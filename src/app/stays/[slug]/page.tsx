@@ -1,0 +1,99 @@
+import { notFound } from 'next/navigation';
+import { cache } from 'react';
+import { apiFetch } from '@/lib/api';
+import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperience';
+
+// ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
+export const revalidate = 60;
+export const dynamicParams = true;
+
+
+type RoomVariant = { id: number; variant_name: string; weekday_price: number; weekend_price: number; capacity_per_room?: number };
+type RoomDetail = {
+  id: number;
+  slug: string;
+  lodge_name: string;
+  description?: string | null;
+  address?: string | null;
+  cover_image_url?: string | null;
+  og_image_url?: string | null;
+  canonical_url?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  is_featured: boolean;
+  starting_price?: number | null;
+  total_rooms?: number | null;
+  slot_start?: string | null;
+  slot_end?: string | null;
+  booking_slots?: Array<{ title: string; slot_start: string; slot_end: string }>;
+  facilities: string[];
+  variants: RoomVariant[];
+  gallery: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
+  highlights: Array<{ id: number; title: string; icon?: string | null; sort_order: number }>;
+  faqs: Array<{ id: number; question: string; answer: string; sort_order: number }>;
+  policies: Array<{ id: number; type: string; title: string; description: string; sort_order: number }>;
+};
+
+const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> => {
+  try {
+    const res = await apiFetch(`/api/v1/rooms/${slug}`, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const room = await fetchRoomDetail(slug);
+  if (!room) return { title: 'Stay Not Found' };
+  const description = room.meta_description || room.description?.slice(0, 160) || `${room.lodge_name} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
+
+  return {
+    title: room.meta_title || `${room.lodge_name} | Premium Riverside Stay`,
+    description,
+    alternates: { canonical: room.canonical_url || `/stays/${room.slug}` },
+    openGraph: {
+      title: room.meta_title || room.lodge_name,
+      description,
+      images: room.og_image_url || room.cover_image_url ? [{ url: room.og_image_url || room.cover_image_url! }] : [],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: room.meta_title || room.lodge_name,
+      description,
+      images: room.og_image_url || room.cover_image_url ? [room.og_image_url || room.cover_image_url!] : [],
+    },
+  };
+}
+
+export default async function RoomDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const room = await fetchRoomDetail(slug);
+  if (!room) notFound();
+
+  const heroImage = room.cover_image_url || room.gallery.find((image) => image.is_cover)?.image_url || room.gallery[0]?.image_url;
+  const price = Number(room.starting_price || room.variants[0]?.weekday_price || 0);
+  const canonical = room.canonical_url || `/stays/${room.slug}`;
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Hotel',
+      name: room.lodge_name,
+      description: room.description,
+      image: heroImage,
+      address: { '@type': 'PostalAddress', streetAddress: room.address, addressLocality: 'Bhadrachalam', addressRegion: 'Telangana', addressCountry: 'IN' },
+      amenityFeature: room.facilities.map((facility) => ({ '@type': 'LocationFeatureSpecification', name: facility, value: true })),
+      makesOffer: { '@type': 'Offer', price, priceCurrency: 'INR', url: canonical },
+    },
+  ];
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <RoomDetailExperience room={room} />
+    </>
+  );
+}

@@ -1,0 +1,270 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAdminStore } from '@/stores/adminStore';
+import { toast } from 'sonner';
+import {
+  ArrowLeft, Save, User, Phone, Mail, Building2, FileText,
+  Percent, Lock, Eye, EyeOff, RefreshCw, MapPin, KeyRound
+} from 'lucide-react';
+import Link from 'next/link';
+
+function generatePassword(length = 12) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+  let pw = '';
+  for (let i = 0; i < length; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+  return pw;
+}
+
+export default function EditAgentPage() {
+  const params = useParams();
+  const router = useRouter();
+  const agentId = params?.id;
+  const { currentAgent, isLoading, fetchAgentById, updateAgent, resetAgentPassword } = useAdminStore();
+
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [commission, setCommission] = useState('0.00');
+  const [companyName, setCompanyName] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  useEffect(() => {
+    if (agentId) fetchAgentById(agentId as string);
+  }, [agentId, fetchAgentById]);
+
+  useEffect(() => {
+    if (currentAgent) {
+      setFullName(currentAgent.full_name || '');
+      setPhone(currentAgent.phone_number || '');
+      setCommission(String(parseFloat(currentAgent.commission_percentage || 0)));
+      setCompanyName(currentAgent.company_name || '');
+      setGstNumber(currentAgent.gst_number || '');
+      setAddress(currentAgent.address || '');
+      setAdminNotes(currentAgent.admin_notes || '');
+    }
+  }, [currentAgent]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim() || !phone.trim()) {
+      toast.error('Name and phone are required');
+      return;
+    }
+    try {
+      await updateAgent(agentId as string, {
+        full_name: fullName.trim(),
+        phone_number: phone.trim(),
+        commission_percentage: parseFloat(commission) || 0,
+        company_name: companyName.trim() || null,
+        gst_number: gstNumber.trim() || null,
+        address: address.trim() || null,
+        admin_notes: adminNotes.trim() || null,
+      });
+      toast.success('Agent profile updated');
+      router.push('/admin/agents');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update agent');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await resetAgentPassword(agentId as string, newPassword);
+      toast.success('Password reset successfully');
+      setIsResetModalOpen(false);
+      setNewPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reset password');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  if (!currentAgent && isLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!currentAgent && !isLoading) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <h2 className="text-xl font-bold text-slate-900">Agent not found</h2>
+        <Link href="/admin/agents" prefetch={false} className="text-[#5ac4d7] font-bold hover:underline">Back to Agents</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl space-y-8">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/admin/agents" prefetch={false} className="rounded-xl bg-slate-100 p-2.5 text-slate-600 hover:bg-slate-200 transition-all">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900">Edit Agent</h1>
+            <p className="text-slate-500 mt-1">Update {currentAgent?.full_name}&apos;s profile and operational settings.</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => { setNewPassword(''); setShowNewPassword(false); setIsResetModalOpen(true); }}
+          className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer">
+          <KeyRound className="h-4 w-4" /> Reset Password
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+
+        {/* Personal Information */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-blue-50 rounded-lg"><User className="h-5 w-5 text-blue-600" /></div>
+            <h3 className="text-lg font-bold text-slate-900">Personal Information</h3>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name *</label>
+              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (cannot change)</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input type="email" value={currentAgent?.email || ''} disabled
+                  className="w-full rounded-xl border border-slate-200 bg-slate-100 pl-11 pr-4 py-3 text-sm text-slate-500 outline-none cursor-not-allowed" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Phone Number *</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Commission & Business */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-amber-50 rounded-lg"><Percent className="h-5 w-5 text-amber-600" /></div>
+            <h3 className="text-lg font-bold text-slate-900">Commission & Business</h3>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Commission %</label>
+              <div className="relative">
+                <Percent className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input type="number" step="0.01" min="0" max="100" value={commission} onChange={(e) => setCommission(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Company Name</label>
+              <div className="relative">
+                <Building2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">GST Number</label>
+              <input type="text" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Address</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-3 h-4 w-4 text-slate-400" />
+                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Notes */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-purple-50 rounded-lg"><FileText className="h-5 w-5 text-purple-600" /></div>
+            <h3 className="text-lg font-bold text-slate-900">Internal Notes</h3>
+          </div>
+          <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows={4}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
+            placeholder="Private notes about this agent..." />
+        </section>
+
+        {/* Submit */}
+        <div className="flex justify-end gap-4">
+          <Link href="/admin/agents" prefetch={false} className="rounded-xl border border-slate-200 px-6 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all">
+            Cancel
+          </Link>
+          <button type="submit" disabled={isLoading}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-8 py-3 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-slate-800 disabled:opacity-50 cursor-pointer">
+            {isLoading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <Save className="h-4 w-4" />}
+            Save Changes
+          </button>
+        </div>
+      </form>
+
+      {/* Password Reset Modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsResetModalOpen(false)} />
+          <div className="relative z-10 w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <h3 className="text-xl font-black text-slate-900 mb-2">Reset Agent Password</h3>
+            <p className="text-sm text-slate-500 mb-6">Set a new password for {currentAgent?.full_name}. Share it securely with the agent.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Password *</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-12 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
+                      placeholder="Minimum 6 characters" />
+                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <button type="button" onClick={() => { setNewPassword(generatePassword()); setShowNewPassword(true); }}
+                    className="rounded-xl border border-slate-200 bg-white p-3 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" onClick={() => setIsResetModalOpen(false)}
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">Cancel</button>
+                <button type="button" onClick={handleResetPassword} disabled={resetLoading}
+                  className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-red-700 transition-all disabled:opacity-50 cursor-pointer">
+                  {resetLoading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <KeyRound className="h-4 w-4" />}
+                  Reset Password
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

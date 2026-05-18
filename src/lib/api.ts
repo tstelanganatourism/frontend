@@ -1,0 +1,170 @@
+/**
+ * Axios instance with auth interceptors.
+ *
+ * - Injects Authorization: Bearer <token> from Zustand store on every request
+ * - On 401: attempts token refresh via HttpOnly cookie, then retries once
+ * - On refresh failure: clears auth store and redirects to /login
+ *
+ * Also exports `API_BASE` and `apiFetch` for server-side fetch compatibility.
+ */
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+
+// ─── Environment-aware base URL ───────────────────────────────────────────────
+
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Browser: use relative path (Next.js rewrites/proxy work here)
+    return '';
+  }
+  // SSR: full URL required
+  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+};
+
+export const API_BASE = getApiBaseUrl();
+
+// ─── SSR-safe fetch helper (used by Server Components) ────────────────────────
+
+export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const signal = options.signal ?? AbortSignal.timeout(8_000);
+  
+  // Create a safe copy of options
+  const fetchOptions: RequestInit = { ...options };
+  
+  // In development mode, bypass the Next.js Data Cache so every reload fetches fresh data
+  if (process.env.NODE_ENV === 'development') {
+    fetchOptions.cache = 'no-store';
+    if (fetchOptions.next) {
+      // Clean up revalidate options to avoid conflicting with no-storew
+      const nextOpts = { ...fetchOptions.next };
+      delete nextOpts.revalidate;
+      fetchOptions.next = nextOpts;
+    }
+  }
+
+  return fetch(url, {
+    ...fetchOptions,
+    signal,
+    headers: { 'Content-Type': 'application/json', ...fetchOptions.headers },
+  });
+};
+
+// ─── Axios instance for Client Components ─────────────────────────────────────
+
+export const apiClient: AxiosInstance = axios.create({
+  baseURL: typeof window !== 'undefined' ? '' : (process.env.INTERNAL_API_URL || 'http://127.0.0.1:8000'),
+  withCredentials: true, // send HttpOnly refresh cookie
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 15_000,
+});
+
+// ─── Request interceptor: inject access token ────────────────────────────────
+
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  // Lazily import store to avoid SSR issues
+  if (typeof window !== 'undefined') {
+    const { useAuthStore } = require('@/stores/authStore');
+    const token = useAuthStore.getState().accessToken;
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// ─── Response interceptor: refresh on 401 ────────────────────────────────────
+
+let isRefreshing = false;
+let pendingQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
+
+function processQueue(error: unknown, token: string | null = null) {
+  pendingQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)));
+  pendingQueue = [];
+}
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Only intercept 401s that haven't been retried yet
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // Don't retry login, signup, OTP verify, logout, or refresh itself
+    const bypassRetry = 
+      originalRequest.url?.includes('/auth/refresh') ||
+      originalRequest.url?.includes('/auth/logout') ||
+      originalRequest.url?.includes('/login') ||
+      originalRequest.url?.includes('/signup') ||
+      originalRequest.url?.includes('/verify-otp');
+
+    if (bypassRetry) {
+      return Promise.reject(error);
+    }
+
+    // CRITICAL: If auth has not hydrated yet, AuthProvider is already handling the
+    // refresh. Do NOT attempt a second concurrent refresh here — token rotation means
+    // the backend will reject the duplicate call with 401, which would then call
+    // clearAuth() and wipe the session the AuthProvider just established.
+    if (typeof window !== 'undefined') {
+      const { useAuthStore } = require('@/stores/authStore');
+      if (!useAuthStore.getState().isHydrated) {
+        return Promise.reject(error);
+      }
+    }
+
+    originalRequest._retry = true;
+
+    if (isRefreshing) {
+      // Queue concurrent requests until refresh completes
+      return new Promise((resolve, reject) => {
+        pendingQueue.push({
+          resolve: (token) => {
+            originalRequest.headers!['Authorization'] = `Bearer ${token}`;
+            resolve(apiClient(originalRequest));
+          },
+          reject,
+        });
+      });
+    }
+
+    isRefreshing = true;
+
+    try {
+      const { data } = await apiClient.post<{ access_token: string }>('/api/v1/auth/refresh');
+      const newToken = data.access_token;
+
+      if (typeof window !== 'undefined') {
+        const { useAuthStore } = require('@/stores/authStore');
+        useAuthStore.getState().updateAccessToken(newToken);
+      }
+
+      processQueue(null, newToken);
+      originalRequest.headers!['Authorization'] = `Bearer ${newToken}`;
+      return apiClient(originalRequest);
+    } catch (refreshError: any) {
+      processQueue(refreshError, null);
+
+      // Only clear auth and redirect to login if the server explicitly rejects the credentials (401/403)
+        const isAuthError = refreshError.response && (refreshError.response.status === 401 || refreshError.response.status === 403);
+
+      if (isAuthError && typeof window !== 'undefined') {
+        const { useAuthStore } = require('@/stores/authStore');
+        useAuthStore.getState().clearAuth();
+        
+        // Smart redirect based on current route
+        if (window.location.pathname.startsWith('/admin')) {
+          window.location.href = '/admin/login';
+        } else {
+          window.location.href = '/login';
+        }
+      }
+
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+);

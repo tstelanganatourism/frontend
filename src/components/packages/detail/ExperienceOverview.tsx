@@ -1,0 +1,257 @@
+'use client';
+
+import React from 'react';
+import {
+  Bus,
+  CheckCircle2,
+  CircleDollarSign,
+  Clock,
+  FileDown,
+  MapPin,
+  ShieldCheck,
+  Ship,
+  Sparkles,
+} from 'lucide-react';
+import { apiClient } from '@/lib/api';
+
+interface Variant {
+  id: number;
+  title: string;
+  adult_price: number | string;
+  child_price: number | string;
+  transport_info?: string | null;
+}
+
+interface PackageDetail {
+  id: number;
+  slug: string;
+  title: string;
+  type: string;
+  region?: string | null;
+  description?: string | null;
+  brochure_pdf_url?: string | null;  generated_brochure_url?: string | null;  variants: Variant[];
+  highlights?: Array<{ id: number; title?: string; label?: string; icon?: string | null; sort_order?: number }>;
+  inclusions?: Array<{ id: number; title?: string; label?: string; icon?: string | null; sort_order?: number }>;
+  exclusions?: Array<{ id: number; title?: string; label?: string; icon?: string | null; sort_order?: number }>;
+  boarding_points?: Array<{ id: number; title: string; address?: string | null; departure_time?: string | null; sort_order?: number }>;
+}
+
+interface ExperienceOverviewProps {
+  pkg: PackageDetail;
+  durationLabel: string;
+}
+
+const currency = (value: number | string) => Number(value || 0).toLocaleString('en-IN');
+
+export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewProps) => {
+  const visitingPlaces = (pkg.highlights || []).map((item) => item.title || item.label).filter(Boolean);
+  const included = (pkg.inclusions || []).map((item) => item.label || item.title).filter(Boolean);
+  const excluded = (pkg.exclusions || []).map((item) => item.label || item.title).filter(Boolean);
+  const primaryBoarding = pkg.boarding_points?.[0];
+  const lowestAdultFare = pkg.variants.length
+    ? Math.min(...pkg.variants.map((variant) => Number(variant.adult_price || 0)).filter(Boolean))
+    : 0;
+  const activeBrochureUrl = pkg.generated_brochure_url || pkg.brochure_pdf_url;
+
+  const extractObjectKey = (url: string): string | null => {
+    if (!url) return null;
+    if (url.startsWith('private/')) return url;
+    try {
+      const parsed = new URL(url);
+      const path = parsed.pathname.startsWith('/') ? parsed.pathname.slice(1) : parsed.pathname;
+      if (path.startsWith('private/')) {
+        return decodeURIComponent(path);
+      }
+    } catch (e) {
+      if (url.startsWith('private/')) return url;
+    }
+    return null;
+  };
+
+  const handleDownloadBrochure = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const brochureUrl = activeBrochureUrl;
+    if (!brochureUrl) return;
+
+    const rawKey = extractObjectKey(brochureUrl);
+    if (!rawKey) {
+      window.open(brochureUrl, '_blank');
+      return;
+    }
+
+    try {
+      const response = await apiClient.post('/api/v1/documents/signed-url', {
+        object_key: rawKey
+      });
+      window.open(response.data.url, '_blank');
+    } catch (err) {
+      console.error('Failed to get fresh signed URL for brochure:', err);
+      window.open(brochureUrl, '_blank');
+    }
+  };
+
+  return (
+    <section id="overview" className="scroll-mt-28">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-gradient-to-r from-white via-[#f5fbfa] to-[#fff8eb] p-5 md:p-7">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#e7f5f2] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#0f6f7a]">
+            <Sparkles className="h-3.5 w-3.5" />
+            Package at a glance
+          </span>
+          <h2 className="mt-3 text-2xl font-black tracking-normal text-slate-950 md:text-3xl">
+            Everything you need before booking
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-600">
+            Clear route, timing, fare and inclusion details, written in simple Indian English so families can compare and book without confusion.
+          </p>
+        </div>
+
+        <div className="p-5 md:p-7">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <Clock className="mb-3 h-5 w-5 text-[#1a6b7a]" />
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Duration</p>
+              <p className="mt-1 text-base font-black text-slate-950">{durationLabel}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <MapPin className="mb-3 h-5 w-5 text-[#1a6b7a]" />
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Reporting point</p>
+              <p className="mt-1 text-base font-black text-slate-950">{primaryBoarding?.title || 'Confirmed after booking'}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <Ship className="mb-3 h-5 w-5 text-[#1a6b7a]" />
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Experience</p>
+              <p className="mt-1 text-base font-black text-slate-950">{pkg.type === 'TOUR' ? 'River cruise package' : 'Sightseeing tour'}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <CircleDollarSign className="mb-3 h-5 w-5 text-[#1a6b7a]" />
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Fare from</p>
+              <p className="mt-1 text-base font-black text-slate-950">{lowestAdultFare ? `₹${currency(lowestAdultFare)} / adult` : 'Check live fare'}</p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
+            <h3 className="text-lg font-black text-slate-950">About this package</h3>
+            <p className="mt-3 text-base leading-8 text-slate-700">
+              {pkg.description || 'The operator has not added a long description yet. Please check the tour schedule, reporting information, inclusions, exclusions, and fare variants before booking.'}
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
+            <div className="rounded-lg border border-slate-200 bg-[#f7fbfb] p-5">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-black text-slate-950">
+                <Bus className="h-5 w-5 text-[#1a6b7a]" />
+                Fare and transport options
+              </h3>
+              {pkg.variants.length ? (
+                <div className="space-y-3">
+                  {pkg.variants.map((variant) => (
+                    <div key={variant.id} className="rounded-lg border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-slate-950">{variant.title}</p>
+                          {variant.transport_info ? (
+                            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{variant.transport_info}</p>
+                          ) : null}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-black text-[#0f3d56]">₹{currency(variant.adult_price)}</p>
+                          <p className="text-xs font-bold text-slate-500">Child ₹{currency(variant.child_price)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                  No active fare variants are published for this package.
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-5">
+              <div>
+                <h3 className="mb-3 flex items-center gap-2 text-base font-black text-slate-950">
+                  <MapPin className="h-5 w-5 text-[#1a6b7a]" />
+                  Main places covered
+                </h3>
+                {visitingPlaces.length ? (
+                  <ul className="grid gap-2 text-sm font-medium text-slate-700 sm:grid-cols-2">
+                    {visitingPlaces.slice(0, 8).map((place) => (
+                      <li key={place} className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>{place}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                    Visiting places are not published yet for this package.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="mb-3 flex items-center gap-2 text-base font-black text-slate-950">
+                  <ShieldCheck className="h-5 w-5 text-[#1a6b7a]" />
+                  Usually included
+                </h3>
+                {included.length ? (
+                  <ul className="grid gap-2 text-sm font-medium text-slate-700 sm:grid-cols-2">
+                    {included.slice(0, 6).map((item) => (
+                      <li key={item} className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                    Package inclusions are not published yet.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {excluded.length ? (
+            <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <h3 className="mb-3 text-base font-black text-slate-950">Not included</h3>
+              <ul className="grid gap-2 text-sm font-medium text-slate-700 sm:grid-cols-2">
+                {excluded.slice(0, 8).map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {activeBrochureUrl && (
+            <div className="mt-6 rounded-xl border border-[#1a6b7a]/30 bg-[#eef8f6] p-5 md:flex md:items-center md:justify-between md:gap-4">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-[#1a6b7a] p-3 text-white">
+                  <FileDown className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-950">Official tour brochure</h3>
+                  <p className="text-sm font-semibold text-slate-600">Download complete itinerary and package details as PDF.</p>
+                </div>
+              </div>
+              <a
+                href={activeBrochureUrl}
+                onClick={handleDownloadBrochure}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-[#1a6b7a] px-6 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c] md:mt-0 md:w-auto"
+              >
+                Download PDF
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
