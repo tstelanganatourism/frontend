@@ -133,12 +133,13 @@ apiClient.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await apiClient.post<{ access_token: string }>('/api/v1/auth/refresh');
+      const { data } = await apiClient.post<{ access_token: string; user: any }>('/api/v1/auth/refresh');
       const newToken = data.access_token;
 
       if (typeof window !== 'undefined') {
         const { useAuthStore } = require('@/stores/authStore');
         useAuthStore.getState().updateAccessToken(newToken);
+        useAuthStore.getState().updateUser(data.user);
       }
 
       processQueue(null, newToken);

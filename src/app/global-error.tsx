@@ -11,14 +11,19 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    console.error({
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      digest: error?.digest
+    });
   }, [error]);
 
   return (
     <html>
       <body>
         <div className="min-h-screen bg-[#F0F8FF] flex flex-col justify-between font-sans antialiased text-[#0d2f5e]">
-          <header className="px-6 py-4 md:px-12 flex justify-between items-center border-b border-blue-100 bg-white/70 backdrop-blur-md">
+          {/* <header className="px-6 py-4 md:px-12 flex justify-between items-center border-b border-blue-100 bg-white/70 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-[#0d2f5e] flex items-center justify-center text-white font-bold text-lg tracking-wider">
                 T
@@ -27,7 +32,7 @@ export default function GlobalError({
                 TS BOAT TOURISM
               </span>
             </div>
-          </header>
+          </header> */}
 
           <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-center gap-12 md:gap-20">
             <div className="flex-1 text-center md:text-left max-w-lg">
@@ -40,7 +45,7 @@ export default function GlobalError({
               <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-8 py-3.5 bg-[#0d2f5e] text-white font-bold text-sm tracking-wider uppercase rounded-full shadow-lg shadow-blue-900/10 hover:bg-[#1a4a80] hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2"
+                  className="px-8 py-3.5 bg-[#0d2f5e] font-bold text-sm tracking-wider uppercase rounded-full shadow-lg shadow-blue-900/10 hover:bg-[#1a4a80] hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2"
                   style={{ backgroundColor: '#0d2f5e', color: '#ffffff', minWidth: '200px' }}
                 >
                   <RefreshCw className="w-4 h-4 animate-spin-slow" />

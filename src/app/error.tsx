@@ -11,7 +11,12 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    console.error({
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      digest: error?.digest
+    });
   }, [error]);
 
   return (

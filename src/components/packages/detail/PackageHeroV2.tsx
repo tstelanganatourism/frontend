@@ -119,7 +119,7 @@ export const PackageHeroV2 = ({
       <div className="absolute inset-x-0 top-0 h-[78%] bg-[linear-gradient(135deg,#073044_0%,#0f6f7a_58%,#f5b85a_100%)] lg:h-[74%]" />
       <div className="absolute inset-x-0 top-0 h-[78%] bg-[radial-gradient(circle_at_16%_20%,rgba(255,255,255,0.22),transparent_28%),linear-gradient(180deg,rgba(3,24,35,0.05),rgba(3,24,35,0.7))] lg:h-[74%]" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-6 lg:px-8 lg:pb-12">
+      <div className="relative mx-auto max-w-[1600px] px-4 pb-8 pt-5 sm:px-6 lg:px-12 lg:pb-12">
         <div className="mb-5 flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-white/75">
           <Link href="/" className="transition hover:text-white">
             Home

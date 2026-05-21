@@ -86,6 +86,7 @@ export default function PreviewModal({ isOpen, onClose, pkg }: PreviewModalProps
                   durationLabel={durationLabel}
                   boardingPoint={pkg.boarding_points?.[0]?.title}
                   transportInfo={pkg.variants?.[0]?.transport_info}
+                  departureTime={pkg.boarding_points?.[0]?.departure_time}
                 />
               )}
               {(pkg.inclusions?.length > 0 || pkg.exclusions?.length > 0) && (
@@ -101,6 +102,7 @@ export default function PreviewModal({ isOpen, onClose, pkg }: PreviewModalProps
                 <BookingSidebarV2 
                   startingPrice={pkg.starting_price || pkg.variants?.[0]?.adult_price || 0} 
                   variants={pkg.variants || []} 
+                  packageId={pkg.id || 0}
                   packageSlug={pkg.slug || 'preview'} 
                 />
               </aside>
@@ -111,6 +113,7 @@ export default function PreviewModal({ isOpen, onClose, pkg }: PreviewModalProps
              <MobileBookingSheet 
               startingPrice={pkg.starting_price || pkg.variants?.[0]?.adult_price || 0} 
               variants={pkg.variants || []} 
+              packageId={pkg.id || 0}
               packageSlug={pkg.slug || 'preview'} 
             />
           )}

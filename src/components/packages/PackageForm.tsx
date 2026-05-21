@@ -52,8 +52,8 @@ const REGION_OPTIONS = [
 ];
 
 const PACKAGE_TYPE_OPTIONS = [
-  { value: 'TOUR', label: 'Multi-Day Tour Package' },
-  { value: 'TRIP', label: 'Single Day Trip' }
+  { value: 'TOUR', label: 'Boat Rides' },
+  { value: 'TRIP', label: 'Sightseeing' }
 ];
 
 const STATUS_OPTIONS = [
@@ -98,6 +98,8 @@ export default function PackageForm({
   // Basic Fields
   const [title, setTitle] = useState('');
   const [type, setType] = useState('TOUR');
+  const [duration, setDuration] = useState('');
+  const [place, setPlace] = useState('');
   const [slug, setSlug] = useState('');
   const [region, setRegion] = useState('AP');
   const [description, setDescription] = useState('');
@@ -139,6 +141,8 @@ export default function PackageForm({
     if (initialData) {
       setTitle(initialData.title || '');
       setType(initialData.type || 'TOUR');
+      setDuration(initialData.duration || '');
+      setPlace(initialData.place || '');
       setSlug(initialData.slug || '');
       setRegion(initialData.region || 'AP');
       setDescription(initialData.description || '');
@@ -171,7 +175,7 @@ export default function PackageForm({
     if (validationErrors.length > 0 && onClearValidationErrors) {
       onClearValidationErrors();
     }
-  }, [title, type, region, coverImageUrl, variants, itinerary, onClearValidationErrors]);
+  }, [title, type, region, place, coverImageUrl, variants, itinerary, onClearValidationErrors]);
 
   const galleryUrls = gallery.map(g => g.image_url).filter(Boolean);
   const handleGalleryChange = (urls: string[]) => {
@@ -253,7 +257,7 @@ export default function PackageForm({
 
   const handleGenerateBrochure = async () => {
     if (!initialData?.id) return;
-    
+
     // Inline confirmation check to bypass browser popup blockers
     if (activeBrochureUrl && !showRegenConfirm) {
       setShowRegenConfirm(true);
@@ -453,6 +457,8 @@ export default function PackageForm({
     return {
       title,
       type,
+      duration: duration.trim() || null,
+      place: place.trim() || null,
       slug: slug.trim() || undefined,
       region,
       description,
@@ -590,152 +596,151 @@ export default function PackageForm({
         {/* Tab 1: Basic Info */}
         {activeTab === 'basic' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl border border-slate-200 p-8 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#5ac4d7]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-[#5ac4d7]" />
-                      Package Brochure PDF
-                    </h3>
-                    <p className="text-sm font-medium text-slate-500 mt-2 max-w-lg">
-                      Generate a beautiful, printable PDF brochure dynamically from the package data. Admin users can upload a custom PDF manually or regenerate a new brochure after saving package changes.
-                    </p>
+            <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl border border-slate-200 p-8 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#5ac4d7]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-[#5ac4d7]" />
+                    Package Brochure PDF
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 mt-2 max-w-lg">
+                    Generate a beautiful, printable PDF brochure dynamically from the package data. Admin users can upload a custom PDF manually or regenerate a new brochure after saving package changes.
+                  </p>
 
-                    <div className="pt-6 border-t border-slate-100/60 mt-6">
-                      <FileUpload
-                        label="Manual Brochure Upload (Override)"
-                        value={brochurePdfUrl}
-                        onChange={async (url) => {
-                          setBrochurePdfUrl(url || '');
-                          try {
-                            if (onAutosave) {
-                              const payload = { ...getPayload(), brochure_pdf_url: url || null };
-                              await onAutosave(payload);
-                              if (url) {
-                                toast.success('Custom brochure PDF uploaded and saved successfully!');
-                              } else {
-                                toast.success('Custom brochure PDF cleared successfully!');
-                              }
-                              checkBrochureValidation();
+                  <div className="pt-6 border-t border-slate-100/60 mt-6">
+                    <FileUpload
+                      label="Manual Brochure Upload (Override)"
+                      value={brochurePdfUrl}
+                      onChange={async (url) => {
+                        setBrochurePdfUrl(url || '');
+                        try {
+                          if (onAutosave) {
+                            const payload = { ...getPayload(), brochure_pdf_url: url || null };
+                            await onAutosave(payload);
+                            if (url) {
+                              toast.success('Custom brochure PDF uploaded and saved successfully!');
                             } else {
-                              if (url) {
-                                toast.info('PDF uploaded. Save the package to publish this brochure.');
-                              }
+                              toast.success('Custom brochure PDF cleared successfully!');
                             }
-                          } catch (err) {
-                            toast.error('Failed to save brochure PDF changes.');
+                            checkBrochureValidation();
+                          } else {
+                            if (url) {
+                              toast.info('PDF uploaded. Save the package to publish this brochure.');
+                            }
                           }
-                        }}
-                        accept="application/pdf"
-                        fileTypeLabel="Custom PDF Brochure"
-                      />
-                      <p className="mt-3 text-xs font-semibold text-slate-500">
-                        Uploading a manual PDF and saving the package makes it the active public brochure. Generating again later will replace it with a fresh generated PDF.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm md:w-80 shrink-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Pre-flight Checklist</span>
-                      {isValidatingBrochure && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
-                    </div>
-                    {initialData?.id ? (
-                      brochureValidation ? (
-                        <div className="space-y-3">
-                          {brochureValidation.is_valid ? (
-                            <div className="flex items-start gap-2 text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                              <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
-                              <p className="text-xs font-bold leading-relaxed">Package has all required details! Ready for brochure generation.</p>
-                            </div>
-                          ) : (
-                            <div className="flex items-start gap-2 text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100">
-                              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                              <div className="space-y-1">
-                                <p className="text-xs font-bold">Missing requirements:</p>
-                                <ul className="text-[10px] font-semibold list-disc pl-4 space-y-0.5 opacity-90">
-                                  {brochureValidation.errors.map((e: string, i: number) => <li key={i}>{e}</li>)}
-                                </ul>
-                              </div>
-                            </div>
-                          )}
-                          {brochureValidation.warnings?.length > 0 && (
-                            <div className="flex items-start gap-2 text-amber-600 bg-amber-50 p-3 rounded-xl border border-amber-100">
-                              <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                              <ul className="text-[10px] font-semibold list-disc pl-4 space-y-0.5 opacity-90">
-                                {brochureValidation.warnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* Dynamic PDF Actions in the right box */}
-                          {brochureValidation?.is_valid && (
-                            <div className="pt-4 border-t border-slate-100 mt-4 space-y-3">
-                              {/* Alert box for failed generation */}
-                              {brochureValidation?.status === 'FAILED' && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                  <AlertTriangle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
-                                  <div>
-                                    <p className="font-bold">Generation Failed</p>
-                                    <p className="text-[10px] font-medium text-red-600 mt-0.5">Please try again or upload a custom PDF manually.</p>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Generation Button */}
-                              <button
-                                type="button"
-                                onClick={handleGenerateBrochure}
-                                disabled={isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status)}
-                                className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer ${
-                                  isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status)
-                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                    : showRegenConfirm
-                                      ? 'bg-rose-50 border-2 border-rose-400 text-rose-700 hover:bg-rose-100 scale-[0.98]'
-                                      : 'bg-white border-2 border-[#5ac4d7] text-[#0f3d56] hover:bg-[#5ac4d7]/10'
-                                }`}
-                              >
-                                {isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status) ? (
-                                  <><Loader2 className="h-3.5 w-3.5 animate-spin text-[#5ac4d7]" /> {brochureValidation?.status === 'QUEUED' ? 'Queued...' : 'Generating...'}</>
-                                ) : showRegenConfirm ? (
-                                  <><AlertTriangle className="h-3.5 w-3.5" /> Click again to confirm</>
-                                ) : brochureValidation?.status === 'FAILED' ? (
-                                  <><RefreshCw className="h-3.5 w-3.5" /> Retry Generation</>
-                                ) : activeBrochureUrl ? (
-                                  <><RefreshCw className="h-3.5 w-3.5" /> Regenerate Brochure</>
-                                ) : (
-                                  <><RefreshCw className="h-3.5 w-3.5" /> Generate Brochure</>
-                                )}
-                              </button>
-
-                              {/* View/Download Button */}
-                              {activeBrochureUrl && (
-                                <button
-                                  type="button"
-                                  onClick={handleDownloadPDF}
-                                  disabled={isDownloadingPdf}
-                                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-sm hover:bg-emerald-100 transition-all cursor-pointer"
-                                >
-                                  {isDownloadingPdf ? (
-                                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparing Link...</>
-                                  ) : (
-                                    <><Download className="h-3.5 w-3.5" /> View / Download PDF</>
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-xs font-semibold text-slate-400 italic">Validating package data...</div>
-                      )
-                    ) : (
-                      <div className="text-xs font-semibold text-slate-400 italic">Save the package first to validate and generate the brochure.</div>
-                    )}
+                        } catch (err) {
+                          toast.error('Failed to save brochure PDF changes.');
+                        }
+                      }}
+                      accept="application/pdf"
+                      fileTypeLabel="Custom PDF Brochure"
+                    />
+                    <p className="mt-3 text-xs font-semibold text-slate-500">
+                      Uploading a manual PDF and saving the package makes it the active public brochure. Generating again later will replace it with a fresh generated PDF.
+                    </p>
                   </div>
                 </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm md:w-80 shrink-0">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Pre-flight Checklist</span>
+                    {isValidatingBrochure && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
+                  </div>
+                  {initialData?.id ? (
+                    brochureValidation ? (
+                      <div className="space-y-3">
+                        {brochureValidation.is_valid ? (
+                          <div className="flex items-start gap-2 text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                            <p className="text-xs font-bold leading-relaxed">Package has all required details! Ready for brochure generation.</p>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2 text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100">
+                            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <p className="text-xs font-bold">Missing requirements:</p>
+                              <ul className="text-[10px] font-semibold list-disc pl-4 space-y-0.5 opacity-90">
+                                {brochureValidation.errors.map((e: string, i: number) => <li key={i}>{e}</li>)}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                        {brochureValidation.warnings?.length > 0 && (
+                          <div className="flex items-start gap-2 text-amber-600 bg-amber-50 p-3 rounded-xl border border-amber-100">
+                            <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                            <ul className="text-[10px] font-semibold list-disc pl-4 space-y-0.5 opacity-90">
+                              {brochureValidation.warnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Dynamic PDF Actions in the right box */}
+                        {brochureValidation?.is_valid && (
+                          <div className="pt-4 border-t border-slate-100 mt-4 space-y-3">
+                            {/* Alert box for failed generation */}
+                            {brochureValidation?.status === 'FAILED' && (
+                              <div className="bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <AlertTriangle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
+                                <div>
+                                  <p className="font-bold">Generation Failed</p>
+                                  <p className="text-[10px] font-medium text-red-600 mt-0.5">Please try again or upload a custom PDF manually.</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Generation Button */}
+                            <button
+                              type="button"
+                              onClick={handleGenerateBrochure}
+                              disabled={isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status)}
+                              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer ${isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status)
+                                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                  : showRegenConfirm
+                                    ? 'bg-rose-50 border-2 border-rose-400 text-rose-700 hover:bg-rose-100 scale-[0.98]'
+                                    : 'bg-white border-2 border-[#5ac4d7] text-[#0f3d56] hover:bg-[#5ac4d7]/10'
+                                }`}
+                            >
+                              {isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status) ? (
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin text-[#5ac4d7]" /> {brochureValidation?.status === 'QUEUED' ? 'Queued...' : 'Generating...'}</>
+                              ) : showRegenConfirm ? (
+                                <><AlertTriangle className="h-3.5 w-3.5" /> Click again to confirm</>
+                              ) : brochureValidation?.status === 'FAILED' ? (
+                                <><RefreshCw className="h-3.5 w-3.5" /> Retry Generation</>
+                              ) : activeBrochureUrl ? (
+                                <><RefreshCw className="h-3.5 w-3.5" /> Regenerate Brochure</>
+                              ) : (
+                                <><RefreshCw className="h-3.5 w-3.5" /> Generate Brochure</>
+                              )}
+                            </button>
+
+                            {/* View/Download Button */}
+                            {activeBrochureUrl && (
+                              <button
+                                type="button"
+                                onClick={handleDownloadPDF}
+                                disabled={isDownloadingPdf}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-sm hover:bg-emerald-100 transition-all cursor-pointer"
+                              >
+                                {isDownloadingPdf ? (
+                                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparing Link...</>
+                                ) : (
+                                  <><Download className="h-3.5 w-3.5" /> View / Download PDF</>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs font-semibold text-slate-400 italic">Validating package data...</div>
+                    )
+                  ) : (
+                    <div className="text-xs font-semibold text-slate-400 italic">Save the package first to validate and generate the brochure.</div>
+                  )}
+                </div>
               </div>
+            </div>
 
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="sm:col-span-2">
@@ -765,6 +770,28 @@ export default function PackageForm({
                   value={region}
                   options={REGION_OPTIONS}
                   onChange={setRegion}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Package Place / Destination (e.g. Rajahmundry, Bhadrachalam)</label>
+                <input
+                  type="text"
+                  value={place}
+                  onChange={(e) => setPlace(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#5ac4d7] focus:ring-2 focus:ring-[#5ac4d7]/20 transition-all font-semibold text-slate-800 shadow-sm"
+                  placeholder="e.g. Rajahmundry"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Package Duration / Label (e.g. 2 Days / 1 Night, Morning Ride)</label>
+                <input
+                  type="text"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#5ac4d7] focus:ring-2 focus:ring-[#5ac4d7]/20 transition-all font-semibold text-slate-800 shadow-sm"
+                  placeholder="e.g. 2 Days / 1 Night"
                 />
               </div>
 
@@ -1089,25 +1116,32 @@ export default function PackageForm({
             </div>
 
             <div className="grid gap-3">
-              {highlights.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm hover:border-[#5ac4d7]/40 transition-colors">
-                  <div className="flex flex-col gap-1 border-r border-slate-200 pr-3">
-                    <button type="button" onClick={() => moveItem(highlights, setHighlights, index, 'up')} className="p-0.5 hover:bg-slate-200 rounded"><ArrowUp className="h-3 w-3 text-slate-400" /></button>
-                    <button type="button" onClick={() => moveItem(highlights, setHighlights, index, 'down')} className="p-0.5 hover:bg-slate-200 rounded"><ArrowDown className="h-3 w-3 text-slate-400" /></button>
-                  </div>
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={item.title}
-                      onChange={(e) => updateHighlight(index, 'title', e.target.value)}
-                      placeholder="e.g. Scenic Boat Ride on River Godavari"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-[#5ac4d7]"
-                      required
-                    />
-                  </div>
-                  <button type="button" onClick={() => removeHighlight(index)} className="p-2.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-red-200 transition-all"><Trash2 className="h-4 w-4" /></button>
+              {highlights.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                  <Sparkles className="h-8 w-8 mx-auto mb-3 opacity-50 text-[#5ac4d7]" />
+                  <p className="text-sm font-bold">No highlights added.</p>
                 </div>
-              ))}
+              ) : (
+                highlights.map((item, index) => (
+                  <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm hover:border-[#5ac4d7]/40 transition-colors">
+                    <div className="flex flex-col gap-1 border-r border-slate-200 pr-3">
+                      <button type="button" onClick={() => moveItem(highlights, setHighlights, index, 'up')} className="p-0.5 hover:bg-slate-200 rounded"><ArrowUp className="h-3 w-3 text-slate-400" /></button>
+                      <button type="button" onClick={() => moveItem(highlights, setHighlights, index, 'down')} className="p-0.5 hover:bg-slate-200 rounded"><ArrowDown className="h-3 w-3 text-slate-400" /></button>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={item.title}
+                        onChange={(e) => updateHighlight(index, 'title', e.target.value)}
+                        placeholder="e.g. Scenic Boat Ride on River Godavari"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-[#5ac4d7]"
+                        required
+                      />
+                    </div>
+                    <button type="button" onClick={() => removeHighlight(index)} className="p-2.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-red-200 transition-all"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -1196,29 +1230,36 @@ export default function PackageForm({
                 <button type="button" onClick={addPolicy} className="flex items-center gap-1.5 rounded-lg bg-[#0f3d56] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#1a4f6d] transition-colors"><Plus className="h-3.5 w-3.5" /> Add Policy</button>
               </div>
               <div className="grid gap-6">
-                {policies.map((item, index) => (
-                  <div key={index} className="p-5 bg-slate-50 border border-slate-200 rounded-3xl shadow-sm relative hover:border-[#5ac4d7]/40 transition-colors">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
-                      <span className="text-xs font-black uppercase text-[#0f3d56] tracking-wider">Policy #{index + 1}</span>
-                      <button type="button" onClick={() => removePolicy(index)} className="p-1.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-lg shadow-sm"><Trash2 className="h-3.5 w-3.5" /></button>
-                    </div>
-                    <div className="grid gap-4">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <PremiumSelect label="Policy Category *" value={item.type} options={POLICY_CATEGORIES} onChange={(val) => updatePolicy(index, 'type', val)} />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Policy Title *</label>
-                          <input type="text" value={item.title} onChange={(e) => updatePolicy(index, 'title', e.target.value)} placeholder="e.g. 100% Refund before 48hrs" className="w-full rounded-xl border border-slate-200 px-3.5 py-3.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800" required />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Description Details *</label>
-                        <textarea value={item.description} onChange={(e) => updatePolicy(index, 'description', e.target.value)} placeholder="Detailed terms..." className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-medium text-slate-700 min-h-[80px]" required />
-                      </div>
-                    </div>
+                {policies.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                    <ShieldCheck className="h-8 w-8 mx-auto mb-3 opacity-50 text-[#5ac4d7]" />
+                    <p className="text-sm font-bold">No policies configured.</p>
                   </div>
-                ))}
+                ) : (
+                  policies.map((item, index) => (
+                    <div key={index} className="p-5 bg-slate-50 border border-slate-200 rounded-3xl shadow-sm relative hover:border-[#5ac4d7]/40 transition-colors">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                        <span className="text-xs font-black uppercase text-[#0f3d56] tracking-wider">Policy #{index + 1}</span>
+                        <button type="button" onClick={() => removePolicy(index)} className="p-1.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-lg shadow-sm"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                      <div className="grid gap-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <PremiumSelect label="Policy Category *" value={item.type} options={POLICY_CATEGORIES} onChange={(val) => updatePolicy(index, 'type', val)} />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Policy Title *</label>
+                            <input type="text" value={item.title} onChange={(e) => updatePolicy(index, 'title', e.target.value)} placeholder="e.g. 100% Refund before 48hrs" className="w-full rounded-xl border border-slate-200 px-3.5 py-3.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800" required />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Description Details *</label>
+                          <textarea value={item.description} onChange={(e) => updatePolicy(index, 'description', e.target.value)} placeholder="Detailed terms..." className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-medium text-slate-700 min-h-[80px]" required />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -1229,15 +1270,22 @@ export default function PackageForm({
                 <button type="button" onClick={addFAQ} className="flex items-center gap-1.5 rounded-lg bg-[#0f3d56] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#1a4f6d] transition-colors"><Plus className="h-3.5 w-3.5" /> Add FAQ</button>
               </div>
               <div className="grid gap-4">
-                {faqs.map((item, index) => (
-                  <div key={index} className="flex flex-col gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#5ac4d7]/40 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <input type="text" value={item.question} onChange={(e) => updateFAQ(index, 'question', e.target.value)} placeholder="Question?" className="flex-1 rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-[#5ac4d7]" required />
-                      <button type="button" onClick={() => removeFAQ(index)} className="p-2.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-lg shadow-sm hover:border-red-200 transition-all mt-0.5"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                    <textarea value={item.answer} onChange={(e) => updateFAQ(index, 'answer', e.target.value)} placeholder="Answer..." className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-[#5ac4d7] min-h-[60px]" required />
+                {faqs.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                    <HelpCircle className="h-8 w-8 mx-auto mb-3 opacity-50 text-[#5ac4d7]" />
+                    <p className="text-sm font-bold">No FAQs configured.</p>
                   </div>
-                ))}
+                ) : (
+                  faqs.map((item, index) => (
+                    <div key={index} className="flex flex-col gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#5ac4d7]/40 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <input type="text" value={item.question} onChange={(e) => updateFAQ(index, 'question', e.target.value)} placeholder="Question?" className="flex-1 rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-[#5ac4d7]" required />
+                        <button type="button" onClick={() => removeFAQ(index)} className="p-2.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-lg shadow-sm hover:border-red-200 transition-all mt-0.5"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                      <textarea value={item.answer} onChange={(e) => updateFAQ(index, 'answer', e.target.value)} placeholder="Answer..." className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-[#5ac4d7] min-h-[60px]" required />
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

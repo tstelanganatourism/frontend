@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useDeferredValue } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 
@@ -11,21 +11,39 @@ export default function PackageSearch() {
   const [, startTransition] = useTransition();
 
   const q = searchParams.get('q') || '';
-  const [value, setValue] = React.useState(q);
+  const [value, setValue] = useState(q);
+  const deferredValue = useDeferredValue(value);
 
-  const handleSearch = (newVal: string) => {
-    setValue(newVal);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('page'); // Reset to page 1 on search
-    if (newVal.trim()) {
-      params.set('q', newVal.trim());
-    } else {
-      params.delete('q');
-    }
-    
-    startTransition(() => {
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    });
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      const trimmedQuery = deferredValue.trim();
+
+      if (trimmedQuery) {
+        params.set('q', trimmedQuery);
+      } else {
+        params.delete('q');
+      }
+
+      // Reset to page 1 on search
+      params.delete('page');
+
+      const nextQuery = params.toString();
+      const currentQuery = searchParams.toString();
+      
+      // Prevent redundant pushes
+      if (nextQuery === currentQuery) return;
+
+      startTransition(() => {
+        router.replace(`${pathname}?${nextQuery}`, { scroll: false });
+      });
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [deferredValue, pathname, router, searchParams]);
+
+  const handleClear = () => {
+    setValue('');
   };
 
   return (
@@ -37,7 +55,7 @@ export default function PackageSearch() {
         id="package-search"
         type="text"
         value={value}
-        onChange={(e) => handleSearch(e.target.value)}
+        onChange={(e) => setValue(e.target.value)}
         placeholder="Search tours, trips, temples..."
         className="w-full rounded-full border border-white/20 bg-white/10 py-3 pl-12 pr-10 text-white backdrop-blur-md transition-all placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] focus:bg-white/20 font-bold"
       />
@@ -45,7 +63,7 @@ export default function PackageSearch() {
       {value && (
         <button
           type="button"
-          onClick={() => handleSearch('')}
+          onClick={handleClear}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors cursor-pointer"
           title="Clear search"
         >

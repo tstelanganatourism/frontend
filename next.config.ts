@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 import path from "node:path";
+import { withSentryConfig } from "@sentry/nextjs";
+import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const backendOrigin = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 
@@ -26,6 +28,8 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://*.r2.cloudflarestorage.com https://www.google-analytics.com; connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com wss: https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://*.sentry.io; frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; font-src 'self' data:;" },
         ],
       },
     ];
@@ -39,32 +43,33 @@ const nextConfig: NextConfig = {
             { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
           ],
         },
-        // ISR page routes: allow CDN/browser to cache the rendered HTML for 60s.
-        // stale-while-revalidate lets the browser serve stale content instantly
-        // while fetching the fresh version in the background — eliminates the
-        // "cold" repeated requests visible in the dev server log.
+        // ISR page routes: browser must always revalidate (max-age=0) so a
+        // reload after deployment never serves stale HTML. The CDN layer
+        // (Vercel / Cloudflare) caches for 60s via s-maxage, and
+        // stale-while-revalidate lets the CDN serve the old page instantly
+        // while regenerating in the background.
         {
-          source: '/packages/:slug*',
+          source: '/packages/:path*',
           headers: [
-            { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=120' },
+            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
           ],
         },
         {
-          source: '/stays/:slug*',
+          source: '/stays/:path*',
           headers: [
-            { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=120' },
+            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
           ],
         },
         {
           source: '/boat-rides/:path*',
           headers: [
-            { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=120' },
+            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
           ],
         },
         {
           source: '/sightseeing/:path*',
           headers: [
-            { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=120' },
+            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
           ],
         }
       );
@@ -86,4 +91,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+const sentryConfig = withSentryConfig(
+  bundleAnalyzer(nextConfig),
+  {
+    org: "ts-tours",
+    project: "frontend",
+    silent: !process.env.CI,
+    widenClientFileUpload: true,
+    tunnelRoute: "/monitoring",
+  }
+);
+
+export default sentryConfig;

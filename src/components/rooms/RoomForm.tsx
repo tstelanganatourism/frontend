@@ -372,7 +372,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-8 max-w-4xl">
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-8">
       
       {/* Action Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6">

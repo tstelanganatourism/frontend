@@ -1,12 +1,14 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
 import { BedDouble, Sparkles } from 'lucide-react';
 import RoomCard from '@/components/ui/RoomCard';
 import RoomFilters from '@/components/rooms/RoomFilters';
-import RealtimeSearch from '@/components/rooms/RealtimeSearch';
 import RoomListPagination from '@/components/rooms/RoomListPagination';
 import MobileRoomFilterSheet from '@/components/rooms/MobileRoomFilterSheet';
 import Link from 'next/link';
+import { Search } from 'lucide-react';
 
 type RoomData = {
   items: any[];
@@ -24,6 +26,7 @@ export default function RoomsList({
   searchParams?: any;
 }) {
   const [liveData, setLiveData] = React.useState<RoomData | undefined>(undefined);
+  const [searchVal, setSearchVal] = React.useState('');
 
   React.useEffect(() => {
     const fetchLive = async () => {
@@ -54,12 +57,11 @@ export default function RoomsList({
 
   const activeData = liveData !== undefined ? liveData : data;
 
-  // Extract search term from query if needed for RealtimeSearch defaultValue
-  let qValue = '';
-  if (query) {
-    const params = new URLSearchParams(query);
-    qValue = params.get('q') || '';
-  }
+  // Extract active items and filter locally
+  const filteredItems = activeData ? activeData.items.filter((room: any) => 
+    searchVal === '' || 
+    (room.lodge_name && room.lodge_name.toLowerCase().includes(searchVal.toLowerCase()))
+  ) : [];
 
   return (
     <div className="min-h-screen bg-[#f4f6ef]">
@@ -92,7 +94,16 @@ export default function RoomsList({
             </div>
 
             <div>
-              <RealtimeSearch defaultValue={qValue} />
+              <div className="relative w-full md:w-96">
+                <input 
+                  type="text" 
+                  value={searchVal}
+                  onChange={(e) => setSearchVal(e.target.value)}
+                  placeholder="Search by hotel or area..." 
+                  className="w-full bg-white/10 border border-white/20 backdrop-blur-md rounded-full py-3 px-6 pl-12 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] transition-all"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50" />
+              </div>
             </div>
           </div>
         </div>
@@ -114,14 +125,14 @@ export default function RoomsList({
               <div className="transition-opacity duration-200">
                 <div className="mb-6 flex items-center justify-between lg:mb-8">
                   <p className="max-w-[calc(100%-8rem)] text-sm font-medium leading-5 text-slate-500 sm:max-w-none">
-                    We found <span className="font-bold text-[var(--color-brand-river)]">{activeData.total || 0}</span> beautiful stays
+                    We found <span className="font-bold text-[var(--color-brand-river)]">{filteredItems.length || 0}</span> beautiful stays
                   </p>
                   <MobileRoomFilterSheet />
                 </div>
 
-                {activeData.items.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
-                    {activeData.items.map((room) => (
+                {filteredItems.length > 0 ? (
+                  <div className="flex flex-col gap-5">
+                    {filteredItems.map((room) => (
                       <RoomCard key={room.id} room={room} />
                     ))}
                   </div>

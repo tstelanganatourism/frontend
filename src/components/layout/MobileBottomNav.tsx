@@ -29,11 +29,6 @@ export default function MobileBottomNav() {
             <Link 
               key={item.name} 
               href={item.href}
-              onClick={() => {
-                setTimeout(() => {
-                  router.refresh();
-                }, 50);
-              }}
               className={`flex min-h-14 min-w-14 flex-col items-center justify-center rounded-2xl px-2 py-1.5 transition-all duration-200 ${
                 isActive 
                   ? 'bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] scale-105' 

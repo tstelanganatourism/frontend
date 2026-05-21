@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminStore } from '@/stores/adminStore';
 import Link from 'next/link';
@@ -9,10 +9,13 @@ import {
   ArrowLeft, Edit, KeyRound, ShieldCheck, ShieldOff, Trash2,
   User, Phone, Mail, Building2, Percent, Calendar, MapPin,
   TrendingUp, Ticket, CheckCircle2, XCircle, Clock, IndianRupee,
-  Wallet, FileText, BarChart3, CreditCard, Activity
+  Wallet, FileText, BarChart3, CreditCard, Activity, ChevronLeft,
+  ChevronRight, Loader2
 } from 'lucide-react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { Lock, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
 
 function generatePassword(length = 12) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
@@ -32,6 +35,23 @@ function StatusPill({ status }: { status: string }) {
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider ${s.bg} ${s.text}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
       {s.label}
+    </span>
+  );
+}
+
+const BOOKING_STATUS_CFG: Record<string, { label: string; color: string }> = {
+  PENDING:      { label: 'Pending',      color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  PARTIAL_PAID: { label: 'Part. Paid',   color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  FULLY_PAID:   { label: 'Confirmed',    color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  CANCELLED:    { label: 'Cancelled',    color: 'bg-red-50 text-red-700 border-red-200' },
+  REFUNDED:     { label: 'Refunded',     color: 'bg-slate-100 text-slate-600 border-slate-200' },
+};
+
+function BookingStatusBadge({ status }: { status: string }) {
+  const cfg = BOOKING_STATUS_CFG[status.toUpperCase()] ?? { label: status, color: 'bg-slate-50 text-slate-500 border-slate-200' };
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${cfg.color}`}>
+      {cfg.label}
     </span>
   );
 }
@@ -62,9 +82,42 @@ export default function AgentDetailPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
+  // Agent bookings state
+  const [agentBookings, setAgentBookings] = useState<any[]>([]);
+  const [bookingsTotal, setBookingsTotal] = useState(0);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [bookingsOffset, setBookingsOffset] = useState(0);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedPublicId, setSelectedPublicId] = useState<string | null>(null);
+  const BOOKINGS_PAGE_SIZE = 5;
+
   useEffect(() => {
     if (agentId) fetchAgentById(agentId as string);
   }, [agentId, fetchAgentById]);
+
+  const fetchAgentBookings = useCallback(async () => {
+    if (!agentId) return;
+    setBookingsLoading(true);
+    try {
+      const res = await apiClient.get('/api/v1/admin/bookings', {
+        params: {
+          agent_id: agentId,
+          limit: BOOKINGS_PAGE_SIZE,
+          offset: bookingsOffset,
+        }
+      });
+      setAgentBookings(res.data?.items || []);
+      setBookingsTotal(res.data?.total || 0);
+    } catch (err) {
+      console.error('Failed to load agent bookings:', err);
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, [agentId, bookingsOffset]);
+
+  useEffect(() => {
+    fetchAgentBookings();
+  }, [fetchAgentBookings]);
 
   const handleToggleStatus = async () => {
     try {
@@ -163,19 +216,19 @@ export default function AgentDetailPage() {
       {/* Profile Card */}
       <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         <div className="h-24 bg-gradient-to-r from-[#0f3d56] to-[#5ac4d7]" />
-        <div className="px-8 pb-8 -mt-10">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-6">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-[#5ac4d7] to-[#0f3d56] flex items-center justify-center text-white text-2xl font-black ring-4 ring-white shadow-lg">
+        <div className="px-8 pb-8">
+          <div className="flex flex-col sm:flex-row gap-6">
+            <div className="-mt-10 h-20 w-20 shrink-0 rounded-2xl bg-gradient-to-br from-[#5ac4d7] to-[#0f3d56] flex items-center justify-center text-white text-2xl font-black ring-4 ring-white shadow-lg relative z-10">
               {agent.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
+            <div className="flex-1 pt-4 sm:pt-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-2xl font-black text-slate-900">{agent.full_name}</h2>
                 <StatusPill status={agent.account_status} />
               </div>
               <p className="text-sm text-slate-500 mt-1">{agent.company_name || 'Independent Agent'}</p>
             </div>
-            <div className="text-right hidden sm:block">
+            <div className="text-left sm:text-right pt-4 sm:pt-2">
               <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">Commission Rate</p>
               <p className="text-3xl font-black text-[#0f3d56]">{parseFloat(agent.commission_percentage || 0).toFixed(1)}%</p>
             </div>
@@ -194,14 +247,18 @@ export default function AgentDetailPage() {
               <Phone className="h-4 w-4 text-slate-400" />
               <div>
                 <p className="text-xs font-bold text-slate-400">Phone</p>
-                <p className="text-sm font-bold text-slate-700">{agent.phone_number || '—'}</p>
+                <p className={`text-sm font-bold ${agent.phone_number ? 'text-slate-700' : 'text-slate-400 italic'}`}>
+                  {agent.phone_number || 'Not provided'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
               <Building2 className="h-4 w-4 text-slate-400" />
               <div>
                 <p className="text-xs font-bold text-slate-400">GST</p>
-                <p className="text-sm font-bold text-slate-700">{agent.gst_number || '—'}</p>
+                <p className={`text-sm font-bold ${agent.gst_number ? 'text-slate-700' : 'text-slate-400 italic'}`}>
+                  {agent.gst_number || 'Not provided'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
@@ -254,26 +311,114 @@ export default function AgentDetailPage() {
         </div>
       </div>
 
-      {/* Recent Bookings — Empty State (no fake data) */}
+      {/* Recent Bookings Ledger */}
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-[#5ac4d7]" /> Recent Bookings
+            <Activity className="h-5 w-5 text-[#5ac4d7]" /> Recent Bookings Ledger
           </h3>
         </div>
-        {metrics.total_bookings === 0 ? (
+
+        {bookingsLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#5ac4d7]" />
+            <p className="text-sm text-slate-550 mt-2 font-semibold">Retrieving recent bookings...</p>
+          </div>
+        ) : bookingsTotal === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="rounded-2xl bg-slate-50 p-6 mb-4">
               <Ticket className="h-12 w-12 text-slate-300" />
             </div>
-            <h4 className="font-bold text-slate-900">No bookings yet</h4>
+            <h4 className="font-bold text-slate-900">No bookings generated yet</h4>
             <p className="text-sm text-slate-500 mt-1 max-w-[300px]">
-              When this agent generates bookings through their referral link or agent panel, they will appear here with full details.
+              When this agent generates bookings through their agent dashboard or referral code, they will be listed here.
             </p>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <p className="text-sm text-slate-500">Booking details will be shown here when the booking engine is live.</p>
+          <div className="space-y-4">
+            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/70">
+                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Booking ID</th>
+                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Package / Room</th>
+                    <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Travel Date</th>
+                    <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Amount</th>
+                    <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
+                    <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {agentBookings.map((b) => (
+                    <tr
+                      key={b.id}
+                      onClick={() => {
+                        setSelectedPublicId(b.public_id);
+                        setIsDetailsOpen(true);
+                      }}
+                      className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                    >
+                      <td className="px-5 py-3 font-mono font-bold text-xs text-slate-800 tracking-wide">
+                        {b.public_id}
+                      </td>
+                      <td className="px-5 py-3">
+                        <p className="font-bold text-slate-800 text-xs truncate max-w-[180px]">{b.package_title}</p>
+                        <p className="text-[10px] text-slate-400 truncate max-w-[180px]">{b.variant_title}</p>
+                      </td>
+                      <td className="px-5 py-3 text-center text-xs font-bold text-slate-700">
+                        {new Date(b.travel_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="px-5 py-3 text-right font-black text-slate-900 text-xs">
+                        ₹{Number(b.total_amount).toLocaleString('en-IN')}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <BookingStatusBadge status={b.status} />
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPublicId(b.public_id);
+                            setIsDetailsOpen(true);
+                          }}
+                          className="px-3 py-1.5 bg-slate-50 hover:bg-[#0f3d56] hover:text-white rounded-lg text-[10px] font-extrabold uppercase tracking-wider text-slate-600 transition-all cursor-pointer"
+                        >
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination controls */}
+            {bookingsTotal > BOOKINGS_PAGE_SIZE && (
+              <div className="flex items-center justify-between border-t border-slate-100 px-4 pt-4">
+                <p className="text-xs text-slate-400 font-semibold">
+                  Showing {bookingsOffset + 1}–{Math.min(bookingsOffset + BOOKINGS_PAGE_SIZE, bookingsTotal)} of {bookingsTotal} bookings
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={bookingsOffset === 0}
+                    onClick={() => setBookingsOffset(Math.max(0, bookingsOffset - BOOKINGS_PAGE_SIZE))}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs font-bold text-slate-700 px-1">
+                    {Math.floor(bookingsOffset / BOOKINGS_PAGE_SIZE) + 1} / {Math.ceil(bookingsTotal / BOOKINGS_PAGE_SIZE)}
+                  </span>
+                  <button
+                    disabled={bookingsOffset + BOOKINGS_PAGE_SIZE >= bookingsTotal}
+                    onClick={() => setBookingsOffset(bookingsOffset + BOOKINGS_PAGE_SIZE)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -359,6 +504,11 @@ export default function AgentDetailPage() {
           </div>
         </div>
       )}
+      <BookingDetailsModal
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        publicId={selectedPublicId}
+      />
     </div>
   );
 }

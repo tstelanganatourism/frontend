@@ -17,6 +17,7 @@ interface ItineraryTimelineProps {
   durationLabel?: string;
   boardingPoint?: string | null;
   transportInfo?: string | null;
+  departureTime?: string | null;
 }
 
 const parseItineraryLines = (desc?: string | null) => {
@@ -42,12 +43,14 @@ const getStandardSchedule = ({
   durationLabel = '',
   boardingPoint,
   transportInfo,
+  departureTime,
 }: Omit<ItineraryTimelineProps, 'days'>) => {
   const text = `${packageTitle} ${durationLabel}`.toLowerCase();
   const isHyderabad = text.includes('hyderabad') || text.includes('hyd');
   const isMultiDay = text.includes('2 day') || text.includes('2 days') || text.includes('3 night') || text.includes('night');
   const isBoatRide = packageType === 'TOUR' || text.includes('papikondalu') || text.includes('boat');
   const reportAt = boardingPoint || (isHyderabad ? 'Hyderabad pickup point' : 'operator reporting point');
+  const reportTime = departureTime || 'TBA';
 
   if (isHyderabad && isMultiDay) {
     return [
@@ -64,7 +67,7 @@ const getStandardSchedule = ({
         title: 'Bhadrachalam, boat journey and bamboo huts',
         steps: [
           ['06:00 AM', 'Reach Bhadrachalam, fresh-up break and breakfast coordination.'],
-          ['07:30 AM', `Report at ${reportAt} for ticket verification and boarding instructions.`],
+          [reportTime, `Report at ${reportAt} for ticket verification and boarding instructions.`],
           ['09:00 AM', 'Boat journey starts on the Godavari route towards Papikondalu.'],
           ['01:00 PM', 'Lunch served as per package arrangement.'],
           ['05:30 PM', 'Reach Kolluru / bamboo huts area for night stay allocation.'],
@@ -90,7 +93,7 @@ const getStandardSchedule = ({
         day: 'Day 1',
         title: 'Reporting and river journey',
         steps: [
-          ['07:30 AM', `Report at ${reportAt} with valid ID proof.`],
+          [reportTime, `Report at ${reportAt} with valid ID proof.`],
           ['09:00 AM', 'Boat departure after boarding verification.'],
           ['11:30 AM', 'Papikondalu scenic stretch and sightseeing from boat.'],
           ['01:00 PM', 'Lunch served as per package arrangement.'],
@@ -115,7 +118,7 @@ const getStandardSchedule = ({
         day: 'Day 1',
         title: 'Godavari boat ride',
         steps: [
-          ['07:30 AM', `Report at ${reportAt} for ticket verification.`],
+          [reportTime, `Report at ${reportAt} for ticket verification.`],
           ['08:30 AM', 'Boarding starts after operator and safety checks.'],
           ['09:00 AM', 'Boat departure on the Godavari river route.'],
           ['11:30 AM', 'Papikondalu scenic view point / river gorge stretch.'],
@@ -131,7 +134,7 @@ const getStandardSchedule = ({
       day: 'Day 1',
       title: 'Sightseeing tour',
       steps: [
-        ['07:30 AM', `Report at ${reportAt}.`],
+        [reportTime, `Report at ${reportAt}.`],
         ['08:00 AM', `Depart by ${transportInfo || 'tourism transport'}.`],
         ['10:00 AM', 'Visit first sightseeing location.'],
         ['01:00 PM', 'Lunch / refreshment break as per package inclusions.'],
@@ -147,7 +150,7 @@ export const ItineraryTimeline = (props: ItineraryTimelineProps) => {
   const standardSchedule = getStandardSchedule(props);
 
   return (
-    <section id="itinerary" className="scroll-mt-28">
+    <section id="itinerary" className="scroll-mt-[170px]">
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-slate-50 p-5 md:p-7">
           <h2 className="text-2xl font-black tracking-normal text-slate-950 md:text-3xl">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useDeferredValue } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 
@@ -10,11 +10,13 @@ export default function RealtimeSearch({ defaultValue = '' }: { defaultValue?: s
   const [query, setQuery] = useState(defaultValue);
   const [, startTransition] = useTransition();
 
-  // Debounced update to URL
+  const deferredQuery = useDeferredValue(query);
+
+  // Debounced update to URL using deferred value
   useEffect(() => {
     const handler = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
-      const trimmedQuery = query.trim();
+      const trimmedQuery = deferredQuery.trim();
 
       if (trimmedQuery) {
         params.set('q', trimmedQuery);
@@ -34,7 +36,7 @@ export default function RealtimeSearch({ defaultValue = '' }: { defaultValue?: s
     }, 300); // 300ms debounce
 
     return () => clearTimeout(handler);
-  }, [query, searchParams]);
+  }, [deferredQuery, searchParams, router]);
 
   return (
     <div className="relative w-full md:w-96">

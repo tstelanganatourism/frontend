@@ -5,6 +5,17 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import PremiumSelect from '@/components/ui/PremiumSelect';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/authStore';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { apiClient } from '@/lib/api';
+import { useRazorpay } from "react-razorpay";
+import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
+import { toast } from 'sonner';
+import { 
+  Sheet, SheetContent, SheetDescription, 
+  SheetHeader, SheetTitle, SheetTrigger 
+} from '@/components/ui/sheet';
 import {
   ArrowLeft,
   BadgeCheck,
@@ -29,7 +40,8 @@ import {
   Calendar,
   CheckCircle2,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 
 type RoomVariant = {
@@ -77,8 +89,8 @@ const fallbackImage =
 const today = new Date().toISOString().slice(0, 10);
 
 const money = (value?: number | null) => {
-  const numeric = Number(value || 0);
-  if (!numeric) return 'Contact';
+  if (value === null || value === undefined) return 'Contact';
+  const numeric = Number(value);
   return `₹${numeric.toLocaleString('en-IN')}`;
 };
 
@@ -183,6 +195,279 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [isLodgeInactive, setIsLodgeInactive] = useState(false);
   const [isCheckingActive, setIsCheckingActive] = useState(true);
 
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const { Razorpay } = useRazorpay();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showPassengerModal, setShowPassengerModal] = useState(false);
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+  const [customPayAmount, setCustomPayAmount] = useState<string>(''); // '' = full, else rupee amount
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discount_amount: number;
+    discounted_subtotal: number;
+  } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+
+  // Room availability state — controls which calendar dates are selectable
+  const [roomAvailability, setRoomAvailability] = useState<Record<string, Set<string>>>({}); // month -> set of open dates
+  const [detailedAvailability, setDetailedAvailability] = useState<Record<string, Record<number, number>>>({}); // date -> variant_id -> available_rooms
+  const [roomAvailLoading, setRoomAvailLoading] = useState(false);
+
+  const fetchRoomAvailability = async (monthStr: string) => {
+    // Skip if already fetched for this month
+    if (roomAvailability[monthStr] !== undefined) return;
+    setRoomAvailLoading(true);
+    try {
+      const res = await apiClient.get(`/api/v1/rooms/${room.slug}/availability`, { params: { month: monthStr } });
+      const dates: Array<{ date: string; status: string; variant_id: number; available_rooms: number }> = res.data?.dates || [];
+      
+      const openDates = new Set<string>();
+      const newDetailed: Record<string, Record<number, number>> = {};
+      
+      for (const d of dates) {
+        if (d.status === 'OPEN') openDates.add(d.date);
+        if (!newDetailed[d.date]) newDetailed[d.date] = {};
+        newDetailed[d.date][d.variant_id] = d.available_rooms;
+      }
+      
+      setRoomAvailability(prev => ({ ...prev, [monthStr]: openDates }));
+      setDetailedAvailability(prev => {
+        const next = { ...prev };
+        for (const dateStr in newDetailed) {
+          next[dateStr] = { ...(next[dateStr] || {}), ...newDetailed[dateStr] };
+        }
+        return next;
+      });
+    } catch {
+      // On error, set empty so calendar disables all dates
+      setRoomAvailability(prev => ({ ...prev, [monthStr]: new Set<string>() }));
+    } finally {
+      setRoomAvailLoading(false);
+    }
+  };
+
+  // Fetch availability for current month on mount
+  useEffect(() => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    fetchRoomAvailability(currentMonth);
+    // Also fetch next month
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+    fetchRoomAvailability(nextMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room.slug]);
+
+  // Combine all available dates across fetched months into one Set for the pickers
+  const allAvailableDates = useMemo(() => {
+    const combined = new Set<string>();
+    for (const dates of Object.values(roomAvailability)) {
+      for (const d of dates) combined.add(d);
+    }
+    return combined;
+  }, [roomAvailability]);
+
+  // Calculate real-time available rooms for the selected dates and variant
+  const maxAvailableRooms = useMemo(() => {
+    if (!selectedVariantId) return room.total_rooms || 10;
+    if (!arrivalDate) return room.total_rooms || 10;
+    
+    let minAvail = room.total_rooms || 10;
+    let foundAny = false;
+    
+    const start = new Date(`${arrivalDate}T00:00:00`);
+    const end = departureDate ? new Date(`${departureDate}T00:00:00`) : new Date(start);
+    if (!departureDate) end.setDate(end.getDate() + 1);
+    
+    let current = new Date(start);
+    while (current < end) {
+      const dStr = current.toISOString().slice(0, 10);
+      const avail = detailedAvailability[dStr]?.[selectedVariantId];
+      if (avail !== undefined) {
+        minAvail = Math.min(minAvail, avail);
+        foundAny = true;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return foundAny ? minAvail : (room.total_rooms || 10);
+  }, [arrivalDate, departureDate, selectedVariantId, detailedAvailability, room.total_rooms]);
+
+  // Cap guests if dates change and real-time capacity is lower than current guests
+  useEffect(() => {
+    const selectedVariant = validVariants.find((v) => v.id === selectedVariantId);
+    const capacity = selectedVariant?.capacity_per_room || 4;
+    const maxAllowed = maxAvailableRooms * capacity;
+    if (maxAllowed > 0 && guests > maxAllowed) {
+      setGuests(maxAllowed);
+    }
+  }, [maxAvailableRooms, selectedVariantId, validVariants, guests]);
+
+  const validateCoupon = async (code: string) => {
+    setValidatingCoupon(true);
+    setCouponError(null);
+    setCouponSuccess(null);
+    try {
+      const baseFare = stayDetails.totalPrice * roomsCount;
+      const rawSubtotal = baseFare > 0 ? baseFare : price * roomsCount;
+      const res = await apiClient.post('/api/v1/public/coupons/validate', {
+        code: code,
+        booking_amount: rawSubtotal,
+        target_type: 'ROOM',
+        target_id: room.id
+      });
+      setAppliedCoupon({
+        code: code,
+        discount_amount: res.data.discount_amount,
+        discounted_subtotal: res.data.discounted_subtotal
+      });
+      setCouponSuccess(`Coupon applied! You saved ₹${res.data.discount_amount}`);
+    } catch (err: any) {
+      setAppliedCoupon(null);
+      setCouponError(err.response?.data?.detail || "Invalid coupon");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+    validateCoupon(couponCode.trim());
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    setAppliedCoupon(null);
+    setCouponError(null);
+    setCouponSuccess(null);
+  };
+
+
+
+  const handleBookingClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isLodgeInactive) return;
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    if (!arrivalDate || !departureDate) {
+      toast.error("Please select arrival and departure dates.");
+      return;
+    }
+    setShowPassengerModal(true);
+  };
+
+  const handleCheckoutSubmit = async (passengers: any[]) => {
+    setIsProcessingCheckout(true);
+    try {
+      const finalTotal = prices.grandTotal;
+      const minPayable = Math.ceil(finalTotal * 0.50);
+      const parsedCustom = parseInt(customPayAmount, 10);
+      const paymentPercentage = (() => {
+        if (!customPayAmount) return 100;
+        if (isNaN(parsedCustom) || parsedCustom >= finalTotal) return 100;
+        const clamped = Math.max(minPayable, parsedCustom);
+        return Math.round((clamped / finalTotal) * 100);
+      })();
+
+      const payload = {
+        target_type: 'room',
+        travel_date: arrivalDate,
+        departure_date: departureDate,
+        quantity: guests,
+        room_variant_id: selectedVariantId,
+        adult_count: guests,
+        child_count: 0,
+        slot_start: selectedSlot?.slot_start,
+        slot_end: selectedSlot?.slot_end,
+        coupon_code: appliedCoupon ? appliedCoupon.code : null,
+        passengers: passengers,
+        payment_percentage: paymentPercentage
+      };
+
+      const res = await apiClient.post('/api/v1/bookings/checkout', payload);
+      const { checkout_data } = res.data;
+
+      if (!checkout_data || !checkout_data.key_id) {
+        toast.error("Failed to initialize payment gateway. Please try again.");
+        setIsProcessingCheckout(false);
+        return;
+      }
+
+      if (!Razorpay) {
+        toast.error("Payment gateway is still loading or blocked by your browser. Please disable adblockers and try again.");
+        setIsProcessingCheckout(false);
+        return;
+      }
+
+      const options = {
+        key: checkout_data.key_id,
+        amount: checkout_data.amount,
+        currency: checkout_data.currency,
+        name: "TS Tours",
+        description: `Booking Draft: ${checkout_data.draft_id}`,
+        order_id: checkout_data.razorpay_order_id,
+        handler: async (response: any) => {
+          try {
+            const verifyRes = await apiClient.post('/api/v1/payments/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+            if (verifyRes.data.status === 'success') {
+              router.push(`/dashboard/bookings/${verifyRes.data.booking_id}`);
+            }
+          } catch (err) {
+            console.error("Payment verification failed", err);
+            toast.error("Payment verification failed. If money was deducted, it will be refunded automatically or confirmed soon.");
+            setIsProcessingCheckout(false);
+          }
+        },
+        prefill: {
+          name: passengers[0]?.full_name || '',
+          contact: passengers[0]?.phone || ''
+        },
+        theme: { color: "#0f8d7d" },
+        modal: {
+          ondismiss: () => setIsProcessingCheckout(false)
+        }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        toast.error(`Payment Failed: ${response.error.description}`);
+        setIsProcessingCheckout(false);
+      });
+      rzp.open();
+    } catch (err: any) {
+      console.error(err);
+      let errMsg = "Checkout failed. Please try again.";
+      if (err.response?.data?.detail) {
+        if (Array.isArray(err.response.data.detail)) {
+          errMsg = err.response.data.detail.map((d: any) => `${d.loc?.join('.')} - ${d.msg}`).join(', ');
+        } else {
+          errMsg = err.response.data.detail;
+        }
+      } else if (err.message) {
+        if (err.message.includes("Razorpay is not a constructor")) {
+            errMsg = "Payment gateway blocked. Please disable adblockers.";
+        } else {
+            errMsg = err.message;
+        }
+      }
+      toast.error(errMsg);
+      setIsProcessingCheckout(false);
+    }
+  };
+
   useEffect(() => {
     const checkStatus = () => {
       fetch(`/api/v1/rooms/${room.slug}?t=${Date.now()}`)
@@ -213,8 +498,55 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     return getStayPriceDetails(arrivalDate, departureDate, weekday, weekend);
   }, [arrivalDate, departureDate, selectedVariant, room.starting_price]);
 
-  const price = Number(selectedVariant?.weekday_price || room.starting_price || 0);
-  const totalPrice = stayDetails.totalPrice * roomsCount;
+  const price = useMemo(() => {
+    let isWeekend = false;
+    if (arrivalDate) {
+      const date = new Date(`${arrivalDate}T00:00:00`);
+      const day = date.getDay();
+      isWeekend = day === 6 || day === 0;
+    }
+    const weekday = Number(selectedVariant?.weekday_price || room.starting_price || 0);
+    const weekend = Number(selectedVariant?.weekend_price || selectedVariant?.weekday_price || room.starting_price || 0);
+    return isWeekend ? weekend : weekday;
+  }, [arrivalDate, selectedVariant, room.starting_price]);
+
+  const prices = useMemo(() => {
+    const baseFare = stayDetails.totalPrice * roomsCount;
+    const rawSubtotal = baseFare > 0 ? baseFare : price * roomsCount;
+    let discount = 0;
+    if (appliedCoupon) {
+      discount = appliedCoupon.discount_amount;
+    }
+    const subtotal = Math.max(0, rawSubtotal - discount);
+    
+    const gst = Math.round(subtotal * 0.05);
+    const gatewayFee = Math.round((subtotal + gst) * 0.01);
+    const grandTotal = subtotal + gst + gatewayFee;
+
+    return { rawSubtotal, discount, subtotal, gst, gatewayFee, grandTotal };
+  }, [stayDetails.totalPrice, roomsCount, price]);
+
+  // Adjust custom pay amount when total price changes
+  useEffect(() => {
+    setCustomPayAmount(prev => {
+      if (prev === '') return prev;
+      const parsed = parseInt(prev, 10);
+      const minPayable = Math.ceil(prices.grandTotal * 0.50);
+      if (!isNaN(parsed)) {
+        if (parsed >= prices.grandTotal) return '';
+        if (parsed < minPayable) return String(minPayable);
+      }
+      return prev;
+    });
+  }, [prices.grandTotal]);
+
+  useEffect(() => {
+    if (appliedCoupon) {
+      validateCoupon(appliedCoupon.code);
+    }
+  }, [price, roomsCount, stayDetails.totalPrice, room.id]);
+
+  const totalPrice = prices.rawSubtotal;
   const nights = stayDetails.nightsCount;
   const activeImage = slides[activeSlide] || slides[0];
   const facilities = room.facilities.filter(Boolean);
@@ -240,7 +572,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         <div className="absolute inset-0 bg-[linear-gradient(135deg,#062d3c_0%,#0c7b78_58%,#f4b44e_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(255,255,255,0.22),transparent_26%),linear-gradient(180deg,rgba(3,24,35,0.08),rgba(3,24,35,0.7))]" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-[1600px] px-4 pb-10 pt-5 sm:px-6 lg:px-12">
           <div className="mb-5 flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-white/70">
             <Link href="/" className="transition hover:text-white">Home</Link>
             <ChevronRight className="h-3.5 w-3.5" />
@@ -334,7 +666,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
       <RoomSectionNav />
 
-      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-8 lg:py-14">
+      <section className="mx-auto grid max-w-[1600px] gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14">
         <div className="space-y-8">
           <Section id="overview" title="Stay Overview" eyebrow="Room details">
             <div className="grid gap-4 md:grid-cols-3">
@@ -473,35 +805,43 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </div>
             </Section>
           ) : null}
-        </div>         <aside className="lg:pt-1">
-          <div className="sticky top-28 rounded-xl border border-slate-200 bg-white p-5 shadow-[0_28px_90px_rgba(16,34,49,0.12)]">
-            {isLodgeInactive && (
-              <div className="mb-5 rounded-xl border border-rose-100 bg-rose-50/70 p-3.5 text-xs text-rose-600 font-bold flex items-start gap-2.5">
-                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-black">Online Bookings Suspended</p>
-                  <p className="text-slate-500 font-bold text-[11px] mt-0.5 leading-relaxed">
-                    This stay / lodge is currently closed or inactive. You cannot submit new reservations.
-                  </p>
-                </div>
-              </div>
-            )}
+        </div>
+        <aside className="hidden lg:block lg:pt-1">
+          <div className="sticky top-[140px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_45px_120px_rgba(16,34,49,0.13)] max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
 
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Starting from</p>
-            <div className="mt-2 flex items-end gap-2">
-              <p className="text-4xl font-black text-[#102231]">{money(price)}</p>
-              {price ? <span className="pb-1 text-sm font-black text-slate-500">/ night</span> : null}
+            {/* Dark header */}
+            <div className="bg-[#0f3d56] px-5 py-4 text-white rounded-t-2xl">
+              <h2 className="text-base font-black tracking-wide">Reserve your stay</h2>
+              <div className="mt-1 text-2xl font-black tracking-tight">
+                {money(price)} <span className="text-xs font-semibold text-white/70">/ night</span>
+              </div>
             </div>
 
-            <div className="mt-6 space-y-5">
+            <div className="p-5 space-y-3">
+              {isLodgeInactive && (
+                <div className="rounded-xl border border-rose-100 bg-rose-50/70 p-3 text-xs text-rose-600 font-bold flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-black">Online Bookings Suspended</p>
+                    <p className="text-slate-500 font-bold text-[11px] mt-0.5 leading-relaxed">
+                      This stay / lodge is currently closed or inactive.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Select Dates */}
               <div>
-                <p className="text-sm font-black text-[#263241]">Select Dates</p>
-                <div className="mt-3 grid gap-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Select Dates</p>
+                <div className="grid grid-cols-2 gap-2">
                   <CustomDatePicker
                     label="Arrival"
+                    align="left"
                     value={arrivalDate}
                     min={today}
                     disabled={isLodgeInactive}
+                    availableDates={allAvailableDates}
+                    onMonthChange={fetchRoomAvailability}
                     onChange={(val) => {
                       setArrivalDate(val);
                       if (departureDate && departureDate <= val) {
@@ -513,9 +853,12 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   />
                   <CustomDatePicker
                     label="Departure"
+                    align="right"
                     value={departureDate}
                     min={arrivalDate || today}
                     disabled={isLodgeInactive}
+                    availableDates={allAvailableDates}
+                    onMonthChange={fetchRoomAvailability}
                     onChange={setDepartureDate}
                   />
                 </div>
@@ -533,77 +876,190 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               ) : null}
 
               {slots.length > 0 ? (
-                <div>
-                  <p className="text-sm font-black text-[#263241]">Check-in/out Timing</p>
-                  <div className="mt-3 grid gap-2">
-                    {slots.map((slot, index) => {
-                      const active = selectedSlotIndex === index;
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          disabled={isLodgeInactive}
-                          onClick={() => setSelectedSlotIndex(index)}
-                          className={`flex flex-col w-full text-left rounded-lg border px-4 py-3 transition-all cursor-pointer ${
-                            isLodgeInactive
-                              ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed'
-                              : active
-                              ? 'border-[#0f8d7d] bg-[#f4faf9] shadow-sm ring-1 ring-[#0f8d7d]/20'
-                              : 'border-slate-200 bg-white hover:border-slate-350'
-                          }`}
-                        >
-                          <span className="text-xs font-black text-[#102231]">{slot.title}</span>
-                          <span className="mt-1 text-[11px] font-bold text-slate-500">
-                            {cleanTime(slot.slot_start)} - {cleanTime(slot.slot_end)}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <PremiumSelect
+                  label="Check-in/out Timing"
+                  value={selectedSlotIndex}
+                  disabled={isLodgeInactive}
+                  onChange={(value) => setSelectedSlotIndex(Number(value))}
+                  options={slots.map((slot, index) => ({ value: index, label: `${slot.title} (${cleanTime(slot.slot_start)} - ${cleanTime(slot.slot_end)})` }))}
+                  placeholder="Select timing slot"
+                />
               ) : null}
 
+              {/* Guests */}
               <div>
-                <p className="text-sm font-black text-[#263241]">Guests</p>
-                <div className={`mt-3 flex min-h-14 items-center justify-between rounded-lg border px-4 ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
-                  <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Decrease guests">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Guests</p>
+                <div className={`flex items-center justify-between rounded-lg border px-3 py-1 ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                  <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0f8d7d]'}`} aria-label="Decrease guests">
                     <Minus className="h-4 w-4" />
                   </button>
                   <span className="text-sm font-black">{guests} {guests === 1 ? 'Adult' : 'Adults'}</span>
-                  <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.min(12, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
+                  <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                {selectedVariant?.capacity_per_room ? <p className="mt-2 text-xs font-bold text-slate-400">Selected category capacity: {selectedVariant.capacity_per_room} guests per room.</p> : null}
+                <div className="flex justify-between items-center mt-1">
+                  {selectedVariant?.capacity_per_room ? <p className="text-[10px] font-bold text-slate-400">{selectedVariant.capacity_per_room} guests/room capacity</p> : <div />}
+                  <p className="text-[10px] font-bold text-[#0f8d7d]">
+                    Requires {roomsCount} room{roomsCount !== 1 ? 's' : ''}
+                    {arrivalDate ? ` (out of ${maxAvailableRooms} available)` : (room.total_rooms ? ` (out of ${room.total_rooms})` : '')}
+                  </p>
+                </div>
               </div>
 
-              <div className="border-t border-slate-200 pt-5">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-sm font-black text-slate-500">
-                    <span>Total for {nights} {nights === 1 ? 'night' : 'nights'}</span>
-                    <span className="text-lg text-[#102231]">{totalPrice ? money(totalPrice) : 'Call'}</span>
+              {/* Coupon Section */}
+              <div className="pt-4 border-t border-slate-100">
+                <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2 relative">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Have a promo code?"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      disabled={validatingCoupon || !!appliedCoupon}
+                      className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#1a6b7a] focus:bg-white disabled:opacity-60"
+                    />
+                    {appliedCoupon ? (
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-100"
+                      >
+                        Remove
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={!couponCode || validatingCoupon}
+                        className="flex w-16 items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:opacity-50"
+                      >
+                        {validatingCoupon ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
+                      </button>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
-                    <span>Rooms required</span>
-                    <span>{roomsCount} {roomsCount === 1 ? 'room' : 'rooms'}</span>
-                  </div>
-                </div>
-                {nights > 0 && selectedVariant && arrivalDate && departureDate && stayDetails.breakdown.some(d => d.isWeekend) ? (
-                  <p className="mt-1 text-[11px] font-bold text-slate-400">
-                    Includes {stayDetails.breakdown.filter(d => d.isWeekend).length} weekend night(s) at {money(selectedVariant.weekend_price)} / room
-                  </p>
-                ) : null}
-                {isLodgeInactive ? (
-                  <button disabled className="mt-5 flex min-h-14 w-full items-center justify-center rounded-lg bg-slate-400 text-sm font-black text-white cursor-not-allowed shadow-none">
-                    Reservations Closed / Inactive
-                  </button>
-                ) : (
-                  <a href={`https://wa.me/919542069573?text=${bookingText}`} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-14 w-full items-center justify-center rounded-lg bg-[#0f8d7d] text-sm font-black text-white shadow-[0_18px_40px_rgba(15,141,125,0.28)] transition hover:-translate-y-0.5 hover:bg-[#0b7469]">
-                    Reserve Now
-                  </a>
-                )}
-                <p className="mt-4 text-center text-xs font-bold leading-5 text-slate-400">Final availability, room count, and cancellation terms are confirmed before payment.</p>
+                  {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
+                  {couponSuccess && <p className="text-[10px] font-bold text-[#16a34a]">{couponSuccess}</p>}
+                </form>
               </div>
+
+              {/* Pricing summary */}
+              <div className="pt-2.5 border-t border-slate-100 space-y-1.5 text-[12px] text-slate-500">
+                <div className="flex items-center justify-between">
+                  <span>Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
+                  <span className="font-bold text-slate-800">{prices.rawSubtotal ? money(prices.rawSubtotal) : money(price * roomsCount)}</span>
+                </div>
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between text-[#16a34a]">
+                    <span>Coupon Discount</span>
+                    <span className="font-bold">- {money(appliedCoupon.discount_amount)}</span>
+                  </div>
+                )}
+                {nights > 0 && selectedVariant && arrivalDate && departureDate && stayDetails.breakdown.some(d => d.isWeekend) ? (
+                  <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                    Includes {stayDetails.breakdown.filter(d => d.isWeekend).length} weekend night(s)
+                  </div>
+                ) : null}
+                <div className="flex items-center justify-between">
+                  <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
+                  <span className="font-bold text-slate-800">{money(prices.gst)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
+                  <span className="font-bold text-slate-800">{money(prices.gatewayFee)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
+                  <span>Total</span>
+                  <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
+                </div>
+              </div>
+
+              {/* Payment + CTA */}
+              {isLodgeInactive ? (
+                <button disabled className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-slate-400 cursor-not-allowed h-11 flex items-center justify-center">
+                  Reservations Closed
+                </button>
+              ) : (
+                <>
+                  {arrivalDate && departureDate && (() => {
+                    const finalTotal = prices.grandTotal || price * roomsCount;
+                    const minPayable = Math.ceil(finalTotal * 0.50);
+                    const parsedCustom = parseInt(customPayAmount, 10);
+                    const effectivePay = isNaN(parsedCustom) || customPayAmount === ''
+                      ? finalTotal
+                      : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
+                    const isPartial = effectivePay < finalTotal;
+                    return (
+                      <div className="pt-2.5 border-t border-slate-100">
+                        {/* No cancellation notice */}
+                        <div className="mb-2 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
+                          <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
+                          <p className="text-[10px] font-bold text-amber-700 leading-4">No cancellation — 50% advance secures your room. Balance payable before check-in.</p>
+                        </div>
+
+                        {/* Toggle + amount row */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex bg-slate-100 rounded-lg p-0.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setCustomPayAmount('')}
+                              className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
+                            >
+                              Full
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                              className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
+                            >
+                              50% Adv
+                            </button>
+                          </div>
+
+                          {customPayAmount !== '' ? (
+                            <div className="flex-1 flex items-center gap-1.5 bg-white border border-[#0f8d7d]/50 rounded-lg px-3 py-1.5">
+                              <span className="text-sm font-black text-slate-400">₹</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={customPayAmount}
+                                onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                onBlur={() => {
+                                  const v = parseInt(customPayAmount, 10);
+                                  if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
+                                  else if (v >= finalTotal) setCustomPayAmount('');
+                                  else setCustomPayAmount(String(v));
+                                }}
+                                className="flex-1 bg-transparent text-sm font-black text-slate-800 outline-none w-0 min-w-0"
+                                placeholder={String(minPayable)}
+                              />
+                              <span className="text-[10px] font-bold text-slate-400 shrink-0">now</span>
+                            </div>
+                          ) : (
+                            <div className="flex-1 text-right">
+                              <span className="text-sm font-black text-[#0f8d7d]">₹{finalTotal.toLocaleString('en-IN')}</span>
+                              <span className="text-[11px] text-slate-400 font-semibold ml-1">full</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {isPartial && (
+                          <div className="mt-1.5 flex justify-between items-center text-[11px] text-slate-500 font-semibold">
+                            <span>Balance before check-in</span>
+                            <span className="font-extrabold text-slate-700">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
+                          <p className="mt-1 text-[10px] text-red-500 font-bold">Min advance is ₹{minPayable.toLocaleString('en-IN')} (50%)</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <button onClick={handleBookingClick} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] h-11 flex items-center justify-center">
+                    {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Reserve Now'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </aside>
@@ -615,16 +1071,168 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
               Total ({roomsCount} {roomsCount === 1 ? 'room' : 'rooms'})
             </p>
-            <p className="text-2xl font-black text-[#102231]">{totalPrice ? money(totalPrice) : 'Call'}</p>
+            <p className="text-2xl font-black text-[#102231]">{prices.grandTotal ? money(prices.grandTotal) : money(price * roomsCount)}</p>
           </div>
           {isLodgeInactive ? (
-            <button disabled className="flex h-12 items-center justify-center rounded-lg bg-slate-400 px-6 text-sm font-black text-white cursor-not-allowed">
+            <button disabled className="flex h-12 items-center justify-center rounded-lg bg-slate-400 px-6 text-sm font-black text-white cursor-not-allowed animate-none">
               Closed
             </button>
           ) : (
-            <a href={`https://wa.me/919542069573?text=${bookingText}`} target="_blank" rel="noopener noreferrer" className="flex h-12 items-center justify-center rounded-lg bg-[#0f8d7d] px-6 text-sm font-black text-white">
-              Reserve
-            </a>
+            <Sheet>
+              <SheetTrigger asChild>
+                <button type="button" className="flex h-12 items-center justify-center rounded-lg bg-[#0f8d7d] px-6 text-sm font-black text-white cursor-pointer active:scale-95">
+                  Reserve
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[85vh] overflow-y-auto rounded-t-[30px] border-t border-slate-200 bg-white p-6 scrollbar-none" showCloseButton>
+                <SheetHeader className="mb-4 text-left">
+                  <SheetTitle className="text-xl font-black text-[#102231] flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-[#0f8d7d]" />
+                    Configure Stay
+                  </SheetTitle>
+                  <SheetDescription className="text-xs font-bold text-slate-400">
+                    Reserve room categories, timings, and verify pricing details.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="pb-4 space-y-4">
+                  {/* Select Dates */}
+                  <div>
+                    <p className="text-sm font-black text-[#263241]">Select Dates</p>
+                    <div className="mt-3 grid gap-3">
+                      <CustomDatePicker
+                        label="Arrival"
+                        value={arrivalDate}
+                        min={today}
+                        disabled={isLodgeInactive}
+                        availableDates={allAvailableDates}
+                        onMonthChange={fetchRoomAvailability}
+                        onChange={(val) => {
+                          setArrivalDate(val);
+                          if (departureDate && departureDate <= val) {
+                            const nextDay = new Date(val);
+                            nextDay.setDate(nextDay.getDate() + 1);
+                            setDepartureDate(nextDay.toISOString().slice(0, 10));
+                          }
+                        }}
+                      />
+                      <CustomDatePicker
+                        label="Departure"
+                        value={departureDate}
+                        min={arrivalDate || today}
+                        disabled={isLodgeInactive}
+                        availableDates={allAvailableDates}
+                        onMonthChange={fetchRoomAvailability}
+                        onChange={setDepartureDate}
+                      />
+                    </div>
+                  </div>
+
+                  {validVariants.length ? (
+                    <PremiumSelect
+                      label="Stay Category"
+                      value={selectedVariantId}
+                      disabled={isLodgeInactive}
+                      onChange={(value) => setSelectedVariantId(Number(value))}
+                      options={validVariants.map((variant) => ({ value: variant.id, label: variant.variant_name }))}
+                      placeholder="Select stay category"
+                    />
+                  ) : null}
+
+                  {slots.length > 0 ? (
+                    <PremiumSelect
+                      label="Check-in/out Timing"
+                      value={selectedSlotIndex}
+                      disabled={isLodgeInactive}
+                      onChange={(value) => setSelectedSlotIndex(Number(value))}
+                      options={slots.map((slot, index) => ({ value: index, label: `${slot.title} (${cleanTime(slot.slot_start)} - ${cleanTime(slot.slot_end)})` }))}
+                      placeholder="Select timing slot"
+                    />
+                  ) : null}
+
+                  <div>
+                    <p className="text-sm font-black text-[#263241]">Guests</p>
+                    <div className={`mt-3 flex min-h-14 items-center justify-between rounded-lg border px-4 ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                      <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Decrease guests">
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="text-sm font-black">{guests} {guests === 1 ? 'Adult' : 'Adults'}</span>
+                      <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.min(12, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {selectedVariant?.capacity_per_room ? <p className="mt-2 text-xs font-bold text-slate-400">Selected category capacity: {selectedVariant.capacity_per_room} guests per room.</p> : null}
+                  </div>
+
+                  <div className="border-t border-slate-200 pt-5 space-y-4">
+                    {/* Mobile Coupon Section */}
+                    <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2 relative">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Have a promo code?"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          disabled={validatingCoupon || !!appliedCoupon}
+                          className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#1a6b7a] focus:bg-white disabled:opacity-60"
+                        />
+                        {appliedCoupon ? (
+                          <button
+                            type="button"
+                            onClick={handleRemoveCoupon}
+                            className="flex items-center justify-center rounded-lg bg-red-50 px-4 py-2 text-sm font-black text-red-600 transition hover:bg-red-100"
+                          >
+                            Remove
+                          </button>
+                        ) : (
+                          <button
+                            type="submit"
+                            disabled={!couponCode || validatingCoupon}
+                            className="flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-50"
+                          >
+                            {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                          </button>
+                        )}
+                      </div>
+                      {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
+                      {couponSuccess && <p className="text-[10px] font-bold text-[#16a34a]">{couponSuccess}</p>}
+                    </form>
+
+                    <div className="space-y-1.5 text-[12px] text-slate-500 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <span>Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
+                        <span className="font-bold text-slate-800">{prices.rawSubtotal ? money(prices.rawSubtotal) : money(price * roomsCount)}</span>
+                      </div>
+                      {appliedCoupon && (
+                        <div className="flex items-center justify-between text-[#16a34a]">
+                          <span>Coupon Discount</span>
+                          <span className="font-bold">- {money(appliedCoupon.discount_amount)}</span>
+                        </div>
+                      )}
+                      {nights > 0 && selectedVariant && arrivalDate && departureDate && stayDetails.breakdown.some(d => d.isWeekend) ? (
+                        <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                          Includes {stayDetails.breakdown.filter(d => d.isWeekend).length} weekend night(s)
+                        </div>
+                      ) : null}
+                      <div className="flex items-center justify-between">
+                        <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
+                        <span className="font-bold text-slate-800">{money(prices.gst)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
+                        <span className="font-bold text-slate-800">{money(prices.gatewayFee)}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
+                        <span>Total</span>
+                        <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
+                      </div>
+                    </div>
+                    <a href={`https://wa.me/919849848982?text=${bookingText}`} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-14 w-full items-center justify-center rounded-lg bg-[#0f8d7d] text-sm font-black text-white shadow-[0_18px_40px_rgba(15,141,125,0.28)] transition hover:-translate-y-0.5 hover:bg-[#0b7469]">
+                      Confirm & Reserve via WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           )}
         </div>
       </div>
@@ -654,6 +1262,24 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           </div>
         </div>
       ) : null}
+      <ConfirmModal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        onConfirm={() => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`)}
+        title="Verification Required"
+        message="Please log in to continue booking your reservation."
+        confirmText="Proceed to Login"
+        cancelText="Cancel"
+      />
+
+      <CheckoutPassengerModal 
+        isOpen={showPassengerModal}
+        onClose={() => setShowPassengerModal(false)}
+        onSubmit={handleCheckoutSubmit}
+        adults={guests}
+        children={0}
+        isProcessing={isProcessingCheckout}
+      />
     </main>
   );
 };
@@ -667,7 +1293,7 @@ const HeroFact = ({ icon: Icon, label, value }: { icon: typeof Clock; label: str
 );
 
 const Section = ({ id, eyebrow, title, children }: { id?: string; eyebrow: string; title: string; children: ReactNode }) => (
-  <section id={id} className="scroll-mt-32">
+  <section id={id} className="scroll-mt-[160px]">
     <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">{eyebrow}</p>
     <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">{title}</h2>
     <div className="mt-5">{children}</div>
@@ -719,7 +1345,7 @@ const RoomSectionNav = () => {
 
   return (
     <div className="sticky top-16 z-30 border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12">
         <div className="flex flex-nowrap gap-2 overflow-x-auto py-3 scrollbar-none">
           {ROOM_NAV_ITEMS.map((item) => {
             const isActive = activeSection === item.id;
@@ -765,6 +1391,9 @@ const CustomDatePicker = ({
   onChange,
   placeholder = 'Select Date',
   disabled = false,
+  align = 'left',
+  availableDates,
+  onMonthChange,
 }: {
   label: string;
   value: string;
@@ -772,6 +1401,9 @@ const CustomDatePicker = ({
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  align?: 'left' | 'right';
+  availableDates?: Set<string>;
+  onMonthChange?: (month: string) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -826,11 +1458,19 @@ const CustomDatePicker = ({
   const nextMonth = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    let newMonth = calMonth;
+    let newYear = calYear;
     if (calMonth === 11) {
-      setCalMonth(0);
-      setCalYear(calYear + 1);
+      newMonth = 0;
+      newYear = calYear + 1;
     } else {
-      setCalMonth(calMonth + 1);
+      newMonth = calMonth + 1;
+    }
+    setCalMonth(newMonth);
+    setCalYear(newYear);
+    if (onMonthChange) {
+      const mm = String(newMonth + 1).padStart(2, '0');
+      onMonthChange(`${newYear}-${mm}`);
     }
   };
 
@@ -869,15 +1509,19 @@ const CustomDatePicker = ({
       const isPast = dateStr < minDateStr;
       const isSelected = dateStr === value;
 
+      // If availableDates is provided, only enable dates that are in the set
+      const hasInventory = availableDates ? availableDates.has(dateStr) : true;
+      const isDisabled = isPast || !hasInventory;
+
       days.push(
         <button
           key={i}
           type="button"
-          disabled={isPast}
+          disabled={isDisabled}
           onClick={() => handleDaySelect(i)}
           className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black transition-all
-            ${isPast
-              ? 'text-slate-200 cursor-not-allowed line-through'
+            ${isDisabled
+              ? 'text-slate-200 cursor-not-allowed line-through bg-slate-50/30'
               : isSelected
                 ? 'bg-[#0f8d7d] text-white shadow-md'
                 : 'text-[#102231] hover:bg-[#f4faf9] hover:text-[#0f8d7d] cursor-pointer'
@@ -901,7 +1545,7 @@ const CustomDatePicker = ({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full text-left rounded-lg border px-4 py-3 shadow-inner transition-all ${
+        className={`w-full text-left rounded-lg border px-3.5 py-2.5 shadow-inner transition-all ${
           disabled
             ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-85 text-slate-400'
             : 'bg-white border-slate-200 cursor-pointer hover:border-slate-350 focus:border-[#0f8d7d] focus:outline-none'
@@ -911,13 +1555,13 @@ const CustomDatePicker = ({
           <CalendarDays className="h-4 w-4 text-[#0f8d7d]" />
           {label}
         </span>
-        <div className="mt-1.5 text-sm font-black">
+        <div className="mt-1 text-sm font-black">
           {formattedDate}
         </div>
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-xl border border-slate-150 bg-white p-4 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 max-w-[320px] mx-auto md:max-w-none">
+        <div className={`absolute ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'} top-[calc(100%+6px)] z-50 rounded-xl border border-slate-150 bg-white p-4 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 w-[330px]`}>
           <div className="flex justify-between items-center mb-3">
             <button
               type="button"

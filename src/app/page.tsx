@@ -100,7 +100,7 @@ type FeaturedRoom = {
 async function fetchFeaturedPackages() {
   try {
     const res = await apiFetch('/api/v1/packages?is_featured=true&size=3', {
-      next: { revalidate: 60 } // Revalidate every minute
+      next: { revalidate: 60, tags: ['packages'] } // Revalidate every minute
     });
     if (!res.ok) throw new Error('Failed to fetch packages');
     const data = await res.json();
@@ -114,7 +114,7 @@ async function fetchFeaturedPackages() {
 async function fetchFeaturedRooms() {
   try {
     const res = await apiFetch('/api/v1/rooms?is_featured=true&size=3', {
-      next: { revalidate: 60 }
+      next: { revalidate: 60, tags: ['stays'] }
     });
     if (!res.ok) throw new Error('Failed to fetch rooms');
     const data = await res.json();
@@ -157,7 +157,7 @@ export default async function HomePage() {
                 src={slide.src}
                 alt={slide.alt}
                 fill
-                priority={index === 0}
+                priority={index <= 1}
                 sizes="100vw"
                 className="object-cover"
               />
@@ -377,7 +377,7 @@ async function FeaturedRooms() {
   return rooms ? (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
       {rooms.map((room) => (
-        <RoomCard key={room.id} room={room} />
+        <RoomCard key={room.id} room={room} variant="grid" />
       ))}
     </div>
   ) : (

@@ -110,7 +110,7 @@ export default function EditAgentPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-6xl space-y-8">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -131,89 +131,100 @@ export default function EditAgentPage() {
 
       <form onSubmit={handleSubmit} className="space-y-8">
 
-        {/* Personal Information */}
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-50 rounded-lg"><User className="h-5 w-5 text-blue-600" /></div>
-            <h3 className="text-lg font-bold text-slate-900">Personal Information</h3>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name *</label>
-              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (cannot change)</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input type="email" value={currentAgent?.email || ''} disabled
-                  className="w-full rounded-xl border border-slate-200 bg-slate-100 pl-11 pr-4 py-3 text-sm text-slate-500 outline-none cursor-not-allowed" />
+        {/* Two-Column Form Layout - Compact & Scroll-Optimized */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          
+          {/* Left Column: Personal Info */}
+          <div className="space-y-8">
+            {/* Personal Information */}
+            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-50 rounded-lg"><User className="h-5 w-5 text-blue-600" /></div>
+                <h3 className="text-lg font-bold text-slate-900">Personal Information</h3>
               </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Phone Number *</label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name *</label>
+                  <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (cannot change)</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type="email" value={currentAgent?.email || ''} disabled
+                      className="w-full rounded-xl border border-slate-200 bg-slate-100 pl-11 pr-4 py-3 text-sm text-slate-500 outline-none cursor-not-allowed" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Phone Number *</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                  </div>
+                </div>
               </div>
-            </div>
+            </section>
           </div>
-        </section>
 
-        {/* Commission & Business */}
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-amber-50 rounded-lg"><Percent className="h-5 w-5 text-amber-600" /></div>
-            <h3 className="text-lg font-bold text-slate-900">Commission & Business</h3>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Commission %</label>
-              <div className="relative">
-                <Percent className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input type="number" step="0.01" min="0" max="100" value={commission} onChange={(e) => setCommission(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+          {/* Right Column: Commission & Notes */}
+          <div className="space-y-8">
+            {/* Commission & Business */}
+            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-amber-50 rounded-lg"><Percent className="h-5 w-5 text-amber-600" /></div>
+                <h3 className="text-lg font-bold text-slate-900">Commission & Business</h3>
               </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Company Name</label>
-              <div className="relative">
-                <Building2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Commission %</label>
+                  <div className="relative">
+                    <Percent className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type="number" step="0.01" min="0" max="100" value={commission} onChange={(e) => setCommission(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Company Name</label>
+                  <div className="relative">
+                    <Building2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">GST Number</label>
+                  <input type="text" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Address</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-3 h-4 w-4 text-slate-400" />
+                    <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                  </div>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">GST Number</label>
-              <input type="text" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Address</label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-3 h-4 w-4 text-slate-400" />
-                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
-              </div>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        {/* Notes */}
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-purple-50 rounded-lg"><FileText className="h-5 w-5 text-purple-600" /></div>
-            <h3 className="text-lg font-bold text-slate-900">Internal Notes</h3>
+            {/* Notes */}
+            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-50 rounded-lg"><FileText className="h-5 w-5 text-purple-600" /></div>
+                <h3 className="text-lg font-bold text-slate-900">Internal Notes</h3>
+              </div>
+              <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows={4}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
+                placeholder="Private notes about this agent..." />
+            </section>
           </div>
-          <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows={4}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
-            placeholder="Private notes about this agent..." />
-        </section>
+
+        </div>
 
         {/* Submit */}
-        <div className="flex justify-end gap-4">
+        <div className="flex justify-end gap-4 border-t border-slate-100 pt-6">
           <Link href="/admin/agents" prefetch={false} className="rounded-xl border border-slate-200 px-6 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all">
             Cancel
           </Link>

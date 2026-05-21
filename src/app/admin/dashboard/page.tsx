@@ -111,39 +111,76 @@ export default function AdminDashboardPage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-[#5ac4d7]" /> Recent System Activity
+              <Activity className="h-5 w-5 text-[#5ac4d7]" /> Most Recent Bookings
             </h3>
-            <button className="text-sm font-bold text-[#5ac4d7] hover:underline">View All</button>
+            <Link href="/admin/bookings" className="text-sm font-bold text-[#5ac4d7] hover:underline">View All</Link>
           </div>
           <div className="space-y-6">
-            {[1, 2, 3].map((_, i) => (
-              <div key={i} className="flex items-start gap-4 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                <div className="h-2 w-2 rounded-full bg-blue-500 mt-2" />
-                <div>
-                  <p className="text-sm font-medium text-slate-900">System maintenance completed successfully.</p>
-                  <p className="text-xs text-slate-400 mt-1">Today at 10:45 AM</p>
+            {stats?.recent_bookings && stats.recent_bookings.length > 0 ? (
+              stats.recent_bookings.map((booking: any) => (
+                <div key={booking.id} className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{booking.public_id} - {booking.title}</p>
+                    <p className="text-xs text-slate-400 mt-1">₹{booking.amount?.toLocaleString('en-IN')} • {new Date(booking.created_at).toLocaleString('en-IN')}</p>
+                  </div>
+                  <div className="shrink-0">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                      booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-700' :
+                      booking.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                      booking.status === 'CANCELLED' ? 'bg-rose-100 text-rose-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {booking.status === 'FULLY_PAID' ? 'CONFIRMED' : booking.status}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">No recent bookings found.</p>
+            )}
           </div>
         </div>
 
-        {/* Departure Calendar Shell */}
+        {/* Departure Calendar Shell -> Booking Analysis */}
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#5ac4d7]" /> Upcoming Departures
+              <TrendingUp className="h-5 w-5 text-[#5ac4d7]" /> Website Analysis
             </h3>
-            <Link href="/admin/inventory" className="text-sm font-bold text-[#5ac4d7] hover:underline cursor-pointer">
-              Full Calendar
-            </Link>
           </div>
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 rounded-2xl bg-slate-50 p-6">
-              <Calendar className="h-12 w-12 text-slate-300" />
+          
+          <div className="space-y-4">
+            <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Booking Status Breakdown</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl bg-emerald-50 p-4 border border-emerald-100">
+                <p className="text-xs font-bold text-emerald-600 uppercase mb-1">Confirmed</p>
+                <p className="text-2xl font-black text-slate-900">{stats?.analysis?.CONFIRMED || 0}</p>
+              </div>
+              
+              <div className="rounded-xl bg-amber-50 p-4 border border-amber-100">
+                <p className="text-xs font-bold text-amber-600 uppercase mb-1">Pending</p>
+                <p className="text-2xl font-black text-slate-900">{stats?.analysis?.PENDING || 0}</p>
+              </div>
+              
+              <div className="rounded-xl bg-blue-50 p-4 border border-blue-100">
+                <p className="text-xs font-bold text-blue-600 uppercase mb-1">Partial Paid</p>
+                <p className="text-2xl font-black text-slate-900">{stats?.analysis?.PARTIAL_PAID || 0}</p>
+              </div>
+              
+              <div className="rounded-xl bg-rose-50 p-4 border border-rose-100">
+                <p className="text-xs font-bold text-rose-600 uppercase mb-1">Cancelled</p>
+                <p className="text-2xl font-black text-slate-900">{stats?.analysis?.CANCELLED || 0}</p>
+              </div>
             </div>
-            <h4 className="font-bold text-slate-900">No departures today</h4>
-            <p className="text-sm text-slate-500 mt-1 max-w-[200px]">Check the inventory section to manage travel dates.</p>
+            
+            <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-slate-500 uppercase">Total Revenue</p>
+                <p className="text-xl font-black text-slate-900">₹{stats?.total_revenue?.toLocaleString('en-IN') || 0}</p>
+              </div>
+              <Ticket className="h-8 w-8 text-slate-300" />
+            </div>
           </div>
         </div>
 

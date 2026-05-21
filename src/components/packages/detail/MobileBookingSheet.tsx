@@ -20,11 +20,12 @@ interface PackageVariant {
 interface MobileBookingSheetProps {
   startingPrice?: number | string | null;
   variants: PackageVariant[];
+  packageId: number;
   packageSlug: string;
   brochurePdfUrl?: string | null;
 }
 
-export const MobileBookingSheet = ({ startingPrice, variants, packageSlug, brochurePdfUrl }: MobileBookingSheetProps) => {
+export const MobileBookingSheet = ({ startingPrice, variants, packageId, packageSlug, brochurePdfUrl }: MobileBookingSheetProps) => {
   const { publicAvailability, publicLoading } = useInventoryStore();
   const isPackageInactive = !publicLoading && !publicAvailability;
 
@@ -90,10 +91,11 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageSlug, broch
                   Official Telangana & Andhra Boat Tourism cruise bookings.
                 </SheetDescription>
               </SheetHeader>
-              <div className="pb-8">
+              <div className="pb-4">
                 <BookingSidebarV2 
                   startingPrice={startingPrice}
                   variants={variants}
+                  packageId={packageId}
                   packageSlug={packageSlug}
                   brochurePdfUrl={brochurePdfUrl}
                 />

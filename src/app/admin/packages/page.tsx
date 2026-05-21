@@ -25,6 +25,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import Pagination from '@/components/ui/Pagination';
 
 function CustomFilterSelect({ 
   value, 
@@ -83,9 +84,18 @@ function CustomFilterSelect({
 }
 
 export default function AdminPackagesPage() {
-  const { packages, isLoading, fetchPackages, updatePackage, deletePackage, createPackage } = useAdminStore();
+  const { 
+    packages, 
+    packagesTotal,
+    packagesPage,
+    packagesLimit,
+    isLoading, 
+    fetchPackages, 
+    updatePackage, 
+    deletePackage, 
+    createPackage 
+  } = useAdminStore();
   const [searchVal, setSearchVal] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -97,15 +107,8 @@ export default function AdminPackagesPage() {
   const [isTogglingState, setIsTogglingState] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchQuery(searchVal);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchVal]);
-
-  useEffect(() => {
-    fetchPackages(searchQuery, statusFilter);
-  }, [fetchPackages, searchQuery, statusFilter]);
+    fetchPackages('', statusFilter, 1, packagesLimit);
+  }, [fetchPackages, statusFilter, packagesLimit]);
 
   const handleDeleteConfirm = async () => {
     if (selectedPackageId) {
@@ -131,7 +134,7 @@ export default function AdminPackagesPage() {
           // No future bookings! Instantly make it inactive.
           await updatePackage(pkg.id, { is_active: false });
           toast.success(`"${pkg.title}" is now closed / inactive for bookings`);
-          fetchPackages(searchQuery, statusFilter);
+          fetchPackages('', statusFilter, packagesPage, packagesLimit);
         }
       } catch (err: any) {
         toast.error('Failed to check future bookings');
@@ -143,7 +146,7 @@ export default function AdminPackagesPage() {
       try {
         await updatePackage(pkg.id, { is_active: true });
         toast.success(`"${pkg.title}" is now active and accepting bookings`);
-        fetchPackages(searchQuery, statusFilter);
+        fetchPackages('', statusFilter, packagesPage, packagesLimit);
       } catch (err: any) {
         toast.error('Failed to activate package');
       }
@@ -158,7 +161,7 @@ export default function AdminPackagesPage() {
         setIsToggleModalOpen(false);
         setSelectedPackageToToggle(null);
         setFutureBookingsList([]);
-        fetchPackages(searchQuery, statusFilter);
+        fetchPackages('', statusFilter, packagesPage, packagesLimit);
       } catch (err: any) {
         toast.error('Failed to close package');
       }
@@ -216,7 +219,7 @@ export default function AdminPackagesPage() {
 
       await createPackage(duplicatedData);
       toast.success('Package duplicated successfully with all details!');
-      fetchPackages(searchQuery, statusFilter);
+      fetchPackages('', statusFilter, 1, packagesLimit);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || err.message || 'Failed to duplicate package');
     }
@@ -299,16 +302,28 @@ export default function AdminPackagesPage() {
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />
                   </td>
                 </tr>
-              ) : !Array.isArray(packages) || packages.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-16 text-slate-400">
-                    <ShieldAlert className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="font-bold text-slate-700">No packages found</h3>
-                    <p className="text-xs text-slate-400 mt-1">Try resetting filters or create a new package.</p>
-                  </td>
-                </tr>
-              ) : (
-                Array.isArray(packages) && packages.map((pkg) => (
+              ) : (() => {
+                const filteredPackages = Array.isArray(packages) 
+                  ? packages.filter(pkg => 
+                      searchVal === '' || 
+                      (pkg.title && pkg.title.toLowerCase().includes(searchVal.toLowerCase())) || 
+                      (pkg.slug && pkg.slug.toLowerCase().includes(searchVal.toLowerCase()))
+                    )
+                  : [];
+                  
+                if (filteredPackages.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={7} className="text-center py-16 text-slate-400">
+                        <ShieldAlert className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                        <h3 className="font-bold text-slate-700">No packages found</h3>
+                        <p className="text-xs text-slate-400 mt-1">Try resetting filters or create a new package.</p>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return filteredPackages.map((pkg) => (
                   <tr key={pkg.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
@@ -325,7 +340,9 @@ export default function AdminPackagesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-slate-700 capitalize">{pkg.type.toLowerCase()}</td>
+                    <td className="px-6 py-4 font-semibold text-slate-700">
+                      {pkg.type === 'TOUR' ? 'Boat Rides' : pkg.type === 'TRIP' ? 'Sightseeing' : pkg.type}
+                    </td>
                     <td className="px-6 py-4 font-semibold text-slate-500 uppercase">{pkg.region || '—'}</td>
                     <td className="px-6 py-4">
                       <button
@@ -352,7 +369,7 @@ export default function AdminPackagesPage() {
                             await updatePackage(pkg.id, {
                               status: newStatus
                             });
-                            await fetchPackages(searchQuery, statusFilter);
+                            await fetchPackages('', statusFilter, packagesPage, packagesLimit);
                             toast.success(`Package "${pkg.title}" status updated to ${newStatus}`);
                           } catch (err: any) {
                             toast.error(err.message || 'Failed to update package status');
@@ -373,7 +390,7 @@ export default function AdminPackagesPage() {
                               await updatePackage(pkg.id, {
                                 is_featured: updatedFeatured
                               });
-                              await fetchPackages(searchQuery, statusFilter);
+                              await fetchPackages('', statusFilter, packagesPage, packagesLimit);
                               toast.success(`Package "${pkg.title}" is now ${updatedFeatured ? 'Featured' : 'Not Featured'}`);
                             } catch (err: any) {
                               toast.error(err.message || 'Failed to toggle featured status');
@@ -433,11 +450,18 @@ export default function AdminPackagesPage() {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ));
+              })()}
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={packagesPage}
+          totalItems={packagesTotal}
+          pageSize={packagesLimit}
+          onPageChange={(page) => fetchPackages('', statusFilter, page, packagesLimit)}
+          onPageSizeChange={(size) => fetchPackages('', statusFilter, 1, size)}
+        />
       </div>
 
       <ConfirmModal 

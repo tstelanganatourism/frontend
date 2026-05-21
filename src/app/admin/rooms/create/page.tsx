@@ -25,7 +25,7 @@ export default function AdminRoomCreatePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="w-full max-w-[1600px] mx-auto py-8 px-6">
       <RoomForm onSubmit={handleSubmit} isLoading={isLoading} />
     </div>
   );

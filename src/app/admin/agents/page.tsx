@@ -9,32 +9,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-
-function CustomFilterSelect({ value, options, onChange, placeholder }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; placeholder: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selected = options.find((o) => o.value === value);
-  return (
-    <div className="relative">
-      <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-[#5ac4d7] transition-all min-w-[160px]">
-        <div className="flex-1 text-left">{selected?.label || placeholder}</div>
-        <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40 cursor-default" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-1.5 z-50 rounded-xl border border-slate-150 bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 min-w-[160px]">
-            {options.map((opt) => (
-              <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setIsOpen(false); }}
-                className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-black cursor-pointer transition-all ${opt.value === value ? 'bg-[#5ac4d7]/10 text-[#0f3d56]' : 'text-slate-600 hover:bg-slate-50'}`}
-              >{opt.label}</button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
+import Pagination from '@/components/ui/Pagination';
+import PremiumSelect from '@/components/ui/PremiumSelect';
 function StatusPill({ status }: { status: string }) {
   const cfg: Record<string, { bg: string; text: string; dot: string; label: string }> = {
     ACTIVE:   { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Active' },
@@ -60,21 +36,24 @@ function AvatarInitials({ name }: { name: string }) {
 }
 
 export default function AdminAgentsPage() {
-  const { agents, isLoading, fetchAgents, deleteAgent, toggleAgentStatus } = useAdminStore();
+  const { 
+    agents, 
+    agentsTotal,
+    agentsPage,
+    agentsLimit,
+    isLoading, 
+    fetchAgents, 
+    deleteAgent, 
+    toggleAgentStatus 
+  } = useAdminStore();
   const [searchVal, setSearchVal] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setSearchQuery(searchVal), 300);
-    return () => clearTimeout(timer);
-  }, [searchVal]);
-
-  useEffect(() => {
-    fetchAgents(searchQuery, statusFilter);
-  }, [fetchAgents, searchQuery, statusFilter]);
+    fetchAgents('', statusFilter, 1, agentsLimit);
+  }, [fetchAgents, statusFilter, agentsLimit]);
 
   const handleDeleteConfirm = async () => {
     if (selectedAgentId) {
@@ -82,6 +61,7 @@ export default function AdminAgentsPage() {
       toast.success('Agent removed successfully');
       setIsDeleteModalOpen(false);
       setSelectedAgentId(null);
+      fetchAgents('', statusFilter, agentsPage, agentsLimit);
     }
   };
 
@@ -119,12 +99,19 @@ export default function AdminAgentsPage() {
             className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
         </div>
         <div className="flex gap-4">
-          <CustomFilterSelect value={statusFilter} options={[
-            { value: '', label: 'All Statuses' },
-            { value: 'ACTIVE', label: 'Active' },
-            { value: 'BLOCKED', label: 'Blocked' },
-            { value: 'DISABLED', label: 'Disabled' },
-          ]} onChange={setStatusFilter} placeholder="All Statuses" />
+          <div className="w-[180px]">
+            <PremiumSelect 
+              value={statusFilter} 
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'ACTIVE', label: 'Active' },
+                { value: 'BLOCKED', label: 'Blocked' },
+                { value: 'DISABLED', label: 'Disabled' },
+              ]} 
+              onChange={setStatusFilter} 
+              placeholder="All Statuses" 
+            />
+          </div>
         </div>
       </div>
 
@@ -151,24 +138,39 @@ export default function AdminAgentsPage() {
                     ))}
                   </tr>
                 ))
-              ) : agents.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="rounded-2xl bg-slate-50 p-6"><Users className="h-12 w-12 text-slate-300" /></div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900">No agents found</h3>
-                        <p className="text-sm text-slate-500 mt-1">Onboard your first travel agent to start managing your network.</p>
-                      </div>
-                      <Link href="/admin/agents/create" prefetch={false}
-                        className="mt-2 flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-slate-800 transition-all">
-                        <Plus className="h-4 w-4" /> Onboard Agent
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ) : agents.map((agent) => (
-                <tr key={agent.id} className="border-b border-slate-50 hover:bg-slate-25 transition-colors">
+              ) : (() => {
+                const filteredAgents = Array.isArray(agents)
+                  ? agents.filter(agent => 
+                      searchVal === '' || 
+                      (agent.full_name && agent.full_name.toLowerCase().includes(searchVal.toLowerCase())) || 
+                      (agent.email && agent.email.toLowerCase().includes(searchVal.toLowerCase())) || 
+                      (agent.company_name && agent.company_name.toLowerCase().includes(searchVal.toLowerCase())) || 
+                      (agent.phone_number && agent.phone_number.includes(searchVal))
+                    )
+                  : [];
+                  
+                if (filteredAgents.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="rounded-2xl bg-slate-50 p-6"><Users className="h-12 w-12 text-slate-300" /></div>
+                          <div>
+                            <h3 className="text-lg font-bold text-slate-900">No agents found</h3>
+                            <p className="text-sm text-slate-500 mt-1">Try adjusting your filters or search query.</p>
+                          </div>
+                          <Link href="/admin/agents/create" prefetch={false}
+                            className="mt-2 flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-slate-800 transition-all">
+                            <Plus className="h-4 w-4" /> Onboard Agent
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return filteredAgents.map((agent) => (
+                  <tr key={agent.id} className="border-b border-slate-50 hover:bg-slate-25 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <AvatarInitials name={agent.full_name} />
@@ -183,7 +185,9 @@ export default function AdminAgentsPage() {
                   <td className="px-6 py-4 hidden md:table-cell">
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5 text-slate-600"><Mail className="h-3 w-3 text-slate-400" />{agent.email}</div>
-                      <div className="flex items-center gap-1.5 text-slate-600"><Phone className="h-3 w-3 text-slate-400" />{agent.phone_number}</div>
+                      {agent.phone_number && (
+                        <div className="flex items-center gap-1.5 text-slate-600"><Phone className="h-3 w-3 text-slate-400" />{agent.phone_number}</div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 hidden lg:table-cell">
@@ -220,10 +224,18 @@ export default function AdminAgentsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ));
+              })()}
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={agentsPage}
+          totalItems={agentsTotal}
+          pageSize={agentsLimit}
+          onPageChange={(page) => fetchAgents('', statusFilter, page, agentsLimit)}
+          onPageSizeChange={(size) => fetchAgents('', statusFilter, 1, size)}
+        />
       </div>
 
       <ConfirmModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteConfirm}

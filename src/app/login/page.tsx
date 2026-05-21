@@ -30,7 +30,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (isHydrated && isAuthenticated && user) {
-      const destination = redirect || (user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard');
+      const destination = redirect || (user.role === 'ADMIN' ? '/admin/dashboard' : user.role === 'AGENT' ? '/agent/dashboard' : '/dashboard');
       router.push(destination);
     }
   }, [isHydrated, isAuthenticated, user, redirect, router]);

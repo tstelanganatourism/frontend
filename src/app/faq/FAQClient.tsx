@@ -196,14 +196,14 @@ export default function FAQClient() {
                 </div>
               </div>
             </a>
-            <a href="tel:+919542069573" className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
+            <a href="tel:+919849848982" className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
               <div className="flex items-center gap-4">
                 <span className="grid h-12 w-12 place-items-center rounded-xl bg-slate-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
                   <Phone className="h-6 w-6" />
                 </span>
                 <div>
                   <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Call helpline</div>
-                  <div className="mt-1 text-lg font-bold text-[var(--color-brand-river)]">+91 95420 69573, +91 95731 96369</div>
+                  <div className="mt-1 text-lg font-bold text-[var(--color-brand-river)]">+91 95420 69573 / +91 984 984 89 82 / +91 984 984 89 83 / +91 984 984 89 38</div>
                 </div>
               </div>
             </a>

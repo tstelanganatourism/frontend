@@ -7,23 +7,25 @@ import AuthProvider from '@/components/providers/AuthProvider';
 import PromoBanner from "@/components/ui/PromoBanner";
 import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { Toaster } from 'sonner';
+import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
+import StickyConversionBar from '@/components/ui/StickyConversionBar';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://papikondalutourism.com"),
+  metadataBase: new URL("https://tsboattourism.org"),
   title: {
     default: "Papikondalu Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
     template: "%s | Papikondalu Tourism"
   },
   description: "Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, Kolluru bamboo huts and premium stays with Telangana Boat Tourism.",
-  keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "Telangana Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays"],
+  keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "Telangana Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays", "bhadrachalam tourism", "telangana tourism", "andhra tourism", "boat rides"],
   authors: [{ name: "TSTG Boat Tourism" }],
   creator: "Satvik",
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://papikondalutourism.com",
+    url: "https://tsboattourism.org",
     title: "Papikondalu Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
     description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
     siteName: "Papikondalu Tourism",
@@ -74,82 +76,90 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "TravelAgency",
-              "name": "Telangana Boat Tourism Central Booking Office",
-              "image": "https://res.cloudinary.com/dpdab3e97/image/upload/v1778914224/logo1_shpjk5.jpg",
-              "@id": "https://papikondalutourism.com",
-              "url": "https://papikondalutourism.com",
-              "telephone": ["+919542069573", "+919573196369"],
-              "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "D.No. 4-1-78/1, Kalyana Mandapam Road, Opp SBI ATM",
-                "addressLocality": "Bhadrachalam",
-                "addressRegion": "Telangana",
-                "postalCode": "507111",
-                "addressCountry": "IN"
-              },
-              "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": 17.6679203,
-                "longitude": 80.8842402
-              },
-              "openingHoursSpecification": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": [
-                  "Monday",
-                  "Tuesday",
-                  "Wednesday",
-                  "Thursday",
-                  "Friday",
-                  "Saturday",
-                  "Sunday"
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "TravelAgency",
+                "name": "Telangana Boat Tourism",
+                "alternateName": "Papikondalu Tourism",
+                "url": process.env.NEXT_PUBLIC_SITE_URL || "https://tsboattourism.org",
+                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://tsboattourism.org"}/logo.png`,
+                "image": "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg",
+                "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
+                "telephone": "+91 95420 69573",
+                "email": "tsboattourismservices@gmail.com",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "4-1-76/1 (Near SBI ATM), Kalyana Mandapam Road, Opp SBI ATM",
+                  "addressLocality": "Bhadrachalam",
+                  "addressRegion": "Telangana",
+                  "postalCode": "507111",
+                  "addressCountry": "IN"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 17.6685,
+                  "longitude": 80.8936
+                },
+                "openingHoursSpecification": {
+                  "@type": "OpeningHoursSpecification",
+                  "dayOfWeek": [
+                    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+                  ],
+                  "opens": "07:00",
+                  "closes": "21:00"
+                },
+                "sameAs": [
+                  "https://www.facebook.com/papikondalutourism",
+                  "https://www.instagram.com/papikondalutourism"
                 ],
-                "opens": "00:00",
-                "closes": "23:59"
+                "hasOfferCatalog": {
+                  "@type": "OfferCatalog",
+                  "name": "Tourism Packages",
+                  "itemListElement": [
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "Papikondalu Boat Trips"
+                      }
+                    },
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "Kolluru Bamboo Huts Packages"
+                      }
+                    },
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "LodgingBusiness",
+                        "name": "Bhadrachalam Accommodation"
+                      }
+                    }
+                  ]
+                }
               },
-              "sameAs": [
-                "https://www.facebook.com/papikondalutours",
-                "https://www.instagram.com/papikondalutourism"
-              ],
-              "priceRange": "$$",
-              "areaServed": [
-                "Papikondalu",
-                "Bhadrachalam",
-                "Telangana",
-                "Godavari River"
-              ],
-              "hasOfferCatalog": {
-                "@type": "OfferCatalog",
-                "name": "Papikondalu and Bhadrachalam tour services",
-                "itemListElement": [
-                  {
-                    "@type": "Offer",
-                    "itemOffered": {
-                      "@type": "TouristTrip",
-                      "name": "Papikondalu Boat Tour Packages"
-                    }
-                  },
-                  {
-                    "@type": "Offer",
-                    "itemOffered": {
-                      "@type": "TouristTrip",
-                      "name": "Bhadrachalam Travel Packages"
-                    }
-                  },
-                  {
-                    "@type": "Offer",
-                    "itemOffered": {
-                      "@type": "LodgingBusiness",
-                      "name": "Bhadrachalam Accommodation Support"
-                    }
+              {
+                "@context": "https://schema.org",
+                "@type": "ContactPage",
+                "url": `${process.env.NEXT_PUBLIC_SITE_URL || "https://papikondalutourism.com"}/about`,
+                "mainEntity": {
+                  "@type": "Organization",
+                  "name": "Telangana Boat Tourism Support",
+                  "contactPoint": {
+                    "@type": "ContactPoint",
+                    "telephone": "+91 9542069573",
+                    "contactType": "customer service",
+                    "areaServed": "IN",
+                    "availableLanguage": ["en", "hi", "te"]
                   }
-                ]
+                }
               }
-            })
+            ])
           }}
-        />
+        ></script>
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
         <TopLoader />
@@ -161,6 +171,8 @@ export default function RootLayout({
             <Toaster position="top-center" richColors />
           </AuthProvider>
         </QueryProvider>
+        <AnalyticsProvider />
+        <StickyConversionBar />
       </body>
     </html>
   );

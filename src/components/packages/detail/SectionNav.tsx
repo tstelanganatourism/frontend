@@ -67,7 +67,7 @@ export const SectionNav = () => {
 
   return (
     <div className="sticky top-16 z-30 border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12">
         <div className="flex flex-nowrap gap-2 overflow-x-auto py-3 scrollbar-none">
           {navItems.map((item) => {
             const isActive = activeSection === item.id;

@@ -5,13 +5,14 @@ import { apiClient } from '@/lib/api';
  * Bust Next.js ISR cache for the given paths.
  * Fires silently — does not block or throw if it fails.
  */
-async function revalidateStorefront(paths: string[]) {
+async function revalidateStorefront(paths: string[], tags?: string[]) {
   try {
     await fetch('/api/revalidate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         paths,
+        tags,
         secret: 'ts-tourism-revalidate-2024',
       }),
     });
@@ -26,6 +27,8 @@ interface AdminStats {
   bookings: number;
   users: number;
   total_revenue: number;
+  recent_bookings?: any[];
+  analysis?: any;
 }
 
 interface SystemSettings {
@@ -48,7 +51,15 @@ interface AdminState {
   stats: AdminStats | null;
   settings: SystemSettings | null;
   packages: any[];
+  packagesTotal: number;
+  packagesPage: number;
+  packagesLimit: number;
+
   rooms: any[];
+  roomsTotal: number;
+  roomsPage: number;
+  roomsLimit: number;
+
   currentPackage: any | null;
   currentRoom: any | null;
   isLoading: boolean;
@@ -58,14 +69,14 @@ interface AdminState {
   fetchSettings: () => Promise<void>;
   updateSettings: (data: Partial<SystemSettings>) => Promise<void>;
 
-  fetchPackages: (search?: string, status?: string) => Promise<void>;
+  fetchPackages: (search?: string, status?: string, page?: number, limit?: number) => Promise<void>;
   fetchPackageById: (id: number | string) => Promise<void>;
   createPackage: (data: any) => Promise<any>;
   updatePackage: (id: number | string, data: any) => Promise<any>;
   publishPackage: (id: number | string) => Promise<any>;
   deletePackage: (id: number | string) => Promise<void>;
 
-  fetchRooms: (search?: string, status?: string) => Promise<void>;
+  fetchRooms: (search?: string, status?: string, page?: number, limit?: number) => Promise<void>;
   fetchRoomById: (id: number | string) => Promise<void>;
   createRoom: (data: any) => Promise<any>;
   updateRoom: (id: number | string, data: any) => Promise<any>;
@@ -80,8 +91,11 @@ interface AdminState {
   deleteCoupon: (id: number | string) => Promise<void>;
 
   agents: any[];
+  agentsTotal: number;
+  agentsPage: number;
+  agentsLimit: number;
   currentAgent: any | null;
-  fetchAgents: (search?: string, statusFilter?: string) => Promise<void>;
+  fetchAgents: (search?: string, statusFilter?: string, page?: number, limit?: number) => Promise<void>;
   fetchAgentById: (id: number | string) => Promise<void>;
   createAgent: (data: any) => Promise<any>;
   updateAgent: (id: number | string, data: any) => Promise<any>;
@@ -94,9 +108,18 @@ export const useAdminStore = create<AdminState>((set) => ({
   stats: null,
   settings: null,
   packages: [],
+  packagesTotal: 0,
+  packagesPage: 1,
+  packagesLimit: 10,
   rooms: [],
+  roomsTotal: 0,
+  roomsPage: 1,
+  roomsLimit: 10,
   coupons: [],
   agents: [],
+  agentsTotal: 0,
+  agentsPage: 1,
+  agentsLimit: 10,
   currentPackage: null,
   currentRoom: null,
   currentCoupon: null,
@@ -135,17 +158,26 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
   },
 
-  fetchPackages: async (search, status) => {
+  fetchPackages: async (search, status, page = 1, limit = 10) => {
     set({ isLoading: true, error: null });
+    const safePage = Number(page) || 1;
+    const safeLimit = Number(limit) || 10;
     try {
       const params: any = {};
       if (search) params.search = search;
       if (status) params.status_filter = status;
+      params.limit = safeLimit;
+      params.offset = (safePage - 1) * safeLimit;
       const response = await apiClient.get('/api/v1/admin/packages', { params });
-      const items = Array.isArray(response.data)
-        ? response.data
-        : (response.data && Array.isArray(response.data.items) ? response.data.items : []);
-      set({ packages: items, isLoading: false });
+      const items = response.data && Array.isArray(response.data.items) ? response.data.items : [];
+      const total = response.data && typeof response.data.total === 'number' ? response.data.total : items.length;
+      set({ 
+        packages: items, 
+        packagesTotal: total,
+        packagesPage: safePage,
+        packagesLimit: safeLimit,
+        isLoading: false 
+      });
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to fetch packages', isLoading: false });
     }
@@ -167,7 +199,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       const response = await apiClient.post('/api/v1/admin/packages', data);
       set({ isLoading: false });
       // Bust storefront cache so listing pages reflect new package immediately
-      revalidateStorefront(['/', '/boat-rides', '/sightseeing', '/packages']);
+      revalidateStorefront(['/', '/boat-rides', '/sightseeing', '/packages'], ['packages']);
       return response.data;
     } catch (err: any) {
       const errMsg = err.response?.data?.detail || 'Failed to create package';
@@ -189,6 +221,9 @@ export const useAdminStore = create<AdminState>((set) => ({
         '/sightseeing',
         '/packages',
         ...(slug ? [`/packages/${slug}`] : []),
+      ], [
+        'packages',
+        ...(slug ? [`package:${slug}`] : []),
       ]);
       return response.data;
     } catch (err: any) {
@@ -211,6 +246,9 @@ export const useAdminStore = create<AdminState>((set) => ({
         '/sightseeing',
         '/packages',
         ...(slug ? [`/packages/${slug}`] : []),
+      ], [
+        'packages',
+        ...(slug ? [`package:${slug}`] : []),
       ]);
       return response.data;
     } catch (err: any) {
@@ -232,17 +270,26 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
   },
 
-  fetchRooms: async (search, status) => {
+  fetchRooms: async (search, status, page = 1, limit = 10) => {
     set({ isLoading: true, error: null });
+    const safePage = Number(page) || 1;
+    const safeLimit = Number(limit) || 10;
     try {
       const params: any = {};
       if (search) params.search = search;
       if (status) params.status_filter = status;
+      params.limit = safeLimit;
+      params.offset = (safePage - 1) * safeLimit;
       const response = await apiClient.get('/api/v1/admin/rooms', { params });
-      const items = Array.isArray(response.data)
-        ? response.data
-        : (response.data && Array.isArray(response.data.items) ? response.data.items : []);
-      set({ rooms: items, isLoading: false });
+      const items = response.data && Array.isArray(response.data.items) ? response.data.items : [];
+      const total = response.data && typeof response.data.total === 'number' ? response.data.total : items.length;
+      set({ 
+        rooms: items, 
+        roomsTotal: total,
+        roomsPage: safePage,
+        roomsLimit: safeLimit,
+        isLoading: false 
+      });
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to fetch rooms', isLoading: false });
     }
@@ -264,7 +311,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       const response = await apiClient.post('/api/v1/admin/rooms', data);
       set({ isLoading: false });
       // Bust storefront cache for stays listing + homepage
-      revalidateStorefront(['/', '/stays']);
+      revalidateStorefront(['/', '/stays'], ['stays']);
       return response.data;
     } catch (err: any) {
       const errMsg = err.response?.data?.detail || 'Failed to create room';
@@ -284,6 +331,9 @@ export const useAdminStore = create<AdminState>((set) => ({
         '/',
         '/stays',
         ...(slug ? [`/stays/${slug}`] : []),
+      ], [
+        'stays',
+        ...(slug ? [`stay:${slug}`] : []),
       ]);
       return response.data;
     } catch (err: any) {
@@ -369,14 +419,26 @@ export const useAdminStore = create<AdminState>((set) => ({
 
   // ─── Agents ───────────────────────────────────────────────────────────────
 
-  fetchAgents: async (search, statusFilter) => {
+  fetchAgents: async (search, statusFilter, page = 1, limit = 10) => {
     set({ isLoading: true, error: null });
+    const safePage = Number(page) || 1;
+    const safeLimit = Number(limit) || 10;
     try {
       const params: any = {};
       if (search) params.search = search;
       if (statusFilter) params.status_filter = statusFilter;
+      params.limit = safeLimit;
+      params.offset = (safePage - 1) * safeLimit;
       const response = await apiClient.get('/api/v1/admin/agents', { params });
-      set({ agents: response.data, isLoading: false });
+      const items = response.data && Array.isArray(response.data.items) ? response.data.items : [];
+      const total = response.data && typeof response.data.total === 'number' ? response.data.total : items.length;
+      set({ 
+        agents: items, 
+        agentsTotal: total,
+        agentsPage: safePage,
+        agentsLimit: safeLimit,
+        isLoading: false 
+      });
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to fetch agents', isLoading: false });
     }

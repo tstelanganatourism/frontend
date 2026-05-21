@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import Pagination from '@/components/ui/Pagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Users } from 'lucide-react';
 
@@ -82,9 +83,18 @@ function CustomFilterSelect({
 }
 
 export default function AdminRoomsPage() {
-  const { rooms, isLoading, fetchRooms, deleteRoom, createRoom, updateRoom } = useAdminStore();
+  const { 
+    rooms, 
+    roomsTotal,
+    roomsPage,
+    roomsLimit,
+    isLoading, 
+    fetchRooms, 
+    deleteRoom, 
+    createRoom, 
+    updateRoom 
+  } = useAdminStore();
   const [searchVal, setSearchVal] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -96,19 +106,10 @@ export default function AdminRoomsPage() {
   const [isTogglingState, setIsTogglingState] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setQuery(searchVal);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchVal]);
+    fetchRooms('', statusFilter, 1, roomsLimit);
+  }, [fetchRooms, statusFilter, roomsLimit]);
 
-  function setQuery(val: string) {
-    setSearchQuery(val);
-  }
 
-  useEffect(() => {
-    fetchRooms(searchQuery, statusFilter);
-  }, [fetchRooms, searchQuery, statusFilter]);
 
   const handleDeleteConfirm = async () => {
     if (selectedRoomId) {
@@ -165,7 +166,7 @@ export default function AdminRoomsPage() {
 
       await createRoom(duplicatedData);
       toast.success('Lodge duplicated successfully with all details!');
-      fetchRooms(searchQuery, statusFilter);
+      fetchRooms('', statusFilter, 1, roomsLimit);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || err.message || 'Failed to duplicate room');
     }
@@ -195,7 +196,7 @@ export default function AdminRoomsPage() {
           // No future bookings! Instantly make it inactive.
           await updateRoom(room.id, { is_active: false });
           toast.success(`${room.lodge_name} is now closed / inactive`);
-          fetchRooms(searchQuery, statusFilter);
+          fetchRooms('', statusFilter, roomsPage, roomsLimit);
         }
       } catch (err: any) {
         toast.error('Failed to check future bookings');
@@ -207,7 +208,7 @@ export default function AdminRoomsPage() {
       try {
         await updateRoom(room.id, { is_active: true });
         toast.success(`${room.lodge_name} is now active and accepting bookings`);
-        fetchRooms(searchQuery, statusFilter);
+        fetchRooms('', statusFilter, roomsPage, roomsLimit);
       } catch (err: any) {
         toast.error('Failed to activate room');
       }
@@ -222,7 +223,7 @@ export default function AdminRoomsPage() {
         setIsToggleModalOpen(false);
         setSelectedRoomToToggle(null);
         setFutureBookingsList([]);
-        fetchRooms(searchQuery, statusFilter);
+        fetchRooms('', statusFilter, roomsPage, roomsLimit);
       } catch (err: any) {
         toast.error('Failed to close room');
       }
@@ -297,16 +298,28 @@ export default function AdminRoomsPage() {
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />
                   </td>
                 </tr>
-              ) : !Array.isArray(rooms) || rooms.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-16 text-slate-400">
-                    <ShieldAlert className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="font-bold text-slate-700">No rooms/lodges found</h3>
-                    <p className="text-xs text-slate-400 mt-1">Try resetting filters or create a new lodge.</p>
-                  </td>
-                </tr>
-              ) : (
-                Array.isArray(rooms) && rooms.map((room) => (
+              ) : (() => {
+                const filteredRooms = Array.isArray(rooms)
+                  ? rooms.filter(room => 
+                      searchVal === '' || 
+                      (room.lodge_name && room.lodge_name.toLowerCase().includes(searchVal.toLowerCase())) || 
+                      (room.slug && room.slug.toLowerCase().includes(searchVal.toLowerCase()))
+                    )
+                  : [];
+                  
+                if (filteredRooms.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={6} className="text-center py-16 text-slate-400">
+                        <ShieldAlert className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                        <h3 className="font-bold text-slate-700">No rooms/lodges found</h3>
+                        <p className="text-xs text-slate-400 mt-1">Try resetting filters or create a new lodge.</p>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return filteredRooms.map((room) => (
                   <tr key={room.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
@@ -347,11 +360,11 @@ export default function AdminRoomsPage() {
                             const newStatus = 
                               room.status === 'DRAFT' ? 'PUBLISHED' :
                               room.status === 'PUBLISHED' ? 'ARCHIVED' : 'DRAFT';
-                            await updateRoom(room.id, {
-                              status: newStatus
-                            });
-                            await fetchRooms(searchQuery, statusFilter);
-                            toast.success(`Lodge "${room.lodge_name}" status updated to ${newStatus}`);
+                             await updateRoom(room.id, {
+                               status: newStatus
+                             });
+                             await fetchRooms('', statusFilter, roomsPage, roomsLimit);
+                             toast.success(`Lodge "${room.lodge_name}" status updated to ${newStatus}`);
                           } catch (err: any) {
                             toast.error(err.message || 'Failed to update lodge status');
                           }
@@ -368,11 +381,11 @@ export default function AdminRoomsPage() {
                           onClick={async () => {
                             try {
                               const updatedFeatured = !room.is_featured;
-                              await updateRoom(room.id, {
-                                is_featured: updatedFeatured
-                              });
-                              await fetchRooms(searchQuery, statusFilter);
-                              toast.success(`Lodge "${room.lodge_name}" is now ${updatedFeatured ? 'Featured' : 'Not Featured'}`);
+                               await updateRoom(room.id, {
+                                 is_featured: updatedFeatured
+                               });
+                               await fetchRooms('', statusFilter, roomsPage, roomsLimit);
+                               toast.success(`Lodge "${room.lodge_name}" is now ${updatedFeatured ? 'Featured' : 'Not Featured'}`);
                             } catch (err: any) {
                               toast.error(err.message || 'Failed to toggle featured status');
                             }
@@ -431,11 +444,18 @@ export default function AdminRoomsPage() {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ));
+              })()}
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={roomsPage}
+          totalItems={roomsTotal}
+          pageSize={roomsLimit}
+          onPageChange={(page) => fetchRooms('', statusFilter, page, roomsLimit)}
+          onPageSizeChange={(size) => fetchRooms('', statusFilter, 1, size)}
+        />
       </div>
 
       <ConfirmModal 

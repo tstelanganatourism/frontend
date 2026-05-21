@@ -50,7 +50,7 @@ export default function SortDropdown({ options, value, onChange, label = 'Sort B
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-2 origin-top overflow-hidden rounded-xl border border-border bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="absolute bottom-full left-0 right-0 z-50 mb-2 origin-bottom overflow-hidden rounded-xl border border-border bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
           <div className="py-1">
             {options.map((option) => (
               <button

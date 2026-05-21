@@ -32,7 +32,7 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
 
   return (
     <>
-      <section id="gallery" className="scroll-mt-32">
+      <section id="gallery" className="scroll-mt-[170px]">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">Experience visualised</p>
         <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">Tour Gallery</h2>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -47,7 +47,7 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
               className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30 focus:outline-none focus:ring-2 focus:ring-[#0f8d7d]"
               aria-label={`View photo ${index + 1}`}
             >
-              <Image src={slide.image_url} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
+              <Image src={slide.image_url} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover transition-transform duration-300 hover:scale-105" />
             </button>
           ))}
         </div>

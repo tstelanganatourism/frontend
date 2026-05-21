@@ -39,7 +39,7 @@ const SECTIONS = [
       'No refund will be paid if cancellation occurs within a week before departure or when a journey is postponed by the passenger.',
       'For all other cancellations, a minimum 35% cancellation fee applies. Cancellation is only possible after clicking the "Cancel" button on the website and chatting with the admin to provide a valid reason.',
       'Cancellations made more than a week in advance also require an admin chat and incur a 35% cancellation fee.',
-      'Online tickets can only be cancelled through the phone number used for booking. Send all details to WhatsApp (+91 95420 69573 / +91 95731 96369) or tsboattourismservices@gmail.com.',
+      'Online tickets can only be cancelled through the phone number used for booking. Send all details to WhatsApp (+91 95420 69573 / +91 984 984 89 82 / +91 984 984 89 83 / +91 984 984 89 38) or tsboattourismservices@gmail.com.',
       'Approved refunds are transferred to the customer account within 5 working days.',
     ],
   },
@@ -150,7 +150,7 @@ export default function TermsPage() {
                   <Mail className="h-4 w-4" />
                   Email Support
                 </a>
-                <a href="tel:+919542069573" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-1 hover:bg-white hover:text-[var(--color-brand-river)]">
+                <a href="tel:+919849848982" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-1 hover:bg-white hover:text-[var(--color-brand-river)]">
                   <Phone className="h-4 w-4" />
                   Call Helpline
                 </a>

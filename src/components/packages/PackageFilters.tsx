@@ -2,7 +2,7 @@
 
 import React, { useTransition } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { Check, Filter } from 'lucide-react';
+import { Check, Filter, ChevronDown } from 'lucide-react';
 import SortDropdown from '@/components/ui/SortDropdown';
 import type { SortOption } from '@/stores/useFilterStore';
 import { cn } from '@/lib/utils';
@@ -36,10 +36,56 @@ export default function PackageFilters({ className, sticky = true }: { className
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  const activeRegion = searchParams.get('region');
-  const activeType = searchParams.get('type');
-  const activeTags = searchParams.getAll('tags');
-  const activeSort = (searchParams.get('sort') as SortOption | null) || 'priority';
+  const activeRegionParam = searchParams.get('region');
+  const activeTypeParam = searchParams.get('type');
+  const activeTagsParam = searchParams.getAll('tags');
+  const activePlaceParam = searchParams.get('place');
+  const activeSortParam = (searchParams.get('sort') as SortOption | null) || 'priority';
+
+  // Optimistic local state for instant toggle feedback
+  const [activeRegion, setActiveRegion] = React.useState(activeRegionParam);
+  const [activeType, setActiveType] = React.useState(activeTypeParam);
+  const [activePlace, setActivePlace] = React.useState(activePlaceParam);
+  const [activeTags, setActiveTags] = React.useState(activeTagsParam);
+  const [activeSort, setActiveSort] = React.useState(activeSortParam);
+  const [places, setPlaces] = React.useState<string[]>([]);
+  const [isPlacesOpen, setIsPlacesOpen] = React.useState(false);
+  const placesDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  const activeTagsString = activeTagsParam.join(',');
+
+  React.useEffect(() => {
+    setActiveRegion(activeRegionParam);
+    setActiveType(activeTypeParam);
+    setActiveTags(activeTagsParam);
+    setActiveSort(activeSortParam);
+    setActivePlace(activePlaceParam);
+  }, [activeRegionParam, activeTypeParam, activeTagsString, activeSortParam, activePlaceParam]);
+
+  React.useEffect(() => {
+    const fetchPlaces = async () => {
+      try {
+        const res = await fetch('/api/v1/packages/places/all');
+        if (res.ok) {
+          const data = await res.json();
+          setPlaces(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch places:', err);
+      }
+    };
+    fetchPlaces();
+  }, []);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (placesDropdownRef.current && !placesDropdownRef.current.contains(event.target as Node)) {
+        setIsPlacesOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Determine path locks
   const isBoatRide = pathname === '/boat-rides';
@@ -57,6 +103,11 @@ export default function PackageFilters({ className, sticky = true }: { className
   const setParam = (key: string, value: string | null, defaultValue?: string) => {
     const params = new URLSearchParams(searchParams.toString());
 
+    if (key === 'region') setActiveRegion(value);
+    if (key === 'type') setActiveType(value);
+    if (key === 'place') setActivePlace(value);
+    if (key === 'sort' && value) setActiveSort(value as SortOption);
+
     if (!value || value === defaultValue) {
       params.delete(key);
     } else {
@@ -67,15 +118,25 @@ export default function PackageFilters({ className, sticky = true }: { className
   };
 
   const toggleTag = (tag: string) => {
-    const params = new URLSearchParams(searchParams.toString());
     const nextTags = activeTags.includes(tag) ? activeTags.filter((item) => item !== tag) : [...activeTags, tag];
+    
+    // Instant optimistic feedback
+    setActiveTags(nextTags);
 
+    const params = new URLSearchParams(searchParams.toString());
     params.delete('tags');
     nextTags.forEach((item) => params.append('tags', item));
     pushPackageParams(params);
   };
 
   const clearAll = () => {
+    // Instant optimistic feedback
+    setActiveRegion(null);
+    setActiveType(null);
+    setActivePlace(null);
+    setActiveTags([]);
+    setActiveSort('priority');
+
     startTransition(() => {
       router.replace(pathname, { scroll: false });
     });
@@ -120,6 +181,63 @@ export default function PackageFilters({ className, sticky = true }: { className
           })}
         </div>
       </div>
+
+      {/* Places Filter Dropdown */}
+      {places.length > 0 && (
+        <div className="relative w-full" ref={placesDropdownRef}>
+          <h4 className="mb-3 text-sm font-semibold text-[var(--color-brand-river)]">Search by Places</h4>
+          <button
+            type="button"
+            onClick={() => setIsPlacesOpen(!isPlacesOpen)}
+            className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 shadow-sm transition-all hover:border-[var(--color-brand-teal)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)]/20 cursor-pointer"
+          >
+            <span>{activePlace || 'All Places'}</span>
+            <ChevronDown 
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${isPlacesOpen ? 'rotate-180' : ''}`} 
+            />
+          </button>
+
+          {isPlacesOpen && (
+            <div className="absolute left-0 right-0 z-50 mt-2 origin-top overflow-hidden rounded-xl border border-border bg-white shadow-2xl animate-in fade-in zoom-in duration-200 max-h-60 overflow-y-auto">
+              <div className="py-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setParam('place', null);
+                    setIsPlacesOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between px-4 py-3 text-left text-xs transition-colors ${
+                    !activePlace
+                      ? 'bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  All Places
+                  {!activePlace && <Check className="h-4 w-4 text-[var(--color-brand-teal)]" />}
+                </button>
+                {places.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      setParam('place', p);
+                      setIsPlacesOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between px-4 py-3 text-left text-xs transition-colors ${
+                      activePlace === p
+                        ? 'bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {p}
+                    {activePlace === p && <Check className="h-4 w-4 text-[var(--color-brand-teal)]" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Package Type (Hidden if on specific Boat-Rides or Sightseeing routes) */}
       {!hideTypeFilter && (

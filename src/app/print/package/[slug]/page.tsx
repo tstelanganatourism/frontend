@@ -5,28 +5,29 @@ export const dynamic = 'force-dynamic';
 
 // ─── Company constants (fixed for every brochure) ──────────────────────────
 const CO = {
-  bannerUrl: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779093640/47d2b35a-af1b-454c-aac9-2a06d1634800.png',
+  bannerUrl: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779382620/63766aa2-a4d6-46ce-8064-0e46fe66c59a.png',
   addr1: 'D.no: 4-1-78/1 (Near SBI ATM),',
   addr2: 'Kalyana Mandapam Road, Opp SBI ATM,',
-  addr3: 'Bhadrachalam, Khammam Dist.,',
+  addr3: 'Bhadrachalam, BHADRADRI KOTHAGUDEM Dist.,',
   addr4: 'Telangana State - 507 111',
-  phones: ['+91 95420 69573', '+91 95731 96369', '+91 95428 65575'],
+  phones: ['+91 95420 69573', '+91 984 984 89 82', '+91 984 984 89 83', '+91 984 984 89 38'],
   email: 'tsboattourismservices@gmail.com',
   website: 'www.tsboattourism.org',
 };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-type Itinerary = { day_number: number; title: string; timing?: string | null; duration_at_stop?: string | null; meal_included: boolean; sort_order: number };
-type Inclusion  = { label: string };
-type Exclusion  = { label: string };
-type Policy     = { type: string; title: string; description: string };
+type Itinerary = { day_number: number; title: string; description?: string | null; timing?: string | null; duration_at_stop?: string | null; meal_included: boolean; sort_order: number };
+type Inclusion = { label: string };
+type Exclusion = { label: string };
+type Policy = { type: string; title: string; description: string };
 type BoardingPt = { title: string; address?: string | null; landmark?: string | null; departure_time?: string | null; contact_number?: string | null; pickup_instructions?: string | null };
-type Gallery    = { image_url: string; alt_text?: string | null };
-type Variant    = { title: string; adult_price: number; child_price: number; transport_info?: string | null };
+type Gallery = { image_url: string; alt_text?: string | null };
+type Variant = { title: string; adult_price: number; child_price: number; transport_info?: string | null };
 
 interface Pkg {
   title: string;
   type: string;
+  duration?: string | null;
   region?: string | null;
   cover_image_url?: string | null;
   itinerary: Itinerary[];
@@ -81,18 +82,43 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
   const pkg = await getPackage(slug);
   if (!pkg) notFound();
 
-  const byDay       = groupByDay(pkg.itinerary);
-  const duration    = deriveDuration(pkg.itinerary);
-  const primary     = pkg.boarding_points[0];
-  const transport   = pkg.variants[0]?.transport_info ?? '—';
+  const byDay = groupByDay(pkg.itinerary);
+  const duration = hasVal(pkg.duration) ? pkg.duration! : deriveDuration(pkg.itinerary);
+  const primary = pkg.boarding_points[0];
+  const variantsList = pkg.variants || [];
+  const transportOptions: string[] = [];
+  variantsList.forEach(v => {
+    const titleLower = v.title.toLowerCase();
+    if (titleLower.includes('non-a/c') || titleLower.includes('non-ac') || titleLower.includes('shared non-a/c')) {
+      if (!transportOptions.includes('Shared Non-A/C')) transportOptions.push('Shared Non-A/C');
+    } else if (titleLower.includes('a/c') || titleLower.includes(' ac ') || titleLower.includes('shared a/c') || titleLower.includes('shared ac')) {
+      if (!transportOptions.includes('Shared A/C')) transportOptions.push('Shared A/C');
+    } else if (titleLower.includes('car') || titleLower.includes('cab') || titleLower.includes('private')) {
+      if (!transportOptions.includes('Private Car')) transportOptions.push('Private Car');
+    }
+  });
+
+  let transport = '';
+  if (transportOptions.length > 0) {
+    transport = transportOptions.join(' / ');
+  } else {
+    const firstActive = variantsList[0];
+    if (firstActive) {
+      const infoLower = (firstActive.transport_info || '').toLowerCase();
+      if (infoLower.includes('no transport') || firstActive.title.toLowerCase().includes('no transport')) {
+        transport = 'No transport included';
+      } else {
+        transport = firstActive.title;
+      }
+    } else {
+      transport = 'No transport specified';
+    }
+  }
   const galleryImgs = pkg.gallery.slice(0, 3);
 
   // Has any itinerary item a timing value?
   const hasAnyTiming = pkg.itinerary.some(i => hasVal(i.timing));
   const hasAnyDuration = pkg.itinerary.some(i => hasVal(i.duration_at_stop));
-
-  const allRules = pkg.policies.filter(p => !['INFO', 'INFORMATION', 'IMPORTANT_INFO'].includes(p.type));
-  const allInfo  = pkg.policies.filter(p => ['INFO', 'INFORMATION', 'IMPORTANT_INFO'].includes(p.type));
 
   const CSS = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -249,6 +275,38 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
           </div>
         </div>
 
+        {/* ── FARE & VARIANT PRICING ───────────────────────────────── */}
+        {pkg.variants && pkg.variants.length > 0 && (
+          <div className="ov" style={{ marginTop: '0mm', marginBottom: '3mm' }}>
+            <div className="sh">Fare &amp; Variant Options</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#e8eef4' }}>
+                  <th style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, color: '#0d2f5e', borderBottom: '1px solid #b8c8d8' }}>Fare Option / Transport Variant</th>
+                  <th style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, color: '#0d2f5e', borderBottom: '1px solid #b8c8d8', width: '35mm', textAlign: 'right' }}>Adult Price</th>
+                  <th style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, color: '#0d2f5e', borderBottom: '1px solid #b8c8d8', width: '35mm', textAlign: 'right' }}>Child Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pkg.variants.map((v, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #e4ecf2' }}>
+                    <td style={{ padding: '2mm 3.5mm', fontSize: '7.5pt' }}>
+                      <div style={{ fontWeight: 700, color: '#0d2f5e' }}>{v.title}</div>
+                      {v.transport_info && <div style={{ fontSize: '7pt', color: '#666', marginTop: '0.5mm' }}>{v.transport_info}</div>}
+                    </td>
+                    <td style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, textAlign: 'right', color: '#2e7d32' }}>
+                      ₹{Number(v.adult_price).toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, textAlign: 'right', color: '#1a6b7a' }}>
+                      ₹{Number(v.child_price).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {/* ── ITINERARY + MEALS ─────────────────────────────────────── */}
         <div className="mid">
           <div>
@@ -258,8 +316,8 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                 <thead>
                   <tr>
                     <th style={{ width: '10mm' }}>Day</th>
-                    {hasAnyTiming   && <th style={{ width: '18mm' }}>Time</th>}
-                    <th>Activity / Plan</th>
+                    {hasAnyTiming && <th style={{ width: '18mm' }}>Time</th>}
+                    <th>Activity / Plan Details</th>
                     {hasAnyDuration && <th style={{ width: '20mm' }}>Duration</th>}
                   </tr>
                 </thead>
@@ -267,22 +325,27 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                   {byDay.size === 0
                     ? <tr><td colSpan={4} style={{ color: '#888', fontStyle: 'italic' }}>No itinerary added yet</td></tr>
                     : Array.from(byDay.entries()).map(([day, stops]) =>
-                        stops.map((stop, idx) => (
-                          <tr key={`${day}-${idx}`}>
-                            {idx === 0 && (
-                              <td rowSpan={stops.length} className="day-lbl" style={{ verticalAlign: 'middle', borderRight: '1px solid #dde' }}>
-                                Day {day}
-                              </td>
-                            )}
-                            {hasAnyTiming && <td>{hasVal(stop.timing) ? stop.timing : '—'}</td>}
-                            <td>
-                              {stop.title}
-                              {stop.meal_included && <div className="mb">✓ Meal Included</div>}
+                      stops.map((stop, idx) => (
+                        <tr key={`${day}-${idx}`}>
+                          {idx === 0 && (
+                            <td rowSpan={stops.length} className="day-lbl" style={{ verticalAlign: 'middle', borderRight: '1px solid #dde', textAlign: 'center' }}>
+                              Day {day}
                             </td>
-                            {hasAnyDuration && <td>{hasVal(stop.duration_at_stop) ? stop.duration_at_stop : '—'}</td>}
-                          </tr>
-                        ))
-                      )
+                          )}
+                          {hasAnyTiming && <td>{hasVal(stop.timing) ? stop.timing : '—'}</td>}
+                          <td style={{ padding: '2.5mm 3.5mm' }}>
+                            <div style={{ fontWeight: 700, color: '#0d2f5e', fontSize: '8pt', marginBottom: '0.5mm' }}>{stop.title}</div>
+                            {hasVal(stop.description) && (
+                              <div style={{ fontSize: '7.5pt', color: '#444', whiteSpace: 'pre-line', lineHeight: '1.4', paddingLeft: '2mm', borderLeft: '2.5px solid #5ac4d7', marginTop: '1.5mm', marginBottom: '1.5mm' }}>
+                                {stop.description}
+                              </div>
+                            )}
+                            {stop.meal_included && <div className="mb">✓ Meal Included</div>}
+                          </td>
+                          {hasAnyDuration && <td>{hasVal(stop.duration_at_stop) ? stop.duration_at_stop : '—'}</td>}
+                        </tr>
+                      ))
+                    )
                   }
                 </tbody>
               </table>
@@ -312,43 +375,36 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
           </div>
         </div>
 
-        {/* ── INCLUSIONS / EXCLUSIONS / RULES ──────────────────────── */}
+        {/* ── INCLUSIONS / EXCLUSIONS / POLICIES ────────────────────── */}
         <div className="tc">
           <div className="cp">
             <div className="sh">Inclusions</div>
             {pkg.inclusions.length === 0
               ? <div className="li" style={{ color: '#888', fontStyle: 'italic' }}>No inclusions added</div>
               : pkg.inclusions.map((inc, i) => (
-                  <div className="li" key={i}><span className="ii">✔</span><span>{inc.label}</span></div>
-                ))}
+                <div className="li" key={i}><span className="ii">✔</span><span>{inc.label}</span></div>
+              ))}
           </div>
           <div className="cp">
             <div className="sh">Exclusions</div>
             {pkg.exclusions.length === 0
               ? <div className="li" style={{ color: '#888', fontStyle: 'italic' }}>No exclusions added</div>
               : pkg.exclusions.map((exc, i) => (
-                  <div className="li" key={i}><span className="xi">✖</span><span>{exc.label}</span></div>
-                ))}
+                <div className="li" key={i}><span className="xi">✖</span><span>{exc.label}</span></div>
+              ))}
           </div>
           <div className="cp">
-            <div className="sh">Important Rules &amp; Terms</div>
-            {allRules.length === 0
-              ? <div className="li" style={{ color: '#888', fontStyle: 'italic' }}>No rules added</div>
-              : allRules.flatMap(p => p.description.split('\n').filter(Boolean)).slice(0, 8).map((line, i) => (
-                  <div className="li" key={i}><span className="ri">▶</span><span>{line}</span></div>
-                ))}
+            <div className="sh">Travel Policies</div>
+            {pkg.policies.length === 0
+              ? <div className="li" style={{ color: '#888', fontStyle: 'italic' }}>No policy guidelines added</div>
+              : pkg.policies.map((p, i) => (
+                <div className="li" key={i} style={{ flexDirection: 'column', gap: '0.5mm', padding: '2mm 3mm', borderBottom: '1px solid #f0f4f7' }}>
+                  <div style={{ fontWeight: 700, color: '#f47920', fontSize: '7.5pt' }}>{p.title || p.type}</div>
+                  <div style={{ fontSize: '7pt', color: '#444', whiteSpace: 'pre-line', lineHeight: '1.3' }}>{p.description}</div>
+                </div>
+              ))}
           </div>
         </div>
-
-        {/* ── IMPORTANT INFORMATION ────────────────────────────────── */}
-        {allInfo.length > 0 && (
-          <div className="ip">
-            <div className="sh">Important Information</div>
-            {allInfo.flatMap(p => p.description.split('\n').filter(Boolean)).map((line, i) => (
-              <div className="il" key={i}><span style={{ color: '#f47920' }}>▶</span><span>{line}</span></div>
-            ))}
-          </div>
-        )}
 
         {/* ── GALLERY + REPORTING POINT ────────────────────────────── */}
         <div className="bg">
@@ -356,10 +412,11 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
             <div className="sh">Gallery</div>
             <div className="gg">
               {galleryImgs.length === 0
-                ? [0,1,2].map(i => <div key={i} className="gph">No image</div>)
+                ? [0, 1, 2].map(i => <div key={i} className="gph">No image</div>)
                 : galleryImgs.map((img, i) => (
-                    <img key={i} src={img.image_url} alt={img.alt_text ?? `Gallery ${i+1}`} />
-                  ))
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={img.image_url} alt={img.alt_text ?? `Gallery ${i + 1}`} />
+                ))
               }
             </div>
           </div>
@@ -398,7 +455,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
           </div>
           <div className="fc">
             <div className="ft-t">📞 Call Us</div>
-            <div className="ft-v">{CO.phones.map((p,i) => <div key={i}>{p}</div>)}</div>
+            <div className="ft-v">{CO.phones.map((p, i) => <div key={i}>{p}</div>)}</div>
           </div>
           <div className="fc">
             <div className="ft-t">✉ Email Us</div>

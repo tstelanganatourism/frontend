@@ -28,6 +28,7 @@ type PackageDetail = {
   slug: string;
   title: string;
   type: string;
+  duration?: string | null;
   region?: string | null;
   description?: string | null;
   cover_image_url?: string | null;
@@ -53,7 +54,7 @@ type JsonLdObject = Record<string, unknown>;
 
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 60 } });
+    const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 60, tags: ['packages', `package:${slug}`] } });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -88,6 +89,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 function getDurationLabel(pkg: PackageDetail) {
+  if (pkg.duration) return pkg.duration;
   if (pkg.itinerary.length > 1) return `${pkg.itinerary.length} days`;
   const text = `${pkg.title} ${pkg.slug}`.toLowerCase();
   const dayMatch = text.match(/(\d+)[-\s]*(day|days|d)\b/);
@@ -125,17 +127,17 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       description: pkg.description,
       image: pkg.cover_image_url,
       touristType: ['Family travelers', 'Nature travelers', 'Pilgrimage travelers'],
-      offers: { 
-        '@type': 'Offer', 
-        price, 
-        priceCurrency: 'INR', 
-        availability: 'https://schema.org/InStock', 
-        url: canonical 
+      offers: {
+        '@type': 'Offer',
+        price,
+        priceCurrency: 'INR',
+        availability: 'https://schema.org/InStock',
+        url: canonical
       },
-      itinerary: pkg.itinerary.map((day) => ({ 
-        '@type': 'ItemList', 
-        name: `Day ${day.day_number}: ${day.title}`, 
-        description: day.description 
+      itinerary: pkg.itinerary.map((day) => ({
+        '@type': 'ItemList',
+        name: `Day ${day.day_number}: ${day.title}`,
+        description: day.description
       })),
     },
     {
@@ -143,11 +145,11 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-        { 
-          '@type': 'ListItem', 
-          position: 2, 
-          name: pkg.type === 'TOUR' ? 'Boat Rides' : 'Sightseeing', 
-          item: pkg.type === 'TOUR' ? '/boat-rides' : '/sightseeing' 
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: pkg.type === 'TOUR' ? 'Boat Rides' : 'Sightseeing',
+          item: pkg.type === 'TOUR' ? '/boat-rides' : '/sightseeing'
         },
         { '@type': 'ListItem', position: 3, name: pkg.title, item: canonical },
       ],
@@ -158,10 +160,10 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
     jsonLd.push({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: pkg.faqs.map((faq) => ({ 
-        '@type': 'Question', 
-        name: faq.question, 
-        acceptedAnswer: { '@type': 'Answer', text: faq.answer } 
+      mainEntity: pkg.faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: { '@type': 'Answer', text: faq.answer }
       })),
     });
   }
@@ -188,12 +190,12 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       {/* Tabbed Navigation */}
       <SectionNav />
 
-      {/* Main Content Grid */}
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-8 lg:py-12">
-        
+      {/* Main Content Grid with Majestic Width & Spacious 420px Sidebar Column */}
+      <div className="mx-auto grid max-w-[1600px] gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14">
+
         {/* Left Content Column */}
         <div className="space-y-10">
-          
+
           <ExperienceOverview pkg={pkg} durationLabel={getDurationLabel(pkg)} />
 
           <VisitingPlaces highlights={pkg.highlights} />
@@ -205,6 +207,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
             durationLabel={getDurationLabel(pkg)}
             boardingPoint={pkg.boarding_points[0]?.title}
             transportInfo={pkg.variants[0]?.transport_info}
+            departureTime={pkg.boarding_points[0]?.departure_time}
           />
 
           <FacilitiesInclusions inclusions={pkg.inclusions} exclusions={pkg.exclusions} />
@@ -215,16 +218,41 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
 
           <PackagePolicies policies={pkg.policies} primaryBoarding={pkg.boarding_points?.[0]} />
 
+          {/* Visual Brochure Download Panel */}
+          {/* {(pkg.generated_brochure_url || pkg.brochure_pdf_url) && (
+            <section id="brochure" className="scroll-mt-32">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">Offline Planning</p>
+              <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">Official Tour Brochure</h2>
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 transition hover:shadow-md">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-[#0f3d56]">Download PDF Brochure</h3>
+                  <p className="text-xs font-semibold leading-relaxed text-slate-500 max-w-xl">
+                    Get the complete verified travel itinerary, detailed package variants pricing structure, boarding instructions, and rules in a beautifully structured, high-resolution PDF brochure for offline viewing.
+                  </p>
+                </div>
+                <a
+                  href={pkg.generated_brochure_url || pkg.brochure_pdf_url || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a6b7a] hover:bg-[#13505c] text-white px-6 py-3.5 text-xs font-black uppercase tracking-wider shadow-md transition hover:-translate-y-0.5"
+                >
+                  📥 Download Brochure PDF
+                </a>
+              </div>
+            </section>
+          )} */}
+
           <PackageGallery gallery={pkg.gallery} />
 
         </div>
 
         {/* Right Sticky Booking Sidebar */}
         <aside className="hidden lg:block relative">
-          <BookingSidebarV2 
-            startingPrice={getPositiveStartingPrice(pkg)} 
-            variants={pkg.variants} 
-            packageSlug={pkg.slug} 
+          <BookingSidebarV2
+            startingPrice={getPositiveStartingPrice(pkg)}
+            variants={pkg.variants}
+            packageId={pkg.id}
+            packageSlug={pkg.slug}
             brochurePdfUrl={pkg.generated_brochure_url || pkg.brochure_pdf_url}
           />
         </aside>
@@ -232,10 +260,11 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       </div>
 
       {/* Sticky Bottom Sheet Action Trigger for Mobile screen flow */}
-      <MobileBookingSheet 
-        startingPrice={getPositiveStartingPrice(pkg)} 
-        variants={pkg.variants} 
-        packageSlug={pkg.slug} 
+      <MobileBookingSheet
+        startingPrice={getPositiveStartingPrice(pkg)}
+        variants={pkg.variants}
+        packageId={pkg.id}
+        packageSlug={pkg.slug}
         brochurePdfUrl={pkg.generated_brochure_url || pkg.brochure_pdf_url}
       />
     </main>

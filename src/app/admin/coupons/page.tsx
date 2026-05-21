@@ -17,17 +17,20 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import PremiumSelect from '@/components/ui/PremiumSelect';
 
 export default function AdminCouponsPage() {
-  const { coupons, packages, isLoading, fetchCoupons, fetchPackages, updateCoupon, deleteCoupon } = useAdminStore();
+  const { coupons, packages, rooms, isLoading, fetchCoupons, fetchPackages, fetchRooms, updateCoupon, deleteCoupon } = useAdminStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [targetFilter, setTargetFilter] = useState<'ALL' | 'PACKAGES' | 'ROOMS'>('ALL');
   const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCoupons(searchQuery);
     fetchPackages();
-  }, [fetchCoupons, fetchPackages, searchQuery]);
+    fetchRooms();
+  }, [fetchCoupons, fetchPackages, fetchRooms, searchQuery]);
 
   const handleDeleteConfirm = async () => {
     if (selectedCouponId) {
@@ -46,6 +49,26 @@ export default function AdminCouponsPage() {
     });
     return map;
   }, [packages]);
+
+  const roomMap = React.useMemo(() => {
+    const map: Record<number, string> = {};
+    const roomList = Array.isArray(rooms) ? rooms : [];
+    roomList.forEach((rm) => {
+      map[rm.id] = rm.lodge_name;
+    });
+    return map;
+  }, [rooms]);
+
+  const filteredCoupons = React.useMemo(() => {
+    return coupons.filter(coupon => {
+      const isGlobal = (!coupon.applicable_package_ids || coupon.applicable_package_ids.length === 0) && 
+                       (!coupon.applicable_room_ids || coupon.applicable_room_ids.length === 0);
+      if (targetFilter === 'ALL') return true;
+      if (targetFilter === 'PACKAGES') return coupon.applicable_package_ids && coupon.applicable_package_ids.length > 0;
+      if (targetFilter === 'ROOMS') return coupon.applicable_room_ids && coupon.applicable_room_ids.length > 0;
+      return true;
+    });
+  }, [coupons, targetFilter]);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'No date constraint';
@@ -74,9 +97,9 @@ export default function AdminCouponsPage() {
         </Link>
       </div>
 
-      {/* Search Bar */}
+      {/* Search Bar & Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
-        <div className="relative flex-1">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
@@ -84,6 +107,17 @@ export default function AdminCouponsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
+          />
+        </div>
+        <div className="relative w-full md:w-56">
+          <PremiumSelect
+            value={targetFilter}
+            onChange={(val) => setTargetFilter(val)}
+            options={[
+              { value: 'ALL', label: 'All Targets' },
+              { value: 'PACKAGES', label: 'Packages Only' },
+              { value: 'ROOMS', label: 'Rooms Only' },
+            ]}
           />
         </div>
       </div>
@@ -110,7 +144,7 @@ export default function AdminCouponsPage() {
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />
                   </td>
                 </tr>
-              ) : coupons.length === 0 ? (
+              ) : filteredCoupons.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-16 text-slate-400">
                     <ShieldAlert className="h-12 w-12 text-slate-300 mx-auto mb-4" />
@@ -119,7 +153,7 @@ export default function AdminCouponsPage() {
                   </td>
                 </tr>
               ) : (
-                coupons.map((coupon) => (
+                filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -148,13 +182,32 @@ export default function AdminCouponsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-600">
-                      {coupon.package_id ? (
-                        <div className="max-w-[200px] truncate" title={packageMap[coupon.package_id]}>
-                          {packageMap[coupon.package_id] || `Package (ID: ${coupon.package_id})`}
-                        </div>
-                      ) : (
-                        <span className="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md">All Packages</span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {(!coupon.applicable_package_ids || coupon.applicable_package_ids.length === 0) && (!coupon.applicable_room_ids || coupon.applicable_room_ids.length === 0) ? (
+                          <span className="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md inline-block max-w-max">Global (All)</span>
+                        ) : (
+                          <>
+                            {coupon.applicable_package_ids && coupon.applicable_package_ids.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {coupon.applicable_package_ids.map((id: number) => (
+                                  <span key={`pkg-${id}`} className="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-1.5 py-0.5 rounded border border-indigo-100 max-w-[120px] truncate" title={packageMap[id]}>
+                                    📦 {packageMap[id] || `Pkg ${id}`}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {coupon.applicable_room_ids && coupon.applicable_room_ids.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {coupon.applicable_room_ids.map((id: number) => (
+                                  <span key={`rm-${id}`} className="text-[10px] bg-orange-50 text-orange-600 font-bold px-1.5 py-0.5 rounded border border-orange-100 max-w-[120px] truncate" title={roomMap[id]}>
+                                    🏨 {roomMap[id] || `Rm ${id}`}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-500">
                       <div className="flex items-center gap-1">
@@ -185,7 +238,8 @@ export default function AdminCouponsPage() {
                                 min_booking_amount: coupon.min_booking_amount ? Number(coupon.min_booking_amount) : null,
                                 max_discount_amount: coupon.max_discount_amount ? Number(coupon.max_discount_amount) : null,
                                 usage_limit: coupon.usage_limit ? Number(coupon.usage_limit) : null,
-                                package_id: coupon.package_id ? Number(coupon.package_id) : null,
+                                applicable_package_ids: coupon.applicable_package_ids || [],
+                                applicable_room_ids: coupon.applicable_room_ids || [],
                                 valid_from: coupon.valid_from ? new Date(coupon.valid_from).toISOString() : null,
                                 valid_until: coupon.valid_until ? new Date(coupon.valid_until).toISOString() : null,
                                 is_active: updatedStatus

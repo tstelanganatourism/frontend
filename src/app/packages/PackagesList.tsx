@@ -1,9 +1,10 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
 import { Map, Search, Sparkles } from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
 import PackageFilters from '@/components/packages/PackageFilters';
-import PackageSearch from '@/components/packages/PackageSearch';
 import PackageListPagination from '@/components/packages/PackageListPagination';
 import MobileFilterSheet from '@/components/packages/MobileFilterSheet';
 import Link from 'next/link';
@@ -14,19 +15,20 @@ type PackageData = {
   size: number;
 };
 
-export default function PackagesList({ 
-  data, 
+export default function PackagesList({
+  data,
   pathname,
   searchParams
-}: { 
-  data?: PackageData; 
-  pathname: string; 
+}: {
+  data?: PackageData;
+  pathname: string;
   searchParams?: any;
 }) {
   const isBoatRide = pathname === '/boat-rides';
   const isSightseeing = pathname === '/sightseeing';
 
   const [liveData, setLiveData] = React.useState<PackageData | undefined>(undefined);
+  const [searchVal, setSearchVal] = React.useState('');
 
   React.useEffect(() => {
     const fetchLive = async () => {
@@ -46,7 +48,7 @@ export default function PackagesList({
         } else if (isSightseeing) {
           queryParams.set('type', 'TRIP');
         }
-        
+
         const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
         const res = await fetch(`/api/v1/packages${query}`);
         if (res.ok) {
@@ -57,36 +59,43 @@ export default function PackagesList({
         console.error("Failed to fetch live sync storefront packages:", err);
       }
     };
-    
+
     fetchLive();
   }, [pathname, searchParams, isBoatRide, isSightseeing]);
 
   const activeData = liveData !== undefined ? liveData : data;
 
-  const badgeText = isBoatRide 
-    ? 'Official Godavari Cruises' 
-    : isSightseeing 
-    ? 'Scenic Pilgrimage Journeys' 
-    : 'All-in-One Tours & Sightseeing';
+  // Extract active items and filter locally
+  const filteredItems = activeData ? activeData.items.filter((pkg: any) => 
+    searchVal === '' || 
+    (pkg.title && pkg.title.toLowerCase().includes(searchVal.toLowerCase())) ||
+    (pkg.slug && pkg.slug.toLowerCase().includes(searchVal.toLowerCase()))
+  ) : [];
 
-  const headingText = isBoatRide 
-    ? 'Pappikondalu Boat Rides' 
-    : isSightseeing 
-    ? 'Bhadrachalam Sightseeing' 
-    : 'Tours & Sightseeing';
+  const badgeText = isBoatRide
+    ? 'Official Godavari Cruises'
+    : isSightseeing
+      ? 'Scenic Pilgrimage Journeys'
+      : 'All-in-One Tours & Sightseeing';
+
+  const headingText = isBoatRide
+    ? 'Pappikondalu Boat Rides'
+    : isSightseeing
+      ? 'Bhadrachalam Sightseeing'
+      : 'Tours & Sightseeing';
 
   const descriptionText = isBoatRide
     ? 'Book premium government-approved river cruises, luxury boat rides, and traditional dining day trips through the stunning Papi Hills.'
     : isSightseeing
-    ? 'Explore sacred temple tours, guided nature excursions, and complete family packages with verified local support.'
-    : 'Book premium boat rides, river cruises, temple tours, and local sightseeing packages with verified local support.';
+      ? 'Explore sacred temple tours, guided nature excursions, and complete family packages with verified local support.'
+      : 'Book premium boat rides, river cruises, temple tours, and local sightseeing packages with verified local support.';
 
   const resultLabel = isBoatRide ? 'boat ride experiences' : isSightseeing ? 'sightseeing trips' : 'experiences';
 
   return (
     <div className="min-h-screen bg-[#f6f3ec]">
       {/* Dynamic SEO Hero Banner */}
-      <div className="relative overflow-hidden bg-[var(--color-brand-river)] pb-14 pt-22 sm:pb-16 sm:pt-28">
+      <div className="relative overflow-hidden bg-[var(--color-brand-river)] pb-14 pt-28 sm:pb-16 sm:pt-36">
         <Image
           src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg"
           alt="Explore Tours Background"
@@ -114,7 +123,16 @@ export default function PackagesList({
             </div>
 
             <div>
-              <PackageSearch />
+              <div className="relative w-full md:w-96">
+                <input 
+                  type="text" 
+                  value={searchVal}
+                  onChange={(e) => setSearchVal(e.target.value)}
+                  placeholder="Search experiences..." 
+                  className="w-full bg-white/10 border border-white/20 backdrop-blur-md rounded-full py-3 px-6 pl-12 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] transition-all"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50" />
+              </div>
             </div>
           </div>
         </div>
@@ -136,14 +154,14 @@ export default function PackagesList({
               <div className="transition-opacity duration-200">
                 <div className="mb-6 flex items-center justify-between lg:mb-8">
                   <p className="max-w-[calc(100%-8rem)] text-sm font-medium leading-5 text-slate-500 sm:max-w-none">
-                    We found <span className="font-bold text-[var(--color-brand-river)]">{activeData.total || 0}</span> amazing {resultLabel}
+                    We found <span className="font-bold text-[var(--color-brand-river)]">{filteredItems.length || 0}</span> amazing {resultLabel}
                   </p>
                   <MobileFilterSheet />
                 </div>
 
-                {activeData.items.length > 0 ? (
+                {filteredItems.length > 0 ? (
                   <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
-                    {activeData.items.map((pkg) => (
+                    {filteredItems.map((pkg) => (
                       <PackageCard key={pkg.id} pkg={pkg} />
                     ))}
                   </div>

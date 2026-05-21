@@ -43,7 +43,8 @@ export default function PremiumSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedOption = options.find((opt) => String(opt.value) === String(value));
+  const safeOptions = Array.isArray(options) ? options : [];
+  const selectedOption = safeOptions.find((opt) => String(opt.value) === String(value));
 
   return (
     <div className={`relative w-full ${className}`} ref={containerRef}>
@@ -56,8 +57,9 @@ export default function PremiumSelect({
       <button
         type="button"
         disabled={disabled}
+        title={selectedOption ? (selectedOption.label?.trim() || 'Unnamed Option') : placeholder}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border px-4 py-3.5 text-sm font-semibold text-slate-800 transition-all outline-none text-left cursor-pointer ${
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold text-slate-800 transition-all outline-none text-left cursor-pointer ${
           disabled 
             ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'
             : isOpen
@@ -75,15 +77,16 @@ export default function PremiumSelect({
         <>
           <div className="fixed inset-0 z-40 cursor-default" onClick={() => setIsOpen(false)} />
           <div className="absolute left-0 right-0 mt-2 z-50 rounded-xl border border-slate-100 bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 max-h-60 overflow-y-auto">
-            {options.length === 0 ? (
+            {safeOptions.length === 0 ? (
               <div className="px-4 py-3 text-xs text-slate-400 text-center font-medium">No options available</div>
             ) : (
-              options.map((opt) => {
+              safeOptions.map((opt) => {
                 const isSelected = String(opt.value) === String(value);
                 return (
                   <button
                     key={opt.value}
                     type="button"
+                    title={opt.label?.trim() || 'Unnamed Option'}
                     onClick={() => {
                       onChange(opt.value);
                       setIsOpen(false);

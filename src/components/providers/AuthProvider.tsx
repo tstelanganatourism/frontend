@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { refreshToken, getMe } from '@/services/authService';
+import { refreshToken } from '@/services/authService';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const setHydrated = useAuthStore((s) => s.setHydrated);
@@ -17,18 +17,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     const initAuth = async () => {
       try {
-        // 1. Call /refresh — this rotates the cookie and returns a new access token.
-        //    refreshToken() also immediately writes the access token into the Zustand
-        //    store via updateAccessToken(), so any API call that fires concurrently
-        //    (e.g. dashboard fetchStats) can use it without triggering the interceptor.
-        const token = await refreshToken();
-
-        if (token) {
-          // 2. Fetch the user profile with the fresh access token.
-          const user = await getMe();
-          // 3. Set fully authenticated state.
-          setAuth(user, token);
-        }
+        // Call /refresh — this rotates the cookie, returns a new access token + user details,
+        // and updates the Zustand store automatically.
+        await refreshToken();
       } catch (error: any) {
         // Only clear auth on explicit 401/403 (invalid/expired refresh token).
         // Network errors (5xx, timeout) should NOT log the user out.

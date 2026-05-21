@@ -18,7 +18,7 @@ export const FacilitiesInclusions = ({ inclusions, exclusions }: FacilitiesInclu
   if ((!inclusions || inclusions.length === 0) && (!exclusions || exclusions.length === 0)) return null;
 
   return (
-    <section id="inclusions" className="scroll-mt-28">
+    <section id="inclusions" className="scroll-mt-[170px]">
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-gradient-to-r from-[#f4faf9] to-white p-5 md:p-7">
           <h2 className="text-2xl font-black tracking-normal text-slate-950 md:text-3xl">

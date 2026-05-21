@@ -4,10 +4,9 @@ import { Promotion } from '@/hooks/usePromotions';
 
 async function fetchActivePromotions(): Promise<Promotion[]> {
   try {
-    // Note: Revalidates every 60 seconds.
-    // The backend endpoint also sets a Cache-Control max-age=60 header.
+    // Fetch fresh active promotions dynamically so deactivation of promo codes reflects instantly
     const res = await apiFetch('/api/v1/promotions/active', {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
     
     if (!res.ok) {

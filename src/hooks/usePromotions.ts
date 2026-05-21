@@ -30,6 +30,6 @@ export function useActivePromotions() {
       if (!res.ok) throw new Error('Failed to fetch promotions');
       return res.json();
     },
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 5 * 1000, // 5 seconds
   });
 }

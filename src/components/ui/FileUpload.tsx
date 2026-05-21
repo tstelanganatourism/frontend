@@ -80,27 +80,30 @@ export default function FileUpload({ value, onChange, label, accept = "applicati
       {label && <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>}
       
       {value ? (
-        <div className="relative group overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 h-32 flex items-center justify-center p-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-100 rounded-xl text-emerald-600">
-              <FileText className="h-8 w-8" />
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 min-h-[96px] flex items-center justify-between gap-4 transition-all hover:border-emerald-200">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="p-3 bg-emerald-100/70 rounded-xl text-emerald-600 shrink-0">
+              <FileText className="h-6 w-6" />
             </div>
-            <div className="text-left overflow-hidden">
-              <p className="text-sm font-bold text-emerald-800 truncate max-w-[200px]">{getDisplayFilename(value)}</p>
-              <p className="text-xs font-semibold text-emerald-600/70 mt-0.5">Uploaded successfully</p>
+            <div className="text-left min-w-0">
+              <p className="text-sm font-bold text-slate-800 truncate max-w-[240px] md:max-w-[400px]" title={getDisplayFilename(value)}>
+                {getDisplayFilename(value)}
+              </p>
+              <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Uploaded successfully
+              </p>
             </div>
           </div>
           
-          <div className="absolute inset-0 bg-emerald-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <button 
-              type="button"
-              onClick={() => onChange('')} 
-              className="p-3 bg-red-600 hover:bg-red-500 rounded-full text-white transition-all transform hover:scale-110 shadow-lg"
-              title="Remove File"
-            >
-              <CloseIcon className="h-5 w-5" />
-            </button>
-          </div>
+          <button 
+            type="button"
+            onClick={() => onChange('')} 
+            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:scale-105 shrink-0"
+            title="Remove File"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
         </div>
       ) : (
         <div

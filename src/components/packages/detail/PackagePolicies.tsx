@@ -112,7 +112,7 @@ export const PackagePolicies = ({ policies, primaryBoarding }: PackagePoliciesPr
   }
 
   return (
-    <section id="policies" className="scroll-mt-28 mb-12">
+    <section id="policies" className="scroll-mt-[170px] mb-12">
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-bold text-slate-900 mb-2">
           Terms & Conditions

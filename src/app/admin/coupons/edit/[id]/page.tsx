@@ -16,7 +16,8 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import PremiumSelect from '@/components/ui/PremiumSelect';
+import PremiumMultiSelect from '@/components/ui/PremiumMultiSelect';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
 interface EditPageProps {
   params: Promise<{ id: string }>;
@@ -25,7 +26,7 @@ interface EditPageProps {
 export default function AdminCouponEditPage({ params }: EditPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
-  const { packages, currentCoupon, isLoading, fetchPackages, fetchCouponById, updateCoupon } = useAdminStore();
+  const { packages, rooms, currentCoupon, isLoading, fetchPackages, fetchRooms, fetchCouponById, updateCoupon } = useAdminStore();
 
   const [code, setCode] = useState('');
   const [discountType, setDiscountType] = useState('PERCENTAGE');
@@ -33,7 +34,8 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
   const [minBookingAmount, setMinBookingAmount] = useState('');
   const [maxDiscountAmount, setMaxDiscountAmount] = useState('');
   const [usageLimit, setUsageLimit] = useState('');
-  const [packageId, setPackageId] = useState('');
+  const [applicablePackageIds, setApplicablePackageIds] = useState<string[]>([]);
+  const [applicableRoomIds, setApplicableRoomIds] = useState<string[]>([]);
   const [validFrom, setValidFrom] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -41,8 +43,9 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
 
   useEffect(() => {
     fetchPackages();
+    fetchRooms();
     fetchCouponById(resolvedParams.id);
-  }, [fetchPackages, fetchCouponById, resolvedParams.id]);
+  }, [fetchPackages, fetchRooms, fetchCouponById, resolvedParams.id]);
 
   useEffect(() => {
     if (currentCoupon) {
@@ -52,7 +55,8 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
       setMinBookingAmount(currentCoupon.min_booking_amount ? String(currentCoupon.min_booking_amount) : '');
       setMaxDiscountAmount(currentCoupon.max_discount_amount ? String(currentCoupon.max_discount_amount) : '');
       setUsageLimit(currentCoupon.usage_limit ? String(currentCoupon.usage_limit) : '');
-      setPackageId(currentCoupon.package_id ? String(currentCoupon.package_id) : '');
+      setApplicablePackageIds(currentCoupon.applicable_package_ids ? currentCoupon.applicable_package_ids.map(String) : []);
+      setApplicableRoomIds(currentCoupon.applicable_room_ids ? currentCoupon.applicable_room_ids.map(String) : []);
       
       if (currentCoupon.valid_from) {
         setValidFrom(new Date(currentCoupon.valid_from).toISOString().slice(0, 16));
@@ -84,7 +88,8 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
         min_booking_amount: minBookingAmount ? Number(minBookingAmount) : null,
         max_discount_amount: discountType === 'PERCENTAGE' && maxDiscountAmount ? Number(maxDiscountAmount) : null,
         usage_limit: usageLimit ? Number(usageLimit) : null,
-        package_id: packageId ? Number(packageId) : null,
+        applicable_package_ids: applicablePackageIds.map(Number),
+        applicable_room_ids: applicableRoomIds.map(Number),
         valid_from: validFrom ? new Date(validFrom).toISOString() : null,
         valid_until: validUntil ? new Date(validUntil).toISOString() : null,
         is_active: isActive
@@ -109,7 +114,7 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="w-full max-w-[1600px] mx-auto space-y-8 px-6">
       
       {/* Header */}
       <div className="flex items-center gap-4 border-b border-slate-150 pb-6">
@@ -254,39 +259,48 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Campaign Start Date</label>
-              <input 
-                type="datetime-local" 
-                value={validFrom} 
-                onChange={(e) => setValidFrom(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-55 px-5 py-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800"
+              <CustomDatePicker
+                value={validFrom}
+                onChange={setValidFrom}
+                placeholder="Start Date"
+                allowPast={true}
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Campaign Expiry Date</label>
-              <input 
-                type="datetime-local" 
-                value={validUntil} 
-                onChange={(e) => setValidUntil(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-55 px-5 py-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800"
+              <CustomDatePicker
+                value={validUntil}
+                min={validFrom}
+                onChange={setValidUntil}
+                placeholder="End Date"
+                allowPast={true}
               />
             </div>
           </div>
-
-          <div className="grid gap-6 sm:grid-cols-2">
+          
+          <div className="grid gap-6 sm:grid-cols-2 pt-4">
             <div>
-              <PremiumSelect
-                label="Restrict to specific package"
-                value={packageId}
-                onChange={(val) => setPackageId(val || '')}
-                options={[
-                  { value: '', label: 'Apply Globally (All Packages)' },
-                  ...(Array.isArray(packages) ? packages.map((pkg) => ({ value: String(pkg.id), label: pkg.title })) : []),
-                ]}
-                placeholder="Apply Globally (All Packages)"
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Restrict to specific packages (Optional)</label>
+              <PremiumMultiSelect
+                options={packages.map(p => ({ value: p.id.toString(), label: p.title }))}
+                value={applicablePackageIds}
+                onChange={setApplicablePackageIds}
+                placeholder="All Packages (Global)"
               />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Restrict to specific rooms (Optional)</label>
+              <PremiumMultiSelect
+                options={rooms.map(r => ({ value: r.id.toString(), label: r.lodge_name }))}
+                value={applicableRoomIds}
+                onChange={setApplicableRoomIds}
+                placeholder="All Rooms (Global)"
+              />
+            </div>
+          </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status Active</label>
               <div className="flex items-center gap-4 h-[54px]">

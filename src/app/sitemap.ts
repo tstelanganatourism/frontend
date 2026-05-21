@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { apiFetch } from '@/lib/api'
  
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://papikondalutourism.com'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://papikondalutourism.com';
   
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },

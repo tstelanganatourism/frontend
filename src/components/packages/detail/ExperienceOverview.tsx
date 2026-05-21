@@ -91,7 +91,7 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
   };
 
   return (
-    <section id="overview" className="scroll-mt-28">
+    <section id="overview" className="scroll-mt-[160px]">
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-gradient-to-r from-white via-[#f5fbfa] to-[#fff8eb] p-5 md:p-7">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#e7f5f2] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#0f6f7a]">
@@ -143,13 +143,22 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                 <Bus className="h-5 w-5 text-[#1a6b7a]" />
                 Fare and transport options
               </h3>
-              {pkg.variants.length ? (
+               {pkg.variants.length ? (
                 <div className="space-y-3">
                   {pkg.variants.map((variant) => (
-                    <div key={variant.id} className="rounded-lg border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                    <button
+                      key={variant.id}
+                      type="button"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('select-variant', { detail: { variantId: variant.id } }));
+                        const bookingEl = document.getElementById('booking');
+                        if (bookingEl) bookingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:border-[#1a6b7a] cursor-pointer group"
+                    >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="text-sm font-black text-slate-950">{variant.title}</p>
+                          <p className="text-sm font-black text-slate-950 group-hover:text-[#1a6b7a] transition-colors">{variant.title}</p>
                           {variant.transport_info ? (
                             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{variant.transport_info}</p>
                           ) : null}
@@ -157,9 +166,10 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                         <div className="shrink-0 text-right">
                           <p className="text-sm font-black text-[#0f3d56]">₹{currency(variant.adult_price)}</p>
                           <p className="text-xs font-bold text-slate-500">Child ₹{currency(variant.child_price)}</p>
+                          <span className="inline-block mt-1.5 text-[9px] font-black uppercase tracking-wider text-[#1a6b7a] opacity-0 group-hover:opacity-100 transition-opacity">Select →</span>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (

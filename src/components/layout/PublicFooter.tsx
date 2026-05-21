@@ -23,14 +23,14 @@ export default function PublicFooter() {
     <footer className="bg-[var(--color-brand-river)] text-white pt-10 pb-6 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`grid grid-cols-1 gap-8 ${isHomePage ? 'lg:grid-cols-[1fr_0.5fr_0.5fr_1fr_1.5fr]' : 'lg:grid-cols-[1.2fr_0.7fr_0.7fr_1.2fr]'} mb-8`}>
-          
+
           {/* Brand Info */}
           <div className="space-y-4">
             <Link href="/" className="inline-block transition-transform duration-200 hover:scale-[1.02]">
-              <img 
-                src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778914224/logo1_shpjk5.jpg" 
+              <img
+                src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778914224/logo1_shpjk5.jpg"
                 alt="Papikondalu Tourism Logo"
-                className="h-10 w-auto object-contain" 
+                className="h-10 w-auto object-contain"
               />
             </Link>
             <p className="text-white/70 text-[11px] leading-relaxed max-w-xs">
@@ -59,7 +59,7 @@ export default function PublicFooter() {
                 <li><Link href="/about" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">About Us</Link></li>
                 <li><Link href="/boat-rides" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Boat Rides</Link></li>
                 <li><Link href="/sightseeing" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Sightseeing</Link></li>
-                <li><Link href="/stays" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Stays</Link></li>
+                <li><Link href="/stays" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Accommodations</Link></li>
               </ul>
             </div>
 
@@ -82,7 +82,7 @@ export default function PublicFooter() {
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="h-3.5 w-3.5 text-[var(--color-brand-teal)] shrink-0" />
-                <span className="text-white/70 text-[11px]">+91 95420 69573, +91 95731 96369</span>
+                <span className="text-white/70 text-[11px]">+91 95420 69573, +91 984 984 89 82, +91 984 984 89 83, +91 984 984 89 38</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Clock className="h-3.5 w-3.5 text-[var(--color-brand-teal)] shrink-0 mt-0.5" />

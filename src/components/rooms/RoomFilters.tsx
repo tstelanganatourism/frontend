@@ -16,6 +16,23 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   const router = useRouter();
   const [, startTransition] = useTransition();
 
+  const isFeaturedParam = searchParams.get('is_featured') === 'true';
+  const activeFacilitiesParam = searchParams.getAll('facilities');
+  const activeSortParam = (searchParams.get('sort') as SortOption | null) || 'priority';
+
+  // Optimistic local state for instant toggle feedback
+  const [isFeatured, setIsFeatured] = React.useState(isFeaturedParam);
+  const [activeFacilities, setActiveFacilities] = React.useState(activeFacilitiesParam);
+  const [activeSort, setActiveSort] = React.useState(activeSortParam);
+
+  const activeFacilitiesString = activeFacilitiesParam.join(',');
+
+  React.useEffect(() => {
+    setIsFeatured(isFeaturedParam);
+    setActiveFacilities(activeFacilitiesParam);
+    setActiveSort(activeSortParam);
+  }, [isFeaturedParam, activeFacilitiesString, activeSortParam]);
+
   const pushRoomParams = (params: URLSearchParams) => {
     params.delete('page');
     const query = params.toString();
@@ -24,12 +41,11 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
     });
   };
 
-  const isFeatured = searchParams.get('is_featured') === 'true';
-  const activeFacilities = searchParams.getAll('facilities');
-  const activeSort = (searchParams.get('sort') as SortOption | null) || 'priority';
-
   const setParam = (key: string, value: string | null, defaultValue?: string) => {
     const params = new URLSearchParams(searchParams.toString());
+
+    if (key === 'is_featured') setIsFeatured(value === 'true');
+    if (key === 'sort' && value) setActiveSort(value as SortOption);
 
     if (!value || value === defaultValue) {
       params.delete(key);
@@ -41,17 +57,25 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   };
 
   const toggleFacility = (facility: string) => {
-    const params = new URLSearchParams(searchParams.toString());
     const nextFacilities = activeFacilities.includes(facility)
       ? activeFacilities.filter((item) => item !== facility)
       : [...activeFacilities, facility];
+    
+    // Instant optimistic feedback
+    setActiveFacilities(nextFacilities);
 
+    const params = new URLSearchParams(searchParams.toString());
     params.delete('facilities');
     nextFacilities.forEach((item) => params.append('facilities', item));
     pushRoomParams(params);
   };
 
   const clearAll = () => {
+    // Instant optimistic feedback
+    setIsFeatured(false);
+    setActiveFacilities([]);
+    setActiveSort('priority');
+    
     startTransition(() => {
       router.replace('/stays', { scroll: false });
     });

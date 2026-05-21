@@ -17,7 +17,7 @@ const GALLERY_IMAGES = [
   { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915577/download_sba73y.jpg', title: 'Nature\'s Riverside Escape' },
   { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915477/455c0ca2-d017-4399-bf8d-b7abbefd4d6b.png', title: 'Bhadrachalam Ghat View' },
   { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915516/download_tkimtx.jpg', title: 'Godavari River Bank' },
-  
+
   // Trip/Slider Images
   { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912157/slider1_p9iape.jpg', title: 'Golden Morning Cruise' },
   { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg', title: 'Cinematic Mountain Vista' },
@@ -72,8 +72,8 @@ export default function GalleryPage() {
   return (
     <div className="bg-[#F9F9F7] min-h-screen">
       {/* Premium Hero Header */}
-      <div className="relative h-[60vh] min-h-[400px] w-full flex items-center justify-center overflow-hidden">
-        <Image 
+      <div className="relative h-[45vh] min-h-[320px] w-full flex items-center justify-center overflow-hidden">
+        <Image
           src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg"
           alt="Gallery Hero"
           fill
@@ -81,28 +81,28 @@ export default function GalleryPage() {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-brand-river)]/80 via-[var(--color-brand-river)]/60 to-[var(--color-brand-river)]" />
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-[10px] font-bold tracking-[0.2em] uppercase mb-6 animate-in slide-in-from-bottom duration-700">
-            <Camera className="h-4 w-4 text-[var(--color-brand-teal)]" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 py-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-[9px] font-bold tracking-[0.2em] uppercase mb-4 animate-in slide-in-from-bottom duration-700">
+            <Camera className="h-3.5 w-3.5 text-[var(--color-brand-teal)]" />
             Visual Archive
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight animate-in slide-in-from-bottom duration-1000 delay-100">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 tracking-tight animate-in slide-in-from-bottom duration-1000 delay-100">
             The <span className="text-[var(--color-brand-sand)]">Gallery</span>
           </h1>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto animate-in slide-in-from-bottom duration-1000 delay-200">
-            Immerse yourself in the breathtaking landscapes of the Godavari. 
+          <p className="text-white/70 text-base max-w-xl mx-auto animate-in slide-in-from-bottom duration-1000 delay-200">
+            Immerse yourself in the breathtaking landscapes of the Godavari.
             Every photo tells a story of tranquility and adventure.
           </p>
         </div>
       </div>
 
       {/* Gallery Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
           {GALLERY_IMAGES.map((image, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="relative group overflow-hidden rounded-3xl cursor-pointer break-inside-avoid shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 bg-slate-200"
               onClick={() => setSelectedIndex(index)}
             >
@@ -130,13 +130,13 @@ export default function GalleryPage() {
 
       {/* Advanced Lightbox */}
       {selectedIndex !== null && (
-        <div 
+        <div
           className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
           {/* Close Button - High Visibility */}
-          <button 
+          <button
             className="absolute top-6 right-6 p-4 text-white hover:text-[var(--color-brand-teal)] bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-full transition-all z-[1100] group shadow-2xl cursor-pointer"
             onClick={() => setSelectedIndex(null)}
           >
@@ -144,13 +144,13 @@ export default function GalleryPage() {
           </button>
 
           {/* Navigation Arrows - High Visibility */}
-          <button 
+          <button
             className="absolute left-6 p-5 text-white/70 hover:text-white bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-full transition-all hidden md:flex z-[1100] shadow-2xl cursor-pointer"
             onClick={(e) => { e.stopPropagation(); handlePrev(); }}
           >
             <ChevronLeft className="h-10 w-10" />
           </button>
-          <button 
+          <button
             className="absolute right-6 p-5 text-white/70 hover:text-white bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-full transition-all hidden md:flex z-[1100] shadow-2xl cursor-pointer"
             onClick={(e) => { e.stopPropagation(); handleNext(); }}
           >
@@ -160,14 +160,14 @@ export default function GalleryPage() {
           {/* Main Image Container */}
           <div className="w-full h-full flex flex-col items-center justify-center p-4 select-none" onClick={() => setSelectedIndex(null)}>
             <div className="relative w-full h-full max-h-[85vh] max-w-[95vw] flex items-center justify-center group" onClick={(e) => e.stopPropagation()}>
-              <img 
+              <img
                 key={GALLERY_IMAGES[selectedIndex].url}
-                src={GALLERY_IMAGES[selectedIndex].url} 
-                alt={GALLERY_IMAGES[selectedIndex].title} 
+                src={GALLERY_IMAGES[selectedIndex].url}
+                alt={GALLERY_IMAGES[selectedIndex].title}
                 className="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-[0_0_150px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-500 min-w-[300px] md:min-w-[65vw]"
               />
             </div>
-            
+
             {/* Metadata Section */}
             <div className="mt-6 text-center animate-in slide-in-from-top-4 duration-700 delay-200">
               <h2 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-tight">

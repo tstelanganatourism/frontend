@@ -29,7 +29,7 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
 
   try {
     const query = params.toString();
-    const res = await apiFetch(`/api/v1/rooms${query ? `?${query}` : ''}`, { next: { revalidate: 60 } });
+    const res = await apiFetch(`/api/v1/rooms${query ? `?${query}` : ''}`, { next: { revalidate: 60, tags: ['stays'] } });
     if (!res.ok) return { query, data: undefined };
     return { query, data: await res.json() };
   } catch {

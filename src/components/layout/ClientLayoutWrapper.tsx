@@ -15,20 +15,10 @@ interface ClientLayoutWrapperProps {
 export default function ClientLayoutWrapper({ children, promoBanner }: ClientLayoutWrapperProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const isAdminOrAgentPage = (pathname?.startsWith('/admin') || pathname?.startsWith('/agent')) && !pathname?.endsWith('/login');
+  const isAdminOrAgentPage = pathname?.startsWith('/admin') && !pathname?.endsWith('/login');
   const isPrintPage = pathname?.startsWith('/print');
 
-  // Trigger real-time revalidation whenever the browser tab gains focus
-  useEffect(() => {
-    const handleFocus = () => {
-      router.refresh();
-    };
 
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [router]);
 
   // Register PWA Service Worker
   useEffect(() => {
@@ -58,7 +48,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
         {children}
       </main>
       <PublicFooter />
-      <MobileBottomNav />
+      {!pathname?.match(/^\/(packages|stays|rooms)\/[^/]+$/) && <MobileBottomNav />}
       <WhatsAppFAB />
     </>
   );
