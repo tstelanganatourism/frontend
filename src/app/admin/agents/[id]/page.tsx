@@ -315,7 +315,7 @@ export default function AgentDetailPage() {
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-[#5ac4d7]" /> Recent Bookings Ledger
+            <Activity className="h-5 w-5 text-[#5ac4d7]" /> Recent Bookings List
           </h3>
         </div>
 

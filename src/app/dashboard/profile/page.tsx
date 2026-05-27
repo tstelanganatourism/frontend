@@ -77,6 +77,11 @@ export default function ProfilePage() {
       toast.error('Full name is required');
       return;
     }
+    
+    if (phoneNumber.trim() && !/^\d{10}$/.test(phoneNumber.trim())) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -122,6 +127,15 @@ export default function ProfilePage() {
             <div className="relative group">
               <div 
                 onClick={triggerFileInput}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    const fakeEvent = { target: { files: e.dataTransfer.files } } as any;
+                    handleAvatarChange(fakeEvent);
+                  }
+                }}
                 className="h-32 w-32 rounded-full bg-[var(--color-brand-sand)] flex items-center justify-center text-[var(--color-brand-river)] text-4xl font-black shadow-inner relative overflow-hidden cursor-pointer border-2 border-slate-100"
               >
                 {avatarUrl ? (
@@ -149,7 +163,7 @@ export default function ProfilePage() {
               type="file" 
               ref={fileInputRef} 
               onChange={handleAvatarChange} 
-              accept="image/*" 
+              accept="image/*;capture=camera" 
               className="hidden" 
             />
 
@@ -192,8 +206,10 @@ export default function ProfilePage() {
               {isEditingProfile ? (
                 <input 
                   type="tel" 
+                  id="phoneNumber"
                   value={phoneNumber} 
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  maxLength={10}
                   placeholder="Enter phone number" 
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#5ac4d7] focus:ring-1 focus:ring-[#5ac4d7] max-w-sm font-semibold text-slate-800 transition-all" 
                 />

@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getHdImageUrl } from '@/lib/utils';
+import { useLightbox } from '@/hooks/useLightbox';
 import {
   BadgeCheck,
   Camera,
@@ -76,9 +78,14 @@ export const PackageHeroV2 = ({
   const activeSlide = slides[activeIdx] || slides[0];
   const categoryLabel = type === 'TOUR' ? 'Boat Ride' : 'Sightseeing';
   const price = formatPrice(startingPrice);
-  const cleanDescription = description?.replace(/\s+/g, ' ').trim();
+  const stripHtml = (html: string | null | undefined) => {
+    if (!html) return '';
+    return html.replace(/<[^>]*>?/gm, '');
+  };
+
+  const plainDescription = stripHtml(description)?.replace(/\s+/g, ' ').trim();
   const intro =
-    cleanDescription ||
+    plainDescription ||
     'A verified travel experience with clear timings, boarding details, inclusions, and fare options shown before booking.';
 
   const moveSlide = (direction: 'left' | 'right') => {
@@ -88,31 +95,12 @@ export const PackageHeroV2 = ({
     });
   };
 
-  // Swipe support for mobile hand action
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const minSwipeDistance = 50;
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    if (isLeftSwipe) {
-      moveSlide('right');
-    } else if (isRightSwipe) {
-      moveSlide('left');
-    }
-  };
+  const { handlers: lightboxHandlers } = useLightbox({
+    isOpen: lightboxOpen,
+    onClose: () => setLightboxOpen(false),
+    onNext: () => moveSlide('right'),
+    onPrev: () => moveSlide('left'),
+  });
 
   return (
     <section className="relative overflow-hidden bg-[#f6fbfa]">
@@ -201,9 +189,7 @@ export const PackageHeroV2 = ({
           <div className="rounded-xl border border-white/18 bg-white p-2 shadow-2xl shadow-slate-950/18">
             <div 
               className="relative overflow-hidden rounded-lg bg-slate-950"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              {...lightboxHandlers}
             >
               <div className="relative aspect-[4/3] min-h-[280px] sm:aspect-[16/10] lg:min-h-[470px]">
                 <Image
@@ -320,9 +306,7 @@ export const PackageHeroV2 = ({
           </div>
           <div 
             className="relative flex flex-1 items-center justify-center p-2 md:p-8"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            {...lightboxHandlers}
           >
             {slides.length > 1 && (
               <button
@@ -337,7 +321,7 @@ export const PackageHeroV2 = ({
               </button>
             )}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={activeSlide.image_url} alt={activeSlide.alt_text || title} fill sizes="100vw" className="object-contain" />
+              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || title} fill sizes="100vw" className="object-contain" unoptimized quality={100} />
             </div>
             {slides.length > 1 && (
               <button

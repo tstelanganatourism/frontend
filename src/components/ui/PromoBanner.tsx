@@ -1,32 +1,23 @@
-import { apiFetch } from '@/lib/api';
+import React from 'react';
 import PromoBannerClient from './PromoBannerClient';
+import { apiFetch } from '@/lib/api';
 import { Promotion } from '@/hooks/usePromotions';
 
-async function fetchActivePromotions(): Promise<Promotion[]> {
+export default async function PromoBanner() {
   try {
-    // Fetch fresh active promotions dynamically so deactivation of promo codes reflects instantly
     const res = await apiFetch('/api/v1/promotions/active', {
-      cache: 'no-store',
+      next: { revalidate: 60 } // Cache for 60 seconds
     });
     
-    if (!res.ok) {
-      console.warn('Failed to fetch promotions', res.status);
-      return [];
-    }
+    if (!res.ok) return null;
     
-    return await res.json();
-  } catch (error) {
-    console.warn('Error fetching promotions:', error);
-    return [];
-  }
-}
+    const promotions: Promotion[] = await res.json();
+    if (!promotions || promotions.length === 0) {
+      return null;
+    }
 
-export default async function PromoBanner() {
-  const promotions = await fetchActivePromotions();
-
-  if (!promotions || promotions.length === 0) {
+    return <PromoBannerClient promotions={promotions} />;
+  } catch (err) {
     return null;
   }
-
-  return <PromoBannerClient promotions={promotions} />;
 }

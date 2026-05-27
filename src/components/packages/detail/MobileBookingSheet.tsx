@@ -39,7 +39,7 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
   const hasFare = Number.isFinite(positiveStartingPrice) && positiveStartingPrice > 0;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#dfe8e2]/60 bg-white/95 p-4 shadow-[0_-10px_30px_rgba(15,61,86,0.08)] backdrop-blur lg:hidden">
+    <div className="fixed inset-x-0 bottom-16 sm:bottom-0 z-40 border-t border-[#dfe8e2]/60 bg-white/95 p-4 shadow-[0_-10px_30px_rgba(15,61,86,0.08)] backdrop-blur lg:hidden">
       <div className="flex items-center justify-between gap-4">
         
         {/* Left Side: Starter pricing */}

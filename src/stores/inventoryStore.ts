@@ -117,6 +117,7 @@ interface InventoryState {
 
   // Public actions
   fetchPublicAvailability: (slug: string, month: string, force?: boolean) => Promise<void>;
+  applySSEPayload: (payload: any) => void;
 }
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
@@ -288,5 +289,28 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         set({ publicAvailability: null, publicLoading: false });
       }
     }
+  },
+
+  applySSEPayload: (payload: any) => {
+    // Only apply if we have loaded publicAvailability and it matches the package
+    const current = get().publicAvailability;
+    if (!current || current.package_id !== payload.package_id) return;
+    
+    // Update the specific date
+    const updatedDates = current.dates.map(d => {
+      if (d.date === payload.travel_date && d.variant_id === payload.variant_id) {
+        return {
+          ...d,
+          available_seats: payload.available,
+          is_closed: payload.is_closed,
+          effective_adult_price: payload.effective_adult_price,
+          effective_child_price: payload.effective_child_price,
+          status: payload.is_closed ? 'CLOSED' : (payload.available <= 0 ? 'SOLD_OUT' : 'OPEN')
+        } as PublicDateAvailability;
+      }
+      return d;
+    });
+
+    set({ publicAvailability: { ...current, dates: updatedDates } });
   },
 }));

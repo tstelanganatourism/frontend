@@ -44,6 +44,8 @@ interface BookingDetails {
   passengers: Passenger[];
   agent_id: number | null;
   agent_name: string | null;
+  agent_gst?: string | null;
+  agent_company?: string | null;
   boarding_point: BoardingPoint | null;
   has_pending_cancellation?: boolean;
   ticket_pdf_url?: string | null;
@@ -78,7 +80,7 @@ export default function BookingDetailPage() {
       
       // Construct and open WhatsApp deep link
       const message = `Hello TS Boat Tourism, I would like to request a cancellation for:\n\nBooking ID: ${booking?.public_id}\nPackage: ${booking?.package_title}\nTravel Date: ${new Date(booking?.travel_date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}\nReason: ${cancelReason}`;
-      window.open(`https://wa.me/919849848982?text=${encodeURIComponent(message)}`, '_blank');
+      window.open(`https://wa.me/919542069573?text=${encodeURIComponent(message)}`, '_blank');
       
       // Update local state dynamically
       setBooking(prev => prev ? { ...prev, has_pending_cancellation: true } : null);
@@ -414,8 +416,15 @@ export default function BookingDetailPage() {
             {/* Silent Agent Footer Indicator */}
             {booking.agent_id && (
               <div className="mt-8 pt-6 border-t border-dashed border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                <span>Agent Code: AGT-{booking.agent_id}</span>
-                <span>Agent Partner: {booking.agent_name}</span>
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                  <span>Agent Code: AGT-{booking.agent_id}</span>
+                  <span>Agent Partner: {booking.agent_company || booking.agent_name}</span>
+                </div>
+                {booking.agent_gst && (
+                  <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-500">
+                    Agent GST: {booking.agent_gst}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -424,9 +433,14 @@ export default function BookingDetailPage() {
         {/* Sidebar Summary */}
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-border">
-            <h3 className="text-xs font-black text-slate-850 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-slate-400" /> Booking Invoice
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-black text-slate-850 uppercase tracking-wider flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-slate-400" /> Booking Invoice
+              </h3>
+              <div className="text-[9px] font-bold text-slate-400 bg-slate-50 border border-slate-100 px-2 py-1 rounded">
+                GST: 36AYSPN0044M1ZZ
+              </div>
+            </div>
             
             <div className="space-y-3 text-xs">
               <div className="flex justify-between text-slate-500 font-semibold">
@@ -486,7 +500,7 @@ export default function BookingDetailPage() {
               Both the <strong className="font-bold">Printed Ticket</strong> and the <strong className="font-bold">Customer Detail Form</strong> must be printed, filled out, and submitted at the owner's reporting address to collect your manual ticket before proceeding to your ride or room.
             </div>
             <a 
-              href="https://wa.me/919849848982"
+              href="https://wa.me/919542069573"
               target="_blank"
               rel="noopener noreferrer"
               className="block text-center bg-white text-[var(--color-brand-river)] text-xs font-bold py-2.5 rounded-xl shadow-sm hover:shadow transition-all uppercase tracking-wider"

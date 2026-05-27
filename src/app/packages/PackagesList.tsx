@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Map, Search, Sparkles } from 'lucide-react';
+import { Anchor, Camera, Search, Sparkles } from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
 import PackageFilters from '@/components/packages/PackageFilters';
 import PackageListPagination from '@/components/packages/PackageListPagination';
@@ -10,19 +10,40 @@ import MobileFilterSheet from '@/components/packages/MobileFilterSheet';
 import Link from 'next/link';
 
 type PackageData = {
-  items: any[];
+  items: PackageItem[];
   total: number;
   size: number;
+};
+
+type PackageItem = {
+  id: number;
+  slug: string;
+  title: string;
+  type: string;
+  duration?: string | null;
+  place?: string | null;
+  region: string;
+  cover_image_url: string | null;
+  is_featured: boolean;
+  tags: string[];
+  starting_price: number | null;
+  variants?: Array<{
+    id: number;
+    title: string;
+    adult_price: number;
+    child_price: number;
+    transport_info?: string | null;
+    is_active: boolean;
+  }>;
 };
 
 export default function PackagesList({
   data,
   pathname,
-  searchParams
 }: {
   data?: PackageData;
   pathname: string;
-  searchParams?: any;
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const isBoatRide = pathname === '/boat-rides';
   const isSightseeing = pathname === '/sightseeing';
@@ -30,19 +51,20 @@ export default function PackagesList({
   const [liveData, setLiveData] = React.useState<PackageData | undefined>(undefined);
   const [searchVal, setSearchVal] = React.useState('');
 
+  // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
+  // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
+  // route to remain perfectly static. Instead, we use a simple window location check in useEffect.
   React.useEffect(() => {
     const fetchLive = async () => {
       try {
-        const queryParams = new URLSearchParams();
-        if (searchParams) {
-          Object.entries(searchParams).forEach(([key, val]) => {
-            if (Array.isArray(val)) {
-              val.forEach(v => queryParams.append(key, v));
-            } else if (val) {
-              queryParams.set(key, val as string);
-            }
-          });
+        const queryParams = new URLSearchParams(window.location.search);
+
+        // If there are no query parameters, and we are not forcing a specific type,
+        // we can just use the server-provided SSG data without an extra network call.
+        if (queryParams.toString() === '' && !isBoatRide && !isSightseeing) {
+          return;
         }
+
         if (isBoatRide) {
           queryParams.set('type', 'TOUR');
         } else if (isSightseeing) {
@@ -61,13 +83,13 @@ export default function PackagesList({
     };
 
     fetchLive();
-  }, [pathname, searchParams, isBoatRide, isSightseeing]);
+  }, [pathname, isBoatRide, isSightseeing]);
 
   const activeData = liveData !== undefined ? liveData : data;
 
   // Extract active items and filter locally
-  const filteredItems = activeData ? activeData.items.filter((pkg: any) => 
-    searchVal === '' || 
+  const filteredItems = activeData ? activeData.items.filter((pkg) =>
+    searchVal === '' ||
     (pkg.title && pkg.title.toLowerCase().includes(searchVal.toLowerCase())) ||
     (pkg.slug && pkg.slug.toLowerCase().includes(searchVal.toLowerCase()))
   ) : [];
@@ -79,56 +101,85 @@ export default function PackagesList({
       : 'All-in-One Tours & Sightseeing';
 
   const headingText = isBoatRide
-    ? 'Pappikondalu Boat Rides'
+    ? 'Explore River Journeys'
     : isSightseeing
-      ? 'Bhadrachalam Sightseeing'
+      ? 'Heritage & Temple Tours'
       : 'Tours & Sightseeing';
 
-  const descriptionText = isBoatRide
-    ? 'Book premium government-approved river cruises, luxury boat rides, and traditional dining day trips through the stunning Papi Hills.'
+  const headingPrimary = isBoatRide ? 'Premium' : isSightseeing ? 'Cultural' : 'Tours';
+  const headingSecondary = isBoatRide ? 'Boat Rides' : isSightseeing ? 'Sightseeing' : 'Sightseeing';
+
+  const headingAccent = isBoatRide
+    ? 'Godavari River Cruises'
     : isSightseeing
-      ? 'Explore sacred temple tours, guided nature excursions, and complete family packages with verified local support.'
+      ? 'Temple & Nature Trips'
+      : 'Curated Travel Experiences';
+
+  const descriptionText = isBoatRide
+    ? 'Book scenic Godavari cruise packages through Papikondalu hills with verified reporting, family-friendly planning, and clear local support.'
+    : isSightseeing
+      ? 'Explore Bhadrachalam temple routes, nature viewpoints, and complete family sightseeing plans with verified local travel support.'
       : 'Book premium boat rides, river cruises, temple tours, and local sightseeing packages with verified local support.';
 
   const resultLabel = isBoatRide ? 'boat ride experiences' : isSightseeing ? 'sightseeing trips' : 'experiences';
 
+  const backgroundImage = isBoatRide
+    ? '/images/boat-rides-banner-2026.png'
+    : isSightseeing
+      ? '/images/sightseeing-banner-2026.png'
+      : 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg';
+
+  const HeroIcon = isBoatRide ? Anchor : Camera;
+  const heroImagePosition = isBoatRide ? 'center 58%' : isSightseeing ? 'center 54%' : 'center';
+
   return (
     <div className="min-h-screen bg-[#f6f3ec]">
       {/* Dynamic SEO Hero Banner */}
-      <div className="relative overflow-hidden bg-[var(--color-brand-river)] pb-14 pt-28 sm:pb-16 sm:pt-36">
+      <div className="relative min-h-[23rem] overflow-hidden bg-[#071f2f] pb-12 pt-24 sm:min-h-[28rem] sm:pb-16 sm:pt-32">
         <Image
-          src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg"
-          alt="Explore Tours Background"
+          src={backgroundImage}
+          alt={`${headingText} banner`}
           fill
-          className="object-cover opacity-45"
+          sizes="100vw"
+          className="object-cover"
+          style={{ objectPosition: heroImagePosition }}
           priority
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,32,47,0.6),rgba(7,32,47,0.88)),linear-gradient(90deg,rgba(7,32,47,0.94),rgba(7,32,47,0.36))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,18,30,0.92)_0%,rgba(3,18,30,0.74)_42%,rgba(3,18,30,0.22)_72%,rgba(3,18,30,0.08)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,18,30,0.18)_0%,rgba(3,18,30,0.08)_42%,rgba(3,18,30,0.62)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#f6f3ec] to-transparent" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
-            <div className="max-w-2xl text-white">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
-                <Sparkles className="h-3 w-3 text-[var(--color-brand-sand)] animate-spin-slow" />
+          <div className="flex min-h-[15rem] flex-col justify-end gap-8 md:min-h-[18rem] md:flex-row md:items-end md:justify-between">
+            <div className="max-w-3xl text-white">
+              <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/45 bg-slate-950/34 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_10px_28px_rgba(0,0,0,0.2)] backdrop-blur-md sm:px-4">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" />
                 {badgeText}
               </div>
-              <h1 className="mb-6 flex items-center gap-4 text-4xl font-black tracking-tight text-white md:text-6xl">
-                <Map className="h-10 w-10 text-[var(--color-brand-teal)] shrink-0" />
-                {headingText}
+              <h1 className="mb-4 flex items-start gap-3 text-[2.8rem] font-black leading-[0.95] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.38)] sm:gap-4 sm:text-6xl lg:text-7xl">
+                <HeroIcon className="mt-1 h-9 w-9 shrink-0 text-amber-300 sm:h-11 sm:w-11" strokeWidth={1.8} />
+                <span>
+                  <span className="block text-amber-300">{headingPrimary}</span>
+                  <span className="block">{headingSecondary}</span>
+                </span>
               </h1>
-              <p className="text-lg leading-relaxed text-white/70">
+              <div className="mb-4 flex max-w-md items-center gap-3 text-amber-300/90">
+                <span className="h-px flex-1 bg-current/70" />
+                <span className="text-xs font-black uppercase tracking-[0.24em]">{headingAccent}</span>
+                <span className="h-px flex-1 bg-current/70" />
+              </div>
+              <p className="max-w-2xl text-base font-semibold leading-7 text-white/86 sm:text-lg">
                 {descriptionText}
               </p>
             </div>
 
             <div>
               <div className="relative w-full md:w-96">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={searchVal}
                   onChange={(e) => setSearchVal(e.target.value)}
-                  placeholder="Search experiences..." 
+                  placeholder="Search experiences..."
                   className="w-full bg-white/10 border border-white/20 backdrop-blur-md rounded-full py-3 px-6 pl-12 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] transition-all"
                 />
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50" />

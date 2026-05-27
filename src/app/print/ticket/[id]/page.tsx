@@ -354,7 +354,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
       <div className="pkg-ribbon">{booking.package_title.toUpperCase()}</div>
 
       {/* ═══════ BANNER IMAGE ═══════ */}
-      <img src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779382620/63766aa2-a4d6-46ce-8064-0e46fe66c59a.png" className="banner-img" alt="Telangana Boat Tourism" />
+      <img src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779480316/27d6478a-0032-4cc3-a0e0-20eec56de773.png" className="banner-img" alt="Telangana Boat Tourism" />
 
       <div className="body">
         {/* ═══════ TOP GRID ═══════ */}

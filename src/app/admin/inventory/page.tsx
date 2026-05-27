@@ -5,6 +5,7 @@ import { useAdminStore } from '@/stores/adminStore';
 import { useInventoryStore, InventoryRow, RoomInventoryRow } from '@/stores/inventoryStore';
 import { toast } from 'sonner';
 import PremiumSelect from '@/components/ui/PremiumSelect';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import {
   CalendarDays, ChevronLeft, ChevronRight, RefreshCw,
   Lock, Unlock, AlertCircle, CheckCircle2, XCircle,
@@ -239,17 +240,17 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
 
 // ─── Generate/Create Modals (Shared Logic) ───────────────────────────────────
 
-function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated }: { mode: 'package' | 'room', entityId: number, currentMonth: string, onClose: () => void, onGenerated: () => void }) {
+function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated, defaultCapacity }: { mode: 'package' | 'room', entityId: number, currentMonth: string, onClose: () => void, onGenerated: () => void, defaultCapacity?: number }) {
   const { generateInventory, generateRoomInventory } = useInventoryStore();
   const today = todayIST();
-  const minISO = new Date(today.getTime() + 86400000).toISOString().slice(0, 10);
+  const minISO = today.toISOString().slice(0, 10);
   const [fromDate, setFromDate] = useState(minISO);
   const [toDate, setToDate] = useState(() => {
     const d = new Date(today);
     d.setMonth(d.getMonth() + 3);
     return d.toISOString().slice(0, 10);
   });
-  const [capacity, setCapacity] = useState(mode === 'package' ? 500 : 20);
+  const [capacity, setCapacity] = useState(defaultCapacity ?? (mode === 'package' ? 500 : 20));
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
@@ -273,8 +274,8 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-[#0f3d56] px-6 py-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-[#0f3d56] px-6 py-4 rounded-t-2xl">
           <h3 className="text-base font-black text-white flex items-center gap-2">
             <Zap className="h-4 w-4 text-[#5ac4d7]" /> Generate {mode === 'package' ? 'Package' : 'Room'} Inventory
           </h3>
@@ -282,13 +283,11 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated }: {
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">From Date</label>
-            <input type="date" min={minISO} value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
+            <CustomDatePicker value={fromDate} onChange={setFromDate} min={minISO} />
           </div>
-          <div>
+          <div className="relative z-40">
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">To Date</label>
-            <input type="date" min={fromDate} value={toDate} onChange={(e) => setToDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
+            <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} />
           </div>
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Default Capacity per day</label>
@@ -296,7 +295,7 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated }: {
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
           </div>
         </div>
-        <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4">
+        <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4 rounded-b-2xl">
           <button onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancel</button>
           <button onClick={handleGenerate} disabled={loading || !fromDate || !toDate}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-5 py-2.5 text-sm font-black text-white hover:bg-[#1a6b7a] disabled:opacity-50 transition-colors">
@@ -721,15 +720,19 @@ export default function AdminInventoryPage() {
           onCreated={refresh}
         />
       )}
-      {showGenerate && hasSelection && (
-        <GenerateModal
-          mode={activeTab === 'packages' ? 'package' : 'room'}
-          entityId={activeTab === 'packages' ? selectedVariantId! : selectedRoomVariantId!}
-          currentMonth={formatMonth(calYear, calMonth)}
-          onClose={() => setShowGenerate(false)}
-          onGenerated={refresh}
-        />
-      )}
+      {showGenerate && hasSelection && (() => {
+        const selectedRoomVariant = roomVariants.find((v: any) => v.id === selectedRoomVariantId);
+        return (
+          <GenerateModal
+            mode={activeTab === 'packages' ? 'package' : 'room'}
+            entityId={activeTab === 'packages' ? selectedVariantId! : selectedRoomVariantId!}
+            currentMonth={formatMonth(calYear, calMonth)}
+            onClose={() => setShowGenerate(false)}
+            onGenerated={refresh}
+            defaultCapacity={activeTab === 'rooms' && selectedRoomVariant?.total_rooms ? selectedRoomVariant.total_rooms : undefined}
+          />
+        );
+      })()}
     </div>
   );
 }

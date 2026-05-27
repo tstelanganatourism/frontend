@@ -96,7 +96,7 @@ export default function ImageUpload({ value, onChange, label }: ImageUploadProps
             type="file" 
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept="image/*"
+            accept="image/*;capture=camera"
             className="hidden" 
           />
           {isUploading ? (

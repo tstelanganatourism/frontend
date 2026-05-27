@@ -202,7 +202,14 @@ export const useAdminStore = create<AdminState>((set) => ({
       revalidateStorefront(['/', '/boat-rides', '/sightseeing', '/packages'], ['packages']);
       return response.data;
     } catch (err: any) {
-      const errMsg = err.response?.data?.detail || 'Failed to create package';
+      let errMsg = 'Failed to create package';
+      if (err.response?.data?.detail) {
+        if (Array.isArray(err.response.data.detail)) {
+          errMsg = err.response.data.detail.map((e: any) => `${e.loc?.slice(-1)?.[0] || 'Field'}: ${e.msg}`).join(', ');
+        } else {
+          errMsg = err.response.data.detail;
+        }
+      }
       set({ error: errMsg, isLoading: false });
       throw new Error(errMsg);
     }
@@ -227,9 +234,16 @@ export const useAdminStore = create<AdminState>((set) => ({
       ]);
       return response.data;
     } catch (err: any) {
-      const errMsg = err.response?.data?.detail || 'Failed to update package';
+      let errMsg = 'Failed to update package';
+      if (err.response?.data?.detail) {
+        if (Array.isArray(err.response.data.detail)) {
+          errMsg = err.response.data.detail.map((e: any) => `${e.loc?.slice(-1)?.[0] || 'Field'}: ${e.msg}`).join(', ');
+        } else {
+          errMsg = err.response.data.detail;
+        }
+      }
       set({ error: errMsg, isLoading: false });
-      throw err; // throw raw error so we can handle validation failures in form
+      throw new Error(errMsg);
     }
   },
 
@@ -314,7 +328,14 @@ export const useAdminStore = create<AdminState>((set) => ({
       revalidateStorefront(['/', '/stays'], ['stays']);
       return response.data;
     } catch (err: any) {
-      const errMsg = err.response?.data?.detail || 'Failed to create room';
+      let errMsg = 'Failed to create room';
+      if (err.response?.data?.detail) {
+        if (Array.isArray(err.response.data.detail)) {
+          errMsg = err.response.data.detail.map((e: any) => `${e.loc?.slice(-1)?.[0] || 'Field'}: ${e.msg}`).join(', ');
+        } else {
+          errMsg = err.response.data.detail;
+        }
+      }
       set({ error: errMsg, isLoading: false });
       throw new Error(errMsg);
     }
@@ -337,7 +358,14 @@ export const useAdminStore = create<AdminState>((set) => ({
       ]);
       return response.data;
     } catch (err: any) {
-      const errMsg = err.response?.data?.detail || 'Failed to update room';
+      let errMsg = 'Failed to update room';
+      if (err.response?.data?.detail) {
+        if (Array.isArray(err.response.data.detail)) {
+          errMsg = err.response.data.detail.map((e: any) => `${e.loc?.slice(-1)?.[0] || 'Field'}: ${e.msg}`).join(', ');
+        } else {
+          errMsg = err.response.data.detail;
+        }
+      }
       set({ error: errMsg, isLoading: false });
       throw new Error(errMsg);
     }

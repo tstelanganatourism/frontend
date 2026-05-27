@@ -132,9 +132,16 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
 
           <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
             <h3 className="text-lg font-black text-slate-950">About this package</h3>
-            <p className="mt-3 text-base leading-8 text-slate-700">
-              {pkg.description || 'The operator has not added a long description yet. Please check the tour schedule, reporting information, inclusions, exclusions, and fare variants before booking.'}
-            </p>
+            {pkg.description ? (
+              <div 
+                className="mt-3 text-base leading-8 text-slate-700 prose prose-slate max-w-none"
+                dangerouslySetInnerHTML={{ __html: pkg.description }}
+              />
+            ) : (
+              <p className="mt-3 text-base leading-8 text-slate-700">
+                The operator has not added a long description yet. Please check the tour schedule, reporting information, inclusions, exclusions, and fare variants before booking.
+              </p>
+            )}
           </div>
 
           <div className="mt-6 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">

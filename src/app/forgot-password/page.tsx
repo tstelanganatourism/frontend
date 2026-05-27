@@ -48,7 +48,34 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const applyOtpDigits = (index: number, value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 6);
+    if (!digits) return;
+
+    const startIndex = digits.length === 6 ? 0 : index;
+    const newOtp = [...otp];
+    for (let i = 0; i < digits.length && startIndex + i < 6; i++) {
+      newOtp[startIndex + i] = digits[i];
+    }
+
+    setOtp(newOtp);
+    otpRefs.current[Math.min(startIndex + digits.length, 5)]?.focus();
+  };
+
+  const handleOtpPaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted.replace(/\D/g, '')) {
+      e.preventDefault();
+      applyOtpDigits(index, pasted);
+    }
+  };
+
   const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      applyOtpDigits(index, value);
+      return;
+    }
+
     if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
@@ -205,8 +232,10 @@ export default function ForgotPasswordPage() {
                         ref={(el) => { otpRefs.current[i] = el; }}
                         type="text"
                         maxLength={1}
+                        inputMode="numeric"
                         value={digit}
                         onChange={(e) => handleOtpChange(i, e.target.value)}
+                        onPaste={(e) => handleOtpPaste(i, e)}
                         onKeyDown={(e) => handleOtpKeyDown(i, e)}
                         className="w-full h-12 rounded-xl border border-white/15 bg-white/10 text-center text-xl font-black text-white outline-none transition-all focus:border-[#5ac4d7]/70 focus:bg-white/15 focus:ring-2 focus:ring-[#5ac4d7]/20"
                       />

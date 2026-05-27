@@ -6,29 +6,35 @@ import { refreshToken } from '@/services/authService';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const setHydrated = useAuthStore((s) => s.setHydrated);
-  const setAuth = useAuthStore((s) => s.setAuth);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
 
-  const hasHydrated = useRef(false);
+  // Component-level ref to prevent duplicate concurrent initializations
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    if (hasHydrated.current) return;
-    hasHydrated.current = true;
+    // Guard against duplicate execution or if already hydrated
+    if (isHydrated || isInitialized.current) {
+      return;
+    }
+    isInitialized.current = true;
 
     const initAuth = async () => {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Auth hydration timeout')), 8000)
+      );
+
       try {
-        // Call /refresh — this rotates the cookie, returns a new access token + user details,
-        // and updates the Zustand store automatically.
-        await refreshToken();
+        // Run refresh token request with a strict 8-second safety timeout around refreshToken() only
+        await Promise.race([refreshToken(), timeoutPromise]);
       } catch (error: any) {
-        // Only clear auth on explicit 401/403 (invalid/expired refresh token).
-        // Network errors (5xx, timeout) should NOT log the user out.
+        // Handle explicit 401/403 credentials rejection safely
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
           clearAuth();
         }
       } finally {
-        // Mark hydration complete — navbar now shows the correct state.
+        // ALWAYS mark hydration complete via finally to guarantee the UI never locks
         setHydrated();
       }
     };
@@ -39,3 +45,4 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   return <>{children}</>;
 }
+

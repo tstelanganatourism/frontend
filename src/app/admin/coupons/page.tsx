@@ -162,7 +162,10 @@ export default function AdminCouponsPage() {
                         </div>
                         <div>
                           <h4 className="font-black text-slate-900 uppercase tracking-wider">{coupon.code}</h4>
-                          <p className="text-[10px] text-slate-400 mt-0.5 font-bold">Min booking: ₹{Number(coupon.min_booking_amount || 0).toLocaleString('en-IN')}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 font-bold">
+                            Min booking: ₹{Number(coupon.min_booking_amount || 0).toLocaleString('en-IN')}
+                            {coupon.min_tickets ? ` | Min pax: ${coupon.min_tickets}` : ''}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -237,6 +240,7 @@ export default function AdminCouponsPage() {
                                 discount_value: Number(coupon.discount_value),
                                 min_booking_amount: coupon.min_booking_amount ? Number(coupon.min_booking_amount) : null,
                                 max_discount_amount: coupon.max_discount_amount ? Number(coupon.max_discount_amount) : null,
+                                min_tickets: coupon.min_tickets ? Number(coupon.min_tickets) : null,
                                 usage_limit: coupon.usage_limit ? Number(coupon.usage_limit) : null,
                                 applicable_package_ids: coupon.applicable_package_ids || [],
                                 applicable_room_ids: coupon.applicable_room_ids || [],

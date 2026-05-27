@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { apiFetch } from '@/lib/api';
 import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperience';
+import CouponPopup from '@/components/ui/CouponPopup';
 
 // ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
 export const revalidate = 60;
@@ -36,7 +37,7 @@ type RoomDetail = {
 
 const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/rooms/${slug}`, { next: { revalidate: 60, tags: ['stays', `stay:${slug}`] } });
+    const res = await apiFetch(`/api/v1/rooms/${slug}`, { next: { revalidate: 30, tags: ['stays', `stay:${slug}`] } });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -48,7 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const room = await fetchRoomDetail(slug);
   if (!room) return { title: 'Stay Not Found' };
-  const description = room.meta_description || room.description?.slice(0, 160) || `${room.lodge_name} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
+  const description = room.meta_description || room.description?.replace(/<[^>]+>/g, '').slice(0, 160) || `${room.lodge_name} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
 
   return {
     title: room.meta_title || `${room.lodge_name} | Premium Riverside Stay`,
@@ -77,16 +78,53 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
   const heroImage = room.cover_image_url || room.gallery.find((image) => image.is_cover)?.image_url || room.gallery[0]?.image_url;
   const price = Number(room.starting_price || room.variants[0]?.weekday_price || 0);
   const canonical = room.canonical_url || `/stays/${room.slug}`;
+
+  // Ensure all JSON-LD URLs are absolute — schema.org mandates fully-qualified URLs.
+  const SITE_ORIGIN = 'https://telanganaboattourism.com';
+  const abs = (url?: string | null) =>
+    url ? (url.startsWith('http') ? url : `${SITE_ORIGIN}${url}`) : undefined;
+
+  const absoluteCanonical = abs(canonical)!;
+  const absoluteHeroImage = abs(heroImage);
+
   const jsonLd = [
     {
       '@context': 'https://schema.org',
       '@type': 'Hotel',
       name: room.lodge_name,
       description: room.description,
-      image: heroImage,
-      address: { '@type': 'PostalAddress', streetAddress: room.address, addressLocality: 'Bhadrachalam', addressRegion: 'Telangana', addressCountry: 'IN' },
-      amenityFeature: room.facilities.map((facility) => ({ '@type': 'LocationFeatureSpecification', name: facility, value: true })),
-      makesOffer: { '@type': 'Offer', price, priceCurrency: 'INR', url: canonical },
+      image: absoluteHeroImage,
+      url: absoluteCanonical,
+      // priceRange is a recommended property that helps Google display pricing in rich results.
+      priceRange: price > 0 ? `₹${price}+` : undefined,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: room.address,
+        addressLocality: 'Bhadrachalam',
+        addressRegion: 'Telangana',
+        addressCountry: 'IN',
+      },
+      amenityFeature: room.facilities.map((facility) => ({
+        '@type': 'LocationFeatureSpecification',
+        name: facility,
+        value: true,
+      })),
+      makesOffer: {
+        '@type': 'Offer',
+        price,
+        priceCurrency: 'INR',
+        url: absoluteCanonical,
+      },
+    },
+    // BreadcrumbList was missing entirely — required for rich breadcrumb display in SERPs.
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+        { '@type': 'ListItem', position: 2, name: 'Stays', item: `${SITE_ORIGIN}/stays` },
+        { '@type': 'ListItem', position: 3, name: room.lodge_name, item: absoluteCanonical },
+      ],
     },
   ];
 
@@ -94,6 +132,7 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <RoomDetailExperience room={room} />
+      <CouponPopup targetType="ROOM" targetId={room.id} />
     </>
   );
 }

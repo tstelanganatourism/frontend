@@ -5,31 +5,41 @@ import Image from 'next/image';
 import { ImageIcon, X, ZoomIn, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const GALLERY_IMAGES = [
-  // User provided new images
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915621/download_pbhj2g.jpg', title: 'Breathtaking Godavari Horizon' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915618/download_p2otqu.jpg', title: 'Serene Sunset at Bhadrachalam' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915616/download_ethlqv.jpg', title: 'Morning Boat Expedition' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915614/download_cwmdx5.jpg', title: 'Traditional Temple Architecture' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915602/download_vwq2qz.jpg', title: 'Majestic Papikondalu Hills' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915596/download_hwvdag.jpg', title: 'Luxury River Cruise' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915592/download_nli1hu.jpg', title: 'Lush Green Riverside' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915586/download_r2yxu1.jpg', title: 'Calm Godavari Waters' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915577/download_sba73y.jpg', title: 'Nature\'s Riverside Escape' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915477/455c0ca2-d017-4399-bf8d-b7abbefd4d6b.png', title: 'Bhadrachalam Ghat View' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915516/download_tkimtx.jpg', title: 'Godavari River Bank' },
+  // Newly uploaded Papikondalu and Maredumilli photos
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431995/papikondalu-tour-packages-ap-15_adycoe.jpg", title: "Papikondalu Tour Package" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431993/papikondalu-tour-packages-ap-14_ipdsvc.jpg", title: "Papikondalu Adventure" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431964/Papikondalu_1_Day_Tour_65a1_uw2490.jpg", title: "Papikondalu 1 Day Tour" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431961/Papikondalu_1_Day_Tour_5cc6_eet9fd.jpg", title: "Papikondalu River View" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431956/papikondalu-tour-packages-ap-7_cfwphr.jpg", title: "Godavari Riverside" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431952/papikondalu-tour-packages-ap-2_s9wrav.jpg", title: "Scenic Papikondalu" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431946/papikondalu-tour-packages-ap-11_h1s0y9.jpg", title: "Papikondalu Landscape" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431943/papikondalu-tour-packages-ap-1_hje1jh.jpg", title: "Boat Tour Experience" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431938/papikondalu-5_f8jdvq.png", title: "Papikondalu Cruise" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431929/papikondalu-4_xjvjro.png", title: "Papikondalu Beauty" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431926/papikondalu-3_jg6thw.png", title: "Godavari Waters" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431922/papikondalu-sunset_bmvm1e.jpg", title: "Papikondalu Sunset" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431919/papikondalu-1_wvjks3.png", title: "Papikondalu Nature" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431906/maredumilli-2_zjweff.jpg", title: "Maredumilli Forest" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431903/maredumilli-1_lkxuot.jpg", title: "Maredumilli Nature Camp" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431900/maredumilli-5_tdeltk.jpg", title: "Maredumilli Waterfall" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431897/maredumilli-4_kptvk6.jpg", title: "Maredumilli Jungle Safari" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431895/maredumilli-6_zst608.jpg", title: "Maredumilli Streams" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431893/maredumilli-8_hvwiun.jpg", title: "Maredumilli Greenery" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431890/maredumilli-7_zm0kzz.jpg", title: "Maredumilli Resort View" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431887/maredumilli-11_zluh4b.jpg", title: "Maredumilli Eco Tourism" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431884/maredumilli-10_ctlppk.jpg", title: "Maredumilli Trees" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431881/maredumilli-14_urkstf.jpg", title: "Maredumilli Scenic Spot" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431879/maredumilli-9_crcjml.jpg", title: "Maredumilli Wilderness" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431877/maredumilli-12_isygta.jpg", title: "Maredumilli Viewpoint" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431874/maredumilli-15_dg5pjn.jpg", title: "Maredumilli Exploration" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431872/maredumilli-13_mdqgmv.jpg", title: "Maredumilli Deep Woods" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779431871/maredumilli-16_sgs35x.jpg", title: "Maredumilli Photography" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779391908/ts_tours/eudxii55l3uutjif2jgn.png", title: "TS Tours Moment" },
+  { url: "https://res.cloudinary.com/dpdab3e97/image/upload/v1779391905/ts_tours/dzlmnm6zmhqmnveornyp.png", title: "TS Tours Memory" },
 
-  // Trip/Slider Images
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912157/slider1_p9iape.jpg', title: 'Golden Morning Cruise' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg', title: 'Cinematic Mountain Vista' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg', title: 'River Sunset Glow' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912248/slider2_souyzb.jpg', title: 'Misty River Trail' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912273/slider3_bx3qsu.jpg', title: 'Endless Godavari Horizon' },
-
-  // Package Images
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912633/telpkg11_jlak8x.jpg', title: 'Cultural Tour Experience' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912635/telpkg21_qgjrl1.jpg', title: 'Weekend Adventure Trip' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912638/telpkg31_l5z0jc.jpg', title: 'Premium Luxury Boat' },
-  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912641/telpkg41_mblbra.jpg', title: 'Deep Forest Expedition' },
+  // Keep a few legacy hero images
+  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432996/5bbee6a1-5edf-46c0-92b5-00b11612644b.png', title: 'Breathtaking Godavari Horizon' },
+  { url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432924/papikondalu-tour-packages-ap-8_w5qssm.jpg', title: 'River Sunset Glow' }
 ];
 
 export default function GalleryPage() {
@@ -74,7 +84,7 @@ export default function GalleryPage() {
       {/* Premium Hero Header */}
       <div className="relative h-[45vh] min-h-[320px] w-full flex items-center justify-center overflow-hidden">
         <Image
-          src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg"
+          src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779433086/50a543e0-c479-4770-aeff-c6148fc985cb.png"
           alt="Gallery Hero"
           fill
           className="object-cover scale-105"

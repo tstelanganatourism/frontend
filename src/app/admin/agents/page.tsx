@@ -198,8 +198,17 @@ export default function AdminAgentsPage() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700">
-                      <Percent className="h-3 w-3" />
-                      {parseFloat(agent.commission_percentage || 0).toFixed(1)}%
+                      {agent.commission_type === 'FIXED_AMOUNT' ? (
+                        <>
+                          <span>₹</span>
+                          {parseFloat(agent.commission_fixed_amount || 0).toLocaleString('en-IN')}
+                        </>
+                      ) : (
+                        <>
+                          <Percent className="h-3 w-3" />
+                          {parseFloat(agent.commission_percentage || 0).toFixed(1)}%
+                        </>
+                      )}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">

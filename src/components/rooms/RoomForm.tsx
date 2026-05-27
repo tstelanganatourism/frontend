@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Save, 
-  ArrowLeft, 
-  Info, 
-  Globe, 
-  Plus, 
+import {
+  Save,
+  ArrowLeft,
+  Info,
+  Globe,
+  Plus,
   Trash2,
   ListPlus,
   ArrowUp,
@@ -35,11 +35,11 @@ interface CustomSelectProps {
   paddingClass?: string;
 }
 
-export function CustomSelect({ 
-  label, 
-  labelClassName = "block text-[10px] font-bold text-slate-400 uppercase mb-1", 
-  value, 
-  options, 
+export function CustomSelect({
+  label,
+  labelClassName = "block text-[10px] font-bold text-slate-400 uppercase mb-1",
+  value,
+  options,
   onChange,
   bgClass = "bg-white",
   paddingClass = "px-3.5 py-2.5"
@@ -71,11 +71,10 @@ export function CustomSelect({
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-black cursor-pointer transition-all ${
-                  opt.value === value
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-black cursor-pointer transition-all ${opt.value === value
                     ? 'bg-[#5ac4d7]/10 text-[#0f3d56]'
                     : 'text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 {opt.label}
               </button>
@@ -107,16 +106,30 @@ const POLICY_CATEGORIES = [
   { value: 'CANCELLATION', label: 'Cancellation & Refund' },
   { value: 'REFUND', label: 'Security Deposit & Refund' },
   { value: 'CHILD_POLICY', label: 'Child & Extra Bed Policy' },
-  { value: 'CHECK_IN_OUT', label: 'Check-in/Check-out Timing' },
+  { value: 'CHECK_IN_OUT', label: 'Check-in/Check-out Timing & Rules' },
   { value: 'PETS', label: 'Pets Policy' },
   { value: 'SMOKING', label: 'Smoking / Alcohol Policy' },
-  { value: 'OTHER', label: 'General / House Rules' },
+  { value: 'STAY_RULES', label: 'Stay Rules' },
+  { value: 'OTHER', label: 'General / House Rules' }
 ];
+
+const timeToInputFormat = (timeStr: string) => {
+  if (!timeStr) return '';
+  return timeStr.slice(0, 5); // Take "HH:MM" from "HH:MM:SS"
+};
+
+const handleTimeInputChange = (val: string, setter: (v: string) => void) => {
+  if (!val) {
+    setter('00:00:00');
+    return;
+  }
+  setter(val + ':00'); // Add seconds for backend compatibility
+};
 
 export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('basic');
-  
+
   // Basic Fields
   const [lodgeName, setLodgeName] = useState('');
   const [slug, setSlug] = useState('');
@@ -178,10 +191,53 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
     }
   }, [initialData]);
 
+  // Dynamic SEO Auto-Generation when creating a new stay
+  const lastGeneratedMetaTitleRef = useRef('');
+  const lastGeneratedMetaDescRef = useRef('');
+  const lastGeneratedCanonicalRef = useRef('');
+  const lastGeneratedOgImgRef = useRef('');
+
+  useEffect(() => {
+    if (!initialData) {
+      // 1. Auto-generate Meta Title
+      const expectedTitle = lodgeName.trim() ? `${lodgeName.trim()} | Premium Stay Booking` : '';
+      if (!metaTitle || metaTitle === lastGeneratedMetaTitleRef.current) {
+        setMetaTitle(expectedTitle);
+        lastGeneratedMetaTitleRef.current = expectedTitle;
+      }
+
+      // 2. Auto-generate Meta Description
+      const cleanAddress = address.trim() ? ` at ${address.trim()}` : '';
+      const expectedDesc = lodgeName.trim()
+        ? `Book premium rooms and luxury cottages at ${lodgeName.trim()}${cleanAddress}. Enjoy premium facilities, modern amenities, and local dining at best rates.`
+        : '';
+      if (!metaDescription || metaDescription === lastGeneratedMetaDescRef.current) {
+        setMetaDescription(expectedDesc);
+        lastGeneratedMetaDescRef.current = expectedDesc;
+      }
+
+      // 3. Auto-generate Canonical URL
+      const computedSlug = slug.trim() || lodgeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const expectedCanonical = computedSlug
+        ? `https://www.tsboattourism.org/stays/${computedSlug}`
+        : '';
+      if (!canonicalUrl || canonicalUrl === lastGeneratedCanonicalRef.current) {
+        setCanonicalUrl(expectedCanonical);
+        lastGeneratedCanonicalRef.current = expectedCanonical;
+      }
+
+      // 4. Auto-generate OG Image from Cover Image
+      if (!ogImageUrl || ogImageUrl === lastGeneratedOgImgRef.current) {
+        setOgImageUrl(coverImageUrl);
+        lastGeneratedOgImgRef.current = coverImageUrl;
+      }
+    }
+  }, [lodgeName, slug, address, coverImageUrl, initialData, metaTitle, metaDescription, canonicalUrl, ogImageUrl]);
+
   const toggleFacility = (facility: string) => {
-    setFacilities(prev => 
-      prev.includes(facility) 
-        ? prev.filter(f => f !== facility) 
+    setFacilities(prev =>
+      prev.includes(facility)
+        ? prev.filter(f => f !== facility)
         : [...prev, facility]
     );
   };
@@ -191,18 +247,18 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
     const newList = [...list];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newList.length) return;
-    
+
     // Swap items
     const temp = newList[index];
     newList[index] = newList[targetIndex];
     newList[targetIndex] = temp;
-    
+
     // Rescale sort_order fields
     const rescaledList = newList.map((item, idx) => ({
       ...item,
       sort_order: idx + 1
     }));
-    
+
     setList(rescaledList);
   };
 
@@ -210,7 +266,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
   const addVariant = () => {
     setVariants(prev => [
       ...prev,
-      { variant_name: '', weekday_price: 1500, weekend_price: 2000, capacity_per_room: 2, is_active: true }
+      { variant_name: '', weekday_price: 1500, weekend_price: 2000, capacity_per_room: 2, total_rooms: 5, is_active: true }
     ]);
   };
   const updateVariant = (index: number, key: string, value: any) => {
@@ -309,7 +365,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
       toast.error('Lodge name is required');
       return;
     }
-    
+
     const payload = {
       lodge_name: lodgeName,
       slug: slug.trim() || undefined,
@@ -330,13 +386,14 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
       meta_description: metaDescription || null,
       og_image_url: ogImageUrl || null,
       canonical_url: canonicalUrl || null,
-      
+
       // Relations
       variants: variants.map(v => ({
         ...v,
         weekday_price: Number(v.weekday_price),
         weekend_price: Number(v.weekend_price),
-        capacity_per_room: Number(v.capacity_per_room)
+        capacity_per_room: Number(v.capacity_per_room),
+          total_rooms: Number(v.total_rooms) || 0
       })),
       gallery,
       highlights,
@@ -373,11 +430,11 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
 
   return (
     <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-8">
-      
+
       {/* Action Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             type="button"
             onClick={() => router.push('/admin/rooms')}
             className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-55 text-slate-600 cursor-pointer transition-all shadow-sm"
@@ -391,7 +448,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
             <p className="text-sm text-slate-500 mt-1">Configure property features, room capacities, variants, and booking rules.</p>
           </div>
         </div>
-        <button 
+        <button
           type="submit"
           disabled={isLoading}
           className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg cursor-pointer transition-all hover:-translate-y-1 hover:bg-slate-800 disabled:opacity-50"
@@ -414,11 +471,10 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 border-b-2 px-6 py-4 text-xs font-black uppercase tracking-wider cursor-pointer transition-all -mb-[2px] whitespace-nowrap ${
-                activeTab === tab.id 
-                  ? 'border-[#5ac4d7] text-[#5ac4d7]' 
+              className={`flex items-center gap-2 border-b-2 px-6 py-4 text-xs font-black uppercase tracking-wider cursor-pointer transition-all -mb-[2px] whitespace-nowrap ${activeTab === tab.id
+                  ? 'border-[#5ac4d7] text-[#5ac4d7]'
                   : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
+                }`}
             >
               <Icon className="h-4 w-4" />
               {tab.label}
@@ -429,16 +485,16 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
 
       {/* Active Tab Panel */}
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        
+
         {/* Tab 1: Basic Info */}
         {activeTab === 'basic' && (
           <div className="space-y-6">
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Lodge Name *</label>
-                <input 
-                  type="text" 
-                  value={lodgeName} 
+                <input
+                  type="text"
+                  value={lodgeName}
                   onChange={(e) => setLodgeName(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                   placeholder="e.g. River Edge Holiday Resort"
@@ -447,9 +503,9 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Link Name / Page Address (Auto-created if left blank)</label>
-                <input 
-                  type="text" 
-                  value={slug} 
+                <input
+                  type="text"
+                  value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                   placeholder="e.g. river-edge-lodge"
@@ -457,9 +513,9 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Total Rooms Capacity</label>
-                <input 
-                  type="number" 
-                  value={totalRooms} 
+                <input
+                  type="number"
+                  value={totalRooms}
                   onChange={(e) => setTotalRooms(Number(e.target.value))}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                   min={1}
@@ -482,29 +538,27 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Check-in Slot Start</label>
-                <input 
-                  type="text" 
-                  value={slotStart} 
-                  onChange={(e) => setSlotStart(e.target.value)}
+                <input
+                  type="time"
+                  value={timeToInputFormat(slotStart)}
+                  onChange={(e) => handleTimeInputChange(e.target.value, setSlotStart)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all font-semibold text-slate-700"
-                  placeholder="12:00:00"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Check-out Slot End</label>
-                <input 
-                  type="text" 
-                  value={slotEnd} 
-                  onChange={(e) => setSlotEnd(e.target.value)}
+                <input
+                  type="time"
+                  value={timeToInputFormat(slotEnd)}
+                  onChange={(e) => handleTimeInputChange(e.target.value, setSlotEnd)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all font-semibold text-slate-700"
-                  placeholder="11:00:00"
                 />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Physical Address</label>
-                <input 
-                  type="text" 
-                  value={address} 
+                <input
+                  type="text"
+                  value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all text-slate-700 font-semibold"
                   placeholder="Enter full physical address..."
@@ -512,9 +566,9 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Google Maps Embed Link / Share URL</label>
-                <input 
-                  type="text" 
-                  value={mapUrl} 
+                <input
+                  type="text"
+                  value={mapUrl}
                   onChange={(e) => setMapUrl(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all text-slate-700 font-semibold"
                   placeholder="Paste Google Maps embed code iframe, share link, or coordinates URL..."
@@ -567,31 +621,29 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Start Time (HH:MM:SS) *</label>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Start Time *</label>
                           <input
-                            type="text"
-                            value={slot.slot_start}
+                            type="time"
+                            value={timeToInputFormat(slot.slot_start)}
                             onChange={(e) => {
                               const copy = [...bookingSlots];
-                              copy[index].slot_start = e.target.value;
+                              copy[index].slot_start = e.target.value ? (e.target.value + ':00') : '12:00:00';
                               setBookingSlots(copy);
                             }}
-                            placeholder="12:00:00"
                             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-[#5ac4d7] text-slate-700"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">End Time (HH:MM:SS) *</label>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">End Time *</label>
                           <input
-                            type="text"
-                            value={slot.slot_end}
+                            type="time"
+                            value={timeToInputFormat(slot.slot_end)}
                             onChange={(e) => {
                               const copy = [...bookingSlots];
-                              copy[index].slot_end = e.target.value;
+                              copy[index].slot_end = e.target.value ? (e.target.value + ':00') : '11:00:00';
                               setBookingSlots(copy);
                             }}
-                            placeholder="11:00:00"
                             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-[#5ac4d7] text-slate-700"
                             required
                           />
@@ -624,11 +676,10 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
                       key={facility}
                       type="button"
                       onClick={() => toggleFacility(facility)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                        selected 
-                          ? 'bg-[#5ac4d7]/10 text-slate-900 border-[#5ac4d7]' 
+                      className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${selected
+                          ? 'bg-[#5ac4d7]/10 text-slate-900 border-[#5ac4d7]'
                           : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                      }`}
+                        }`}
                     >
                       {facility}
                     </button>
@@ -637,13 +688,13 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
               </div>
             </div>
 
-            <ImageUpload 
-              label="Cover Image" 
-              value={coverImageUrl} 
-              onChange={setCoverImageUrl} 
+            <ImageUpload
+              label="Cover Image"
+              value={coverImageUrl}
+              onChange={setCoverImageUrl}
             />
 
-            <RichTextEditor 
+            <RichTextEditor
               label="Lodge Description"
               value={description}
               onChange={setDescription}
@@ -652,8 +703,8 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
             {/* Switches */}
             <div className="flex flex-wrap gap-8 pt-4 border-t border-slate-100">
               <label className="flex items-center gap-3 cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
                   className="h-4.5 w-4.5 rounded border-slate-300 text-[#5ac4d7] focus:ring-[#5ac4d7]"
@@ -661,8 +712,8 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
                 <span className="text-sm font-semibold text-slate-700">Feature this property on homepage</span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
                   className="h-4.5 w-4.5 rounded border-slate-300 text-[#5ac4d7] focus:ring-[#5ac4d7]"
@@ -708,7 +759,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
                         <Trash2 className="h-3.5 w-3.5" /> Delete Variant
                       </button>
                     </div>
-                    
+
                     <div className="grid gap-4 sm:grid-cols-4">
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Variant Name *</label>
@@ -719,6 +770,17 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
                           placeholder="e.g. Luxury AC Suite"
                           className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
                           required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rooms of this type</label>
+                        <input
+                          type="number"
+                          value={variant.total_rooms ?? 0}
+                          onChange={(e) => updateVariant(index, 'total_rooms', e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
+                          min={0}
+                          placeholder="e.g. 5"
                         />
                       </div>
                       <div>
@@ -837,7 +899,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Image Alt Text (SEO)</label>
                       <input
                         type="text"
-                        value={img.alt_text}
+                        value={img.alt_text || ''}
                         onChange={(e) => updateGalleryImage(index, 'alt_text', e.target.value)}
                         placeholder="e.g. Deluxe Room bed and view"
                         className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
@@ -939,7 +1001,7 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
         {/* Tab 5: FAQs & Policies */}
         {activeTab === 'faqs' && (
           <div className="space-y-8">
-            
+
             {/* FAQs Block */}
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -1117,9 +1179,9 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
           <div className="space-y-6">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Google Search Title (What shows on Google Search)</label>
-              <input 
-                type="text" 
-                value={metaTitle} 
+              <input
+                type="text"
+                value={metaTitle}
                 onChange={(e) => setMetaTitle(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                 placeholder="e.g. Best Luxury River Edge Lodge | Bhadrachalam Tours"
@@ -1127,24 +1189,24 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Google Search Description (A short summary visible on Google search results)</label>
-              <textarea 
-                value={metaDescription} 
+              <textarea
+                value={metaDescription}
                 onChange={(e) => setMetaDescription(e.target.value)}
                 rows={4}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                 placeholder="e.g. Book luxury ac rooms at River Edge Holiday Resort. Enjoy standard facilities, free wifi, geyser, and delicious local food at best prices."
               />
             </div>
-            <ImageUpload 
-              label="WhatsApp & Social Media Share Image (Image that shows when you share the link)" 
-              value={ogImageUrl} 
-              onChange={setOgImageUrl} 
+            <ImageUpload
+              label="WhatsApp & Social Media Share Image (Image that shows when you share the link)"
+              value={ogImageUrl}
+              onChange={setOgImageUrl}
             />
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Preferred Website Page Link (Leave blank for default page link)</label>
-              <input 
-                type="url" 
-                value={canonicalUrl} 
+              <input
+                type="url"
+                value={canonicalUrl}
                 onChange={(e) => setCanonicalUrl(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                 placeholder="https://tstours.com/rooms/river-edge-lodge"

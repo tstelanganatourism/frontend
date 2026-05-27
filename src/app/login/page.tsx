@@ -81,7 +81,7 @@ function LoginContent() {
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
             <img 
-              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778914224/logo1_shpjk5.jpg" 
+              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
               alt="Papikondalu Tourism Logo" 
               className="h-full w-full object-contain rounded-xl"
             />

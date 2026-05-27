@@ -11,36 +11,47 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 
 type RoomData = {
-  items: any[];
+  items: RoomItem[];
   total: number;
   size: number;
 };
 
+type RoomItem = {
+  id: number;
+  slug: string;
+  lodge_name: string;
+  cover_image_url: string | null;
+  is_featured: boolean;
+  starting_price: number | null | string;
+  starting_weekend_price?: number | null | string;
+  address: string | null;
+  facilities: string[];
+};
+
 export default function RoomsList({ 
   data, 
-  query,
-  searchParams
 }: { 
   data?: RoomData; 
   query?: string; 
-  searchParams?: any;
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const [liveData, setLiveData] = React.useState<RoomData | undefined>(undefined);
   const [searchVal, setSearchVal] = React.useState('');
 
+  // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
+  // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
+  // route to remain perfectly static. Instead, we use a simple window location check in useEffect.
   React.useEffect(() => {
     const fetchLive = async () => {
       try {
-        const queryParams = new URLSearchParams();
-        if (searchParams) {
-          Object.entries(searchParams).forEach(([key, val]) => {
-            if (Array.isArray(val)) {
-              val.forEach(v => queryParams.append(key, v));
-            } else if (val) {
-              queryParams.set(key, val as string);
-            }
-          });
+        const queryParams = new URLSearchParams(window.location.search);
+        
+        // If there are no query parameters, we can just use the server-provided SSG data 
+        // without an extra network call.
+        if (queryParams.toString() === '') {
+          return;
         }
+
         const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
         const res = await fetch(`/api/v1/rooms${queryStr}`);
         if (res.ok) {
@@ -53,12 +64,12 @@ export default function RoomsList({
     };
     
     fetchLive();
-  }, [searchParams]);
+  }, []);
 
   const activeData = liveData !== undefined ? liveData : data;
 
   // Extract active items and filter locally
-  const filteredItems = activeData ? activeData.items.filter((room: any) => 
+  const filteredItems = activeData ? activeData.items.filter((room) => 
     searchVal === '' || 
     (room.lodge_name && room.lodge_name.toLowerCase().includes(searchVal.toLowerCase()))
   ) : [];
@@ -66,30 +77,41 @@ export default function RoomsList({
   return (
     <div className="min-h-screen bg-[#f4f6ef]">
       {/* Premium Hero Banner */}
-      <div className="relative overflow-hidden bg-[var(--color-brand-river)] pb-14 pt-22 sm:pb-16 sm:pt-28">
+      <div className="relative min-h-[23rem] overflow-hidden bg-[#0c2b24] pb-12 pt-24 sm:min-h-[28rem] sm:pb-16 sm:pt-32">
         <Image
-          src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912248/slider2_souyzb.jpg"
-          alt="Luxury Stays Background"
+          src="/images/stays-banner-2026.png"
+          alt="Riverside stays and accommodation banner"
           fill
-          className="object-cover opacity-45"
+          sizes="100vw"
+          className="object-cover"
+          style={{ objectPosition: 'center 56%' }}
           priority
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,32,47,0.56),rgba(7,32,47,0.88)),linear-gradient(90deg,rgba(18,54,39,0.92),rgba(18,54,39,0.32))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,24,20,0.92)_0%,rgba(5,24,20,0.72)_42%,rgba(5,24,20,0.18)_72%,rgba(5,24,20,0.04)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,24,20,0.14)_0%,rgba(5,24,20,0.06)_42%,rgba(5,24,20,0.58)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#f4f6ef] to-transparent" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
-            <div className="max-w-2xl text-white">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
-                <Sparkles className="h-3 w-3 text-[var(--color-brand-sand)] animate-spin-slow" />
+          <div className="flex min-h-[15rem] flex-col justify-end gap-8 md:min-h-[18rem] md:flex-row md:items-end md:justify-between">
+            <div className="max-w-3xl text-white">
+              <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/45 bg-slate-950/34 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_10px_28px_rgba(0,0,0,0.2)] backdrop-blur-md sm:px-4">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" />
                 Verified Riverside Lodging
               </div>
-              <h1 className="mb-6 flex items-center gap-4 text-4xl font-black tracking-tight text-white md:text-6xl">
-                <BedDouble className="h-10 w-10 text-[var(--color-brand-teal)] shrink-0" />
-                Riverside Stays
+              <h1 className="mb-4 flex items-start gap-3 text-[2.8rem] font-black leading-[0.95] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.38)] sm:gap-4 sm:text-6xl lg:text-7xl">
+                <BedDouble className="mt-1 h-9 w-9 shrink-0 text-amber-300 sm:h-11 sm:w-11" strokeWidth={1.8} />
+                <span>
+                  <span className="block text-amber-300">Riverside</span>
+                  <span className="block">Stays</span>
+                </span>
               </h1>
-              <p className="text-lg leading-relaxed text-white/70">
-                Book premium bamboo huts, Godavari forest resorts, and comfortable pilgrim cottages in Bhadrachalam and Kolluru with verified booking support.
+              <div className="mb-4 flex max-w-md items-center gap-3 text-amber-300/90">
+                <span className="h-px flex-1 bg-current/70" />
+                <span className="text-xs font-black uppercase tracking-[0.24em]">Bamboo Huts & Verified Rooms</span>
+                <span className="h-px flex-1 bg-current/70" />
+              </div>
+              <p className="max-w-2xl text-base font-semibold leading-7 text-white/86 sm:text-lg">
+                Book cozy riverside cottages, bamboo-style stays, and comfortable pilgrim rooms around Bhadrachalam and Kolluru with verified booking support.
               </p>
             </div>
 

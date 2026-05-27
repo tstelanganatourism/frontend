@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense, type ClipboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -73,18 +73,31 @@ function AdminLoginContent() {
     }
   };
 
+  const applyOtpDigits = (index: number, value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 6);
+    if (!digits) return;
+
+    const startIndex = digits.length === 6 ? 0 : index;
+    const newOtp = [...otp];
+    for (let i = 0; i < digits.length && startIndex + i < 6; i++) {
+      newOtp[startIndex + i] = digits[i];
+    }
+
+    setOtp(newOtp);
+    inputRefs.current[Math.min(startIndex + digits.length, 5)]?.focus();
+  };
+
+  const handleOtpPaste = (index: number, e: ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted.replace(/\D/g, '')) {
+      e.preventDefault();
+      applyOtpDigits(index, pasted);
+    }
+  };
+
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) {
-      // Handle paste
-      const pasted = value.replace(/\D/g, '').slice(0, 6);
-      const newOtp = [...otp];
-      for (let i = 0; i < pasted.length; i++) {
-        if (index + i < 6) newOtp[index + i] = pasted[i];
-      }
-      setOtp(newOtp);
-      // Focus next empty or last
-      const nextIndex = Math.min(index + pasted.length, 5);
-      inputRefs.current[nextIndex]?.focus();
+      applyOtpDigits(index, value);
       return;
     }
 
@@ -292,6 +305,7 @@ function AdminLoginContent() {
                         maxLength={6}
                         value={digit}
                         onChange={(e) => handleOtpChange(i, e.target.value)}
+                        onPaste={(e) => handleOtpPaste(i, e)}
                         onKeyDown={(e) => handleOtpKeyDown(i, e)}
                         className="h-14 w-12 rounded-2xl border border-white/10 bg-black/45 text-center text-2xl font-black text-white outline-none transition-all duration-300 focus:border-violet-400 focus:bg-black/60 focus:ring-4 focus:ring-violet-400/15 shadow-lg"
                       />

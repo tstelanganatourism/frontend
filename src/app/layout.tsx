@@ -8,12 +8,11 @@ import PromoBanner from "@/components/ui/PromoBanner";
 import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { Toaster } from 'sonner';
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
-import StickyConversionBar from '@/components/ui/StickyConversionBar';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://tsboattourism.org"),
+  metadataBase: new URL("https://www.tsboattourism.org"),
   title: {
     default: "Papikondalu Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
     template: "%s | Papikondalu Tourism"
@@ -25,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://tsboattourism.org",
+    url: "https://www.tsboattourism.org",
     title: "Papikondalu Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
     description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
     siteName: "Papikondalu Tourism",
@@ -62,7 +61,7 @@ export const viewport = {
   themeColor: '#5ac4d7',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -82,8 +81,8 @@ export default function RootLayout({
                 "@type": "TravelAgency",
                 "name": "Telangana Boat Tourism",
                 "alternateName": "Papikondalu Tourism",
-                "url": process.env.NEXT_PUBLIC_SITE_URL || "https://tsboattourism.org",
-                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://tsboattourism.org"}/logo.png`,
+                "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org",
+                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org"}/logo.png`,
                 "image": "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg",
                 "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 95420 69573",
@@ -144,7 +143,7 @@ export default function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "ContactPage",
-                "url": `${process.env.NEXT_PUBLIC_SITE_URL || "https://papikondalutourism.com"}/about`,
+                "url": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org"}/about`,
                 "mainEntity": {
                   "@type": "Organization",
                   "name": "Telangana Boat Tourism Support",
@@ -172,7 +171,6 @@ export default function RootLayout({
           </AuthProvider>
         </QueryProvider>
         <AnalyticsProvider />
-        <StickyConversionBar />
       </body>
     </html>
   );

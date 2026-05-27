@@ -14,15 +14,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { paths, tags, secret } = body as { paths?: string[]; tags?: string[]; secret?: string };
 
-    // In development mode, Next.js does not statically cache pages (it renders on-demand),
-    // and calling revalidatePath/revalidateTag forces full page recompilations that freeze the single-threaded dev server.
-    if (process.env.NODE_ENV === 'development') {
-      return NextResponse.json({ 
-        message: 'Skipped revalidation in development mode to prevent dev server freeze.',
-        paths,
-        tags
-      });
-    }
+    // Dev-mode skip removed for real-time consistency verification
 
     // Simple shared secret guard — prevents public abuse
     const expectedSecret = process.env.REVALIDATE_SECRET || 'ts-tourism-revalidate-2024';

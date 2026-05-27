@@ -5,9 +5,10 @@ import { apiClient } from '@/lib/api';
 import {
   Search, RefreshCw, ChevronLeft, ChevronRight,
   CheckCircle2, Clock, XCircle, AlertCircle, IndianRupee,
-  Loader2, Filter
+  Loader2, Filter, FileText, X as CloseIcon, Info
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CancellationRequest {
   id: number;
@@ -203,110 +204,156 @@ export default function AdminCancellationsPage() {
       </div>
 
       {/* Review Modal */}
-      {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Review Cancellation Request</h3>
-            
-            <div className="space-y-4 mb-6">
-              <div className="grid grid-cols-2 gap-4">
+      <AnimatePresence>
+        {selectedRequest && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedRequest(null)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 z-10 flex flex-col max-h-[90vh]"
+            >
+              {/* Modal Header */}
+              <div className="bg-slate-50/80 border-b border-slate-100 p-6 md:p-8 flex justify-between items-start shrink-0">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Booking ID</p>
-                  <p className="font-semibold text-slate-900">{selectedRequest.booking_public_id}</p>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-inset ring-indigo-600/20">
+                      Cancellation Request
+                    </span>
+                    <span className="font-mono text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1 rounded-lg tracking-wider">
+                      {selectedRequest.booking_public_id}
+                    </span>
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">Review Request</h3>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Customer</p>
-                  <p className="font-semibold text-slate-900">{selectedRequest.customer_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Amount Paid</p>
-                  <p className="font-semibold text-slate-900">{formatINR(selectedRequest.paid_amount)}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Travel Date</p>
-                  <p className="font-semibold text-slate-900">{formatDate(selectedRequest.travel_date)}</p>
-                </div>
+                <button
+                  onClick={() => setSelectedRequest(null)}
+                  className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600 cursor-pointer bg-slate-100/50"
+                >
+                  <CloseIcon className="h-5 w-5" />
+                </button>
               </div>
 
-              <div>
-                <p className="text-sm font-medium text-slate-500 mb-1">Reason for Cancellation</p>
-                <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-inset ring-slate-200">
-                  {selectedRequest.reason}
+              {/* Modal Body */}
+              <div className="p-6 md:p-8 space-y-8 overflow-y-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 bg-slate-50/50 rounded-2xl border border-slate-100 p-5">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Customer</p>
+                    <p className="text-sm font-bold text-slate-800 truncate">{selectedRequest.customer_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Amount Paid</p>
+                    <p className="text-sm font-bold text-slate-800">{formatINR(selectedRequest.paid_amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Travel Date</p>
+                    <p className="text-sm font-bold text-slate-800">{formatDate(selectedRequest.travel_date)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Requested At</p>
+                    <p className="text-sm font-bold text-slate-800">{formatDate(selectedRequest.requested_at)}</p>
+                  </div>
                 </div>
-              </div>
 
-              {selectedRequest.status === 'PENDING' && (
                 <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Admin Notes (Optional)</p>
-                  <textarea
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                    className="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                    rows={3}
-                    placeholder="Enter notes for this decision..."
-                  />
-                  <div className="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-800 flex gap-2">
-                    <AlertCircle className="h-5 w-5 shrink-0" />
-                    <p>
-                      Approving will apply a <strong>35% cancellation fee</strong> on the total amount. Refund processing is manual.
-                    </p>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-slate-400" /> Reason for Cancellation
+                  </h4>
+                  <div className="rounded-2xl bg-white p-5 text-sm text-slate-700 border border-slate-200 shadow-sm leading-relaxed">
+                    {selectedRequest.reason}
                   </div>
                 </div>
-              )}
 
-              {selectedRequest.status !== 'PENDING' && (
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                  <div>
-                    <p className="text-sm font-medium text-slate-500">Cancellation Fee</p>
-                    <p className="font-semibold text-slate-900">
-                      {selectedRequest.cancellation_fee !== null ? formatINR(selectedRequest.cancellation_fee) : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-500">Refund Amount</p>
-                    <p className="font-semibold text-slate-900">
-                      {selectedRequest.refund_amount !== null ? formatINR(selectedRequest.refund_amount) : '—'}
-                    </p>
-                  </div>
-                  {selectedRequest.admin_notes && (
-                    <div className="col-span-2">
-                      <p className="text-sm font-medium text-slate-500">Admin Notes</p>
-                      <p className="text-sm text-slate-700">{selectedRequest.admin_notes}</p>
+                {selectedRequest.status === 'PENDING' && (
+                  <div className="space-y-5">
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3">Admin Notes (Optional)</h4>
+                      <textarea
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm focus:border-[#0f3d56] focus:ring-2 focus:ring-[#0f3d56]/20 outline-none transition-all shadow-sm resize-none font-medium"
+                        rows={3}
+                        placeholder="Enter internal notes for this decision..."
+                      />
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-5 text-sm text-indigo-800 flex gap-4 items-start shadow-sm">
+                      <AlertCircle className="h-6 w-6 shrink-0 text-indigo-600 mt-0.5" />
+                      <div className="leading-relaxed">
+                        <p className="font-black text-indigo-900 mb-1 text-base">Cancellation Policy Applies</p>
+                        <p className="font-medium">Approving will automatically deduct a <span className="font-extrabold text-indigo-900 bg-indigo-100 px-1.5 py-0.5 rounded">35% cancellation fee</span> from the total amount. Refund processing to the customer is manual.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setSelectedRequest(null)}
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Close
-              </button>
-              {selectedRequest.status === 'PENDING' && (
-                <>
-                  <button
-                    disabled={isProcessing === selectedRequest.id}
-                    onClick={() => handleProcessRequest(selectedRequest.id, 'REJECTED')}
-                    className="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
-                  >
-                    {isProcessing === selectedRequest.id ? 'Processing...' : 'Reject'}
-                  </button>
-                  <button
-                    disabled={isProcessing === selectedRequest.id}
-                    onClick={() => handleProcessRequest(selectedRequest.id, 'APPROVED')}
-                    className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isProcessing === selectedRequest.id ? 'Processing...' : 'Approve & Deduct Fee'}
-                  </button>
-                </>
-              )}
-            </div>
+                {selectedRequest.status !== 'PENDING' && (
+                  <div className="pt-2">
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                      <Info className="h-4 w-4 text-slate-400" /> Resolution Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 bg-slate-50/50 rounded-2xl border border-slate-100 p-5">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Cancellation Fee Deducted</p>
+                        <p className="text-xl font-black text-red-600">
+                          {selectedRequest.cancellation_fee !== null ? formatINR(selectedRequest.cancellation_fee) : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Refund Amount Due</p>
+                        <p className="text-xl font-black text-emerald-600">
+                          {selectedRequest.refund_amount !== null ? formatINR(selectedRequest.refund_amount) : '—'}
+                        </p>
+                      </div>
+                      {selectedRequest.admin_notes && (
+                        <div className="col-span-2 pt-4 mt-4 border-t border-slate-200 border-dashed">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Admin Notes</p>
+                          <p className="text-sm text-slate-700 italic font-medium bg-white p-3 rounded-xl border border-slate-100">{selectedRequest.admin_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="border-t border-slate-100 p-6 md:px-8 md:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-b-[32px] shrink-0">
+                <button
+                  onClick={() => setSelectedRequest(null)}
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl text-xs font-black tracking-widest uppercase border-2 border-slate-200 text-slate-600 bg-white hover:bg-slate-100 hover:text-slate-900 transition-all shadow-sm active:scale-95"
+                >
+                  Close
+                </button>
+                {selectedRequest.status === 'PENDING' && (
+                  <div className="flex w-full sm:w-auto gap-3">
+                    <button
+                      disabled={isProcessing === selectedRequest.id}
+                      onClick={() => handleProcessRequest(selectedRequest.id, 'REJECTED')}
+                      className="flex-1 sm:flex-none inline-flex justify-center items-center px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider text-red-700 bg-red-50 border-2 border-red-100 hover:bg-red-100 hover:border-red-200 transition-all disabled:opacity-50 active:scale-95"
+                    >
+                      {isProcessing === selectedRequest.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject Request'}
+                    </button>
+                    <button
+                      disabled={isProcessing === selectedRequest.id}
+                      onClick={() => handleProcessRequest(selectedRequest.id, 'APPROVED')}
+                      className="flex-1 sm:flex-none inline-flex justify-center items-center px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 active:scale-95"
+                    >
+                      {isProcessing === selectedRequest.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {isProcessing === selectedRequest.id ? 'Processing...' : 'Approve & Deduct Fee'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

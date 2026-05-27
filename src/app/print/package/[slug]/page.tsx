@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 // ─── Company constants (fixed for every brochure) ──────────────────────────
 const CO = {
-  bannerUrl: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779382620/63766aa2-a4d6-46ce-8064-0e46fe66c59a.png',
+  bannerUrl: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779480316/27d6478a-0032-4cc3-a0e0-20eec56de773.png',
   addr1: 'D.no: 4-1-78/1 (Near SBI ATM),',
   addr2: 'Kalyana Mandapam Road, Opp SBI ATM,',
   addr3: 'Bhadrachalam, BHADRADRI KOTHAGUDEM Dist.,',

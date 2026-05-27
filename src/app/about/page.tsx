@@ -34,7 +34,7 @@ export default function AboutPage() {
       {/* Cinematic Hero Section */}
       <div className="relative h-[35vh] min-h-[500px] flex items-center justify-center overflow-hidden">
         <img
-          src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg"
+          src="https://res.cloudinary.com/dpdab3e97/image/upload/v1779431956/papikondalu-tour-packages-ap-7_cfwphr.jpg"
           alt="Papikondalu Landscape"
           className="absolute inset-0 w-full h-full object-cover scale-105"
           fetchPriority="high"
@@ -91,7 +91,7 @@ export default function AboutPage() {
               <div className="absolute -inset-4 bg-[var(--color-brand-sand)]/20 rounded-[3rem] -rotate-3 scale-95 group-hover:rotate-0 group-hover:scale-100 transition-transform duration-700" />
               <div className="relative overflow-hidden rounded-[2.5rem] shadow-2xl">
                 <img
-                  src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778915596/download_hwvdag.jpg"
+                  src="https://res.cloudinary.com/dpdab3e97/image/upload/v1779431943/papikondalu-tour-packages-ap-1_hje1jh.jpg"
                   alt="Our Boat in Godavari"
                   className="w-full h-auto object-cover transform transition-transform duration-1000 group-hover:scale-105"
                 />
@@ -354,7 +354,7 @@ export default function AboutPage() {
                 </dl>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <a href="tel:+919849848982" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-brand-teal)] px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#125866] shadow-sm">
+                  <a href="tel:+919542069573" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-brand-teal)] px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#125866] shadow-sm">
                     <Phone className="h-4 w-4" />
                     Call Now
                   </a>

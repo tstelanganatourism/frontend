@@ -28,6 +28,7 @@ export default function AdminCouponCreatePage() {
   const [discountValue, setDiscountValue] = useState('');
   const [minBookingAmount, setMinBookingAmount] = useState('');
   const [maxDiscountAmount, setMaxDiscountAmount] = useState('');
+  const [minTickets, setMinTickets] = useState('');
   const [usageLimit, setUsageLimit] = useState('');
   const [applicablePackageIds, setApplicablePackageIds] = useState<string[]>([]);
   const [applicableRoomIds, setApplicableRoomIds] = useState<string[]>([]);
@@ -60,6 +61,7 @@ export default function AdminCouponCreatePage() {
         discount_value: Number(discountValue),
         min_booking_amount: minBookingAmount ? Number(minBookingAmount) : null,
         max_discount_amount: discountType === 'PERCENTAGE' && maxDiscountAmount ? Number(maxDiscountAmount) : null,
+        min_tickets: minTickets ? Number(minTickets) : null,
         usage_limit: usageLimit ? Number(usageLimit) : null,
         applicable_package_ids: applicablePackageIds.map(Number),
         applicable_room_ids: applicableRoomIds.map(Number),
@@ -208,6 +210,18 @@ export default function AdminCouponCreatePage() {
                 min="0"
               />
               <p className="text-[10px] text-slate-400 mt-1.5 font-bold">Only triggers if booking total matches or exceeds this value.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Minimum Passengers/Tickets</label>
+              <input 
+                type="number" 
+                value={minTickets} 
+                onChange={(e) => setMinTickets(e.target.value)}
+                placeholder="5"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-55 px-5 py-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800"
+                min="1"
+              />
+              <p className="text-[10px] text-slate-400 mt-1.5 font-bold">Only triggers if the passenger count matches or exceeds this value.</p>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Total Limit (Usage Count Cap)</label>

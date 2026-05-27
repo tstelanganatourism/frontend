@@ -29,7 +29,7 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
 
   try {
     const query = params.toString();
-    const res = await apiFetch(`/api/v1/rooms${query ? `?${query}` : ''}`, { next: { revalidate: 60, tags: ['stays'] } });
+    const res = await apiFetch(`/api/v1/rooms${query ? `?${query}` : ''}`, { next: { revalidate: 30, tags: ['stays'] } });
     if (!res.ok) return { query, data: undefined };
     return { query, data: await res.json() };
   } catch {
@@ -37,12 +37,7 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
   }
 }
 
-export default async function StaysPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const { query, data } = await fetchInitialRooms(params);
-  return <RoomsList data={data} query={query} searchParams={params} />;
+export default async function StaysPage() {
+  const { query, data } = await fetchInitialRooms({});
+  return <RoomsList data={data} query={query} />;
 }

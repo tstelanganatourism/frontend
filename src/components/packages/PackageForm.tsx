@@ -170,6 +170,50 @@ export default function PackageForm({
     }
   }, [initialData]);
 
+  // Dynamic SEO Auto-Generation when creating a new package
+  const lastGeneratedMetaTitleRef = useRef('');
+  const lastGeneratedMetaDescRef = useRef('');
+  const lastGeneratedCanonicalRef = useRef('');
+  const lastGeneratedOgImgRef = useRef('');
+
+  useEffect(() => {
+    if (!initialData) {
+      // 1. Auto-generate Meta Title
+      const expectedTitle = title.trim() ? `${title.trim()} - Book Now` : '';
+      if (!metaTitle || metaTitle === lastGeneratedMetaTitleRef.current) {
+        setMetaTitle(expectedTitle);
+        lastGeneratedMetaTitleRef.current = expectedTitle;
+      }
+
+      // 2. Auto-generate Meta Description
+      const cleanPlace = place.trim() ? ` in ${place.trim()}` : '';
+      const cleanDur = duration.trim() ? `. Duration: ${duration.trim()}` : '';
+      const expectedDesc = title.trim() 
+        ? `Book ${title.trim()}${cleanPlace}${cleanDur}. Experience premium boat rides, scenic Godavari river cruises, and cottages. Reserve your tickets online today!`
+        : '';
+      if (!metaDescription || metaDescription === lastGeneratedMetaDescRef.current) {
+        setMetaDescription(expectedDesc);
+        lastGeneratedMetaDescRef.current = expectedDesc;
+      }
+
+      // 3. Auto-generate Canonical URL
+      const computedSlug = slug.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const expectedCanonical = computedSlug 
+        ? `https://www.tsboattourism.org/packages/${computedSlug}`
+        : '';
+      if (!canonicalUrl || canonicalUrl === lastGeneratedCanonicalRef.current) {
+        setCanonicalUrl(expectedCanonical);
+        lastGeneratedCanonicalRef.current = expectedCanonical;
+      }
+
+      // 4. Auto-generate OG Image from Cover Image
+      if (!ogImageUrl || ogImageUrl === lastGeneratedOgImgRef.current) {
+        setOgImageUrl(coverImageUrl);
+        lastGeneratedOgImgRef.current = coverImageUrl;
+      }
+    }
+  }, [title, place, duration, slug, coverImageUrl, initialData, metaTitle, metaDescription, canonicalUrl, ogImageUrl]);
+
   // Handle auto-clearing validation errors when fields change
   useEffect(() => {
     if (validationErrors.length > 0 && onClearValidationErrors) {
@@ -459,7 +503,7 @@ export default function PackageForm({
       type,
       duration: duration.trim() || null,
       place: place.trim() || null,
-      slug: slug.trim() || undefined,
+      slug: slug.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       region,
       description,
       cover_image_url: coverImageUrl || null,
@@ -1174,6 +1218,10 @@ export default function PackageForm({
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Full Address</label>
                         <input type="text" value={item.address || ''} onChange={(e) => updateBoardingPoint(index, 'address', e.target.value)} placeholder="Physical address..." className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Google Maps Embed URL</label>
+                        <input type="text" value={item.map_url || ''} onChange={(e) => updateBoardingPoint(index, 'map_url', e.target.value)} placeholder="Paste Google Maps iframe src or share link..." className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800" />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Landmark</label>

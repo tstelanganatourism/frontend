@@ -14,7 +14,11 @@ const schema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone_number: z.string().optional(),
+  phone_number: z.string()
+    .optional()
+    .refine((val) => !val || /^\d{10}$/.test(val.trim()), {
+      message: 'Phone number must be exactly 10 digits',
+    }),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -67,7 +71,7 @@ export default function SignupPage() {
         <div className="mb-4 flex flex-col items-center text-center">
           <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
             <img 
-              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778914224/logo1_shpjk5.jpg" 
+              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
               alt="Papikondalu Tourism Logo" 
               className="h-full w-full object-contain rounded-xl"
             />
@@ -146,11 +150,14 @@ export default function SignupPage() {
                 <input
                   {...register('phone_number')}
                   type="tel"
+                  maxLength={10}
+                  onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 10); }}
                   autoComplete="tel"
-                  placeholder="+91 98765 43210"
+                  placeholder="10 digit mobile number"
                   className="w-full rounded-xl border border-white/15 bg-white/8 py-2.5 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
                 />
               </div>
+              {errors.phone_number && <p className="mt-1 flex items-center gap-1 text-[10px] text-red-400"><AlertCircle className="h-3 w-3" />{errors.phone_number.message}</p>}
             </div>
 
             {/* Password */}

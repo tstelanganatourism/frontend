@@ -109,7 +109,7 @@ export default function AgentBookingsLedgerPage() {
         const res = await apiClient.get<BookingListItem[]>('/api/v1/bookings/agent/bookings');
         setBookings(res.data);
       } catch (err: any) {
-        setError(err?.response?.data?.detail || 'Failed to load client bookings ledger.');
+        setError(err?.response?.data?.detail || 'Failed to load client bookings List.');
       } finally {
         setLoading(false);
       }
@@ -188,12 +188,12 @@ export default function AgentBookingsLedgerPage() {
       {/* Header Title */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[var(--color-brand-river)] tracking-tight">Booking Ledger</h1>
+          <h1 className="text-2xl font-black text-[var(--color-brand-river)] tracking-tight">Booking List</h1>
           <p className="text-sm text-slate-500 font-medium mt-1">Review, filter, and track all your active customer reservations.</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-50 border border-slate-100 text-slate-500">
-            <TrendingUp className="h-3.5 w-3.5 text-teal-500 animate-pulse" /> Live Ledger
+            <TrendingUp className="h-3.5 w-3.5 text-teal-500 animate-pulse" /> Live List
           </span>
         </div>
       </div>

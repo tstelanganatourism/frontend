@@ -17,6 +17,7 @@ interface PackageProps {
     title: string;
     type: string;
     duration?: string | null;
+    place?: string | null;
     region: string;
     cover_image_url: string | null;
     is_featured: boolean;
@@ -43,14 +44,14 @@ function getDurationLabel(title: string, slug: string) {
   return '1 Day (Same Day)';
 }
 
-function getBoardingLocation(title: string, slug: string, tags: string[] = []) {
-  const text = `${title} ${slug} ${tags.join(' ')}`.toLowerCase();
-  if (text.includes('rajahmundry') || text.includes('rjy')) return 'Rajahmundry';
-  if (text.includes('bhadrachalam') || text.includes('bdl')) return 'Bhadrachalam';
-  return 'Bhadrachalam Office';
+function getPackageDestination(place?: string | null) {
+  return place?.trim() || 'Destination updating';
 }
 
-function getTransportType(variants: any[] = [], title: string) {
+function getTransportType(
+  variants: Array<{ transport_info?: string | null; is_active?: boolean }> = [],
+  title: string
+) {
   const activeVariants = variants.filter(v => v.is_active);
   if (activeVariants.length > 0) {
     const transports = activeVariants
@@ -90,7 +91,7 @@ function PackageCard({ pkg }: PackageProps) {
 
   // Dynamic Content Deduction
   const duration = pkg.duration ? pkg.duration : getDurationLabel(pkg.title, pkg.slug);
-  const boarding = getBoardingLocation(pkg.title, pkg.slug, pkg.tags);
+  const destination = getPackageDestination(pkg.place);
   const transport = getTransportType(pkg.variants || [], pkg.title);
   const displayPrice = getDisplayPrice(pkg);
 
@@ -144,7 +145,7 @@ function PackageCard({ pkg }: PackageProps) {
               <span
                 key={tag}
                 className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${tag.toLowerCase() === 'featured'
-                    ? 'bg-[#d97706] text-white shadow-md'
+                    ? 'bg-[#b45309] text-white shadow-md'
                     : 'bg-white/95 text-[var(--color-brand-river)] shadow-sm'
                   }`}
               >
@@ -181,7 +182,7 @@ function PackageCard({ pkg }: PackageProps) {
       {/* Card Body */}
       <div className="relative flex flex-1 flex-col p-5">
         <div className="mb-2">
-          <span className="text-[11px] font-black uppercase tracking-widest text-[#0b5c6d]/70">
+          <span className="text-[11px] font-black uppercase tracking-widest text-[#083e4a]">
             {transport}
           </span>
         </div>
@@ -214,7 +215,7 @@ function PackageCard({ pkg }: PackageProps) {
             })}
           </div>
           <span className="text-xs font-bold text-slate-700">{reviewScore}</span>
-          <span className="text-[11px] text-slate-400">({40 + ((pkg.id * 31 + 7) % 160)} reviews)</span>
+          <span className="text-[11px] text-slate-600">({40 + ((pkg.id * 31 + 7) % 160)} reviews)</span>
         </div>
 
         {/* Key Features Grid */}
@@ -229,46 +230,46 @@ function PackageCard({ pkg }: PackageProps) {
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
               <MapPin className="h-3.5 w-3.5 text-[var(--color-brand-teal)]" />
             </div>
-            <span className="text-[13px] font-bold text-slate-600 line-clamp-1">{boarding}</span>
+            <span className="text-[13px] font-bold text-slate-600 line-clamp-1">{destination}</span>
           </div>
         </div>
 
         {/* Pricing & Action Footer */}
         <div className="mt-3 flex flex-col gap-3">
           <div className="border-t border-slate-100 pt-3">
-            <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+            <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
               Starts From
             </p>
             <div className="flex items-end justify-between">
               <div>
-                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
                   Adult Fare
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-[1.35rem] font-black leading-none tracking-tight text-[var(--color-brand-teal)]">
+                  <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
                     {adultPrice ? `₹${adultPrice.toLocaleString('en-IN')}` : 'updating'}
                   </span>
-                  <span className="text-[11px] font-bold text-slate-400">/ adult</span>
+                  <span className="text-[11px] font-bold text-slate-600">/ adult</span>
                 </div>
               </div>
 
               {childPrice !== null && childPrice > 0 && (
                 <div className="text-right">
-                  <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
                     Child Fare
                   </p>
                   <div className="flex items-baseline justify-end gap-1">
-                    <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#d97706]">
+                    <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
                       ₹{childPrice.toLocaleString('en-IN')}
                     </span>
-                    <span className="text-[11px] font-bold text-slate-400">/ child</span>
+                    <span className="text-[11px] font-bold text-slate-600">/ child</span>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className={`flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-[13px] font-bold text-white shadow-md transition-all duration-300 group-hover/card:shadow-lg ${isTrip ? 'bg-[#b98928] group-hover/card:bg-[#a67a20]' : 'bg-[var(--color-brand-teal)] group-hover/card:bg-[#125866]'
+          <div className={`flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-[13px] font-bold text-white shadow-md transition-all duration-300 group-hover/card:shadow-lg ${isTrip ? 'bg-[#8c6519] group-hover/card:bg-[#735314]' : 'bg-[var(--color-brand-teal)] group-hover/card:bg-[#125866]'
             }`}>
             View Details
           </div>

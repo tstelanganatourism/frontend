@@ -6,12 +6,19 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
 const backendOrigin = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'lodash'],
+  },
   turbopack: {
     root: path.resolve(__dirname),
   },
   compress: true,
   poweredByHeader: false,
   images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    qualities: [50, 75, 85, 90, 100],
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'https', hostname: '*.r2.cloudflarestorage.com', pathname: '/**' }
@@ -29,7 +36,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
-          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://*.r2.cloudflarestorage.com https://www.google-analytics.com; connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com wss: https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://*.sentry.io; frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; font-src 'self' data:;" },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://*.r2.cloudflarestorage.com https://www.google-analytics.com; connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com wss: https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://*.sentry.io; frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://www.google.com; font-src 'self' data:;" },
         ],
       },
     ];
@@ -95,15 +102,4 @@ const bundleAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
-const sentryConfig = withSentryConfig(
-  bundleAnalyzer(nextConfig),
-  {
-    org: "ts-tours",
-    project: "frontend",
-    silent: !process.env.CI,
-    widenClientFileUpload: true,
-    tunnelRoute: "/monitoring",
-  }
-);
-
-export default sentryConfig;
+export default nextConfig;

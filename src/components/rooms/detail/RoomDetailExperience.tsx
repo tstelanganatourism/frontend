@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { getHdImageUrl } from '@/lib/utils';
+import { useLightbox } from '@/hooks/useLightbox';
 import type { ReactNode } from 'react';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import PremiumSelect from '@/components/ui/PremiumSelect';
@@ -11,10 +13,12 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { apiClient } from '@/lib/api';
 import { useRazorpay } from "react-razorpay";
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
+import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
+
 import { toast } from 'sonner';
-import { 
-  Sheet, SheetContent, SheetDescription, 
-  SheetHeader, SheetTitle, SheetTrigger 
+import {
+  Sheet, SheetContent, SheetDescription,
+  SheetHeader, SheetTitle, SheetTrigger
 } from '@/components/ui/sheet';
 import {
   ArrowLeft,
@@ -86,7 +90,10 @@ interface RoomDetailExperienceProps {
 const fallbackImage =
   'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg';
 
-const today = new Date().toISOString().slice(0, 10);
+const getLocalToday = () => {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const money = (value?: number | null) => {
   if (value === null || value === undefined) return 'Contact';
@@ -174,6 +181,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     () => room.variants.filter((variant) => variant.variant_name?.trim() && Number(variant.weekday_price) > 0),
     [room.variants]
   );
+  const today = getLocalToday();
 
   const slides = useMemo(() => {
     const gallery = [...room.gallery].sort((a, b) => Number(b.is_cover) - Number(a.is_cover));
@@ -226,16 +234,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     try {
       const res = await apiClient.get(`/api/v1/rooms/${room.slug}/availability`, { params: { month: monthStr } });
       const dates: Array<{ date: string; status: string; variant_id: number; available_rooms: number }> = res.data?.dates || [];
-      
+
       const openDates = new Set<string>();
       const newDetailed: Record<string, Record<number, number>> = {};
-      
+
       for (const d of dates) {
         if (d.status === 'OPEN') openDates.add(d.date);
         if (!newDetailed[d.date]) newDetailed[d.date] = {};
         newDetailed[d.date][d.variant_id] = d.available_rooms;
       }
-      
+
       setRoomAvailability(prev => ({ ...prev, [monthStr]: openDates }));
       setDetailedAvailability(prev => {
         const next = { ...prev };
@@ -273,18 +281,66 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     return combined;
   }, [roomAvailability]);
 
+  // SSE connection for real-time inventory updates
+  const sseVersionRef = useRef<number>(0);
+  
+  useEffect(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const es = new ReconnectingEventSource(`${baseUrl}/api/v1/stream/rooms/${room.id}`);
+    
+    es.addEventListener('INVENTORY_UPDATE', (e: any) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.version && payload.version < sseVersionRef.current) return;
+        if (payload.version) sseVersionRef.current = payload.version;
+        
+        const { travel_date, available, is_closed, variant_id } = payload;
+        
+        // Update detailed availability
+        setDetailedAvailability(prev => {
+          const next = { ...prev };
+          if (!next[travel_date]) next[travel_date] = {};
+          next[travel_date][variant_id] = available;
+          return next;
+        });
+        
+        // Update room availability sets
+        const monthStr = travel_date.slice(0, 7); // YYYY-MM
+        setRoomAvailability(prev => {
+          const next = { ...prev };
+          const set = next[monthStr] ? new Set(next[monthStr]) : new Set<string>();
+          
+          if (is_closed || available <= 0) {
+            // Re-fetch month to get accurate boolean mapping across all variants
+            fetchRoomAvailability(monthStr);
+          } else {
+            set.add(travel_date);
+            next[monthStr] = set;
+          }
+          return next;
+        });
+      } catch (err) {
+        console.error("Failed to parse SSE payload", err);
+      }
+    });
+    
+    return () => {
+      es.close();
+    };
+  }, [room.id]);
+
   // Calculate real-time available rooms for the selected dates and variant
   const maxAvailableRooms = useMemo(() => {
-    if (!selectedVariantId) return room.total_rooms || 10;
-    if (!arrivalDate) return room.total_rooms || 10;
-    
-    let minAvail = room.total_rooms || 10;
+    // Before dates are selected: no constraint yet (use a large number so UI doesn't block)
+    if (!selectedVariantId || !arrivalDate) return 999;
+
+    let minAvail = Infinity;
     let foundAny = false;
-    
+
     const start = new Date(`${arrivalDate}T00:00:00`);
     const end = departureDate ? new Date(`${departureDate}T00:00:00`) : new Date(start);
     if (!departureDate) end.setDate(end.getDate() + 1);
-    
+
     let current = new Date(start);
     while (current < end) {
       const dStr = current.toISOString().slice(0, 10);
@@ -295,9 +351,11 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       }
       current.setDate(current.getDate() + 1);
     }
-    
-    return foundAny ? minAvail : (room.total_rooms || 10);
-  }, [arrivalDate, departureDate, selectedVariantId, detailedAvailability, room.total_rooms]);
+
+    // If dates are selected but NO inventory row exists for this variant → 0 available (not bookable)
+    // If inventory rows found → use the minimum available across all stay nights
+    return foundAny ? minAvail : 0;
+  }, [arrivalDate, departureDate, selectedVariantId, detailedAvailability]);
 
   // Cap guests if dates change and real-time capacity is lower than current guests
   useEffect(() => {
@@ -389,11 +447,17 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         slot_start: selectedSlot?.slot_start,
         slot_end: selectedSlot?.slot_end,
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
-        passengers: passengers,
-        payment_percentage: paymentPercentage
+        passengers: passengers.map((p: any) => ({
+          ...p,
+          aadhaar: p.aadhaar || undefined,
+          phone: p.phone || undefined,
+        })),
+        payment_percentage: paymentPercentage,
+        expected_amount: finalTotal
       };
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
+
       const { checkout_data } = res.data;
 
       if (!checkout_data || !checkout_data.key_id) {
@@ -458,9 +522,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         }
       } else if (err.message) {
         if (err.message.includes("Razorpay is not a constructor")) {
-            errMsg = "Payment gateway blocked. Please disable adblockers.";
+          errMsg = "Payment gateway blocked. Please disable adblockers.";
         } else {
-            errMsg = err.message;
+          errMsg = err.message;
         }
       }
       toast.error(errMsg);
@@ -474,7 +538,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         .then((res) => {
           setIsLodgeInactive(res.status === 404);
         })
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => {
           setIsCheckingActive(false);
         });
@@ -483,7 +547,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     const interval = setInterval(checkStatus, 3000);
     return () => clearInterval(interval);
   }, [room.slug]);
- 
+
   const selectedVariant = useMemo(() => {
     if (!validVariants.length) return undefined;
     return validVariants.find((variant) => variant.id === selectedVariantId) || validVariants[0];
@@ -518,7 +582,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       discount = appliedCoupon.discount_amount;
     }
     const subtotal = Math.max(0, rawSubtotal - discount);
-    
+
     const gst = Math.round(subtotal * 0.05);
     const gatewayFee = Math.round((subtotal + gst) * 0.01);
     const grandTotal = subtotal + gst + gatewayFee;
@@ -566,6 +630,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     });
   };
 
+  const { handlers: lightboxHandlers } = useLightbox({
+    isOpen: lightboxOpen,
+    onClose: () => setLightboxOpen(false),
+    onNext: () => moveSlide('right'),
+    onPrev: () => moveSlide('left'),
+  });
+
   return (
     <main className="min-h-screen bg-[#f5faf9] text-[#102231]">
       <section className="relative overflow-hidden bg-[#062d3c]">
@@ -604,9 +675,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               <h1 className="max-w-3xl text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl">
                 {room.lodge_name}
               </h1>
-              <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-white/85 sm:text-base">
-                {room.description || 'A verified Bhadrachalam stay with room categories, facilities, location, and reservation details shown clearly before booking.'}
-              </p>
+              {room.description ? (
+                <div
+                  className="mt-4 max-w-2xl text-sm font-medium leading-7 text-white/85 sm:text-base prose prose-invert prose-sm"
+                  dangerouslySetInnerHTML={{ __html: room.description }}
+                />
+              ) : (
+                <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-white/85 sm:text-base">
+                  A verified Bhadrachalam stay with room categories, facilities, location, and reservation details shown clearly before booking.
+                </p>
+              )}
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <HeroFact icon={IndianRupee} label="Starts from" value={price ? money(price) : money(room.starting_price)} />
@@ -620,7 +698,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               <div className="relative overflow-hidden rounded-lg bg-slate-950">
                 <div className="relative aspect-[4/3] min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
                   <Image src={activeImage.image_url} alt={activeImage.alt_text || room.lodge_name} fill priority className="scale-110 object-cover opacity-35 blur-2xl" sizes="(max-width: 1024px) 100vw, 720px" />
-                  <Image src={activeImage.image_url} alt={activeImage.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 720px" />
+                  <Image src={getHdImageUrl(activeImage.image_url)} alt={activeImage.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" unoptimized quality={100} />
                   <button type="button" onClick={() => setLightboxOpen(true)} className="absolute inset-0 z-10" aria-label="Open stay photos" />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent p-3 sm:p-4">
                     <span className="inline-flex items-center gap-2 rounded-full bg-white/92 px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm">
@@ -789,17 +867,17 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <Section id="gallery" title="Stay Gallery" eyebrow="Property photos">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 {slides.map((slide, index) => (
-                  <button 
-                    key={slide.id || index} 
-                    type="button" 
+                  <button
+                    key={slide.id || index}
+                    type="button"
                     onClick={() => {
                       setActiveSlide(index);
                       setLightboxOpen(true);
-                    }} 
-                    className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30" 
+                    }}
+                    className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30"
                     aria-label={`View photo ${index + 1}`}
                   >
-                    <Image src={slide.image_url} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
+                    <Image src={getHdImageUrl(slide.image_url)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" unoptimized quality={100} />
                   </button>
                 ))}
               </div>
@@ -900,9 +978,11 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   {selectedVariant?.capacity_per_room ? <p className="text-[10px] font-bold text-slate-400">{selectedVariant.capacity_per_room} guests/room capacity</p> : <div />}
-                  <p className="text-[10px] font-bold text-[#0f8d7d]">
-                    Requires {roomsCount} room{roomsCount !== 1 ? 's' : ''}
-                    {arrivalDate ? ` (out of ${maxAvailableRooms} available)` : (room.total_rooms ? ` (out of ${room.total_rooms})` : '')}
+                  <p className={`text-[10px] font-bold ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0f8d7d]'}`}>
+                    {arrivalDate && maxAvailableRooms === 0
+                      ? 'No rooms available — select different dates'
+                      : `Requires ${roomsCount} room${roomsCount !== 1 ? 's' : ''}${arrivalDate ? ` (${maxAvailableRooms} available)` : ''}`
+                    }
                   </p>
                 </div>
               </div>
@@ -1055,16 +1135,26 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     );
                   })()}
 
-                  <button onClick={handleBookingClick} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] h-11 flex items-center justify-center">
-                    {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Reserve Now'}
-                  </button>
+                  {arrivalDate && departureDate && maxAvailableRooms === 0 ? (
+                    <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
+                      Not Available
+                    </div>
+                  ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms ? (
+                    <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
+                      Not Enough Rooms
+                    </div>
+                  ) : (
+                    <button onClick={handleBookingClick} disabled={isProcessingCheckout} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] h-11 flex items-center justify-center disabled:opacity-60">
+                      {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Reserve Now'}
+                    </button>
+                  )}
                 </>
               )}
             </div>
           </div>
         </aside>
       </section>
- 
+
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/50 bg-white/94 p-3 shadow-[0_-18px_50px_rgba(23,34,50,0.14)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div>
@@ -1226,7 +1316,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
                       </div>
                     </div>
-                    <a href={`https://wa.me/919849848982?text=${bookingText}`} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-14 w-full items-center justify-center rounded-lg bg-[#0f8d7d] text-sm font-black text-white shadow-[0_18px_40px_rgba(15,141,125,0.28)] transition hover:-translate-y-0.5 hover:bg-[#0b7469]">
+                    <a href={`https://wa.me/919542069573?text=${bookingText}`} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-14 w-full items-center justify-center rounded-lg bg-[#0f8d7d] text-sm font-black text-white shadow-[0_18px_40px_rgba(15,141,125,0.28)] transition hover:-translate-y-0.5 hover:bg-[#0b7469]">
                       Confirm & Reserve via WhatsApp
                     </a>
                   </div>
@@ -1238,7 +1328,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       </div>
 
       {lightboxOpen ? (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-sm" {...lightboxHandlers}>
           <div className="flex items-center justify-between p-4">
             <span className="text-sm font-medium text-white/70">{activeSlide + 1} of {slides.length}</span>
             <button onClick={() => setLightboxOpen(false)} className="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Close gallery">
@@ -1252,7 +1342,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </button>
             ) : null}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={activeImage.image_url} alt={activeImage.alt_text || room.lodge_name} fill sizes="100vw" className="object-contain" />
+              <Image src={getHdImageUrl(activeImage.image_url)} alt={activeImage.alt_text || room.lodge_name} fill sizes="100vw" className="object-contain" unoptimized quality={100} />
             </div>
             {slides.length > 1 ? (
               <button onClick={() => moveSlide('right')} className="absolute right-2 z-10 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 md:right-8" aria-label="Next photo">
@@ -1272,7 +1362,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         cancelText="Cancel"
       />
 
-      <CheckoutPassengerModal 
+      <CheckoutPassengerModal
         isOpen={showPassengerModal}
         onClose={() => setShowPassengerModal(false)}
         onSubmit={handleCheckoutSubmit}
@@ -1502,7 +1592,7 @@ const CustomDatePicker = ({
       days.push(<div key={`empty-${i}`} className="h-8 w-8" />);
     }
 
-    const minDateStr = min || new Date().toISOString().slice(0, 10);
+    const minDateStr = min || getLocalToday();
 
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = toYYYYMMDD(calYear, calMonth, i);
@@ -1545,11 +1635,10 @@ const CustomDatePicker = ({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full text-left rounded-lg border px-3.5 py-2.5 shadow-inner transition-all ${
-          disabled
+        className={`w-full text-left rounded-lg border px-3.5 py-2.5 shadow-inner transition-all ${disabled
             ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-85 text-slate-400'
             : 'bg-white border-slate-200 cursor-pointer hover:border-slate-350 focus:border-[#0f8d7d] focus:outline-none'
-        }`}
+          }`}
       >
         <span className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">
           <CalendarDays className="h-4 w-4 text-[#0f8d7d]" />

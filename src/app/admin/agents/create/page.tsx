@@ -40,6 +40,16 @@ export default function CreateAgentPage() {
       toast.error('Please fill in all required fields');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
     try {
       await createAgent({
         full_name: fullName.trim(),
@@ -107,9 +117,9 @@ export default function CreateAgentPage() {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Phone Number *</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} maxLength={10} required
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
-                      placeholder="+91 98765 43210" />
+                      placeholder="10 digit mobile number" />
                   </div>
                 </div>
               </div>

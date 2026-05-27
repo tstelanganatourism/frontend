@@ -97,7 +97,8 @@ export default function BookingDetailsModal({ isOpen, onClose, publicId }: Booki
     fetchDetails();
   }, [isOpen, publicId]);
 
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+  const [isDownloadingTicket, setIsDownloadingTicket] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
@@ -105,16 +106,18 @@ export default function BookingDetailsModal({ isOpen, onClose, publicId }: Booki
   
   const { user } = useAuthStore();
 
-  const handleDownloadPdf = async (objectKey: string) => {
+  const handleDownloadPdf = async (objectKey: string, type: 'invoice' | 'ticket') => {
     if (!objectKey) return;
-    setIsDownloading(true);
+    if (type === 'invoice') setIsDownloadingInvoice(true);
+    else setIsDownloadingTicket(true);
     try {
       const res = await apiClient.post('/api/v1/documents/signed-url', { object_key: objectKey });
       window.open(res.data.url, '_blank');
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to generate secure document link');
     } finally {
-      setIsDownloading(false);
+      if (type === 'invoice') setIsDownloadingInvoice(false);
+      else setIsDownloadingTicket(false);
     }
   };
 
@@ -246,7 +249,7 @@ export default function BookingDetailsModal({ isOpen, onClose, publicId }: Booki
                   <div className="grid gap-3 sm:grid-cols-2">
                     {booking.passengers && booking.passengers.length > 0 ? (
                       booking.passengers.map((p, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:border-slate-200 transition-colors">
+                        <div key={idx} className={`flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:border-slate-200 transition-colors ${booking.passengers.length === 1 ? 'sm:col-span-2' : ''}`}>
                           <div className="h-9 w-9 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center font-bold text-xs shrink-0">
                             {p.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                           </div>
@@ -320,12 +323,20 @@ export default function BookingDetailsModal({ isOpen, onClose, publicId }: Booki
               </div>
 
               {/* Action Buttons */}
-              <div className="border-t border-slate-100 p-6 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
-                <div className="flex gap-2 flex-wrap">
+              <div className="border-t border-slate-100 p-6 flex flex-col md:flex-row items-center justify-between gap-4 bg-white rounded-b-3xl shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)] relative z-10">
+                
+                {/* Left Side: Close & Cancel */}
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 w-full md:w-auto">
+                  <button
+                    onClick={onClose}
+                    className="px-6 py-3 rounded-2xl text-xs font-black tracking-widest uppercase border-2 border-slate-200 text-slate-600 bg-white hover:bg-slate-100 hover:text-slate-900 transition-all shadow-sm w-full sm:w-auto active:scale-95"
+                  >
+                    Close
+                  </button>
                   {booking.status !== 'CANCELLED' && booking.status !== 'REFUNDED' && (
                     <button
                       onClick={() => setIsCancelConfirmOpen(true)}
-                      className="px-5 py-2.5 rounded-xl text-xs font-bold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors cursor-pointer"
+                      className="px-6 py-3 rounded-2xl text-xs font-black tracking-wide border-2 border-red-100 text-red-600 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all shadow-sm w-full sm:w-auto active:scale-95"
                     >
                       Cancel Booking
                     </button>
@@ -334,63 +345,63 @@ export default function BookingDetailsModal({ isOpen, onClose, publicId }: Booki
                     <button
                       onClick={handleMarkFullyPaid}
                       disabled={isMarkingPaid}
-                      className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs font-bold border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer disabled:opacity-50"
+                      className="inline-flex items-center justify-center px-6 py-3 rounded-2xl text-xs font-black tracking-wide border-2 border-emerald-500 text-emerald-700 bg-emerald-50 hover:bg-emerald-500 hover:text-white transition-all shadow-sm disabled:opacity-50 w-full sm:w-auto active:scale-95"
                     >
-                      {isMarkingPaid ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Mark as Fully Paid'}
+                      {isMarkingPaid ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      {isMarkingPaid ? 'Updating...' : 'Mark Fully Paid'}
                     </button>
                   )}
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={onClose}
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-100 text-slate-650 bg-white transition-colors cursor-pointer"
-                  >
-                    Close
-                  </button>
+                
+                {/* Right Side: Documents */}
+                <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
                   {booking.status === 'FULLY_PAID' && user?.role === 'ADMIN' && (
                     booking.invoice_pdf_url ? (
                       <button
-                        onClick={() => handleDownloadPdf(booking.invoice_pdf_url!)}
-                        disabled={isDownloading}
-                        className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                        onClick={() => handleDownloadPdf(booking.invoice_pdf_url!, 'invoice')}
+                        disabled={isDownloadingInvoice}
+                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 disabled:opacity-50 w-full sm:w-auto border border-slate-700"
                       >
-                        <ExternalLink className="h-4 w-4" /> Download Invoice PDF
+                        {isDownloadingInvoice ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                        Invoice
                       </button>
                     ) : booking.invoice_generation_status === 'GENERATING' ? (
-                      <button disabled className="inline-flex items-center gap-2 bg-slate-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm cursor-not-allowed">
-                        Generating Invoice...
+                      <button disabled className="inline-flex justify-center items-center gap-2 bg-slate-200 text-slate-500 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm cursor-not-allowed w-full sm:w-auto">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Generating
                       </button>
                     ) : (
                       <a
                         href={`/print/invoice/${booking.public_id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 w-full sm:w-auto border border-slate-700"
                       >
                         <ExternalLink className="h-4 w-4" /> View Invoice
                       </a>
                     )
                   )}
+                  
                   {booking.ticket_pdf_url ? (
                     <button
-                      onClick={() => handleDownloadPdf(booking.ticket_pdf_url!)}
-                      disabled={isDownloading}
-                      className="inline-flex items-center gap-2 bg-[#0f3d56] hover:bg-[#1a5663] text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                      onClick={() => handleDownloadPdf(booking.ticket_pdf_url!, 'ticket')}
+                      disabled={isDownloadingTicket}
+                      className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 disabled:opacity-50 w-full sm:w-auto border border-[#0f3d56]"
                     >
-                      <ExternalLink className="h-4 w-4" /> Download Ticket PDF
+                      {isDownloadingTicket ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
+                      Ticket PDF
                     </button>
                   ) : booking.ticket_generation_status === 'GENERATING' ? (
-                    <button disabled className="inline-flex items-center gap-2 bg-slate-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm cursor-not-allowed">
-                      Generating Ticket...
+                    <button disabled className="inline-flex justify-center items-center gap-2 bg-slate-200 text-slate-500 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm cursor-not-allowed w-full sm:w-auto">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Generating
                     </button>
                   ) : (
                     <a
                       href={`/print/ticket/${booking.public_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-[#0f3d56] hover:bg-[#1a5663] text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+                      className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56]"
                     >
-                      <ExternalLink className="h-4 w-4" /> View Ticket
+                      <Ticket className="h-4 w-4" /> View Ticket
                     </a>
                   )}
 
@@ -399,7 +410,7 @@ export default function BookingDetailsModal({ isOpen, onClose, publicId }: Booki
                       href={`/print/form/${booking.public_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+                      className="inline-flex justify-center items-center gap-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm transition-all active:scale-95 w-full sm:w-auto border-2 border-indigo-100 hover:border-indigo-600"
                     >
                       <FileText className="h-4 w-4" /> Print Form
                     </a>

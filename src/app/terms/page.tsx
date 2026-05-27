@@ -150,7 +150,7 @@ export default function TermsPage() {
                   <Mail className="h-4 w-4" />
                   Email Support
                 </a>
-                <a href="tel:+919849848982" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-1 hover:bg-white hover:text-[var(--color-brand-river)]">
+                <a href="tel:919542069573" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-1 hover:bg-white hover:text-[var(--color-brand-river)]">
                   <Phone className="h-4 w-4" />
                   Call Helpline
                 </a>

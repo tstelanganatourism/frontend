@@ -15,6 +15,7 @@ import { PackageFaqs } from '@/components/packages/detail/PackageFaqs';
 import { PackagePolicies } from '@/components/packages/detail/PackagePolicies';
 import { BookingSidebarV2 } from '@/components/packages/detail/BookingSidebarV2';
 import { MobileBookingSheet } from '@/components/packages/detail/MobileBookingSheet';
+import CouponPopup from '@/components/ui/CouponPopup';
 
 // ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
 export const revalidate = 60;
@@ -54,7 +55,7 @@ type JsonLdObject = Record<string, unknown>;
 
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 60, tags: ['packages', `package:${slug}`] } });
+    const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 30, tags: ['packages', `package:${slug}`] } });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -118,6 +119,14 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
   const price = getPositiveStartingPrice(pkg) || 0;
   const canonical = pkg.canonical_url || `/packages/${pkg.slug}`;
 
+  // Ensure all JSON-LD URLs are absolute — schema.org mandates fully-qualified URLs.
+  const SITE_ORIGIN = 'https://www.tsboattourism.org';
+  const abs = (url?: string | null) =>
+    url ? (url.startsWith('http') ? url : `${SITE_ORIGIN}${url}`) : undefined;
+
+  const absoluteCanonical = abs(canonical)!;
+  const absoluteImage = abs(pkg.cover_image_url);
+
   // Structured schema markup for premium SEO indexability
   const jsonLd: JsonLdObject[] = [
     {
@@ -125,33 +134,34 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       '@type': 'TouristTrip',
       name: pkg.title,
       description: pkg.description,
-      image: pkg.cover_image_url,
+      image: absoluteImage,
+      url: absoluteCanonical,
       touristType: ['Family travelers', 'Nature travelers', 'Pilgrimage travelers'],
       offers: {
         '@type': 'Offer',
         price,
         priceCurrency: 'INR',
         availability: 'https://schema.org/InStock',
-        url: canonical
+        url: absoluteCanonical,
       },
       itinerary: pkg.itinerary.map((day) => ({
         '@type': 'ItemList',
         name: `Day ${day.day_number}: ${day.title}`,
-        description: day.description
+        description: day.description,
       })),
     },
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
         {
           '@type': 'ListItem',
           position: 2,
           name: pkg.type === 'TOUR' ? 'Boat Rides' : 'Sightseeing',
-          item: pkg.type === 'TOUR' ? '/boat-rides' : '/sightseeing'
+          item: pkg.type === 'TOUR' ? `${SITE_ORIGIN}/boat-rides` : `${SITE_ORIGIN}/sightseeing`,
         },
-        { '@type': 'ListItem', position: 3, name: pkg.title, item: canonical },
+        { '@type': 'ListItem', position: 3, name: pkg.title, item: absoluteCanonical },
       ],
     },
   ];
@@ -163,7 +173,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       mainEntity: pkg.faqs.map((faq) => ({
         '@type': 'Question',
         name: faq.question,
-        acceptedAnswer: { '@type': 'Answer', text: faq.answer }
+        acceptedAnswer: { '@type': 'Answer', text: faq.answer },
       })),
     });
   }
@@ -267,6 +277,8 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         packageSlug={pkg.slug}
         brochurePdfUrl={pkg.generated_brochure_url || pkg.brochure_pdf_url}
       />
+
+      <CouponPopup targetType="PACKAGE" targetId={pkg.id} />
     </main>
   );
 }

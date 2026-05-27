@@ -185,9 +185,9 @@ export default function FAQClient() {
           )}
 
           <div className="grid gap-4 md:grid-cols-2">
-            <a href="mailto:tsboattourismservices@gmail.com" className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
-              <div className="flex items-center gap-4">
-                <span className="grid h-12 w-12 place-items-center rounded-xl bg-slate-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
+            <a href="mailto:tsboattourismservices@gmail.com" className="group flex h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
+              <div className="flex items-start gap-4">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
                   <Mail className="h-6 w-6" />
                 </span>
                 <div>
@@ -196,14 +196,19 @@ export default function FAQClient() {
                 </div>
               </div>
             </a>
-            <a href="tel:+919849848982" className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
-              <div className="flex items-center gap-4">
-                <span className="grid h-12 w-12 place-items-center rounded-xl bg-slate-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
+            <a href="tel:+919542069573" className="group flex h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
+              <div className="flex items-start gap-4">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
                   <Phone className="h-6 w-6" />
                 </span>
                 <div>
                   <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Call helpline</div>
-                  <div className="mt-1 text-lg font-bold text-[var(--color-brand-river)]">+91 95420 69573 / +91 984 984 89 82 / +91 984 984 89 83 / +91 984 984 89 38</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-1 text-sm font-bold text-[var(--color-brand-river)] transition-colors group-hover:border-slate-200">+91 95420 69573</span>
+                    <span className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-1 text-sm font-bold text-[var(--color-brand-river)] transition-colors group-hover:border-slate-200">+91 984 984 89 82</span>
+                    <span className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-1 text-sm font-bold text-[var(--color-brand-river)] transition-colors group-hover:border-slate-200">+91 984 984 89 83</span>
+                    <span className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-1 text-sm font-bold text-[var(--color-brand-river)] transition-colors group-hover:border-slate-200">+91 984 984 89 38</span>
+                  </div>
                 </div>
               </div>
             </a>

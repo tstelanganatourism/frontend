@@ -20,6 +20,8 @@ interface BookingDetails {
   adult_count: number;
   child_count: number;
   total_amount: number;
+  package_title?: string;
+  variant_title?: string;
   passengers: Passenger[];
 }
 
@@ -92,6 +94,7 @@ export default async function PrintFormPage({
         .title-block h1 { margin: 0; font-size: 32px; font-weight: 900; color: #000; text-transform: uppercase; }
         .title-block h2 { margin: 5px 0; font-size: 24px; font-weight: 800; color: #000; }
         .title-block h3 { margin: 0; font-size: 20px; font-weight: 700; color: #000; }
+        .title-block h4 { margin: 5px 0 0 0; font-size: 16px; font-weight: 700; color: #333; }
 
         /* Meta Row */
         .meta-row { display: flex; justify-content: space-between; padding: 10px; font-size: 14px; font-weight: 700; }
@@ -126,6 +129,9 @@ export default async function PrintFormPage({
               <h1>CUSTOMER DETAIL FORM</h1>
               <h2>TELANGANA BOAT TOURISM</h2>
               <h3>APTDC PAPIKONDALU</h3>
+              <h4>
+                {booking.package_title} {booking.variant_title && booking.variant_title !== '—' && `- ${booking.variant_title}`}
+              </h4>
             </div>
             <img src="/logos/ap-tourism.png" className="logo-img" alt="AP Tourism" />
           </div>

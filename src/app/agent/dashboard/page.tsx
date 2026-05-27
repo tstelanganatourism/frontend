@@ -77,7 +77,7 @@ export default function AgentDashboardPage() {
               href="/agent/dashboard/bookings"
               className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-sand)] text-[var(--color-brand-river)] px-6 py-3 text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#e6d0a3] transition-all hover:-translate-y-0.5"
             >
-              See Booking Ledger
+              See Bookings
             </Link>
             <Link
               href="/packages"
@@ -163,7 +163,7 @@ export default function AgentDashboardPage() {
             Recent Client Bookings
           </h2>
           <Link href="/agent/dashboard/bookings" className="text-xs font-bold text-[var(--color-brand-teal)] hover:underline uppercase tracking-wider">
-            View All Ledger
+            View All Bookings
           </Link>
         </div>
         {recentBookings.length > 0 ? (

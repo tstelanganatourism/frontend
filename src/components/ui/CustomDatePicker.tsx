@@ -57,6 +57,10 @@ export const CustomDatePicker = ({
     const dd = String(day).padStart(2, '0');
     return `${year}-${mm}-${dd}`;
   };
+  const getLocalToday = () => {
+    const d = new Date();
+    return toYYYYMMDD(d.getFullYear(), d.getMonth(), d.getDate());
+  };
 
   const handleDaySelect = (day: number) => {
     onChange(toYYYYMMDD(calYear, calMonth, day));
@@ -84,7 +88,7 @@ export const CustomDatePicker = ({
     const firstDay = getFirstDayOfMonth(calYear, calMonth);
     const days = [];
     for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} className="h-8 w-8" />);
-    const minDateStr = min ? min : new Date().toISOString().slice(0, 10);
+    const minDateStr = min ? min : getLocalToday();
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = toYYYYMMDD(calYear, calMonth, i);
       const isPast = !allowPast && dateStr < minDateStr;

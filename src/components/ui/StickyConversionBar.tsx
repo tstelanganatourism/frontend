@@ -36,7 +36,7 @@ export default function StickyConversionBar() {
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleWhatsApp}
-        className="flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#25D366] active:opacity-80"
+        className="flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#075e54] active:opacity-80"
       >
         <MessageCircle className="h-5 w-5" />
         WhatsApp

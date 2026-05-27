@@ -6,7 +6,8 @@ import { useAdminStore } from '@/stores/adminStore';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Save, User, Phone, Mail, Building2, FileText,
-  Percent, Lock, Eye, EyeOff, RefreshCw, MapPin, KeyRound
+  Percent, Lock, Eye, EyeOff, RefreshCw, MapPin, KeyRound,
+  IndianRupee, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +27,8 @@ export default function EditAgentPage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [commission, setCommission] = useState('0.00');
+  const [commissionType, setCommissionType] = useState<'PERCENTAGE' | 'FIXED_AMOUNT'>('PERCENTAGE');
+  const [fixedAmount, setFixedAmount] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [address, setAddress] = useState('');
@@ -44,6 +47,8 @@ export default function EditAgentPage() {
       setFullName(currentAgent.full_name || '');
       setPhone(currentAgent.phone_number || '');
       setCommission(String(parseFloat(currentAgent.commission_percentage || 0)));
+      setCommissionType(currentAgent.commission_type || 'PERCENTAGE');
+      setFixedAmount(String(parseFloat(currentAgent.commission_fixed_amount || 0)));
       setCompanyName(currentAgent.company_name || '');
       setGstNumber(currentAgent.gst_number || '');
       setAddress(currentAgent.address || '');
@@ -57,11 +62,18 @@ export default function EditAgentPage() {
       toast.error('Name and phone are required');
       return;
     }
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
     try {
       await updateAgent(agentId as string, {
         full_name: fullName.trim(),
         phone_number: phone.trim(),
+        commission_type: commissionType,
         commission_percentage: parseFloat(commission) || 0,
+        commission_fixed_amount: commissionType === 'FIXED_AMOUNT' ? (parseFloat(fixedAmount) || 0) : null,
         company_name: companyName.trim() || null,
         gst_number: gstNumber.trim() || null,
         address: address.trim() || null,
@@ -160,7 +172,7 @@ export default function EditAgentPage() {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Phone Number *</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} maxLength={10} required
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
                   </div>
                 </div>
@@ -177,14 +189,52 @@ export default function EditAgentPage() {
                 <h3 className="text-lg font-bold text-slate-900">Commission & Business</h3>
               </div>
               <div className="grid gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Commission %</label>
-                  <div className="relative">
-                    <Percent className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input type="number" step="0.01" min="0" max="100" value={commission} onChange={(e) => setCommission(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                {/* Commission Type Toggle */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Commission Type</label>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setCommissionType('PERCENTAGE')}
+                      className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-bold transition ${
+                        commissionType === 'PERCENTAGE' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                      }`}>
+                      <Percent className="h-4 w-4" /> Percentage
+                    </button>
+                    <button type="button" onClick={() => setCommissionType('FIXED_AMOUNT')}
+                      className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-bold transition ${
+                        commissionType === 'FIXED_AMOUNT' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                      }`}>
+                      <IndianRupee className="h-4 w-4" /> Fixed Amount
+                    </button>
                   </div>
                 </div>
+
+                {commissionType === 'PERCENTAGE' ? (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Commission Percentage</label>
+                    <div className="relative">
+                      <Percent className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input type="number" step="0.01" min="0" max="100" value={commission} onChange={(e) => setCommission(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all" />
+                    </div>
+                    {parseFloat(commission) > 35 && (
+                      <p className="flex items-center gap-1 text-xs text-amber-600 font-semibold mt-2">
+                        <AlertTriangle className="h-3 w-3" /> Commission above 35% is unusually high
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-400 mt-1">Applied to confirmed booking revenue.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Fixed Amount (INR)</label>
+                    <div className="relative">
+                      <IndianRupee className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input type="number" step="1" min="0" value={fixedAmount} onChange={(e) => setFixedAmount(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
+                        placeholder="e.g. 500" />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">Fixed discount per booking for this agent.</p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Company Name</label>
                   <div className="relative">

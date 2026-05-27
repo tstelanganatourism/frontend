@@ -29,7 +29,7 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
 
   try {
     const query = params.toString();
-    const res = await apiFetch(`/api/v1/packages?${query}`, { next: { revalidate: 60, tags: ['packages'] } });
+    const res = await apiFetch(`/api/v1/packages?${query}`, { next: { revalidate: 30, tags: ['packages'] } });
     if (!res.ok) return { query, data: undefined };
     return { query, data: await res.json() };
   } catch {
@@ -37,12 +37,7 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
   }
 }
 
-export default async function PackagesPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const { data } = await fetchInitialPackages(params);
-  return <PackagesList data={data} pathname="/packages" searchParams={params} />;
+export default async function PackagesPage() {
+  const { data } = await fetchInitialPackages({});
+  return <PackagesList data={data} pathname="/packages" />;
 }

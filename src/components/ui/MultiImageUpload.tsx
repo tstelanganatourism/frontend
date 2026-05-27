@@ -131,7 +131,7 @@ export default function MultiImageUpload({ value, onChange, label, helperText }:
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept="image/*"
+            accept="image/*;capture=camera"
             multiple
             className="hidden"
           />
@@ -147,7 +147,7 @@ export default function MultiImageUpload({ value, onChange, label, helperText }:
                 <Upload className="h-5 w-5" />
               </div>
               <p className="text-xs font-bold text-slate-600 text-center px-4">
-                Add Photos
+                Drag & Drop Photos<br/><span className="font-normal text-[10px] text-slate-400">or click to browse</span>
               </p>
             </>
           )}

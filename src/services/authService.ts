@@ -95,10 +95,24 @@ export async function resendAdminOtp(data: {
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
+let activeRefreshPromise: Promise<TokenResponse> | null = null;
+
 export async function refreshToken(): Promise<TokenResponse> {
-  const res = await apiClient.post<TokenResponse>('/api/v1/auth/refresh');
-  useAuthStore.getState().setAuth(res.data.user, res.data.access_token);
-  return res.data;
+  if (activeRefreshPromise) {
+    return activeRefreshPromise;
+  }
+  
+  activeRefreshPromise = (async () => {
+    try {
+      const res = await apiClient.post<TokenResponse>('/api/v1/auth/refresh');
+      useAuthStore.getState().setAuth(res.data.user, res.data.access_token);
+      return res.data;
+    } finally {
+      activeRefreshPromise = null;
+    }
+  })();
+  
+  return activeRefreshPromise;
 }
 
 export async function logout(): Promise<void> {

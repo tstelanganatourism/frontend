@@ -5,11 +5,13 @@ import { Home, Map, BedDouble, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 
-export default function MobileBottomNav() {
+export default function MobileBottomNav({ isStacked = false }: { isStacked?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
-  const profileHref = isAuthenticated ? '/dashboard' : '/login';
+  const { isAuthenticated, user } = useAuthStore();
+  const profileHref = isAuthenticated 
+    ? (user?.role === 'ADMIN' ? '/admin/dashboard' : user?.role === 'AGENT' ? '/agent/dashboard' : '/dashboard') 
+    : '/login';
 
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
@@ -18,8 +20,10 @@ export default function MobileBottomNav() {
     { name: isAuthenticated ? 'Dashboard' : 'Login', href: profileHref, icon: User },
   ];
 
+  const bottomClass = isStacked ? "bottom-16 sm:bottom-0" : "bottom-0";
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/70 bg-white/92 px-5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-xl md:hidden">
+    <div className={`fixed ${bottomClass} left-0 right-0 z-50 border-t border-white/70 bg-white/92 px-5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-xl md:hidden`}>
       <div className="mx-auto flex max-w-md items-center justify-between">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));

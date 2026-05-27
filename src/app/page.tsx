@@ -5,6 +5,8 @@ import type { Metadata } from 'next';
 import { ArrowRight, CalendarCheck, Compass, Mountain, Navigation, Quote, ShieldCheck, Ship, Sparkles, Star, Waves } from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
 import RoomCard from '@/components/ui/RoomCard';
+import HeroSlider from '@/components/ui/HeroSlider';
+import HeroBody from '@/components/ui/HeroBody';
 import { ShimmerGrid } from '@/components/ui/SkeletonLoader';
 import { apiFetch } from '@/lib/api';
 
@@ -24,46 +26,24 @@ export const metadata: Metadata = {
   ],
 };
 
-const HERO_SLIDES = [
-  {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg',
-    alt: 'Godavari river flowing through Papikondalu hills',
-  },
-  {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg',
-    alt: 'Scenic boat journey through Papikondalu',
-  },
-  {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912248/slider2_souyzb.jpg',
-    alt: 'Papikondalu tourism landscape',
-  },
-  {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912273/slider3_bx3qsu.jpg',
-    alt: 'Bhadrachalam and Godavari travel view',
-  },
-  {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912157/slider1_p9iape.jpg',
-    alt: 'Papikondalu river cruise at sunrise',
-  },
-];
 
 const DESTINATION_HIGHLIGHTS = [
   {
     title: 'Godavari River Cruise',
     copy: 'Slow water, green folds of Papikondalu and a route designed for families, pilgrims and first-time travellers.',
-    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/v1779431926/papikondalu-3_jg6thw.png',
     icon: Waves,
   },
   {
     title: 'Bhadrachalam Darshan',
     copy: 'Temple-first itineraries with clean pickup planning, local timing support and room options close to the journey.',
-    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912273/slider3_bx3qsu.jpg',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432477/temple_0ciG4xn9_202402271449110_bck96x.jpg',
     icon: Sparkles,
   },
   {
     title: 'Papikondalu Nature Escape',
     copy: 'Hill views, bamboo stay extensions and camera-ready river stretches curated into simple package choices.',
-    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912248/slider2_souyzb.jpg',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/v1779431872/maredumilli-13_mdqgmv.jpg',
     icon: Mountain,
   },
 ];
@@ -100,7 +80,7 @@ type FeaturedRoom = {
 async function fetchFeaturedPackages() {
   try {
     const res = await apiFetch('/api/v1/packages?is_featured=true&size=3', {
-      next: { revalidate: 60, tags: ['packages'] } // Revalidate every minute
+      next: { revalidate: 30, tags: ['packages'] } 
     });
     if (!res.ok) throw new Error('Failed to fetch packages');
     const data = await res.json();
@@ -131,7 +111,7 @@ export default async function HomePage() {
     '@type': 'TravelAgency',
     name: 'Telangana Boat Tourism',
     description: 'Book trusted Papikondalu boat tours, Godavari river cruises, Kolluru bamboo huts and Bhadrachalam travel packages.',
-    url: 'https://telanganaboattourism.com', // Update with actual domain
+    url: 'https://www.tsboattourism.org',
     logo: 'https://res.cloudinary.com/dpdab3e97/image/upload/v1778912203/slider4_rikfsq.jpg',
     address: {
       '@type': 'PostalAddress',
@@ -144,123 +124,20 @@ export default async function HomePage() {
   return (
     <div className="flex w-full flex-col overflow-hidden bg-[#f7f4ed]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      {/* Cinematic Hero Section */}
-      <section className="relative min-h-[calc(100svh-4rem)] w-full overflow-hidden bg-[var(--color-brand-river)]">
+      {/* ─── Cinematic Hero Section ─────────────────────────────────────── */}
+      <section className="sticky top-0 w-full overflow-hidden bg-slate-950">
+        {/* Background slider */}
         <div className="absolute inset-0 z-0">
-          {HERO_SLIDES.map((slide, index) => (
-            <div
-              key={slide.src}
-              className="hero-cinema-slide absolute inset-0 opacity-0"
-              style={{ animationDelay: `${index * 6}s` }}
-            >
-              <Image
-                src={slide.src}
-                alt={slide.alt}
-                fill
-                priority={index <= 1}
-                sizes="100vw"
-                className="object-cover"
-              />
-            </div>
-          ))}
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,22,34,0.92),rgba(15,61,86,0.66)_43%,rgba(15,61,86,0.22)_70%),linear-gradient(0deg,rgba(3,22,34,0.82),rgba(3,22,34,0.04)_54%,rgba(3,22,34,0.42))]" />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#08293d] to-transparent" />
-          <div className="hero-light-sweep absolute -left-1/3 top-0 h-full w-1/2 rotate-12 bg-white/10 blur-3xl" />
+          <HeroSlider />
         </div>
-
-        <div className="relative z-10 mx-auto flex min-h-[calc(100svh-4rem)] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid w-full items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="max-w-3xl">
-              <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-white shadow-xl backdrop-blur-md sm:text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-[var(--color-brand-sand)]" />
-                Official Papikondalu & Bhadrachalam Booking
-              </span>
-              <h1 className="mt-5 text-4xl font-black leading-[1.02] text-white drop-shadow-xl sm:text-5xl md:text-6xl xl:text-7xl">
-                Premium Pappikondalu Boat Rides & Stays
-              </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-white/88 drop-shadow-md sm:text-lg md:text-xl md:leading-8">
-                Experience scenic Godavari river cruises, exciting sightseeing journeys, and authentic riverside bamboo huts with official booking support from Telangana Boat Tourism.
-              </p>
-
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/boat-rides"
-                  prefetch={false}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-brand-sand)] px-6 py-3.5 text-sm font-bold text-[#0a3147] shadow-[0_18px_45px_rgba(0,0,0,0.24)] transition-all duration-200 hover:-translate-y-1 hover:bg-white sm:text-base"
-                >
-                  <Ship className="h-5 w-5" />
-                  Explore Boat Rides
-                </Link>
-                <Link
-                  href="/stays"
-                  prefetch={false}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1a6b7a] px-6 py-3.5 text-sm font-bold text-white shadow-[0_18px_45px_rgba(0,0,0,0.24)] transition-all duration-200 hover:-translate-y-1 hover:bg-white hover:text-[#1a6b7a] sm:text-base"
-                >
-                  <CalendarCheck className="h-5 w-5" />
-                  Book Riverside Stays
-                </Link>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3 text-sm text-white/85">
-                {['Godavari boat rides', 'Riverside stays', 'Sightseeing cruises', 'Family package options', 'Aadhaar verified booking'].map((item) => (
-                  <span key={item} className="rounded-full border border-white/15 bg-white/10 px-4 py-2 backdrop-blur-md">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="hidden lg:block">
-              <div className="ml-auto max-w-sm border-l border-white/20 pl-8 text-white">
-                <div className="flex items-center gap-2 text-[var(--color-brand-sand)]">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-                <p className="mt-4 text-xl font-semibold leading-snug xl:text-2xl">
-                  A polished Godavari journey with quick booking help, clean itinerary choices and local expertise.
-                </p>
-                <div className="mt-7 grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-3xl font-bold text-[var(--color-brand-sand)]">20+</div>
-                    <div className="mt-1 text-xs uppercase tracking-widest text-white/60">Years</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-[var(--color-brand-sand)]">100k+</div>
-                    <div className="mt-1 text-xs uppercase tracking-widest text-white/60">Travellers</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Indicators */}
-      <section className="relative z-20 -mt-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-4 rounded-[1.75rem] border border-white/50 bg-white/90 p-4 text-center shadow-[0_24px_70px_rgba(15,61,86,0.16)] backdrop-blur-xl md:grid-cols-3 md:p-5">
-            <div className="flex flex-col items-center rounded-[1.25rem] bg-[#f8fbfa] px-4 py-6">
-              <ShieldCheck className="h-10 w-10 text-[var(--color-brand-teal)] mb-4" />
-              <h3 className="text-lg font-bold text-[var(--color-brand-river)] mb-2">Verified & Secure</h3>
-              <p className="text-muted-foreground text-sm">Official government-approved tourism boats and lodges.</p>
-            </div>
-            <div className="flex flex-col items-center rounded-[1.25rem] bg-[#f8fbfa] px-4 py-6">
-              <Ship className="h-10 w-10 text-[var(--color-brand-teal)] mb-4" />
-              <h3 className="text-lg font-bold text-[var(--color-brand-river)] mb-2">Premium Experience</h3>
-              <p className="text-muted-foreground text-sm">A/C luxury boats, delicious food, and comfortable stays.</p>
-            </div>
-            <div className="flex flex-col items-center rounded-[1.25rem] bg-[#f8fbfa] px-4 py-6">
-              <Navigation className="h-10 w-10 text-[var(--color-brand-teal)] mb-4" />
-              <h3 className="text-lg font-bold text-[var(--color-brand-river)] mb-2">Seamless Booking</h3>
-              <p className="text-muted-foreground text-sm">Instant confirmation, digital tickets, and 24/7 support.</p>
-            </div>
-          </div>
+        {/* Foreground hero content */}
+        <div className="relative z-10">
+          <HeroBody />
         </div>
       </section>
 
       {/* Featured Packages */}
-      <section className="relative py-14 md:py-24">
+      <section className="relative z-20 rounded-t-[3rem] bg-[#f7f4ed] py-14 shadow-[0_-20px_40px_rgba(0,0,0,0.15)] md:py-24">
         <div className="absolute left-0 top-20 h-72 w-72 rounded-full bg-[#bdebf1]/35 blur-3xl" />
         <div className="absolute bottom-10 right-0 h-80 w-80 rounded-full bg-[#f1d58a]/28 blur-3xl" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -273,7 +150,7 @@ export default async function HomePage() {
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          
+
           <Suspense fallback={<ShimmerGrid count={3} />}>
             <FeaturedPackages />
           </Suspense>
@@ -326,7 +203,7 @@ export default async function HomePage() {
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          
+
           <Suspense fallback={<ShimmerGrid count={3} />}>
             <FeaturedRooms />
           </Suspense>

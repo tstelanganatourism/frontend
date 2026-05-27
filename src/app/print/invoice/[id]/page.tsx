@@ -102,7 +102,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   const billedName = primaryPassenger?.full_name || booking.user?.full_name || 'Guest User';
   const billedPhone = (primaryPassenger as any)?.phone_number || (primaryPassenger as any)?.phone || booking.user?.phone || 'N/A';
 
-  const paymentMode = booking.pricing_snapshot?.razorpay_payment_id ? 'Online (Razorpay)' : 'Manual / Offline';
+  const paymentMode = booking.pricing_snapshot?.razorpay_payment_id ? 'Online (Razorpay)' : 'Office';
   const paymentId = booking.pricing_snapshot?.razorpay_payment_id || 'N/A';
 
   return (
@@ -327,7 +327,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             {booking.passengers.map((p, idx) => (
               <tr key={idx}>
                 <td>{idx + 1}</td>
-                <td>{p.full_name} {p.is_primary ? '(Lead)' : ''}</td>
+                <td>{p.full_name} {p.is_primary ? '(Primary)' : ''}</td>
                 <td>{p.age}</td>
                 <td>{p.gender || '-'}</td>
                 <td>{p.id_proof_number ? `${p.id_proof_type}: ${p.id_proof_number.slice(-4) || p.id_proof_number}` : '(Not Provided)'}</td>

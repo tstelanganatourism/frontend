@@ -59,7 +59,7 @@ export default function GoogleCallbackPage() {
         <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-3xl overflow-hidden bg-white shadow-xl p-2 border border-white/20">
           {error ? (
             <img 
-              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778914224/logo1_shpjk5.jpg" 
+              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
               alt="Papikondalu Tourism Logo" 
               className="h-full w-full object-contain rounded-2xl opacity-40 grayscale"
             />
@@ -70,7 +70,7 @@ export default function GoogleCallbackPage() {
               className="h-full w-full flex items-center justify-center"
             >
               <img 
-                src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778914224/logo1_shpjk5.jpg" 
+                src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
                 alt="Papikondalu Tourism Logo" 
                 className="h-full w-full object-contain rounded-2xl"
               />

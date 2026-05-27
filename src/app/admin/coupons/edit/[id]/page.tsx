@@ -38,6 +38,7 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
   const [applicableRoomIds, setApplicableRoomIds] = useState<string[]>([]);
   const [validFrom, setValidFrom] = useState('');
   const [validUntil, setValidUntil] = useState('');
+  const [minTickets, setMinTickets] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -64,6 +65,7 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
       if (currentCoupon.valid_until) {
         setValidUntil(new Date(currentCoupon.valid_until).toISOString().slice(0, 16));
       }
+      setMinTickets(currentCoupon.min_tickets ? String(currentCoupon.min_tickets) : '');
       setIsActive(currentCoupon.is_active !== false);
     }
   }, [currentCoupon]);
@@ -87,6 +89,7 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
         discount_value: Number(discountValue),
         min_booking_amount: minBookingAmount ? Number(minBookingAmount) : null,
         max_discount_amount: discountType === 'PERCENTAGE' && maxDiscountAmount ? Number(maxDiscountAmount) : null,
+        min_tickets: minTickets ? Number(minTickets) : null,
         usage_limit: usageLimit ? Number(usageLimit) : null,
         applicable_package_ids: applicablePackageIds.map(Number),
         applicable_room_ids: applicableRoomIds.map(Number),
@@ -244,6 +247,21 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
               />
               <p className="text-[10px] text-slate-400 mt-1.5 font-bold">Only triggers if booking total matches or exceeds this value.</p>
             </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Minimum Passengers/Tickets</label>
+              <input 
+                type="number" 
+                value={minTickets} 
+                onChange={(e) => setMinTickets(e.target.value)}
+                placeholder="5"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-55 px-5 py-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800"
+                min="1"
+              />
+              <p className="text-[10px] text-slate-400 mt-1.5 font-bold">Only triggers if the passenger count matches or exceeds this value.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Total Limit (Usage Count Cap)</label>
               <input 

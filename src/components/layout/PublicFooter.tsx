@@ -20,19 +20,33 @@ export default function PublicFooter() {
   const isHomePage = pathname === '/';
 
   return (
-    <footer className="bg-[var(--color-brand-river)] text-white pt-10 pb-6 border-t border-white/5">
+    <footer className="bg-[var(--color-brand-river)] text-white pt-10 pb-24 sm:pb-6 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`grid grid-cols-1 gap-8 ${isHomePage ? 'lg:grid-cols-[1fr_0.5fr_0.5fr_1fr_1.5fr]' : 'lg:grid-cols-[1.2fr_0.7fr_0.7fr_1.2fr]'} mb-8`}>
 
           {/* Brand Info */}
           <div className="space-y-4">
-            <Link href="/" className="inline-block transition-transform duration-200 hover:scale-[1.02]">
-              <img
-                src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778914224/logo1_shpjk5.jpg"
-                alt="Papikondalu Tourism Logo"
-                className="h-10 w-auto object-contain"
-              />
-            </Link>
+            <div className="flex flex-col gap-5 mb-2">
+              <Link href="/" className="group flex items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
+                <div className="grid place-items-center h-11 w-11 shrink-0 rounded-full bg-white p-1 shadow-sm">
+                  <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism" className="h-full w-full object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60">Andhra Pradesh</div>
+                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white group-hover:text-[var(--color-brand-sand)] transition-colors">Official Boat Tourism</div>
+                </div>
+              </Link>
+              
+              <div className="group flex items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
+                <div className="grid place-items-center h-11 w-11 shrink-0 rounded-full bg-white p-1 shadow-sm">
+                  <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" className="h-full w-full object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60">Telangana</div>
+                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white transition-colors">Official Tourism</div>
+                </div>
+              </div>
+            </div>
             <p className="text-white/70 text-[11px] leading-relaxed max-w-xs">
               Experience the breathtaking beauty of the Godavari river and majestic hills. Your premium journey starts here.
             </p>
@@ -41,6 +55,7 @@ export default function PublicFooter() {
                 <a
                   key={social.label}
                   href={social.href}
+                  aria-label={social.label}
                   target={social.href.startsWith('http') ? '_blank' : undefined}
                   rel={social.href.startsWith('http') ? 'noreferrer' : undefined}
                   className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white transition-all hover:bg-white hover:text-[var(--color-brand-river)]"
@@ -118,10 +133,10 @@ export default function PublicFooter() {
 
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-white/40 text-[10px] text-center md:text-left">
+          <p className="text-white/65 text-[10px] text-center md:text-left">
             © {new Date().getFullYear()} Papikondalu Tourism. All rights reserved.
           </p>
-          <div className="flex items-center gap-1 text-white/50 text-[11px] font-medium">
+          <div className="flex items-center gap-1 text-white/70 text-[11px] font-medium">
             Made with <Heart className="h-3 w-3 text-red-500 fill-red-500 mx-0.5" /> by <a href="https://wa.me/918886154275" target="_blank" rel="noreferrer" className="text-white font-bold hover:text-[var(--color-brand-teal)] transition-colors">Satvik</a>
           </div>
         </div>

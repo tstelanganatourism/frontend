@@ -4,8 +4,11 @@ import React, { Suspense, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
-import MobileBottomNav from "./MobileBottomNav";
-import WhatsAppFAB from "../ui/WhatsAppFAB";
+import dynamic from 'next/dynamic';
+
+const MobileBottomNav = dynamic(() => import("./MobileBottomNav"), { ssr: false });
+const WhatsAppFAB = dynamic(() => import("../ui/WhatsAppFAB"), { ssr: false });
+const StickyConversionBar = dynamic(() => import("../ui/StickyConversionBar"), { ssr: false });
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode;
@@ -18,7 +21,10 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
   const isAdminOrAgentPage = pathname?.startsWith('/admin') && !pathname?.endsWith('/login');
   const isPrintPage = pathname?.startsWith('/print');
 
-
+  const isBookingPage = !!pathname?.match(/^\/(packages|stays|rooms)\/[^/]+(\/checkout)?$/);
+  const isDashboardPage = !!pathname?.match(/^\/(dashboard|admin\/dashboard|agent\/dashboard)/);
+  const showStickyBar = isBookingPage || isDashboardPage;
+  const showMobileNav = !isBookingPage;
 
   // Register PWA Service Worker
   useEffect(() => {
@@ -34,6 +40,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
     return (
       <main className="flex-1 w-full relative min-h-screen">
         {children}
+        {isDashboardPage && <StickyConversionBar />}
       </main>
     );
   }
@@ -44,12 +51,13 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       <Suspense fallback={<div className="h-16 border-b border-border bg-white" />}>
         <PublicNavbar />
       </Suspense>
-      <main className="flex-1 w-full relative pb-24 md:pb-0 min-h-[calc(100vh-4rem)]">
+      <main className="flex-1 w-full relative pb-[136px] md:pb-0 min-h-[calc(100vh-4rem)]">
         {children}
       </main>
       <PublicFooter />
-      {!pathname?.match(/^\/(packages|stays|rooms)\/[^/]+$/) && <MobileBottomNav />}
+      {showMobileNav && <MobileBottomNav isStacked={showStickyBar} />}
       <WhatsAppFAB />
+      {showStickyBar && <StickyConversionBar />}
     </>
   );
 }

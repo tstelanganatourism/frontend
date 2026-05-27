@@ -9,7 +9,9 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { apiClient } from '@/lib/api';
 import { useRazorpay } from "react-razorpay";
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
+
 import { toast } from 'sonner';
+import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 
 interface PackageVariant {
   id: number;
@@ -106,9 +108,8 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     }
   };
 
-  const tomorrow = new Date(todayIST());
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDateStr = toYYYYMMDD(tomorrow);
+  const today = new Date(todayIST());
+  const minDateStr = toYYYYMMDD(today);
 
   const validVariants = useMemo(() => {
     return variants.filter(
@@ -118,7 +119,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(tomorrow));
+  const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(today));
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [paymentPercentage, setPaymentPercentage] = useState(100);
@@ -138,8 +139,8 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   const [dateMenuOpen, setDateMenuOpen] = useState(false);
   
   // Calendar state
-  const [calYear, setCalYear] = useState(tomorrow.getFullYear());
-  const [calMonth, setCalMonth] = useState(tomorrow.getMonth()); // 0-11
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-11
   const dateMenuRef = useRef<HTMLDivElement>(null);
 
   // Auto-select first valid variant when loaded
@@ -155,10 +156,45 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     if (packageSlug && currentMonthStr) {
       fetchPublicAvailability(packageSlug, currentMonthStr);
     }
-    // fetchPublicAvailability is a Zustand store action — omitting it is intentional
-    // to avoid the unstable reference causing re-fetches on every store update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageSlug, currentMonthStr]);
+
+  // Version tracking map for A-C-B out of order protection
+  const versionMapRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!packageId) return;
+    
+    // Connect to scoped SSE endpoint
+    const sse = new ReconnectingEventSource(`/api/v1/stream/packages/${packageId}`);
+    
+    const handleUpdate = (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        const key = `${payload.variant_id}-${payload.travel_date}`;
+        
+        // Event ordering protection: ignore stale versions
+        const currentVersion = versionMapRef.current[key] || 0;
+        if (payload.version < currentVersion) {
+          console.warn(`[SSE] Ignored stale event for ${key} (version ${payload.version} < ${currentVersion})`);
+          return;
+        }
+        
+        // Update version and apply payload
+        versionMapRef.current[key] = payload.version;
+        useInventoryStore.getState().applySSEPayload(payload);
+        console.log(`[SSE] Applied inventory update for ${key} (version ${payload.version})`);
+      } catch (err) {
+        console.error('[SSE] Failed to parse event payload', err);
+      }
+    };
+    
+    sse.addEventListener('INVENTORY_UPDATE', handleUpdate);
+    
+    return () => {
+      sse.removeEventListener('INVENTORY_UPDATE', handleUpdate);
+      sse.close();
+    };
+  }, [packageId]);
 
   // Click outside to close menus
   useEffect(() => {
@@ -437,6 +473,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           passengers: passengers.map(p => ({
             ...p,
             aadhaar: p.aadhaar || undefined,
+            phone: p.phone || undefined,
           }))
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
@@ -453,7 +490,11 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
         adult_count: adults,
         child_count: children,
-        passengers: passengers,
+        passengers: passengers.map((p: any) => ({
+          ...p,
+          aadhaar: p.aadhaar || undefined,
+          phone: p.phone || undefined,
+        })),
         payment_percentage: (() => {
           if (!customPayAmount) return 100;
           const minPay = Math.ceil(prices.grandTotal * 0.35);
@@ -461,10 +502,12 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           if (isNaN(parsed) || parsed >= prices.grandTotal) return 100;
           const clamped = Math.max(minPay, parsed);
           return Math.round((clamped / prices.grandTotal) * 100);
-        })()
+        })(),
+        expected_amount: prices.grandTotal
       };
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
+      
       const { checkout_data } = res.data;
 
       if (!checkout_data || !checkout_data.key_id) {
@@ -855,7 +898,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
              )}
            </div>
 
-           {!isAgent && !isAdmin && selectedDate && (() => {
+           {selectedDate && (() => {
              const minPayable = Math.ceil(prices.grandTotal * 0.35);
              const parsedCustom = parseInt(customPayAmount, 10);
              const effectivePayNow = isNaN(parsedCustom) || customPayAmount === '' 
