@@ -496,6 +496,7 @@ export default function AdminBookingsPage() {
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         publicId={selectedPublicId}
+        onPaymentRecorded={fetchBookings}
       />
     </div>
   );

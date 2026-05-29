@@ -25,11 +25,16 @@ export default function AdminCouponsPage() {
   const [targetFilter, setTargetFilter] = useState<'ALL' | 'PACKAGES' | 'ROOMS'>('ALL');
   const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
-    fetchCoupons(searchQuery);
-    fetchPackages();
-    fetchRooms();
+    Promise.all([
+      fetchCoupons(searchQuery),
+      fetchPackages(),
+      fetchRooms()
+    ]).finally(() => {
+      setIsInitialMount(false);
+    });
   }, [fetchCoupons, fetchPackages, fetchRooms, searchQuery]);
 
   const handleDeleteConfirm = async () => {
@@ -138,7 +143,7 @@ export default function AdminCouponsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {isLoading ? (
+              {(isLoading || isInitialMount) ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12">
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />

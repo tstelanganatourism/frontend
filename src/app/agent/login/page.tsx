@@ -15,6 +15,11 @@ const loginSchema = z.object({
 });
 type LoginData = z.infer<typeof loginSchema>;
 
+function getAuthErrorMessage(error: unknown, fallback: string) {
+  const responseError = error as { response?: { data?: { detail?: string } } };
+  return responseError.response?.data?.detail || fallback;
+}
+
 function AgentLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,8 +40,8 @@ function AgentLoginContent() {
       const destination = redirect || '/';
       router.push(destination);
       router.refresh();
-    } catch (err: any) {
-      setApiError(err?.response?.data?.detail || 'Invalid credentials or unauthorized.');
+    } catch (err: unknown) {
+      setApiError(getAuthErrorMessage(err, 'Invalid credentials or unauthorized.'));
     }
   };
 
@@ -85,7 +90,7 @@ function AgentLoginContent() {
                   type="email"
                   autoComplete="username"
                   placeholder="agent@example.com"
-                  className="w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-4 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-teal-400 focus:bg-black/60 focus:ring-4 focus:ring-teal-400/10"
+                  className="auth-input w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-4 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-teal-400 focus:bg-black/60 focus:ring-4 focus:ring-teal-400/10"
                 />
               </div>
               {errors.email && (
@@ -106,7 +111,7 @@ function AgentLoginContent() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-12 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-teal-400 focus:bg-black/60 focus:ring-4 focus:ring-teal-400/10"
+                  className="auth-input w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-12 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-teal-400 focus:bg-black/60 focus:ring-4 focus:ring-teal-400/10"
                 />
                 <button
                   type="button"

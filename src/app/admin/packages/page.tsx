@@ -20,7 +20,8 @@ import {
   IndianRupee,
   Clock,
   CheckCircle2,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -104,10 +105,14 @@ export default function AdminPackagesPage() {
   const [selectedPackageToToggle, setSelectedPackageToToggle] = useState<any | null>(null);
   const [futureBookingsList, setFutureBookingsList] = useState<any[]>([]);
   const [isToggleModalOpen, setIsToggleModalOpen] = useState(false);
-  const [isTogglingState, setIsTogglingState] = useState(false);
+  const [togglingActiveId, setTogglingActiveId] = useState<number | null>(null);
+  const [togglingStatusId, setTogglingStatusId] = useState<number | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    fetchPackages('', statusFilter, 1, packagesLimit);
+    fetchPackages('', statusFilter, 1, packagesLimit).then(() => setHasFetched(true));
   }, [fetchPackages, statusFilter, packagesLimit]);
 
   const handleDeleteConfirm = async () => {
@@ -120,9 +125,10 @@ export default function AdminPackagesPage() {
   };
 
   const handleToggleActive = async (pkg: any) => {
+    if (togglingActiveId) return;
+    setTogglingActiveId(pkg.id);
     if (pkg.is_active) {
       // Admin is turning the package INACTIVE. Let's fetch future bookings first!
-      setIsTogglingState(true);
       try {
         const response = await apiClient.get(`/api/v1/admin/packages/${pkg.id}/future-bookings`);
         if (response.data && response.data.length > 0) {
@@ -130,40 +136,80 @@ export default function AdminPackagesPage() {
           setFutureBookingsList(response.data);
           setSelectedPackageToToggle(pkg);
           setIsToggleModalOpen(true);
+          setTogglingActiveId(null);
         } else {
           // No future bookings! Instantly make it inactive.
           await updatePackage(pkg.id, { is_active: false });
           toast.success(`"${pkg.title}" is now closed / inactive for bookings`);
-          fetchPackages('', statusFilter, packagesPage, packagesLimit);
+          fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
+          setTogglingActiveId(null);
         }
       } catch (err: any) {
         toast.error('Failed to check future bookings');
-      } finally {
-        setIsTogglingState(false);
+        setTogglingActiveId(null);
       }
     } else {
       // Admin is turning the package ACTIVE. No future bookings check needed.
       try {
         await updatePackage(pkg.id, { is_active: true });
         toast.success(`"${pkg.title}" is now active and accepting bookings`);
-        fetchPackages('', statusFilter, packagesPage, packagesLimit);
+        fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
       } catch (err: any) {
         toast.error('Failed to activate package');
+      } finally {
+        setTogglingActiveId(null);
       }
+    }
+  };
+
+  const handleToggleStatus = async (pkg: any) => {
+    if (togglingStatusId) return;
+    setTogglingStatusId(pkg.id);
+    try {
+      const newStatus = 
+        pkg.status === 'DRAFT' ? 'PUBLISHED' :
+        pkg.status === 'PUBLISHED' ? 'ARCHIVED' : 'DRAFT';
+
+      if (newStatus === 'ARCHIVED' || newStatus === 'DRAFT') {
+        const response = await apiClient.get(`/api/v1/admin/packages/${pkg.id}/future-bookings`);
+        if (response.data && response.data.length > 0) {
+          setFutureBookingsList(response.data);
+          setSelectedPackageToToggle({ ...pkg, intent: 'STATUS', newStatus });
+          setIsToggleModalOpen(true);
+          setTogglingStatusId(null);
+          return;
+        }
+      }
+
+      await updatePackage(pkg.id, { status: newStatus });
+      toast.success(`Package "${pkg.title}" status updated to ${newStatus}`);
+      fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
+    } catch (err: any) {
+      toast.error('Failed to update package status');
+    } finally {
+      setTogglingStatusId(null);
     }
   };
 
   const handleConfirmToggleInactive = async () => {
     if (selectedPackageToToggle) {
+      setIsConfirming(true);
       try {
-        await updatePackage(selectedPackageToToggle.id, { is_active: false });
-        toast.success(`"${selectedPackageToToggle.title}" is now closed / inactive for bookings`);
+        if (selectedPackageToToggle.intent === 'STATUS') {
+          await updatePackage(selectedPackageToToggle.id, { status: selectedPackageToToggle.newStatus });
+          toast.success(`Package "${selectedPackageToToggle.title}" status updated to ${selectedPackageToToggle.newStatus}`);
+        } else {
+          await updatePackage(selectedPackageToToggle.id, { is_active: false });
+          toast.success(`"${selectedPackageToToggle.title}" is now closed / inactive for bookings`);
+        }
         setIsToggleModalOpen(false);
         setSelectedPackageToToggle(null);
         setFutureBookingsList([]);
-        fetchPackages('', statusFilter, packagesPage, packagesLimit);
+        fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
       } catch (err: any) {
         toast.error('Failed to close package');
+      } finally {
+        setIsConfirming(false);
       }
     }
   };
@@ -219,7 +265,7 @@ export default function AdminPackagesPage() {
 
       await createPackage(duplicatedData);
       toast.success('Package duplicated successfully with all details!');
-      fetchPackages('', statusFilter, 1, packagesLimit);
+      fetchPackages('', statusFilter, 1, packagesLimit, true);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || err.message || 'Failed to duplicate package');
     }
@@ -296,7 +342,7 @@ export default function AdminPackagesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {isLoading ? (
+              {isLoading || !hasFetched ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12">
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />
@@ -347,37 +393,37 @@ export default function AdminPackagesPage() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleToggleActive(pkg)}
-                        disabled={isTogglingState}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all border cursor-pointer ${
-                          pkg.is_active 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
-                            : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                        disabled={togglingActiveId === pkg.id}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all border cursor-pointer disabled:opacity-70 disabled:cursor-wait ${
+                          togglingActiveId === pkg.id
+                            ? 'bg-slate-100 text-slate-500 border-slate-200'
+                            : pkg.is_active 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
+                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
                         }`}
                       >
-                        <span className={`h-2 w-2 rounded-full ${pkg.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                        {pkg.is_active ? 'Accepting Bookings' : 'Closed / Inactive'}
+                        {togglingActiveId === pkg.id ? (
+                          <><Loader2 className="h-3 w-3 animate-spin" /> Updating</>
+                        ) : (
+                          <>
+                            <span className={`h-2 w-2 rounded-full ${pkg.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                            {pkg.is_active ? 'Accepting Bookings' : 'Closed / Inactive'}
+                          </>
+                        )}
                       </button>
                     </td>
                     <td className="px-6 py-4">
                       <button
                         type="button"
-                        onClick={async () => {
-                          try {
-                            const newStatus = 
-                              pkg.status === 'DRAFT' ? 'PUBLISHED' :
-                              pkg.status === 'PUBLISHED' ? 'ARCHIVED' : 'DRAFT';
-                            await updatePackage(pkg.id, {
-                              status: newStatus
-                            });
-                            await fetchPackages('', statusFilter, packagesPage, packagesLimit);
-                            toast.success(`Package "${pkg.title}" status updated to ${newStatus}`);
-                          } catch (err: any) {
-                            toast.error(err.message || 'Failed to update package status');
-                          }
-                        }}
-                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold cursor-pointer hover:scale-105 active:scale-95 transition-all ${getStatusColor(pkg.status)}`}
+                        disabled={togglingStatusId === pkg.id}
+                        onClick={() => handleToggleStatus(pkg)}
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold cursor-pointer hover:scale-105 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100 disabled:active:scale-100 ${
+                          togglingStatusId === pkg.id ? 'bg-slate-100 text-slate-500 border-slate-200' : getStatusColor(pkg.status)
+                        }`}
                       >
-                        {pkg.status}
+                        {togglingStatusId === pkg.id ? (
+                          <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Updating</>
+                        ) : pkg.status}
                       </button>
                     </td>
                     <td className="px-6 py-4">
@@ -390,7 +436,7 @@ export default function AdminPackagesPage() {
                               await updatePackage(pkg.id, {
                                 is_featured: updatedFeatured
                               });
-                              await fetchPackages('', statusFilter, packagesPage, packagesLimit);
+                              await fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
                               toast.success(`Package "${pkg.title}" is now ${updatedFeatured ? 'Featured' : 'Not Featured'}`);
                             } catch (err: any) {
                               toast.error(err.message || 'Failed to toggle featured status');
@@ -513,30 +559,14 @@ export default function AdminPackagesPage() {
                 </div>
               </div>
 
-              {/* List of Bookings */}
-              <div className="max-h-60 overflow-y-auto border border-slate-150 rounded-2xl divide-y divide-slate-100 bg-slate-50 p-2 space-y-2 mb-6">
-                {futureBookingsList.map((booking: any) => (
-                  <div key={booking.id} className="p-3.5 bg-white rounded-xl border border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 transition-colors">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-black text-[#0f3d56] bg-[#0f3d56]/5 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">{booking.public_id}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-slate-400 font-bold mt-1">
-                        <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
-                        <span>
-                          {new Date(booking.travel_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <span className="font-black text-slate-900 block text-sm">₹{booking.total_amount.toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] font-bold text-slate-400 flex items-center justify-end gap-1">
-                        <Users className="h-3 w-3 text-slate-350" />
-                        {booking.adult_count} A / {booking.child_count} C
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              {/* Summary of Bookings (Simplified as requested) */}
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-150 mb-6 text-center">
+                <p className="text-sm font-bold text-slate-700">
+                  There are <span className="text-rose-600 font-black text-lg">{futureBookingsList.length}</span> active future bookings.
+                </p>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  Active bookings won't be deleted, and no further bookings will be allowed until you reopen.
+                </p>
               </div>
 
               <div className="text-xs font-bold text-rose-600 mb-6 bg-rose-50/70 border border-rose-100/70 rounded-xl p-3.5 flex items-start gap-2.5">
@@ -553,15 +583,18 @@ export default function AdminPackagesPage() {
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setIsToggleModalOpen(false)}
-                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-slate-350 active:scale-95 transition-all outline-none"
+                  disabled={isConfirming}
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-slate-350 active:scale-95 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel, Keep Active
                 </button>
                 <button
                   onClick={handleConfirmToggleInactive}
-                  className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 text-xs font-bold cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all shadow-md shadow-rose-200 outline-none"
+                  disabled={isConfirming}
+                  className="flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 text-xs font-bold cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all shadow-md shadow-rose-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 >
-                  Yes, Inactivate Anyway
+                  {isConfirming && <Loader2 className="h-4 w-4 animate-spin text-white" />}
+                  Yes, {selectedPackageToToggle?.intent === 'STATUS' ? `Change to ${selectedPackageToToggle.newStatus}` : 'Inactivate Anyway'}
                 </button>
               </div>
             </motion.div>

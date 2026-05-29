@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import PremiumSelect from '@/components/ui/PremiumSelect';
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 // ─── Verhoeff Checksum (client-side Aadhaar validation) ──────────────────────
 const _d = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 0, 6, 7, 8, 9, 5], [2, 3, 4, 0, 1, 7, 8, 9, 5, 6], [3, 4, 0, 1, 2, 8, 9, 5, 6, 7], [4, 0, 1, 2, 3, 9, 5, 6, 7, 8], [5, 9, 8, 7, 6, 0, 4, 3, 2, 1], [6, 5, 9, 8, 7, 1, 0, 4, 3, 2], [7, 6, 5, 9, 8, 2, 1, 0, 4, 3], [8, 7, 6, 5, 9, 3, 2, 1, 0, 4], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]];
@@ -34,9 +35,10 @@ interface CheckoutPassengerModalProps {
   adults: number;
   children: number;
   isProcessing: boolean;
+  targetType?: 'package' | 'room';
 }
 
-export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adults, children, isProcessing }: CheckoutPassengerModalProps) {
+export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adults, children, isProcessing, targetType = 'package' }: CheckoutPassengerModalProps) {
   const totalPassengers = adults + children;
   const [passengers, setPassengers] = useState<PassengerInput[]>([]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -74,24 +76,31 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
   };
 
   if (typeof document === 'undefined') return null;
-  const { createPortal } = require('react-dom');
+  if (!isOpen) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a6b7a]/10 text-[#1a6b7a]">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-slate-800">Passenger Details</h2>
-              <p className="text-xs font-semibold text-slate-500">Please provide details for {totalPassengers} passengers.</p>
-            </div>
-          </div>
+  return (
+    <DialogPrimitive.Root open={isOpen} onOpenChange={(val) => !val && onClose()} modal={!isProcessing}>
+      <DialogPrimitive.Portal>
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4">
+          <DialogPrimitive.Overlay className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" />
+          
+          <DialogPrimitive.Content 
+            className="relative w-full sm:max-w-2xl h-[92dvh] sm:max-h-[90vh] sm:h-auto overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl flex flex-col outline-none"
+            aria-describedby={undefined}
+          >
+            <DialogPrimitive.Title className="sr-only">Passenger Details</DialogPrimitive.Title>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a6b7a]/10 text-[#1a6b7a]">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-800">Passenger Details</h2>
+                  <p className="text-xs font-semibold text-slate-500">Please provide details for {totalPassengers} passengers.</p>
+                </div>
+              </div>
           <button
             type="button"
             onClick={onClose}
@@ -110,7 +119,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               return (
                 <div key={i} className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#1a6b7a]/30 hover:shadow-md">
                   <p className="mb-4 text-xs font-black uppercase tracking-wider text-[#1a6b7a]">
-                    {isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`}
+                    {targetType === 'room' ? `Guest Card ${i + 1}` : (isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`)}
                     {i === 0 && <span className="ml-2 rounded-full bg-[#1a6b7a]/10 px-2 py-0.5 text-[10px] text-[#1a6b7a]">Primary Contact</span>}
                   </p>
 
@@ -133,13 +142,13 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       <input
                         type="number"
                         required
-                        min={isChild ? 4 : 11}
-                        max={isChild ? 10 : 150}
+                        min={targetType === 'package' ? (isChild ? 4 : 11) : 0}
+                        max={targetType === 'package' && isChild ? 10 : 150}
                         disabled={isProcessing}
                         value={p.age}
                         onChange={(e) => handleChange(i, 'age', e.target.value === '' ? '' : parseInt(e.target.value))}
                         className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
-                        placeholder={isChild ? "4-10" : "11+"}
+                        placeholder={targetType === 'package' ? (isChild ? "4-10" : "11+") : "Age"}
                       />
                     </div>
 
@@ -161,13 +170,13 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-600">
                         Aadhaar Number
-                        {(typeof p.age === 'number' && p.age < 10) && (
-                          <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional for children)</span>
+                        {(typeof p.age === 'number' && p.age <= 10) && (
+                          <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional for children &le; 10)</span>
                         )}
                       </label>
                       <input
                         type="text"
-                        required={!(typeof p.age === 'number' && p.age < 10)}
+                        required={!(typeof p.age === 'number' && p.age <= 10)}
                         pattern="[0-9]{12}"
                         title="12 digit Aadhaar number"
                         disabled={isProcessing}
@@ -189,13 +198,13 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-600">
                           Contact Number
-                          {i !== 0 && (
+                          {(i !== 0 || (typeof p.age === 'number' && p.age <= 10)) && (
                             <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional)</span>
                           )}
                         </label>
                         <input
                           type="tel"
-                          required={i === 0}
+                          required={i === 0 && !(typeof p.age === 'number' && p.age <= 10)}
                           disabled={isProcessing}
                           value={p.phone}
                           onChange={(e) => handleChange(i, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
@@ -255,14 +264,18 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               !agreedToTerms ||
               !passengers.every((p, i) => {
                 const isChild = i >= adults;
-                const isMinor = typeof p.age === 'number' && p.age < 18;
+                const isChildAge = typeof p.age === 'number' && p.age <= 10;
                 const nameOk = p.full_name.trim() !== '';
-                const ageOk = typeof p.age === 'number' && (isChild ? (p.age >= 4 && p.age <= 10) : p.age >= 11);
+                const isPackage = targetType === 'package';
+                const ageOk = typeof p.age === 'number' && (isPackage ? (isChild ? (p.age >= 4 && p.age <= 10) : p.age >= 11) : (p.age >= 0));
                 const genderOk = p.gender !== '';
-                const aadhaarOk = isMinor
+                const aadhaarOk = isChildAge
                   ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
                   : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
-                const phoneOk = isChild || (i !== 0 && (!p.phone || p.phone.trim().length === 0)) || (p.phone && p.phone.trim().length === 10);
+                // Phone is optional if it's a child package, OR if they are <= 10 years old (even if it's a room), OR if they are not the primary contact.
+                const phoneOk = isChild || isChildAge || (i !== 0 && (!p.phone || p.phone.trim().length === 0)) || (p.phone && p.phone.trim().length === 10);
+                
+                // For the primary contact (Guest 1), if they are a child, we should still ensure someone in the group has a phone, but we'll let it pass here.
                 return nameOk && ageOk && genderOk && aadhaarOk && phoneOk;
               })
             }
@@ -283,8 +296,9 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
             </p>
           </div>
         )}
+      </DialogPrimitive.Content>
       </div>
-    </div>,
-    document.body
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

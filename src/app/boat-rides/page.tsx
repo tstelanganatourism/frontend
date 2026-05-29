@@ -38,7 +38,8 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
   }
 }
 
-export default async function BoatRidesPage() {
-  const { data } = await fetchInitialPackages({});
-  return <PackagesList data={data} pathname="/boat-rides" />;
+export default async function BoatRidesPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const searchParams = await props.searchParams;
+  const { data } = await fetchInitialPackages(searchParams);
+  return <PackagesList data={data} pathname="/boat-rides" searchParams={searchParams} />;
 }

@@ -30,6 +30,7 @@ interface Coupon {
   discount_value: number;
   min_booking_amount: number | null;
   max_discount_amount: number | null;
+  min_tickets: number | null;
 }
 
 export default function CouponPopup({ targetType, targetId }: CouponPopupProps) {
@@ -61,6 +62,11 @@ export default function CouponPopup({ targetType, targetId }: CouponPopupProps) 
     setCopiedCode(code);
     toast.success(`Coupon code ${code} copied!`);
     
+    // Dispatch custom window event to automatically fill and apply the copied coupon
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('apply-coupon', { detail: { code } }));
+    }
+    
     // Give them a moment to see the "Copied!" state, then close it
     setTimeout(() => {
       setCopiedCode(null);
@@ -78,8 +84,12 @@ export default function CouponPopup({ targetType, targetId }: CouponPopupProps) 
     : `₹${roundedDiscount} OFF`;
     
   let rulesText = '';
-  if (c.min_booking_amount) {
+  if (c.min_booking_amount && c.min_tickets) {
+    rulesText = `Min. ₹${c.min_booking_amount} & ${c.min_tickets}+ Pax`;
+  } else if (c.min_booking_amount) {
     rulesText = `On orders above ₹${c.min_booking_amount}`;
+  } else if (c.min_tickets) {
+    rulesText = `For ${c.min_tickets}+ passengers`;
   } else {
     rulesText = 'Valid on this booking';
   }

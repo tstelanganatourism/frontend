@@ -69,14 +69,14 @@ interface AdminState {
   fetchSettings: () => Promise<void>;
   updateSettings: (data: Partial<SystemSettings>) => Promise<void>;
 
-  fetchPackages: (search?: string, status?: string, page?: number, limit?: number) => Promise<void>;
+  fetchPackages: (search?: string, status?: string, page?: number, limit?: number, silent?: boolean) => Promise<void>;
   fetchPackageById: (id: number | string) => Promise<void>;
   createPackage: (data: any) => Promise<any>;
   updatePackage: (id: number | string, data: any) => Promise<any>;
   publishPackage: (id: number | string) => Promise<any>;
   deletePackage: (id: number | string) => Promise<void>;
 
-  fetchRooms: (search?: string, status?: string, page?: number, limit?: number) => Promise<void>;
+  fetchRooms: (search?: string, status?: string, page?: number, limit?: number, silent?: boolean) => Promise<void>;
   fetchRoomById: (id: number | string) => Promise<void>;
   createRoom: (data: any) => Promise<any>;
   updateRoom: (id: number | string, data: any) => Promise<any>;
@@ -158,8 +158,8 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
   },
 
-  fetchPackages: async (search, status, page = 1, limit = 10) => {
-    set({ isLoading: true, error: null });
+  fetchPackages: async (search, status, page = 1, limit = 10, silent = false) => {
+    if (!silent) set({ isLoading: true, error: null });
     const safePage = Number(page) || 1;
     const safeLimit = Number(limit) || 10;
     try {
@@ -216,10 +216,22 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   updatePackage: async (id, data) => {
-    set({ isLoading: true, error: null });
+    // Optimistic update: patch the local list immediately so UI feels instant
+    set((state) => ({
+      packages: state.packages.map((p) =>
+        p.id === id ? { ...p, ...data } : p
+      ),
+      error: null,
+    }));
     try {
       const response = await apiClient.put(`/api/v1/admin/packages/${id}`, data);
-      set({ currentPackage: response.data, isLoading: false });
+      // Reconcile with server truth
+      set((state) => ({
+        currentPackage: response.data,
+        packages: state.packages.map((p) =>
+          p.id === id ? { ...p, ...response.data } : p
+        ),
+      }));
       const slug = response.data?.slug;
       // Bust storefront cache for the specific package page + listing pages
       revalidateStorefront([
@@ -242,7 +254,7 @@ export const useAdminStore = create<AdminState>((set) => ({
           errMsg = err.response.data.detail;
         }
       }
-      set({ error: errMsg, isLoading: false });
+      set({ error: errMsg });
       throw new Error(errMsg);
     }
   },
@@ -284,8 +296,8 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
   },
 
-  fetchRooms: async (search, status, page = 1, limit = 10) => {
-    set({ isLoading: true, error: null });
+  fetchRooms: async (search, status, page = 1, limit = 10, silent = false) => {
+    if (!silent) set({ isLoading: true, error: null });
     const safePage = Number(page) || 1;
     const safeLimit = Number(limit) || 10;
     try {
@@ -342,10 +354,22 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   updateRoom: async (id, data) => {
-    set({ isLoading: true, error: null });
+    // Optimistic update: patch the local list immediately so UI feels instant
+    set((state) => ({
+      rooms: state.rooms.map((r) =>
+        r.id === id ? { ...r, ...data } : r
+      ),
+      error: null,
+    }));
     try {
       const response = await apiClient.put(`/api/v1/admin/rooms/${id}`, data);
-      set({ currentRoom: response.data, isLoading: false });
+      // Reconcile with server truth
+      set((state) => ({
+        currentRoom: response.data,
+        rooms: state.rooms.map((r) =>
+          r.id === id ? { ...r, ...response.data } : r
+        ),
+      }));
       const slug = response.data?.slug;
       // Bust storefront cache for the specific stay page + listing pages
       revalidateStorefront([
@@ -366,7 +390,7 @@ export const useAdminStore = create<AdminState>((set) => ({
           errMsg = err.response.data.detail;
         }
       }
-      set({ error: errMsg, isLoading: false });
+      set({ error: errMsg });
       throw new Error(errMsg);
     }
   },

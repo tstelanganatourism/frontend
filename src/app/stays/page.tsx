@@ -37,7 +37,8 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
   }
 }
 
-export default async function StaysPage() {
-  const { query, data } = await fetchInitialRooms({});
-  return <RoomsList data={data} query={query} />;
+export default async function StaysPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const searchParams = await props.searchParams;
+  const { query, data } = await fetchInitialRooms(searchParams);
+  return <RoomsList data={data} query={query} searchParams={searchParams} />;
 }

@@ -39,11 +39,11 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
   const hasFare = Number.isFinite(positiveStartingPrice) && positiveStartingPrice > 0;
 
   return (
-    <div className="fixed inset-x-0 bottom-16 sm:bottom-0 z-40 border-t border-[#dfe8e2]/60 bg-white/95 p-4 shadow-[0_-10px_30px_rgba(15,61,86,0.08)] backdrop-blur lg:hidden">
-      <div className="flex items-center justify-between gap-4">
+    <div className="fixed inset-x-0 bottom-16 z-50 border-t border-[#dfe8e2]/60 bg-white/95 p-3 shadow-[0_-18px_50px_rgba(15,61,86,0.14)] backdrop-blur lg:hidden">
+      <div className="flex items-center justify-between gap-3">
         
         {/* Left Side: Starter pricing */}
-        <div>
+        <div className="min-w-0">
           <span className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 block">Starting from</span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-2xl font-black text-[#1a6b7a]">
@@ -67,7 +67,7 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
         {isPackageInactive ? (
           <button
             disabled
-            className="flex-1 max-w-[200px] inline-flex h-12.5 items-center justify-center rounded-full bg-slate-400 px-6 text-xs font-black uppercase tracking-[0.16em] text-white cursor-not-allowed shadow-none"
+            className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-slate-400 px-6 text-xs font-black uppercase tracking-[0.14em] text-white cursor-not-allowed shadow-none"
           >
             Closed
           </button>
@@ -76,12 +76,12 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
             <SheetTrigger asChild>
               <button
                 type="button"
-                className="flex-1 max-w-[200px] cursor-pointer inline-flex h-12.5 items-center justify-center rounded-full bg-[#0f3d56] hover:bg-[#1a6b7a] px-6 text-xs font-black uppercase tracking-[0.16em] text-white shadow-md transition-all active:scale-95"
+                className="inline-flex h-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#0f3d56] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md transition-all hover:bg-[#1a6b7a] active:scale-95"
               >
-                Book ticket
+                Book Now
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[82vh] overflow-y-auto rounded-t-[30px] border-t border-[#dfe8e2]/60 bg-white p-6 scrollbar-none" showCloseButton>
+            <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[24px] border-t border-[#dfe8e2]/60 bg-white px-4 pb-6 pt-0 scrollbar-none" showCloseButton>
               <SheetHeader className="mb-4 text-left">
                 <SheetTitle className="text-xl font-black text-[#0f3d56] flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-[#1a6b7a]" />

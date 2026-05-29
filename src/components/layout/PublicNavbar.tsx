@@ -168,19 +168,21 @@ export default function PublicNavbar() {
                 <div className="relative hidden lg:block" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex items-center gap-2 rounded-full border border-slate-250 bg-slate-50/80 p-1 pr-3 transition-all hover:bg-slate-100/90 shadow-sm"
+                    className="flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1 pr-3.5 transition-all hover:bg-slate-50 hover:border-slate-350 hover:shadow-md active:scale-[0.98] shadow-sm"
                   >
-                    <div className="h-7 w-7 rounded-full bg-[var(--color-brand-river)] flex items-center justify-center text-white text-xs font-bold overflow-hidden shadow-inner ring-2 ring-white">
+                    <div className="h-7 w-7 rounded-full bg-[#0f3d56] flex items-center justify-center text-white text-xs font-black overflow-hidden shadow-inner ring-2 ring-slate-100 select-none">
                       {user?.avatar_url ? (
                         <img src={user.avatar_url} alt="Profile" className="h-full w-full object-cover" />
                       ) : (
-                        user?.full_name?.charAt(0).toUpperCase() || 'U'
+                        <span className="leading-none transform -translate-y-[0.5px]">
+                          {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                        </span>
                       )}
                     </div>
-                    <span className="text-xs font-extrabold text-slate-700 max-w-[80px] truncate">
+                    <span className="text-[13px] font-extrabold text-slate-700 max-w-[90px] truncate select-none leading-none flex items-center">
                       {user?.full_name?.split(' ')[0] || 'Account'}
                     </span>
-                    <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-300 shrink-0 ${dropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {/* Profile Dropdown Menu */}

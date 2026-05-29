@@ -23,6 +23,7 @@ interface PackageProps {
     is_featured: boolean;
     tags: string[];
     starting_price: number | null;
+    transport_info?: string | null;
     variants?: Array<{
       id: number;
       title: string;
@@ -49,21 +50,14 @@ function getPackageDestination(place?: string | null) {
 }
 
 function getTransportType(
-  variants: Array<{ transport_info?: string | null; is_active?: boolean }> = [],
+  transport_info: string | null | undefined,
   title: string
 ) {
-  const activeVariants = variants.filter(v => v.is_active);
-  if (activeVariants.length > 0) {
-    const transports = activeVariants
-      .map(v => v.transport_info || '')
-      .filter(t => t.trim().length > 0);
-    if (transports.length > 0) {
-      // Return the most unique short transport label
-      const t = transports[0].toLowerCase();
-      if (t.includes('non-ac') || t.includes('non ac')) return 'Non-A/C Transport';
-      if (t.includes('ac') || t.includes('a/c')) return 'A/C Luxury Transport';
-      return transports[0];
-    }
+  if (transport_info && transport_info.trim().length > 0) {
+    const t = transport_info.toLowerCase();
+    if (t.includes('non-ac') || t.includes('non ac')) return 'Non-A/C Transport';
+    if (t.includes('ac') || t.includes('a/c')) return 'A/C Luxury Transport';
+    return transport_info;
   }
   const lowTitle = title.toLowerCase();
   if (lowTitle.includes('non-ac') || lowTitle.includes('non ac')) return 'Non-A/C Sharing';
@@ -92,7 +86,7 @@ function PackageCard({ pkg }: PackageProps) {
   // Dynamic Content Deduction
   const duration = pkg.duration ? pkg.duration : getDurationLabel(pkg.title, pkg.slug);
   const destination = getPackageDestination(pkg.place);
-  const transport = getTransportType(pkg.variants || [], pkg.title);
+  const transport = getTransportType(pkg.transport_info, pkg.title);
   const displayPrice = getDisplayPrice(pkg);
 
   const activeVariants = pkg.variants || [];

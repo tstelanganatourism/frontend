@@ -4,12 +4,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useAdminStore } from '@/stores/adminStore';
 import { useInventoryStore, InventoryRow, RoomInventoryRow } from '@/stores/inventoryStore';
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/api';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import {
   CalendarDays, ChevronLeft, ChevronRight, RefreshCw,
   Lock, Unlock, AlertCircle, CheckCircle2, XCircle,
-  Sliders, Loader2, Package, Zap, Bed, Search
+  Sliders, Loader2, Package, Zap, Bed, Search, Info, Users, IndianRupee
 } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -48,6 +49,57 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${config.color}`}>
       {config.label}
     </span>
+  );
+}
+
+// ─── Bookings List (Injected) ──────────────────────────────────────────────────
+
+function BookingsList({ mode, variantId, dateStr }: { mode: 'package' | 'room', variantId: number, dateStr: string }) {
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    apiClient.get('/api/v1/admin/bookings', {
+      params: {
+        start_date: dateStr,
+        end_date: dateStr,
+        target_filter: mode.toUpperCase(),
+        ...(mode === 'package' ? { variant_id: variantId } : { room_variant_id: variantId }),
+        limit: 100
+      }
+    }).then(res => {
+      if (isMounted) {
+        const active = (res.data.items || []).filter((b: any) => b.status !== 'CANCELLED' && b.status !== 'REJECTED');
+        setBookings(active);
+        setLoading(false);
+      }
+    }).catch(err => {
+      if (isMounted) setLoading(false);
+    });
+    return () => { isMounted = false };
+  }, [mode, variantId, dateStr]);
+
+  if (loading) return <div className="py-2 flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-slate-400" /></div>;
+  if (bookings.length === 0) return null;
+
+  return (
+    <div className="mt-4 rounded-xl border border-[#5ac4d7]/20 bg-[#5ac4d7]/5 p-4">
+      <h4 className="text-[10px] font-black uppercase tracking-widest text-[#0f3d56] mb-3 flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Existing Bookings ({bookings.length})</h4>
+      <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+        {bookings.map(b => (
+          <div key={b.id} className="flex justify-between items-center rounded-lg bg-white p-2.5 shadow-sm border border-slate-100">
+            <div>
+              <p className="text-xs font-bold text-slate-800">{b.primary_passenger_name}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">{b.public_id} • {b.adult_count}A {b.child_count}C</p>
+            </div>
+            <div className="text-right">
+              <span className="inline-flex rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-600">Confirmed</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -97,51 +149,108 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-slate-900 px-6 py-4">
-          <h3 className="text-base font-black text-white">Edit Package Inventory — {row.date}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="flex flex-col w-full max-w-lg max-h-[95vh] overflow-hidden rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] ring-1 ring-slate-900/10 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+        {/* Header Section */}
+        <div className="bg-[#0f3d56] px-6 py-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Package className="w-32 h-32 transform rotate-12 translate-x-4 -translate-y-4" />
+          </div>
+          <div className="flex items-start gap-4 relative z-10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#5ac4d7] ring-1 ring-white/20 shadow-inner">
+              <Package className="h-6 w-6" />
+            </div>
+            <div className="pt-0.5">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#5ac4d7] mb-1">Package Inventory</p>
+              <h3 className="text-xl font-black text-white tracking-tight leading-none">Edit {row.date}</h3>
+              <p className="mt-2 text-sm font-medium text-slate-300">
+                Update capacity, apply price modifiers, or close bookings for this specific date block.
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="p-6 space-y-5">
+
+        <div className="flex-1 space-y-6 p-6 pb-8 bg-slate-50/50 overflow-y-auto custom-scrollbar">
+          {/* Status Cards */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: 'Capacity', value: row.total_capacity },
-              { label: 'Booked', value: row.booked_count },
-              { label: 'Available', value: row.available_seats },
+              { label: 'Capacity', value: row.total_capacity, color: 'text-slate-900', bg: 'bg-white', border: 'border-slate-200' },
+              { label: 'Booked', value: row.booked_count, color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+              { label: 'Available', value: row.available_seats, color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{s.label}</p>
-                <p className="mt-1 text-xl font-black text-slate-800">{s.value}</p>
+              <div key={s.label} className={`rounded-2xl border ${s.border} ${s.bg} p-4 text-center shadow-sm`}>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{s.label}</p>
+                <p className={`text-2xl font-black ${s.color} leading-none`}>{s.value}</p>
               </div>
             ))}
           </div>
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Maximum Capacity</label>
-            <input type="number" min={row.booked_count} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
-          </div>
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Price Override Modifier (₹)</label>
-            <input type="number" placeholder="e.g. 500 or -300" value={priceOverride} onChange={(e) => setPriceOverride(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div>
-              <p className="text-sm font-black text-slate-800">{isClosed ? 'Date is CLOSED' : 'Date is OPEN'}</p>
+
+          <div className="space-y-4">
+            {/* Maximum Capacity */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <Users className="h-3.5 w-3.5 text-blue-500" />
+                Maximum Capacity
+              </label>
+              <input type="number" min={row.booked_count} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
+                className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10" />
             </div>
-            <button onClick={() => setIsClosed(!isClosed)}
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${isClosed ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-              {isClosed ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
+
+            {/* Price Override */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <IndianRupee className="h-3.5 w-3.5 text-emerald-500" />
+                Price Override Modifier (₹)
+              </label>
+              <input type="number" placeholder="e.g. 500 or -300" value={priceOverride} onChange={(e) => setPriceOverride(e.target.value)}
+                className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10" />
+            </div>
+
+            {/* Status Toggle */}
+            <div className={`flex items-center justify-between rounded-2xl border p-5 shadow-sm transition-colors ${isClosed ? 'border-red-200 bg-red-50/50' : 'border-emerald-200 bg-emerald-50/50'}`}>
+              <div>
+                <p className={`text-sm font-black uppercase tracking-wider ${isClosed ? 'text-red-700' : 'text-emerald-700'}`}>
+                  {isClosed ? 'Date is CLOSED' : 'Date is OPEN'}
+                </p>
+                <p className={`text-xs mt-1 font-medium ${isClosed ? 'text-red-600/80' : 'text-emerald-600/80'}`}>
+                  {isClosed ? 'New bookings are blocked for this date.' : 'Customers can actively book this date.'}
+                </p>
+              </div>
+              <button onClick={() => setIsClosed(!isClosed)}
+                className={`group flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border-2 transition-all hover:scale-105 active:scale-95 ${isClosed ? 'bg-red-100 border-red-200 text-red-600 hover:bg-red-200' : 'bg-emerald-100 border-emerald-200 text-emerald-600 hover:bg-emerald-200'}`}>
+                {isClosed ? <Lock className="h-6 w-6 transition-transform group-hover:-rotate-12" /> : <Unlock className="h-6 w-6 transition-transform group-hover:rotate-12" />}
+              </button>
+            </div>
+          </div>
+            <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
+              <div className="flex gap-3">
+                <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                    Active bookings on this date **will not be affected or deleted** if you close these slots. Closing slots simply blocks any future new reservations from checkout. All existing confirmed bookings remain 100% active and safe.
+                  </p>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        {/* Footer Section */}
+        <div className="flex items-center justify-between gap-4 bg-slate-100/80 px-6 py-4 border-t border-slate-200">
+          <button onClick={handleDelete} disabled={saving || row.booked_count > 0} 
+            className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition-all hover:bg-red-50 disabled:opacity-40">
+            <XCircle className="h-4 w-4" /> Delete
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="rounded-xl bg-white border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900">
+              Cancel
+            </button>
+            <button onClick={handleSave} disabled={saving || capacity < row.booked_count} 
+              className="flex items-center gap-2 rounded-xl bg-[#0f3d56] px-6 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Save Changes
             </button>
           </div>
-        </div>
-        <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4">
-          <button onClick={handleDelete} disabled={saving || row.booked_count > 0} className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">Delete</button>
-          <div className="flex-1" />
-          <button onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
-          <button onClick={handleSave} disabled={saving || capacity < row.booked_count} className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-black text-white hover:bg-slate-700">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save
-          </button>
         </div>
       </div>
     </div>
@@ -159,11 +268,11 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
   const handleSave = async () => {
     setSaving(true);
     try {
-      await patchRoomInventoryRow(row.room_variant_id, row.date, {
+      await patchRoomInventoryRow(row.id, {
         total_rooms: capacity,
         is_closed: isClosed,
       });
-      toast.success(`Room inventory updated for ${row.date}`);
+      toast.success(`Room inventory updated for slot ${row.slot_start}-${row.slot_end} on ${row.date}`);
       onSaved();
       onClose();
     } catch (err: any) {
@@ -173,15 +282,15 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
     }
   };
 
-  const handleDelete = async () => {
+    const handleDelete = async () => {
     if (row.booked_rooms > 0) {
       toast.error(`Cannot delete: ${row.booked_rooms} rooms booked. Close the date instead.`);
       return;
     }
     setSaving(true);
     try {
-      await deleteRoomInventoryRow(row.room_variant_id, row.date);
-      toast.success(`Room inventory row deleted for ${row.date}`);
+      await deleteRoomInventoryRow(row.id);
+      toast.success(`Room inventory slot deleted`);
       onSaved();
       onClose();
     } catch (err: any) {
@@ -193,11 +302,12 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col w-full max-w-md max-h-[95vh] rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="bg-slate-900 px-6 py-4">
           <h3 className="text-base font-black text-white">Edit Room Inventory — {row.date}</h3>
+          <p className="text-xs text-slate-400 mt-1">Slot: {row.slot_start.slice(0, 5)} to {row.slot_end.slice(0, 5)}</p>
         </div>
-        <div className="p-6 space-y-5">
+        <div className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar">
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Total Rooms', value: row.total_rooms },
@@ -223,6 +333,17 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
               className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${isClosed ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
               {isClosed ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
             </button>
+          </div>
+          <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
+            <div className="flex gap-3">
+              <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  Active room bookings on this date **will not be affected or deleted** if you close these slots. Closing slots simply blocks any future new room reservations. All existing bookings remain 100% active and safe.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4">
@@ -307,10 +428,21 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated, def
   );
 }
 
-function CreateModal({ mode, entityId, dateStr, onClose, onCreated }: { mode: 'package' | 'room', entityId: number, dateStr: string, onClose: () => void, onCreated: () => void }) {
-  const { generateInventory, generateRoomInventory } = useInventoryStore();
+function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: { mode: 'package' | 'room', entityId: number, dateStr: string, rows: any[], onClose: () => void, onRefresh: () => void }) {
+  const { generateInventory, generateRoomInventory, patchInventoryRow, patchRoomInventoryRow, deleteInventoryRow, deleteRoomInventoryRow } = useInventoryStore();
   const [capacity, setCapacity] = useState(mode === 'package' ? 500 : 20);
   const [loading, setLoading] = useState(false);
+
+  const hasInventory = rows.length > 0;
+  const allClosed = hasInventory && rows.every(r => r.is_closed);
+  const unitLabel = mode === 'package' ? 'seats' : 'rooms';
+  const itemLabel = mode === 'package' ? 'Package seats' : 'Room slots';
+  const defaultCapacity = mode === 'package' ? 500 : 20;
+  const totalCapacity = rows.reduce((acc, r) => acc + (mode === 'package' ? r.total_capacity : r.total_rooms), 0);
+  const totalBooked = rows.reduce((acc, r) => acc + (mode === 'package' ? r.booked_count : r.booked_rooms), 0);
+  const totalAvailable = rows.reduce((acc, r) => acc + (mode === 'package' ? r.available_seats : r.available_rooms), 0);
+  const hasBookings = totalBooked > 0;
+  const openRows = rows.filter(r => !r.is_closed).length;
 
   const handleCreate = async () => {
     setLoading(true);
@@ -321,7 +453,7 @@ function CreateModal({ mode, entityId, dateStr, onClose, onCreated }: { mode: 'p
         await generateRoomInventory({ room_variant_id: entityId, from_date: dateStr, to_date: dateStr, override_total_rooms: capacity });
       }
       toast.success(`Inventory opened for ${dateStr}!`);
-      onCreated();
+      onRefresh();
       onClose();
     } catch (err: any) {
       toast.error(err.message || 'Failed to open inventory');
@@ -330,26 +462,229 @@ function CreateModal({ mode, entityId, dateStr, onClose, onCreated }: { mode: 'p
     }
   };
 
+  const handleToggleClose = async () => {
+    setLoading(true);
+    const targetClosed = !allClosed;
+    try {
+      if (mode === 'package') {
+        const promises = rows
+          .filter(r => r.is_closed !== targetClosed)
+          .map(() => patchInventoryRow(entityId, dateStr, { is_closed: targetClosed }));
+        await Promise.all(promises);
+      } else {
+        const promises = rows
+          .filter(r => r.is_closed !== targetClosed)
+          .map(r => patchRoomInventoryRow(r.id, { is_closed: targetClosed }));
+        await Promise.all(promises);
+      }
+      toast.success(targetClosed ? `All slots closed for ${dateStr}` : `All slots reopened for ${dateStr}`);
+      onRefresh();
+      onClose();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update slots');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    const booked = rows.reduce((acc, r) => acc + (mode === 'package' ? r.booked_count : r.booked_rooms), 0);
+    if (booked > 0) {
+      toast.error(`Cannot delete: ${booked} seats/rooms already booked on this date.`);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      if (mode === 'package') {
+        await deleteInventoryRow(entityId, dateStr);
+      } else {
+        const promises = rows.map(r => deleteRoomInventoryRow(r.id));
+        await Promise.all(promises);
+      }
+      toast.success(`All slots deleted for ${dateStr}`);
+      onRefresh();
+      onClose();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete slots');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-[#0f3d56] px-6 py-4">
-          <h3 className="text-base font-black text-white flex items-center gap-2">
-            <Zap className="h-4 w-4 text-[#5ac4d7] animate-pulse" /> Open Date — {dateStr}
-          </h3>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Default Seats/Rooms</label>
-            <input type="number" min={1} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || (mode === 'package' ? 500 : 20))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" autoFocus />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="flex flex-col w-full max-w-lg max-h-[95vh] overflow-hidden rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] ring-1 ring-slate-900/10 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+        {/* Header Section */}
+        <div className="bg-[#0f3d56] px-6 py-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <CalendarDays className="w-32 h-32 transform rotate-12 translate-x-4 -translate-y-4" />
+          </div>
+          <div className="flex items-start gap-4 relative z-10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#5ac4d7] ring-1 ring-white/20 shadow-inner">
+              {mode === 'package' ? <Package className="h-6 w-6" /> : <Bed className="h-6 w-6" />}
+            </div>
+            <div className="pt-0.5">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#5ac4d7] mb-1">{itemLabel}</p>
+              <h3 className="text-xl font-black text-white tracking-tight leading-none">Manage {dateStr}</h3>
+              <p className="mt-2 text-sm font-medium text-slate-300">
+                {hasInventory
+                  ? `${rows.length} ${mode === 'package' ? 'inventory block' : 'time slot'}${rows.length === 1 ? '' : 's'} found. ${openRows} currently open.`
+                  : `No ${mode === 'package' ? 'package inventory' : 'room slots'} exists for this date yet.`}
+              </p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4">
-          <button onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancel</button>
-          <button onClick={handleCreate} disabled={loading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-5 py-2.5 text-sm font-black text-white hover:bg-[#1a6b7a] disabled:opacity-50 transition-colors">
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />} Open Date
+
+        <div className="flex-1 space-y-6 p-6 pb-8 bg-slate-50/50 overflow-y-auto custom-scrollbar">
+          {/* Status Cards */}
+          {hasInventory ? (
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Total', value: totalCapacity, color: 'text-slate-900', bg: 'bg-white', border: 'border-slate-200' },
+                { label: 'Booked', value: totalBooked, color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+                { label: 'Available', value: totalAvailable, color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
+              ].map((stat) => (
+                <div key={stat.label} className={`rounded-2xl border ${stat.border} ${stat.bg} p-4 text-center shadow-sm`}>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{stat.label}</p>
+                  <p className={`text-2xl font-black ${stat.color} leading-none`}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-start gap-4 rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-5 shadow-sm">
+              <div className="rounded-full bg-sky-100 p-2 text-sky-600 mt-0.5">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-slate-900">Open this date for booking</p>
+                <p className="mt-1 text-sm font-medium text-slate-600 leading-relaxed">
+                  Create availability for this single date using the capacity below.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Capacity Input */}
+          {!hasInventory && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600">
+                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    Starting Capacity
+                  </label>
+                  <p className="mt-1.5 text-sm font-medium text-slate-500">
+                    Use this capacity for {dateStr}.
+                  </p>
+                  <div className="relative mt-3">
+                    <input
+                      type="number"
+                      min={1}
+                      max={10000}
+                      value={capacity}
+                      onChange={(e) => setCapacity(parseInt(e.target.value) || defaultCapacity)}
+                      className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 pl-4 pr-20 py-3.5 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      autoFocus
+                    />
+                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                      <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{unitLabel}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCreate}
+                  disabled={loading || capacity < 1}
+                  className="flex h-[56px] items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-6 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50 disabled:hover:shadow-md sm:min-w-[160px]"
+                >
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+                  Open Date
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Destructive Actions */}
+          {hasInventory && (
+            <div className="pt-2">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-px flex-1 bg-slate-200"></div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bulk Actions</p>
+                <div className="h-px flex-1 bg-slate-200"></div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  onClick={handleToggleClose}
+                  disabled={loading}
+                  className={`group relative flex min-h-[100px] flex-col justify-center gap-2 rounded-2xl border-2 p-4 text-left transition-all disabled:opacity-50 overflow-hidden ${
+                    allClosed 
+                      ? 'border-emerald-200/50 bg-emerald-50/50 hover:border-emerald-300 hover:bg-emerald-100/50' 
+                      : 'border-amber-200/50 bg-amber-50/50 hover:border-amber-300 hover:bg-amber-100/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-slate-500 animate-duration-500" />
+                    ) : allClosed ? (
+                      <Unlock className="h-4 w-4 text-emerald-600 transition-transform group-hover:scale-110" />
+                    ) : (
+                      <Lock className="h-4 w-4 text-amber-600 transition-transform group-hover:scale-110" />
+                    )}
+                    <span className={`text-sm font-black ${allClosed ? 'text-emerald-900' : 'text-amber-900'}`}>
+                      {allClosed ? 'Reopen All ' : 'Close All '} {mode === 'package' ? 'Seats' : 'Slots'}
+                    </span>
+                  </div>
+                  <span className={`text-[13px] font-medium leading-snug ${allClosed ? 'text-emerald-800/80' : 'text-amber-800/80'}`}>
+                    {allClosed ? 'Allow customers to book this date again.' : 'Hide date from new bookings. Existing bookings remain safe.'}
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleDeleteAll}
+                  disabled={loading || hasBookings}
+                  className="group relative flex min-h-[100px] flex-col justify-center gap-2 rounded-2xl border-2 border-red-200/50 bg-red-50/50 p-4 text-left transition-all hover:border-red-300 hover:bg-red-100/50 disabled:opacity-50 overflow-hidden"
+                >
+                  <div className="flex items-center gap-2">
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-red-500 animate-duration-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-600 transition-transform group-hover:scale-110" />
+                    )}
+                    <span className="text-sm font-black text-red-700">Delete Inventory</span>
+                  </div>
+                  <span className="text-[13px] font-medium leading-snug text-red-700/80">
+                    {hasBookings ? `Blocked: ${totalBooked} ${unitLabel} already booked.` : 'Completely remove this date from the calendar.'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+          {hasInventory && (
+            <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
+              <div className="flex gap-3">
+                <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                    Active bookings on this date **will not be affected or deleted** if you close these slots. Closing slots simply blocks any future new reservations from checkout. All existing confirmed bookings remain 100% active and safe.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Section */}
+        <div className="flex items-center justify-between gap-4 bg-slate-100/80 px-6 py-4 border-t border-slate-200">
+          <div className="flex items-center gap-2">
+             <Info className="h-4 w-4 text-slate-400" />
+             <span className="text-xs font-bold text-slate-500">
+               {hasInventory ? (allClosed ? 'All slots are currently closed.' : 'Inventory is actively accepting bookings.') : 'Ready to create inventory blocks.'}
+             </span>
+          </div>
+          <button onClick={onClose} className="rounded-xl bg-white border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900">
+            Cancel
           </button>
         </div>
       </div>
@@ -449,11 +784,17 @@ export default function AdminInventoryPage() {
   useEffect(() => { refresh(); }, [refresh]);
 
   // Build current view row lookup
-  const rowByDate: Record<string, any> = {};
+  const rowsByDate: Record<string, any[]> = {};
   if (activeTab === 'packages') {
-    for (const r of adminRows) rowByDate[r.date] = r;
+    for (const r of adminRows) {
+      if (!rowsByDate[r.date]) rowsByDate[r.date] = [];
+      rowsByDate[r.date].push(r);
+    }
   } else {
-    for (const r of roomAdminRows) rowByDate[r.date] = r;
+    for (const r of roomAdminRows) {
+      if (!rowsByDate[r.date]) rowsByDate[r.date] = [];
+      rowsByDate[r.date].push(r);
+    }
   }
 
   const totalDays = daysInMonth(calYear, calMonth);
@@ -614,36 +955,31 @@ export default function AdminInventoryPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-7 border-b border-slate-100">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                <div key={d} className="py-2 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{d}</div>
-              ))}
-            </div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[760px] sm:min-w-0">
+                <div className="grid grid-cols-7 border-b border-slate-100">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                    <div key={d} className="py-2 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{d}</div>
+                  ))}
+                </div>
 
-            <div className="grid grid-cols-7">
+                <div className="grid grid-cols-7">
               {Array.from({ length: startDay }).map((_, i) => (
-                <div key={`blank-${i}`} className="min-h-[90px] border-b border-r border-slate-50 bg-slate-25" />
+                <div key={`blank-${i}`} className="min-h-[132px] border-b border-r border-slate-50 bg-slate-25 sm:min-h-[90px]" />
               ))}
               {Array.from({ length: totalDays }).map((_, i) => {
                 const day = i + 1;
                 const dateStr = isoDate(calYear, calMonth, day);
                 const todayStr = today.toISOString().slice(0, 10);
-                const isPast = dateStr <= todayStr;
-                const row = rowByDate[dateStr];
-
-                let cellStatus = 'NO_INVENTORY';
-                if (row) {
-                  const avail = activeTab === 'packages' ? row.available_seats : row.available_rooms;
-                  if (row.is_closed) cellStatus = 'CLOSED';
-                  else if (avail === 0) cellStatus = 'SOLD_OUT';
-                  else cellStatus = 'OPEN';
-                }
+                const isPast = dateStr < todayStr;
+                const rows = rowsByDate[dateStr] || [];
+                const hasInventory = rows.length > 0;
 
                 const bgColor = isPast
                   ? 'bg-slate-50'
-                  : row?.is_closed
-                    ? 'bg-red-50 hover:bg-red-100'
-                    : row
+                  : hasInventory && rows.every(r => r.is_closed)
+                    ? 'bg-red-50'
+                    : hasInventory
                       ? 'bg-white hover:bg-slate-50'
                       : 'bg-white hover:bg-[#5ac4d7]/5 border-dashed border-[#5ac4d7]/25';
 
@@ -652,35 +988,66 @@ export default function AdminInventoryPage() {
                     key={day}
                     onClick={() => {
                       if (isPast) return;
-                      if (row) {
-                        activeTab === 'packages' ? setEditPackageRow(row) : setEditRoomRow(row);
-                      } else {
-                        setCreateDate(dateStr);
-                      }
+                      setCreateDate(dateStr);
                     }}
-                    className={`min-h-[90px] cursor-pointer border-b border-r border-slate-100 p-2 transition-colors group ${bgColor} ${!isPast ? 'cursor-pointer' : 'cursor-default'}`}
+                    className={`min-h-[132px] flex flex-col border-b border-r border-slate-100 p-2.5 transition-colors group sm:min-h-[110px] ${bgColor} ${!isPast && !hasInventory ? 'cursor-pointer' : ''}`}
                   >
-                    <p className={`text-sm font-black ${isPast ? 'text-slate-300' : 'text-slate-700'}`}>{day}</p>
+                    <p className={`text-sm font-black shrink-0 ${isPast ? 'text-slate-300' : 'text-slate-700'}`}>{day}</p>
                     {isPast ? (
-                      <p className="mt-1 text-[9px] text-slate-300 font-semibold">Past</p>
-                    ) : row ? (
-                      <div className="mt-1.5 space-y-1">
-                        <StatusBadge status={cellStatus} />
-                        <p className="text-[10px] font-bold text-slate-500">
-                          {activeTab === 'packages' ? `${row.available_seats}/${row.total_capacity}` : `${row.available_rooms}/${row.total_rooms}`}
-                        </p>
-                        {activeTab === 'packages' && row.price_override !== null && row.price_override !== 0 && (
-                          <p className="text-[9px] font-bold text-[#1a6b7a]">
-                            {row.price_override > 0 ? `+₹${row.price_override}` : `₹${row.price_override}`}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <Sliders className="h-2.5 w-2.5 text-slate-400" />
-                          <span className="text-[9px] font-bold text-slate-500">Edit</span>
-                        </div>
+                      <p className="mt-1 text-[9px] text-slate-300 font-semibold shrink-0">Past</p>
+                    ) : hasInventory ? (
+                      <div className="mt-1 flex-1 overflow-y-auto space-y-1.5 pr-1" style={{ maxHeight: '140px' }}>
+                        {rows.map((r, idx) => {
+                          const avail = activeTab === 'packages' ? r.available_seats : r.available_rooms;
+                          const total = activeTab === 'packages' ? r.total_capacity : r.total_rooms;
+                          const booked = activeTab === 'packages' ? r.booked_count : r.booked_rooms;
+                          
+                          let cellStatus = 'NO_INVENTORY';
+                          if (r.is_closed) cellStatus = 'CLOSED';
+                          else if (avail === 0) cellStatus = 'SOLD_OUT';
+                          else cellStatus = 'OPEN';
+
+                          return (
+                            <div 
+                              key={r.id || idx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                activeTab === 'packages' ? setEditPackageRow(r) : setEditRoomRow(r);
+                              }}
+                              className="border border-slate-200 rounded-md p-2 bg-white shadow-sm cursor-pointer hover:border-slate-400 transition-colors"
+                            >
+                              {activeTab === 'rooms' && r.slot_start && (
+                                <p className="text-[10px] font-black text-slate-700 mb-1 tracking-tight whitespace-nowrap">
+                                  {r.slot_start.slice(0,5)} – {r.slot_end.slice(0,5)}
+                                </p>
+                              )}
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <StatusBadge status={cellStatus} />
+                                <span className="text-[9px] font-bold text-slate-500">
+                                  {avail}/{total}
+                                </span>
+                              </div>
+                              <div className="hidden md:flex justify-between text-[8px] text-slate-400 font-medium">
+                                <span>Cap: {total}</span>
+                                <span>Book: {booked}</span>
+                                <span>Rem: {avail}</span>
+                              </div>
+                              {activeTab === 'packages' && r.price_override !== null && r.price_override !== 0 && (
+                                <p className="text-[9px] font-bold text-[#1a6b7a] mt-0.5">
+                                  {r.price_override > 0 ? `+₹${r.price_override}` : `₹${r.price_override}`}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : loadingState ? (
+                      <div className="mt-1.5 flex flex-col gap-1">
+                        <div className="h-3 w-10 rounded-full bg-slate-100 animate-pulse" />
+                        <div className="h-2 w-7 rounded-full bg-slate-100 animate-pulse" />
                       </div>
                     ) : (
-                      <div className="mt-1.5 flex flex-col items-start gap-1">
+                      <div className="mt-1.5 flex flex-col items-start gap-1 shrink-0">
                         <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[9px] font-semibold text-slate-400">
                           No data
                         </span>
@@ -692,6 +1059,8 @@ export default function AdminInventoryPage() {
                   </div>
                 );
               })}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -712,12 +1081,13 @@ export default function AdminInventoryPage() {
         <RoomEditDrawer row={editRoomRow} onClose={() => setEditRoomRow(null)} onSaved={refresh} />
       )}
       {createDate && hasSelection && (
-        <CreateModal
+        <DateManageModal
           mode={activeTab === 'packages' ? 'package' : 'room'}
           entityId={activeTab === 'packages' ? selectedVariantId! : selectedRoomVariantId!}
           dateStr={createDate}
+          rows={rowsByDate[createDate] || []}
           onClose={() => setCreateDate(null)}
-          onCreated={refresh}
+          onRefresh={refresh}
         />
       )}
       {showGenerate && hasSelection && (() => {

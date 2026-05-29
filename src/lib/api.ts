@@ -28,24 +28,10 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   const signal = options.signal ?? AbortSignal.timeout(8_000);
   
-  // Create a safe copy of options
-  const fetchOptions: RequestInit = { ...options };
-  
-  // In development mode, bypass the Next.js Data Cache so every reload fetches fresh data
-  if (process.env.NODE_ENV === 'development') {
-    fetchOptions.cache = 'no-store';
-    if (fetchOptions.next) {
-      // Clean up revalidate options to avoid conflicting with no-storew
-      const nextOpts = { ...fetchOptions.next };
-      delete nextOpts.revalidate;
-      fetchOptions.next = nextOpts;
-    }
-  }
-
   return fetch(url, {
-    ...fetchOptions,
+    ...options,
     signal,
-    headers: { 'Content-Type': 'application/json', ...fetchOptions.headers },
+    headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
   });
 };
 

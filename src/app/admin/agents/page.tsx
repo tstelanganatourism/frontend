@@ -5,7 +5,7 @@ import { useAdminStore } from '@/stores/adminStore';
 import Link from 'next/link';
 import { 
   Search, Plus, Users, Edit, Trash2, Eye, ShieldCheck, ShieldOff,
-  Phone, Mail, Building2, ChevronDown, MoreHorizontal, Percent
+  Phone, Mail, Building2, ChevronDown, MoreHorizontal, Percent, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -50,9 +50,13 @@ export default function AdminAgentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [togglingStatusId, setTogglingStatusId] = useState<number | null>(null);
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
-    fetchAgents('', statusFilter, 1, agentsLimit);
+    fetchAgents('', statusFilter, 1, agentsLimit).finally(() => {
+      setIsInitialMount(false);
+    });
   }, [fetchAgents, statusFilter, agentsLimit]);
 
   const handleDeleteConfirm = async () => {
@@ -66,11 +70,15 @@ export default function AdminAgentsPage() {
   };
 
   const handleToggleStatus = async (agent: any) => {
+    if (togglingStatusId) return;
+    setTogglingStatusId(agent.id);
     try {
       const updated = await toggleAgentStatus(agent.id);
       toast.success(`${agent.full_name} is now ${updated.account_status === 'ACTIVE' ? 'active' : 'blocked'}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to toggle status');
+    } finally {
+      setTogglingStatusId(null);
     }
   };
 
@@ -124,16 +132,17 @@ export default function AdminAgentsPage() {
                 <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Agent</th>
                 <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 hidden md:table-cell">Contact</th>
                 <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 hidden lg:table-cell">Company</th>
+                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Total Bookings</th>
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Commission</th>
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {isLoading && agents.length === 0 ? (
+              {(isLoading || isInitialMount) && agents.length === 0 ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-slate-50">
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <td key={j} className="px-6 py-5"><div className="h-4 w-full max-w-[120px] animate-pulse rounded-lg bg-slate-100" /></td>
                     ))}
                   </tr>
@@ -152,7 +161,7 @@ export default function AdminAgentsPage() {
                 if (filteredAgents.length === 0) {
                   return (
                     <tr>
-                      <td colSpan={6} className="px-6 py-20 text-center">
+                      <td colSpan={7} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-4">
                           <div className="rounded-2xl bg-slate-50 p-6"><Users className="h-12 w-12 text-slate-300" /></div>
                           <div>
@@ -197,6 +206,11 @@ export default function AdminAgentsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
+                    <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-[#5ac4d7]/10 text-[#0f3d56] font-bold text-xs border border-[#5ac4d7]/20">
+                      {agent.total_bookings || 0}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
                     <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700">
                       {agent.commission_type === 'FIXED_AMOUNT' ? (
                         <>
@@ -212,8 +226,19 @@ export default function AdminAgentsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <button onClick={() => handleToggleStatus(agent)} className="cursor-pointer">
-                      <StatusPill status={agent.account_status} />
+                    <button 
+                      onClick={() => handleToggleStatus(agent)} 
+                      disabled={togglingStatusId === agent.id}
+                      className="cursor-pointer disabled:opacity-70 disabled:cursor-wait"
+                    >
+                      {togglingStatusId === agent.id ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider bg-slate-100 text-slate-500">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Updating
+                        </span>
+                      ) : (
+                        <StatusPill status={agent.account_status} />
+                      )}
                     </button>
                   </td>
                   <td className="px-6 py-4 text-center">

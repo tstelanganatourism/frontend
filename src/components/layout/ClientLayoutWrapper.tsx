@@ -31,7 +31,6 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((reg) => console.log('Service Worker registered with scope:', reg.scope))
         .catch((err) => console.error('Service Worker registration failed:', err));
     }
   }, []);
@@ -56,7 +55,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       </main>
       <PublicFooter />
       {showMobileNav && <MobileBottomNav isStacked={showStickyBar} />}
-      <WhatsAppFAB />
+      <WhatsAppFAB hiddenOnMobile={showStickyBar} />
       {showStickyBar && <StickyConversionBar />}
     </>
   );

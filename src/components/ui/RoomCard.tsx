@@ -57,52 +57,13 @@ function getFacilityIcon(name: string): React.ElementType {
   return FACILITY_ICON_MAP[key] || CheckCircle2;
 }
 
-/**
- * Generate a deterministic "random" rating between 4.5 and 4.9
- * based on the room id, so it's stable across renders and SSR/CSR.
- */
-function getRoomRating(id: number) {
-  const seed = ((id * 7919) + 13) % 100;          // deterministic hash
-  const rating = 4.5 + (seed % 5) * 0.1;          // 4.5, 4.6, 4.7, 4.8, 4.9
-  const reviewCount = 40 + ((id * 31 + 7) % 160); // 40–199 reviews
-  return { rating: Math.round(rating * 10) / 10, reviewCount };
-}
 
-function StarRating({ rating, count }: { rating: number; count: number }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex items-center gap-0.5">
-        {[0, 1, 2, 3, 4].map((index) => {
-          // Calculate precise fill percentage for this specific star
-          const fillPercent = Math.max(0, Math.min(100, (rating - index) * 100));
-          
-          return (
-            <div key={index} className="relative h-4 w-4 shrink-0">
-              {/* Grey/Outline Background Star */}
-              <Star className="absolute inset-0 h-4 w-4 text-slate-300 fill-slate-100" />
-              
-              {/* Gold Filled overlay star clipped to fillPercent */}
-              <div 
-                className="absolute inset-0 overflow-hidden" 
-                style={{ width: `${fillPercent}%` }}
-              >
-                <Star className="h-4 w-4 text-amber-400 fill-amber-400 max-w-none" />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <span className="text-sm font-extrabold text-slate-800 ml-1">{rating}</span>
-      <span className="text-xs font-semibold text-slate-600">({count} reviews)</span>
-    </div>
-  );
-}
 
 function RoomCard({ room, variant = 'list' }: RoomProps) {
   const startPriceNum = room.starting_price ? Number(room.starting_price) : null;
   const startWeekendNum = room.starting_weekend_price ? Number(room.starting_weekend_price) : null;
   const prices = getPriceDetails(startPriceNum);
-  const { rating, reviewCount } = getRoomRating(room.id);
+
   const roomTags = getCardTags(
     [
       ...(room.is_featured ? ['Premium Stay'] : []),
@@ -136,7 +97,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
                 Featured
               </div>
             )}
-            {prices && (
+            {prices && prices.percentOff > 0 && (
               <div className="absolute right-3 top-3 z-10 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase text-white shadow-lg">
                 {prices.percentOff}% off
               </div>
@@ -162,9 +123,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
               )}
             </div>
 
-            <div className="mt-3">
-              <StarRating rating={rating} count={reviewCount} />
-            </div>
+
 
             <div className="mt-4 flex flex-wrap gap-1.5">
               {visibleFacilities.map((facility) => {
@@ -196,7 +155,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
                     <span className="text-xl font-black leading-none text-[var(--color-brand-teal)]">
                       {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
                     </span>
-                    {prices && (
+                    {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
                       <span className="text-xs font-semibold text-slate-600 line-through decoration-rose-400/70">
                         ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                       </span>
@@ -254,7 +213,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
           <MoonStar className="h-3.5 w-3.5 text-[#d9f2c8]" />
           Comfort Stay
         </div>
-        {prices && (
+        {prices && prices.percentOff > 0 && (
           <div className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase text-[var(--color-brand-teal)] shadow-lg">
             {prices.percentOff}% off
           </div>
@@ -278,9 +237,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
           <span className="line-clamp-2">{room.address || 'Bhadrachalam'}</span>
         </div>
 
-        <div className="mt-3">
-          <StarRating rating={rating} count={reviewCount} />
-        </div>
+
 
         <div className="mt-4 flex flex-wrap gap-1.5">
           {room.facilities.slice(0, 4).map((facility) => {
@@ -307,7 +264,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
                 <span className="text-xl font-black leading-none text-[var(--color-brand-teal)]">
                   {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
                 </span>
-                {prices && (
+                {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
                   <span className="text-xs font-semibold text-slate-600 line-through decoration-rose-400/70">
                     ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                   </span>

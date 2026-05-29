@@ -40,6 +40,7 @@ type PackageItem = {
 export default function PackagesList({
   data,
   pathname,
+  searchParams,
 }: {
   data?: PackageData;
   pathname: string;
@@ -50,6 +51,8 @@ export default function PackagesList({
 
   const [liveData, setLiveData] = React.useState<PackageData | undefined>(undefined);
   const [searchVal, setSearchVal] = React.useState('');
+  const isInitialMount = React.useRef(true);
+  const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
 
   // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
   // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
@@ -57,7 +60,8 @@ export default function PackagesList({
   React.useEffect(() => {
     const fetchLive = async () => {
       try {
-        const queryParams = new URLSearchParams(window.location.search);
+        const currentSearch = window.location.search;
+        const queryParams = new URLSearchParams(currentSearch);
 
         // If there are no query parameters, and we are not forcing a specific type,
         // we can just use the server-provided SSG data without an extra network call.
@@ -82,8 +86,17 @@ export default function PackagesList({
       }
     };
 
-    fetchLive();
-  }, [pathname, isBoatRide, isSightseeing]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const currentSearch = window.location.search;
+    if (currentSearch !== previousSearchStr.current) {
+      previousSearchStr.current = currentSearch;
+      fetchLive();
+    }
+  }, [pathname, isBoatRide, isSightseeing, searchParams]);
 
   const activeData = liveData !== undefined ? liveData : data;
 

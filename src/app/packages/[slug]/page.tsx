@@ -179,7 +179,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <main className="min-h-screen bg-[#f6fbfa] pb-28 text-slate-800 antialiased">
+    <main className="min-h-screen bg-[#f6fbfa] pb-36 text-slate-800 antialiased lg:pb-28">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Clean Header Grid */}

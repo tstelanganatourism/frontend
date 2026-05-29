@@ -7,8 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, Waves, ArrowRight, AlertCircle } from 'lucide-react';
-import type { Metadata } from 'next';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, Briefcase, ShieldAlert } from 'lucide-react';
 import { touristLogin, getGoogleAuthUrl } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -17,6 +16,11 @@ const schema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 type FormData = z.infer<typeof schema>;
+
+function getAuthErrorMessage(error: unknown, fallback: string) {
+  const responseError = error as { response?: { data?: { detail?: string } } };
+  return responseError.response?.data?.detail || fallback;
+}
 
 function LoginContent() {
   const router = useRouter();
@@ -27,6 +31,8 @@ function LoginContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const { isAuthenticated, user, isHydrated } = useAuthStore();
+  const agentLoginHref = `/agent/login${redirect?.startsWith('/agent') ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
+  const adminLoginHref = `/admin/login${redirect?.startsWith('/admin') ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
 
   useEffect(() => {
     if (isHydrated && isAuthenticated && user) {
@@ -48,9 +54,8 @@ function LoginContent() {
       const destination = redirect || '/';
       router.push(destination);
       router.refresh();
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Login failed. Please try again.';
-      setApiError(msg);
+    } catch (err: unknown) {
+      setApiError(getAuthErrorMessage(err, 'Login failed. Please try again.'));
     }
   };
 
@@ -134,7 +139,7 @@ function LoginContent() {
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
-                  className="w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
+                  className="auth-input w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
                 />
               </div>
               {errors.email && (
@@ -161,7 +166,7 @@ function LoginContent() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   placeholder="Your password"
-                  className="w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-10 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
+                  className="auth-input w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-10 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
                 />
                 <button
                   type="button"
@@ -218,6 +223,30 @@ function LoginContent() {
             Create account
           </Link>
         </p>
+
+        <div className="mt-5">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/12" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-white/40">Portal logins</span>
+            <div className="h-px flex-1 bg-white/12" />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link
+              href={agentLoginHref}
+              className="group flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-teal-300/20 bg-teal-400/10 px-4 py-3 text-sm font-bold text-teal-100 transition-all hover:-translate-y-0.5 hover:border-teal-300/45 hover:bg-teal-400/18"
+            >
+              <Briefcase className="h-4 w-4 text-teal-300 transition-transform group-hover:scale-110" />
+              Agent Login
+            </Link>
+            <Link
+              href={adminLoginHref}
+              className="group flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-violet-300/20 bg-violet-400/10 px-4 py-3 text-sm font-bold text-violet-100 transition-all hover:-translate-y-0.5 hover:border-violet-300/45 hover:bg-violet-400/18"
+            >
+              <ShieldAlert className="h-4 w-4 text-violet-300 transition-transform group-hover:scale-110" />
+              Admin Login
+            </Link>
+          </div>
+        </div>
       </motion.div>
     </div>
   );

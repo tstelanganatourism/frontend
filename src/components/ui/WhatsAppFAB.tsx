@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function WhatsAppFAB() {
+export default function WhatsAppFAB({ hiddenOnMobile = false }: { hiddenOnMobile?: boolean }) {
   const whatsappNumber = '919542069573';
   const message = 'Hello! I am interested in booking a Papikondalu tour with Telangana Boat Tourism Central Booking Office.';
   
@@ -11,7 +11,7 @@ export default function WhatsAppFAB() {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-32 right-4 z-40 grid h-12 w-12 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_16px_40px_rgba(37,211,102,0.38)] ring-4 ring-white/90 transition-all duration-300 hover:-translate-y-1 hover:scale-105 md:bottom-8 md:right-8 md:h-16 md:w-16 group"
+      className={`fixed bottom-32 right-4 z-40 h-12 w-12 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_16px_40px_rgba(37,211,102,0.38)] ring-4 ring-white/90 transition-all duration-300 hover:-translate-y-1 hover:scale-105 md:bottom-8 md:right-8 md:h-16 md:w-16 group ${hiddenOnMobile ? 'hidden sm:grid' : 'grid'}`}
     >
       <div className="absolute right-full mr-3 bg-white text-slate-800 text-sm font-bold px-4 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
         Chat with us!

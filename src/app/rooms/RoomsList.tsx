@@ -30,6 +30,8 @@ type RoomItem = {
 
 export default function RoomsList({ 
   data, 
+  query, 
+  searchParams,
 }: { 
   data?: RoomData; 
   query?: string; 
@@ -37,6 +39,8 @@ export default function RoomsList({
 }) {
   const [liveData, setLiveData] = React.useState<RoomData | undefined>(undefined);
   const [searchVal, setSearchVal] = React.useState('');
+  const isInitialMount = React.useRef(true);
+  const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
 
   // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
   // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
@@ -44,7 +48,8 @@ export default function RoomsList({
   React.useEffect(() => {
     const fetchLive = async () => {
       try {
-        const queryParams = new URLSearchParams(window.location.search);
+        const currentSearch = window.location.search;
+        const queryParams = new URLSearchParams(currentSearch);
         
         // If there are no query parameters, we can just use the server-provided SSG data 
         // without an extra network call.
@@ -63,8 +68,17 @@ export default function RoomsList({
       }
     };
     
-    fetchLive();
-  }, []);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const currentSearch = window.location.search;
+    if (currentSearch !== previousSearchStr.current) {
+      previousSearchStr.current = currentSearch;
+      fetchLive();
+    }
+  }, [searchParams]);
 
   const activeData = liveData !== undefined ? liveData : data;
 

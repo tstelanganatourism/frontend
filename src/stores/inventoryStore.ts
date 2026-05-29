@@ -112,8 +112,8 @@ interface InventoryState {
   // Room admin actions
   fetchRoomAdminInventory: (roomVariantId: number, month: string) => Promise<void>;
   generateRoomInventory: (body: RoomGenerateRequest) => Promise<{ created: number; skipped: number; message: string }>;
-  patchRoomInventoryRow: (roomVariantId: number, date: string, body: RoomUpdateRequest) => Promise<void>;
-  deleteRoomInventoryRow: (roomVariantId: number, date: string) => Promise<void>;
+  patchRoomInventoryRow: (rowId: number, body: RoomUpdateRequest) => Promise<void>;
+  deleteRoomInventoryRow: (rowId: number) => Promise<void>;
 
   // Public actions
   fetchPublicAvailability: (slug: string, month: string, force?: boolean) => Promise<void>;
@@ -165,7 +165,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
 
   patchInventoryRow: async (variantId, date, body) => {
-    set({ isLoading: true, error: null });
+    const previousRows = get().adminRows;
+    set((state) => ({
+      adminRows: state.adminRows.map((r) =>
+        r.variant_id === variantId && r.date === date ? { ...r, ...body } : r
+      ),
+      error: null
+    }));
     try {
       const res = await apiClient.patch<InventoryRow>(
         `/api/v1/admin/inventory/packages/${variantId}/${date}`,
@@ -174,29 +180,30 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       set((state) => ({
         adminRows: state.adminRows.map((r) =>
           r.variant_id === variantId && r.date === date ? res.data : r
-        ),
-        isLoading: false,
+        )
       }));
     } catch (err: any) {
+      set({ adminRows: previousRows });
       const msg = err.response?.data?.detail || 'Failed to update inventory row';
-      set({ error: msg, isLoading: false });
+      set({ error: msg });
       throw new Error(msg);
     }
   },
 
   deleteInventoryRow: async (variantId, date) => {
-    set({ isLoading: true, error: null });
+    const previousRows = get().adminRows;
+    set((state) => ({
+      adminRows: state.adminRows.filter(
+        (r) => !(r.variant_id === variantId && r.date === date)
+      ),
+      error: null
+    }));
     try {
       await apiClient.delete(`/api/v1/admin/inventory/packages/${variantId}/${date}`);
-      set((state) => ({
-        adminRows: state.adminRows.filter(
-          (r) => !(r.variant_id === variantId && r.date === date)
-        ),
-        isLoading: false,
-      }));
     } catch (err: any) {
+      set({ adminRows: previousRows });
       const msg = err.response?.data?.detail || 'Failed to delete inventory row';
-      set({ error: msg, isLoading: false });
+      set({ error: msg });
       throw new Error(msg);
     }
   },
@@ -232,39 +239,46 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     }
   },
 
-  patchRoomInventoryRow: async (roomVariantId, date, body) => {
-    set({ roomIsLoading: true, roomError: null });
+  patchRoomInventoryRow: async (rowId, body) => {
+    const previousRows = get().roomAdminRows;
+    set((state) => ({
+      roomAdminRows: state.roomAdminRows.map((r) =>
+        r.id === rowId ? { ...r, ...body } : r
+      ),
+      roomError: null
+    }));
     try {
       const res = await apiClient.patch<RoomInventoryRow>(
-        `/api/v1/admin/inventory/rooms/${roomVariantId}/${date}`,
+        `/api/v1/admin/inventory/rooms/slots/${rowId}`,
         body
       );
       set((state) => ({
         roomAdminRows: state.roomAdminRows.map((r) =>
-          r.room_variant_id === roomVariantId && r.date === date ? res.data : r
-        ),
-        roomIsLoading: false,
+          r.id === rowId ? res.data : r
+        )
       }));
     } catch (err: any) {
+      set({ roomAdminRows: previousRows });
       const msg = err.response?.data?.detail || 'Failed to update room inventory row';
-      set({ roomError: msg, roomIsLoading: false });
+      set({ roomError: msg });
       throw new Error(msg);
     }
   },
 
-  deleteRoomInventoryRow: async (roomVariantId, date) => {
-    set({ roomIsLoading: true, roomError: null });
+  deleteRoomInventoryRow: async (rowId) => {
+    const previousRows = get().roomAdminRows;
+    set((state) => ({
+      roomAdminRows: state.roomAdminRows.filter(
+        (r) => r.id !== rowId
+      ),
+      roomError: null
+    }));
     try {
-      await apiClient.delete(`/api/v1/admin/inventory/rooms/${roomVariantId}/${date}`);
-      set((state) => ({
-        roomAdminRows: state.roomAdminRows.filter(
-          (r) => !(r.room_variant_id === roomVariantId && r.date === date)
-        ),
-        roomIsLoading: false,
-      }));
+      await apiClient.delete(`/api/v1/admin/inventory/rooms/slots/${rowId}`);
     } catch (err: any) {
+      set({ roomAdminRows: previousRows });
       const msg = err.response?.data?.detail || 'Failed to delete room inventory row';
-      set({ roomError: msg, roomIsLoading: false });
+      set({ roomError: msg });
       throw new Error(msg);
     }
   },

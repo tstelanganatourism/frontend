@@ -127,6 +127,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
   
   const [couponCode, setCouponCode] = useState('');
+  const [pendingCouponCode, setPendingCouponCode] = useState<string | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
@@ -182,16 +183,38 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         // Update version and apply payload
         versionMapRef.current[key] = payload.version;
         useInventoryStore.getState().applySSEPayload(payload);
-        console.log(`[SSE] Applied inventory update for ${key} (version ${payload.version})`);
       } catch (err) {
         console.error('[SSE] Failed to parse event payload', err);
       }
     };
     
+    const handleEntityUpdate = (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.status === 'DELETED') {
+          // Force-close checkout modal before redirecting
+          setShowPassengerModal(false);
+          setSelectedDate('');
+          toast.error('This package has been removed by the administrator.', { duration: 10000 });
+          router.push('/');
+        } else if (payload.status === 'INACTIVE') {
+          // Force-close modal, clear all booking state, show suspended banner
+          setShowPassengerModal(false);
+          setSelectedDate('');
+          toast.error('This package is now inactive. Bookings have been suspended.', { duration: 10000 });
+          fetchPublicAvailability(packageSlug, currentMonthStr);
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse entity event payload', err);
+      }
+    };
+    
     sse.addEventListener('INVENTORY_UPDATE', handleUpdate);
+    sse.addEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
     
     return () => {
       sse.removeEventListener('INVENTORY_UPDATE', handleUpdate);
+      sse.removeEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
       sse.close();
     };
   }, [packageId]);
@@ -355,7 +378,8 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           code: appliedCoupon.code,
           target_type: 'PACKAGE',
           target_id: packageId,
-          booking_amount: prices.rawSubtotal
+          booking_amount: prices.rawSubtotal,
+          ticket_count: adults + children
         });
         
         if (!isMounted) return;
@@ -392,34 +416,37 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     }
     
     return () => { isMounted = false; };
-  }, [prices.rawSubtotal, packageId, selectedDate, selectedVariantId]); // Depend on primary changing factors
+  }, [prices.rawSubtotal, packageId, selectedDate, selectedVariantId, adults, children]); // Depend on primary changing factors
 
-  const handleApplyCoupon = async () => {
+  const applyCouponByCode = async (codeToApply: string) => {
     setCouponError(null);
     setCouponSuccess(null);
+    const trimmedCode = codeToApply.trim().toUpperCase();
+    setCouponCode(trimmedCode);
     
-    if (!couponCode.trim()) {
+    if (!trimmedCode) {
       setCouponError("Please enter a coupon code");
       return;
     }
     
     if (prices.rawSubtotal <= 0) {
-      setCouponError("Please select passengers and dates first");
+      setCouponError("Please select passengers and dates first to activate coupon");
       return;
     }
 
     setValidatingCoupon(true);
     try {
       const response = await apiClient.post('/api/v1/coupons/validate', {
-        code: couponCode.trim(),
+        code: trimmedCode,
         target_type: 'PACKAGE',
         target_id: packageId,
-        booking_amount: prices.rawSubtotal
+        booking_amount: prices.rawSubtotal,
+        ticket_count: adults + children
       });
       
       if (response.data.valid) {
         setAppliedCoupon({
-          code: couponCode.trim().toUpperCase(),
+          code: trimmedCode,
           discount_amount: response.data.discount_amount,
           discounted_subtotal: response.data.discounted_subtotal
         });
@@ -434,9 +461,45 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     }
   };
 
+  const handleApplyCoupon = async () => {
+    await applyCouponByCode(couponCode);
+  };
+
+  useEffect(() => {
+    const handleAutoApplyEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const code = customEvent.detail?.code;
+      if (code) {
+        const trimmedCode = code.trim().toUpperCase();
+        setCouponCode(trimmedCode);
+        if (prices.rawSubtotal > 0) {
+          applyCouponByCode(trimmedCode);
+        } else {
+          setPendingCouponCode(trimmedCode);
+          setCouponSuccess("Coupon code filled! Select dates & passengers to apply.");
+          setCouponError(null);
+        }
+      }
+    };
+
+    window.addEventListener('apply-coupon', handleAutoApplyEvent);
+    return () => {
+      window.removeEventListener('apply-coupon', handleAutoApplyEvent);
+    };
+  }, [prices.rawSubtotal, packageId]);
+
+  // Auto-apply the pending coupon code as soon as a valid price/subtotal is established
+  useEffect(() => {
+    if (pendingCouponCode && prices.rawSubtotal > 0) {
+      applyCouponByCode(pendingCouponCode);
+      setPendingCouponCode(null);
+    }
+  }, [prices.rawSubtotal, pendingCouponCode]);
+
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
     setCouponCode('');
+    setPendingCouponCode(null);
     setCouponError(null);
     setCouponSuccess(null);
   };
@@ -448,6 +511,23 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     !selectedDate ||
     availabilityState.kind === 'closed' ||
     availabilityState.kind === 'sold_out';
+
+  // Strict Real-Time Locking: Force-close CheckoutPassengerModal
+  useEffect(() => {
+    if (isBookingDisabled && showPassengerModal) {
+      setShowPassengerModal(false);
+      toast.error('Booking is no longer available for the selected dates/variants. Please select different options.', { duration: 5000 });
+    }
+  }, [isBookingDisabled, showPassengerModal]);
+
+  // Strict Real-Time Locking: Clear invalid selections instantly
+  useEffect(() => {
+    // Only auto-clear if we ACTUALLY had a selected date and it just became invalid
+    if (selectedDate && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out')) {
+      setSelectedDate('');
+      toast.error(availabilityState.message || 'Selected date is no longer available.', { duration: 5000 });
+    }
+  }, [selectedDate, availabilityState.kind, availabilityState.message]);
 
   const handleBookingClick = (e: React.MouseEvent) => {
     if (isPackageInactive) return;
@@ -673,14 +753,32 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   };
 
   return (
-    <div id="booking" className="sticky top-[140px] w-full my-2">
+    <div id="booking" className="w-full my-2 lg:sticky lg:top-[140px]">
       <div className="overflow-hidden lg:rounded-2xl lg:border lg:border-slate-200 bg-transparent lg:bg-white lg:shadow-[0_45px_120px_rgba(15,61,86,0.13)] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
         
         {/* Header */}
-        <div className="hidden lg:block bg-[#0f3d56] px-5 py-4 text-white lg:rounded-t-2xl">
+        <div className="hidden lg:block bg-[#0f3d56] px-5 py-4 text-white lg:rounded-t-2xl relative overflow-hidden">
           <h2 className="text-base font-black tracking-wide">Book this package</h2>
-          <div className="mt-1 text-2xl font-black tracking-tight">
-            {prices.baseAdult > 0 ? `₹${formatINR(prices.baseAdult)}` : 'Fare updating'} <span className="text-xs font-semibold text-white/70">{prices.baseAdult > 0 ? 'per adult' : ''}</span>
+          <div className="mt-1 flex flex-wrap items-baseline gap-2">
+            <span className="text-2xl font-black tracking-tight">
+              {prices.baseAdult > 0 ? `₹${formatINR(prices.baseAdult)}` : 'Fare updating'}
+            </span>
+            {prices.baseAdult > 0 && <span className="text-xs font-semibold text-white/70">per adult</span>}
+            
+            {/* Price Override Badge */}
+            {selectedDate && selectedSlot && Number(selectedVariant?.adult_price) > 0 && prices.baseAdult !== Number(selectedVariant?.adult_price) && (
+              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 ${
+                prices.baseAdult > Number(selectedVariant?.adult_price) 
+                  ? 'bg-rose-500/20 text-rose-200 border border-rose-500/30' 
+                  : 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30'
+              }`}>
+                {prices.baseAdult > Number(selectedVariant?.adult_price) ? (
+                  <>Surge +₹{formatINR(prices.baseAdult - Number(selectedVariant?.adult_price))}</>
+                ) : (
+                  <>Discount -₹{formatINR(Number(selectedVariant?.adult_price) - prices.baseAdult)}</>
+                )}
+              </span>
+            )}
           </div>
         </div>
 
@@ -1039,6 +1137,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         adults={adults}
         children={children}
         isProcessing={isProcessingCheckout}
+        targetType="package"
       />
     </div>
   );

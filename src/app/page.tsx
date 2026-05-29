@@ -105,7 +105,7 @@ async function fetchFeaturedRooms() {
   }
 }
 
-export default async function HomePage() {
+export default function HomePage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'TravelAgency',
@@ -236,7 +236,6 @@ export default async function HomePage() {
 
 async function FeaturedPackages() {
   const packages = await fetchFeaturedPackages();
-
   return packages ? (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
       {packages.map((pkg) => (
@@ -250,7 +249,6 @@ async function FeaturedPackages() {
 
 async function FeaturedRooms() {
   const rooms = await fetchFeaturedRooms();
-
   return rooms ? (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
       {rooms.map((room) => (

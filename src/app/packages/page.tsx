@@ -37,7 +37,8 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
   }
 }
 
-export default async function PackagesPage() {
-  const { data } = await fetchInitialPackages({});
-  return <PackagesList data={data} pathname="/packages" />;
+export default async function PackagesPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const searchParams = await props.searchParams;
+  const { data } = await fetchInitialPackages(searchParams);
+  return <PackagesList data={data} pathname="/packages" searchParams={searchParams} />;
 }

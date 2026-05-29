@@ -109,6 +109,13 @@ const cleanTime = (value?: string | null) => {
   return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
+const toLocalDateString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const getStayPriceDetails = (
   arrivalStr: string,
   departureStr: string,
@@ -116,14 +123,19 @@ const getStayPriceDetails = (
   weekendPrice: number
 ) => {
   if (!arrivalStr || !departureStr) {
-    return { totalPrice: 0, nightsCount: 1, breakdown: [] };
+    return { totalPrice: 0, nightsCount: 0, breakdown: [] };
   }
 
   const arrival = new Date(`${arrivalStr}T00:00:00`);
-  const departure = new Date(`${departureStr}T00:00:00`);
+  let departure = new Date(`${departureStr}T00:00:00`);
 
-  if (departure <= arrival) {
-    return { totalPrice: 0, nightsCount: 1, breakdown: [] };
+  if (departure < arrival) {
+    return { totalPrice: 0, nightsCount: 0, breakdown: [] };
+  }
+
+  // If arrival and departure are the same date, treat it as 1 day/night
+  if (departure.getTime() === arrival.getTime()) {
+    departure.setDate(departure.getDate() + 1);
   }
 
   let total = 0;
@@ -141,7 +153,7 @@ const getStayPriceDetails = (
     nightsCount++;
 
     breakdown.push({
-      dateStr: current.toISOString().slice(0, 10),
+      dateStr: toLocalDateString(current),
       isWeekend,
       price: nightPrice
     });
@@ -197,6 +209,24 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [arrivalDate, setArrivalDate] = useState('');
   const [departureDate, setDepartureDate] = useState('');
   const [guests, setGuests] = useState(2);
+  const slots = useMemo(() => {
+    const combined = [];
+    if (room.slot_start && room.slot_end) {
+      combined.push({ title: 'Standard stay', slot_start: room.slot_start, slot_end: room.slot_end });
+    }
+    if (room.booking_slots && Array.isArray(room.booking_slots)) {
+      for (const bs of room.booking_slots) {
+        if (!combined.find(s => s.slot_start === bs.slot_start && s.slot_end === bs.slot_end)) {
+          combined.push(bs);
+        }
+      }
+    }
+    if (combined.length === 0) {
+      combined.push({ title: 'Standard stay', slot_start: '12:00', slot_end: '11:00' });
+    }
+    return combined;
+  }, [room.slot_start, room.slot_end, room.booking_slots]);
+
   const [selectedSlotIndex, setSelectedSlotIndex] = useState(0);
 
   // Realtime check to bypass Next.js static page cache if lodge was turned inactive
@@ -224,7 +254,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
   // Room availability state — controls which calendar dates are selectable
   const [roomAvailability, setRoomAvailability] = useState<Record<string, Set<string>>>({}); // month -> set of open dates
-  const [detailedAvailability, setDetailedAvailability] = useState<Record<string, Record<number, number>>>({}); // date -> variant_id -> available_rooms
+  const [detailedAvailability, setDetailedAvailability] = useState<Record<string, Record<number, Record<string, number>>>>({}); // date -> variant_id -> slotKey -> available_rooms
   const [roomAvailLoading, setRoomAvailLoading] = useState(false);
 
   const fetchRoomAvailability = async (monthStr: string) => {
@@ -233,15 +263,21 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     setRoomAvailLoading(true);
     try {
       const res = await apiClient.get(`/api/v1/rooms/${room.slug}/availability`, { params: { month: monthStr } });
-      const dates: Array<{ date: string; status: string; variant_id: number; available_rooms: number }> = res.data?.dates || [];
+      const dates: Array<{ date: string; status: string; variant_id: number; available_rooms: number; slot_start: string; slot_end: string; is_closed?: boolean }> = res.data?.dates || [];
 
       const openDates = new Set<string>();
-      const newDetailed: Record<string, Record<number, number>> = {};
+      const newDetailed: Record<string, Record<number, Record<string, number>>> = {};
 
       for (const d of dates) {
         if (d.status === 'OPEN') openDates.add(d.date);
         if (!newDetailed[d.date]) newDetailed[d.date] = {};
-        newDetailed[d.date][d.variant_id] = d.available_rooms;
+        if (!newDetailed[d.date][d.variant_id]) newDetailed[d.date][d.variant_id] = {};
+        
+        const sStart = d.slot_start?.slice(0, 5) || "12:00";
+        const sEnd = d.slot_end?.slice(0, 5) || "11:00";
+        const slotKey = `${sStart}-${sEnd}`;
+        
+        newDetailed[d.date][d.variant_id][slotKey] = d.is_closed ? 0 : d.available_rooms;
       }
 
       setRoomAvailability(prev => ({ ...prev, [monthStr]: openDates }));
@@ -283,47 +319,92 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
   // SSE connection for real-time inventory updates
   const sseVersionRef = useRef<number>(0);
-  
+  // Stable ref to fetchRoomAvailability to avoid stale closures inside the SSE effect
+  const fetchRoomAvailabilityRef = useRef(fetchRoomAvailability);
+  useEffect(() => { fetchRoomAvailabilityRef.current = fetchRoomAvailability; });
+
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const es = new ReconnectingEventSource(`${baseUrl}/api/v1/stream/rooms/${room.id}`);
-    
+    // Use relative URL — routed through Next.js rewrite proxy to backend
+    // This respects CSP connect-src 'self' and works in any environment
+    const es = new ReconnectingEventSource(`/api/v1/stream/rooms/${room.id}`);
+
     es.addEventListener('INVENTORY_UPDATE', (e: any) => {
       try {
         const payload = JSON.parse(e.data);
-        if (payload.version && payload.version < sseVersionRef.current) return;
+        if (payload.version && payload.version < sseVersionRef.current) {
+          console.warn(`[SSE] Ignored stale room event v${payload.version} < v${sseVersionRef.current}`);
+          return;
+        }
         if (payload.version) sseVersionRef.current = payload.version;
-        
-        const { travel_date, available, is_closed, variant_id } = payload;
-        
+
+        const { travel_date, available, is_closed, variant_id, slot_start, slot_end } = payload;
+
         // Update detailed availability
         setDetailedAvailability(prev => {
           const next = { ...prev };
           if (!next[travel_date]) next[travel_date] = {};
-          next[travel_date][variant_id] = available;
+          if (!next[travel_date][variant_id]) next[travel_date][variant_id] = {};
+          const sStart = slot_start?.slice(0, 5) || '12:00';
+          const sEnd = slot_end?.slice(0, 5) || '11:00';
+          next[travel_date][variant_id][`${sStart}-${sEnd}`] = is_closed ? 0 : available;
           return next;
         });
-        
-        // Update room availability sets
-        const monthStr = travel_date.slice(0, 7); // YYYY-MM
-        setRoomAvailability(prev => {
-          const next = { ...prev };
-          const set = next[monthStr] ? new Set(next[monthStr]) : new Set<string>();
-          
-          if (is_closed || available <= 0) {
-            // Re-fetch month to get accurate boolean mapping across all variants
-            fetchRoomAvailability(monthStr);
-          } else {
-            set.add(travel_date);
-            next[monthStr] = set;
-          }
-          return next;
-        });
+
+        // Update room availability calendar
+        const monthStr = travel_date.slice(0, 7);
+        if (is_closed || available <= 0) {
+          // Use stable ref to avoid stale closure
+          fetchRoomAvailabilityRef.current(monthStr);
+          // Remove from open set immediately so calendar reflects it
+          setRoomAvailability(prev => {
+            const next = { ...prev };
+            if (next[monthStr]) {
+              const s = new Set(next[monthStr]);
+              s.delete(travel_date);
+              next[monthStr] = s;
+            }
+            return next;
+          });
+        } else {
+          setRoomAvailability(prev => {
+            const next = { ...prev };
+            const s = next[monthStr] ? new Set(next[monthStr]) : new Set<string>();
+            s.add(travel_date);
+            next[monthStr] = s;
+            return next;
+          });
+        }
       } catch (err) {
-        console.error("Failed to parse SSE payload", err);
+        console.error('[SSE] Failed to parse room INVENTORY_UPDATE payload', err);
       }
     });
-    
+
+    es.addEventListener('ENTITY_STATUS_UPDATE', (e: any) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.status === 'DELETED') {
+          // Force-close any open checkout modal before redirecting
+          setShowPassengerModal(false);
+          setArrivalDate('');
+          setDepartureDate('');
+          toast.error('This room has been removed by the administrator.', { duration: 10000 });
+          router.push('/');
+        } else if (payload.status === 'INACTIVE') {
+          // Force-close checkout modal, clear dates, suspend UI
+          setShowPassengerModal(false);
+          setArrivalDate('');
+          setDepartureDate('');
+          setIsLodgeInactive(true);
+          toast.error('This room is now inactive. Bookings have been suspended.', { duration: 10000 });
+          const now = new Date();
+          const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          fetchRoomAvailabilityRef.current(currentMonth);
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse room ENTITY_STATUS_UPDATE payload', err);
+      }
+    });
+
     return () => {
       es.close();
     };
@@ -334,28 +415,98 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     // Before dates are selected: no constraint yet (use a large number so UI doesn't block)
     if (!selectedVariantId || !arrivalDate) return 999;
 
+    // If availability data is still loading, don't allow booking yet
+    const startMonth = arrivalDate.slice(0, 7);
+    if (roomAvailability[startMonth] === undefined) return 999; // Data not yet fetched — wait
+
     let minAvail = Infinity;
     let foundAny = false;
 
     const start = new Date(`${arrivalDate}T00:00:00`);
-    const end = departureDate ? new Date(`${departureDate}T00:00:00`) : new Date(start);
-    if (!departureDate) end.setDate(end.getDate() + 1);
+    let end = departureDate ? new Date(`${departureDate}T00:00:00`) : new Date(start);
+    
+    // If departureDate is not set, or if it is exactly equal to arrivalDate (day use / 1-night implicit)
+    if (!departureDate || start.getTime() === end.getTime()) {
+      end.setDate(end.getDate() + 1);
+    }
 
     let current = new Date(start);
+    
+    // Determine the slot key for the currently selected slot
+    const selectedSlot = slots[selectedSlotIndex] || slots[0];
+    const sStart = selectedSlot?.slot_start?.slice(0, 5) || "";
+    const sEnd = selectedSlot?.slot_end?.slice(0, 5) || "";
+    const targetSlotKey = sStart && sEnd ? `${sStart}-${sEnd}` : null;
+
     while (current < end) {
-      const dStr = current.toISOString().slice(0, 10);
-      const avail = detailedAvailability[dStr]?.[selectedVariantId];
-      if (avail !== undefined) {
+      const dStr = toLocalDateString(current);
+      const monthStr = dStr.slice(0, 7);
+
+      // If this month's data has been fetched, we can make a definitive judgment
+      if (roomAvailability[monthStr] !== undefined) {
+        const availObj = detailedAvailability[dStr]?.[selectedVariantId];
+        if (!availObj) {
+          // Month was fetched but this date+variant has zero inventory rows → not available
+          return 0;
+        }
+        // Try to match the exact selected slot key
+        let avail: number | undefined;
+        if (targetSlotKey && availObj[targetSlotKey] !== undefined) {
+          avail = availObj[targetSlotKey];
+        } else {
+          // Fallback: use the best available slot count for this variant/date
+          const values = Object.values(availObj);
+          if (values.length > 0) {
+            avail = Math.max(...values);
+          }
+        }
+        if (avail === undefined || avail <= 0) return 0;
         minAvail = Math.min(minAvail, avail);
         foundAny = true;
       }
+      // If month data not yet fetched for this date, skip (optimistic until loaded)
       current.setDate(current.getDate() + 1);
     }
 
     // If dates are selected but NO inventory row exists for this variant → 0 available (not bookable)
     // If inventory rows found → use the minimum available across all stay nights
     return foundAny ? minAvail : 0;
-  }, [arrivalDate, departureDate, selectedVariantId, detailedAvailability]);
+  }, [arrivalDate, departureDate, selectedVariantId, selectedSlotIndex, detailedAvailability, roomAvailability, room.booking_slots, room.slot_start, room.slot_end]);
+
+  // Compute which departure dates are valid — all nights from arrivalDate must be open
+  const validDepartureDates = useMemo(() => {
+    if (!arrivalDate) return allAvailableDates;
+    const startMonth = arrivalDate.slice(0, 7);
+    if (roomAvailability[startMonth] === undefined) return allAvailableDates; // Not fetched yet
+
+    const result = new Set<string>();
+    const start = new Date(`${arrivalDate}T00:00:00`);
+
+    // Check up to 90 days forward
+    for (let offset = 1; offset <= 90; offset++) {
+      const dep = new Date(start);
+      dep.setDate(dep.getDate() + offset);
+      const depStr = toLocalDateString(dep);
+
+      // All nights from start to dep must be available
+      let allOpen = true;
+      const check = new Date(start);
+      while (check < dep) {
+        const checkStr = toLocalDateString(check);
+        if (!allAvailableDates.has(checkStr)) {
+          allOpen = false;
+          break;
+        }
+        check.setDate(check.getDate() + 1);
+      }
+      if (allOpen) {
+        result.add(depStr);
+      } else {
+        break; // Stop at first gap — no point checking further
+      }
+    }
+    return result;
+  }, [arrivalDate, allAvailableDates, roomAvailability]);
 
   // Cap guests if dates change and real-time capacity is lower than current guests
   useEffect(() => {
@@ -367,6 +518,23 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     }
   }, [maxAvailableRooms, selectedVariantId, validVariants, guests]);
 
+  // Strict Real-Time Locking: Force-close CheckoutPassengerModal when SSE makes
+  // selected slot unavailable (maxAvailableRooms drops to 0 or lodge marked inactive)
+  useEffect(() => {
+    const isNowUnavailable = arrivalDate && (maxAvailableRooms <= 0 || isLodgeInactive);
+    if (isNowUnavailable && showPassengerModal) {
+      setShowPassengerModal(false);
+      setArrivalDate('');
+      setDepartureDate('');
+      toast.error(
+        isLodgeInactive
+          ? 'This room is no longer available for bookings.'
+          : 'This room is now fully booked or closed for your selected dates.',
+        { duration: 6000 }
+      );
+    }
+  }, [maxAvailableRooms, isLodgeInactive, showPassengerModal, arrivalDate]);
+
   const validateCoupon = async (code: string) => {
     setValidatingCoupon(true);
     setCouponError(null);
@@ -374,18 +542,25 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     try {
       const baseFare = stayDetails.totalPrice * roomsCount;
       const rawSubtotal = baseFare > 0 ? baseFare : price * roomsCount;
-      const res = await apiClient.post('/api/v1/public/coupons/validate', {
+      const res = await apiClient.post('/api/v1/coupons/validate', {
         code: code,
         booking_amount: rawSubtotal,
         target_type: 'ROOM',
-        target_id: room.id
+        target_id: room.id,
+        ticket_count: guests
       });
-      setAppliedCoupon({
-        code: code,
-        discount_amount: res.data.discount_amount,
-        discounted_subtotal: res.data.discounted_subtotal
-      });
-      setCouponSuccess(`Coupon applied! You saved ₹${res.data.discount_amount}`);
+      
+      if (res.data.valid) {
+        setAppliedCoupon({
+          code: code,
+          discount_amount: res.data.discount_amount,
+          discounted_subtotal: res.data.discounted_subtotal
+        });
+        setCouponSuccess(`Coupon applied! You saved ₹${res.data.discount_amount}`);
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(res.data.reason || "Invalid coupon");
+      }
     } catch (err: any) {
       setAppliedCoupon(null);
       setCouponError(err.response?.data?.detail || "Invalid coupon");
@@ -533,19 +708,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   };
 
   useEffect(() => {
-    const checkStatus = () => {
-      fetch(`/api/v1/rooms/${room.slug}?t=${Date.now()}`)
-        .then((res) => {
-          setIsLodgeInactive(res.status === 404);
-        })
-        .catch(() => { })
-        .finally(() => {
-          setIsCheckingActive(false);
-        });
-    };
-    checkStatus();
-    const interval = setInterval(checkStatus, 3000);
-    return () => clearInterval(interval);
+    // Single initial status check — SSE handles real-time status updates after this.
+    // DO NOT use setInterval here: polling every 3s fires an API request for EVERY active user = server overload in production.
+    fetch(`/api/v1/rooms/${room.slug}`)
+      .then((res) => {
+        setIsLodgeInactive(res.status === 404);
+      })
+      .catch(() => {})
+      .finally(() => {
+        setIsCheckingActive(false);
+      });
   }, [room.slug]);
 
   const selectedVariant = useMemo(() => {
@@ -614,9 +786,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const nights = stayDetails.nightsCount;
   const activeImage = slides[activeSlide] || slides[0];
   const facilities = room.facilities.filter(Boolean);
-  const slots = room.booking_slots?.length
-    ? room.booking_slots
-    : [{ title: 'Standard stay', slot_start: room.slot_start || '', slot_end: room.slot_end || '' }];
   const selectedSlot = slots[selectedSlotIndex] || slots[0];
   const embedUrl = getMapEmbedUrl(room.map_url, room.address, room.lodge_name);
   const bookingText = encodeURIComponent(
@@ -638,7 +807,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   });
 
   return (
-    <main className="min-h-screen bg-[#f5faf9] text-[#102231]">
+    <main className="min-h-screen bg-[#f5faf9] pb-36 text-[#102231] lg:pb-0">
       <section className="relative overflow-hidden bg-[#062d3c]">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,#062d3c_0%,#0c7b78_58%,#f4b44e_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(255,255,255,0.22),transparent_26%),linear-gradient(180deg,rgba(3,24,35,0.08),rgba(3,24,35,0.7))]" />
@@ -686,7 +855,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 </p>
               )}
 
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-3 min-[460px]:grid-cols-4">
                 <HeroFact icon={IndianRupee} label="Starts from" value={price ? money(price) : money(room.starting_price)} />
                 <HeroFact icon={BedDouble} label="Categories" value={`${validVariants.length || 1} option${validVariants.length === 1 ? '' : 's'}`} />
                 <HeroFact icon={Clock} label="Check-in" value={cleanTime(room.slot_start)} />
@@ -749,7 +918,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           <Section id="overview" title="Stay Overview" eyebrow="Room details">
             <div className="grid gap-4 md:grid-cols-3">
               <InfoTile icon={MapPin} label="Address" value={room.address || 'Bhadrachalam stay location'} />
-              <InfoTile icon={Clock} label="Check-out" value={cleanTime(room.slot_end)} />
+              <InfoTile icon={Clock} label="Check-in/out" value={`${cleanTime(selectedSlot?.slot_start)} - ${cleanTime(selectedSlot?.slot_end)}`} />
               <InfoTile icon={Users} label="Rooms" value={room.total_rooms ? `${room.total_rooms} total rooms` : 'Confirmed by team'} />
             </div>
           </Section>
@@ -891,7 +1060,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <div className="bg-[#0f3d56] px-5 py-4 text-white rounded-t-2xl">
               <h2 className="text-base font-black tracking-wide">Reserve your stay</h2>
               <div className="mt-1 text-2xl font-black tracking-tight">
-                {money(price)} <span className="text-xs font-semibold text-white/70">/ night</span>
+                {stayDetails.nightsCount > 0 
+                  ? money(Math.round(stayDetails.totalPrice / stayDetails.nightsCount)) 
+                  : money(price)} <span className="text-xs font-semibold text-white/70">/ night{stayDetails.nightsCount > 0 && stayDetails.totalPrice !== price * stayDetails.nightsCount ? ' avg' : ''}</span>
               </div>
             </div>
 
@@ -922,10 +1093,18 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     onMonthChange={fetchRoomAvailability}
                     onChange={(val) => {
                       setArrivalDate(val);
-                      if (departureDate && departureDate <= val) {
-                        const nextDay = new Date(val);
-                        nextDay.setDate(nextDay.getDate() + 1);
-                        setDepartureDate(nextDay.toISOString().slice(0, 10));
+                      const sStart = selectedSlot?.slot_start || "";
+                      const sEnd = selectedSlot?.slot_end || "";
+                      const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
+                      
+                      if (!departureDate || (isOvernight && departureDate <= val) || (!isOvernight && departureDate < val)) {
+                        if (isOvernight) {
+                          const nextDay = new Date(val);
+                          nextDay.setDate(nextDay.getDate() + 1);
+                          setDepartureDate(toLocalDateString(nextDay));
+                        } else {
+                          setDepartureDate(val);
+                        }
                       }
                     }}
                   />
@@ -935,7 +1114,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     value={departureDate}
                     min={arrivalDate || today}
                     disabled={isLodgeInactive}
-                    availableDates={allAvailableDates}
+                    availableDates={validDepartureDates}
                     onMonthChange={fetchRoomAvailability}
                     onChange={setDepartureDate}
                   />
@@ -958,7 +1137,23 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   label="Check-in/out Timing"
                   value={selectedSlotIndex}
                   disabled={isLodgeInactive}
-                  onChange={(value) => setSelectedSlotIndex(Number(value))}
+                  onChange={(value) => {
+                    const newIndex = Number(value);
+                    setSelectedSlotIndex(newIndex);
+                    if (arrivalDate && departureDate) {
+                      const newSlot = slots[newIndex] || slots[0];
+                      const sStart = newSlot?.slot_start || "";
+                      const sEnd = newSlot?.slot_end || "";
+                      const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
+                      if (isOvernight && departureDate <= arrivalDate) {
+                        const nextDay = new Date(arrivalDate);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        setDepartureDate(toLocalDateString(nextDay));
+                      } else if (!isOvernight && departureDate > arrivalDate) {
+                        setDepartureDate(arrivalDate);
+                      }
+                    }
+                  }}
                   options={slots.map((slot, index) => ({ value: index, label: `${slot.title} (${cleanTime(slot.slot_start)} - ${cleanTime(slot.slot_end)})` }))}
                   placeholder="Select timing slot"
                 />
@@ -1155,26 +1350,26 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         </aside>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/50 bg-white/94 p-3 shadow-[0_-18px_50px_rgba(23,34,50,0.14)] backdrop-blur-xl lg:hidden">
+      <div className="fixed inset-x-0 bottom-16 z-50 border-t border-white/50 bg-white/95 p-3 shadow-[0_-18px_50px_rgba(23,34,50,0.14)] backdrop-blur-xl sm:bottom-0 lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
               Total ({roomsCount} {roomsCount === 1 ? 'room' : 'rooms'})
             </p>
-            <p className="text-2xl font-black text-[#102231]">{prices.grandTotal ? money(prices.grandTotal) : money(price * roomsCount)}</p>
+            <p className="text-xl font-black text-[#102231] min-[380px]:text-2xl">{prices.grandTotal ? money(prices.grandTotal) : money(price * roomsCount)}</p>
           </div>
           {isLodgeInactive ? (
-            <button disabled className="flex h-12 items-center justify-center rounded-lg bg-slate-400 px-6 text-sm font-black text-white cursor-not-allowed animate-none">
+            <button disabled className="flex h-12 shrink-0 items-center justify-center rounded-full bg-slate-400 px-6 text-sm font-black uppercase tracking-[0.14em] text-white cursor-not-allowed animate-none">
               Closed
             </button>
           ) : (
             <Sheet>
               <SheetTrigger asChild>
-                <button type="button" className="flex h-12 items-center justify-center rounded-lg bg-[#0f8d7d] px-6 text-sm font-black text-white cursor-pointer active:scale-95">
-                  Reserve
+                <button type="button" className="flex h-12 shrink-0 items-center justify-center rounded-full bg-[#0f8d7d] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95">
+                  Reserve Now
                 </button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[85vh] overflow-y-auto rounded-t-[30px] border-t border-slate-200 bg-white p-6 scrollbar-none" showCloseButton>
+              <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[24px] border-t border-slate-200 bg-white px-4 pb-6 pt-0 scrollbar-none" showCloseButton>
                 <SheetHeader className="mb-4 text-left">
                   <SheetTitle className="text-xl font-black text-[#102231] flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-[#0f8d7d]" />
@@ -1198,10 +1393,18 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         onMonthChange={fetchRoomAvailability}
                         onChange={(val) => {
                           setArrivalDate(val);
-                          if (departureDate && departureDate <= val) {
-                            const nextDay = new Date(val);
-                            nextDay.setDate(nextDay.getDate() + 1);
-                            setDepartureDate(nextDay.toISOString().slice(0, 10));
+                          const sStart = selectedSlot?.slot_start || "";
+                          const sEnd = selectedSlot?.slot_end || "";
+                          const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
+                          
+                          if (!departureDate || (isOvernight && departureDate <= val) || (!isOvernight && departureDate < val)) {
+                            if (isOvernight) {
+                              const nextDay = new Date(val);
+                              nextDay.setDate(nextDay.getDate() + 1);
+                              setDepartureDate(toLocalDateString(nextDay));
+                            } else {
+                              setDepartureDate(val);
+                            }
                           }
                         }}
                       />
@@ -1210,7 +1413,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         value={departureDate}
                         min={arrivalDate || today}
                         disabled={isLodgeInactive}
-                        availableDates={allAvailableDates}
+                        availableDates={validDepartureDates}
                         onMonthChange={fetchRoomAvailability}
                         onChange={setDepartureDate}
                       />
@@ -1233,7 +1436,23 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       label="Check-in/out Timing"
                       value={selectedSlotIndex}
                       disabled={isLodgeInactive}
-                      onChange={(value) => setSelectedSlotIndex(Number(value))}
+                      onChange={(value) => {
+                        const newIndex = Number(value);
+                        setSelectedSlotIndex(newIndex);
+                        if (arrivalDate && departureDate) {
+                          const newSlot = slots[newIndex] || slots[0];
+                          const sStart = newSlot?.slot_start || "";
+                          const sEnd = newSlot?.slot_end || "";
+                          const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
+                          if (isOvernight && departureDate <= arrivalDate) {
+                            const nextDay = new Date(arrivalDate);
+                            nextDay.setDate(nextDay.getDate() + 1);
+                            setDepartureDate(toLocalDateString(nextDay));
+                          } else if (!isOvernight && departureDate > arrivalDate) {
+                            setDepartureDate(arrivalDate);
+                          }
+                        }
+                      }}
                       options={slots.map((slot, index) => ({ value: index, label: `${slot.title} (${cleanTime(slot.slot_start)} - ${cleanTime(slot.slot_end)})` }))}
                       placeholder="Select timing slot"
                     />
@@ -1245,7 +1464,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Decrease guests">
                         <Minus className="h-4 w-4" />
                       </button>
-                      <span className="text-sm font-black">{guests} {guests === 1 ? 'Adult' : 'Adults'}</span>
+                      <span className="text-sm font-black">{guests} {guests === 1 ? 'Guest' : 'Guests'}</span>
                       <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.min(12, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
                         <Plus className="h-4 w-4" />
                       </button>
@@ -1316,9 +1535,29 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
                       </div>
                     </div>
-                    <a href={`https://wa.me/919542069573?text=${bookingText}`} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-14 w-full items-center justify-center rounded-lg bg-[#0f8d7d] text-sm font-black text-white shadow-[0_18px_40px_rgba(15,141,125,0.28)] transition hover:-translate-y-0.5 hover:bg-[#0b7469]">
-                      Confirm & Reserve via WhatsApp
-                    </a>
+
+                    {/* Mobile CTA — same Razorpay flow as desktop */}
+                    {arrivalDate && departureDate && maxAvailableRooms === 0 ? (
+                      <div className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 flex items-center justify-center cursor-not-allowed opacity-80">
+                        Not Available on Selected Dates
+                      </div>
+                    ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms ? (
+                      <div className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 flex items-center justify-center cursor-not-allowed opacity-80">
+                        Not Enough Rooms — Reduce Guests
+                      </div>
+                    ) : !arrivalDate || !departureDate ? (
+                      <div className="w-full rounded-lg py-3.5 px-5 font-black text-slate-400 text-sm uppercase tracking-wider bg-slate-100 flex items-center justify-center cursor-not-allowed">
+                        Select Arrival &amp; Departure Dates
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleBookingClick}
+                        disabled={isProcessingCheckout || isLodgeInactive}
+                        className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Reserve & Pay Now'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </SheetContent>
@@ -1369,16 +1608,17 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         adults={guests}
         children={0}
         isProcessing={isProcessingCheckout}
+        targetType="room"
       />
     </main>
   );
 };
 
 const HeroFact = ({ icon: Icon, label, value }: { icon: typeof Clock; label: string; value: string }) => (
-  <div className="min-h-[112px] rounded-lg border border-white/15 bg-[#174b55] p-4 shadow-lg shadow-slate-950/10">
+  <div className="min-h-[118px] rounded-lg border border-white/15 bg-[#174b55] p-4 shadow-lg shadow-slate-950/10">
     <Icon className="mb-3 h-4 w-4 text-amber-200" />
     <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/65">{label}</p>
-    <p className="mt-2 line-clamp-2 text-sm font-black leading-5 text-white">{value}</p>
+    <p className="mt-2 break-words text-[13px] font-black leading-5 text-white min-[460px]:line-clamp-2 sm:text-sm">{value}</p>
   </div>
 );
 

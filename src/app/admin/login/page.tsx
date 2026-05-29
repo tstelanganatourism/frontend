@@ -16,6 +16,11 @@ const loginSchema = z.object({
 });
 type LoginData = z.infer<typeof loginSchema>;
 
+function getAuthErrorMessage(error: unknown, fallback: string) {
+  const responseError = error as { response?: { data?: { detail?: string } } };
+  return responseError.response?.data?.detail || fallback;
+}
+
 function AdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,8 +59,8 @@ function AdminLoginContent() {
       await resendAdminOtp({ email, password });
       setResendTimer(60);
       toast.success('A new code has been sent to your email.');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to resend code.');
+    } catch (err: unknown) {
+      toast.error(getAuthErrorMessage(err, 'Failed to resend code.'));
     }
   };
 
@@ -68,8 +73,8 @@ function AdminLoginContent() {
       setSuccessMessage(res.message);
       setStep(2);
       setResendTimer(60);
-    } catch (err: any) {
-      setApiError(err?.response?.data?.detail || 'Invalid credentials or unauthorized.');
+    } catch (err: unknown) {
+      setApiError(getAuthErrorMessage(err, 'Invalid credentials or unauthorized.'));
     }
   };
 
@@ -134,8 +139,8 @@ function AdminLoginContent() {
       const destination = redirect || '/admin/dashboard';
       router.push(destination);
       router.refresh();
-    } catch (err: any) {
-      setApiError(err?.response?.data?.detail || 'Invalid or expired OTP.');
+    } catch (err: unknown) {
+      setApiError(getAuthErrorMessage(err, 'Invalid or expired OTP.'));
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
       setOtpLoading(false);
@@ -203,7 +208,7 @@ function AdminLoginContent() {
                       type="email"
                       autoComplete="username"
                       placeholder="admin@example.com"
-                      className="w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-4 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-violet-400 focus:bg-black/60 focus:ring-4 focus:ring-violet-400/10"
+                      className="auth-input w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-4 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-violet-400 focus:bg-black/60 focus:ring-4 focus:ring-violet-400/10"
                     />
                   </div>
                   {errors.email && (
@@ -224,7 +229,7 @@ function AdminLoginContent() {
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       placeholder="••••••••"
-                      className="w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-12 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-violet-400 focus:bg-black/60 focus:ring-4 focus:ring-violet-400/10"
+                      className="auth-input w-full rounded-2xl border border-white/10 bg-black/45 py-3.5 pl-12 pr-12 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-violet-400 focus:bg-black/60 focus:ring-4 focus:ring-violet-400/10"
                     />
                     <button
                       type="button"
