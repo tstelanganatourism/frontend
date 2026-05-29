@@ -158,15 +158,30 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
           </Link>
         </div>
 
-        <a
-          href={brochureUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={async (e) => {
+            e.preventDefault();
+            try {
+              const res = await fetch(brochureUrl);
+              const blob = await res.blob();
+              const blobUrl = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = blobUrl;
+              link.download = `${pkg.slug}-brochure.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+              window.open(brochureUrl, '_blank');
+            }
+          }}
           className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1a6b7a] px-4 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c]"
         >
           <FileDown className="h-4 w-4" />
           Download Brochure
-        </a>
+        </button>
       </div>
     </article>
   );
