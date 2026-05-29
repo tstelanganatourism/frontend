@@ -91,9 +91,28 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     e.preventDefault();
     if (!brochurePdfUrl) return;
 
+    const forceDownload = async (url: string) => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Fetch failed");
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `${packageSlug}-brochure.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.warn("Blob download failed, falling back to window.open", err);
+        window.open(url, '_blank');
+      }
+    };
+
     const rawKey = extractObjectKey(brochurePdfUrl);
     if (!rawKey) {
-      window.open(brochurePdfUrl, '_blank');
+      await forceDownload(brochurePdfUrl);
       return;
     }
 
@@ -101,10 +120,10 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
       const response = await apiClient.post('/api/v1/documents/signed-url', {
         object_key: rawKey
       });
-      window.open(response.data.url, '_blank');
+      await forceDownload(response.data.url);
     } catch (err) {
       console.error('Failed to get fresh signed URL for brochure:', err);
-      window.open(brochurePdfUrl, '_blank');
+      await forceDownload(brochurePdfUrl);
     }
   };
 
@@ -1070,7 +1089,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                  {/* Row 2: Balance due / error */}
                  {isPartial && (
                    <div className="mt-1.5 flex justify-between items-center text-[11px] text-slate-500 font-semibold px-0.5">
-                     <span>Balance due after trip confirmation</span>
+                     <span>Pay remaining online or at office</span>
                      <span className="font-extrabold text-slate-700">₹{formatINR(prices.grandTotal - effectivePayNow)}</span>
                    </div>
                  )}

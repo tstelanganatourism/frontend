@@ -52,14 +52,29 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
             {hasFare && <span className="text-[10px] font-bold text-slate-400">/ adult</span>}
           </div>
           {brochurePdfUrl && (
-            <a
-              href={brochurePdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  const res = await fetch(brochurePdfUrl);
+                  const blob = await res.blob();
+                  const blobUrl = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = blobUrl;
+                  link.download = `${packageSlug}-brochure.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(blobUrl);
+                } catch (err) {
+                  window.open(brochurePdfUrl, '_blank');
+                }
+              }}
               className="text-[10px] font-black text-[#1a6b7a] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
             >
               📥 Brochure PDF
-            </a>
+            </button>
           )}
         </div>
 
