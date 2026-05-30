@@ -92,27 +92,34 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     if (!brochurePdfUrl) return;
 
     const rawKey = extractObjectKey(brochurePdfUrl);
-    
+
     if (rawKey) {
-      // Use the backend download endpoint which forces Content-Disposition: attachment
+      // Get a fresh signed URL (no Content-Disposition) purely for viewing in new tab
+      let viewUrl = brochurePdfUrl;
+      try {
+        const response = await apiClient.post('/api/v1/documents/signed-url', { object_key: rawKey });
+        viewUrl = response.data.url;
+      } catch {
+        // fallback to cached URL
+      }
+
+      // 1. Open the view URL in a new tab (displays the PDF, no download)
+      window.open(viewUrl, '_blank');
+
+      // 2. Immediately trigger the backend download (Content-Disposition: attachment baked in)
       const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
-      // Open in new tab to view
-      window.open(brochurePdfUrl, '_blank');
-      // Force download via backend (which bakes Content-Disposition into the presigned URL)
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `${packageSlug}-brochure.pdf`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, 1500);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${packageSlug}-brochure.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } else {
-      // Fallback: just open in new tab
+      // No key — just open in new tab
       window.open(brochurePdfUrl, '_blank');
     }
   };
+
 
   const today = new Date(todayIST());
   const minDateStr = toYYYYMMDD(today);

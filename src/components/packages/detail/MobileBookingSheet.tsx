@@ -56,23 +56,34 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
               type="button"
               onClick={async (e) => {
                 e.preventDefault();
-                // Derive object key from the URL
                 const match = brochurePdfUrl.match(/private\/brochures\/[^\s?#]+/);
                 const rawKey = match ? match[0] : null;
-                // Open in new tab immediately
-                window.open(brochurePdfUrl, '_blank');
-                // Trigger download via backend 1.5s later
+
                 if (rawKey) {
-                  setTimeout(() => {
-                    const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = `${packageSlug}-brochure.pdf`;
-                    link.target = '_blank';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }, 1500);
+                  // Get fresh signed URL for viewing (no Content-Disposition)
+                  let viewUrl = brochurePdfUrl;
+                  try {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/signed-url`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ object_key: rawKey })
+                    });
+                    if (res.ok) { const data = await res.json(); viewUrl = data.url; }
+                  } catch {}
+
+                  // 1. Open in new tab for viewing
+                  window.open(viewUrl, '_blank');
+
+                  // 2. Instantly trigger download via backend
+                  const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
+                  const link = document.createElement('a');
+                  link.href = downloadUrl;
+                  link.download = `${packageSlug}-brochure.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                } else {
+                  window.open(brochurePdfUrl, '_blank');
                 }
               }}
               className="text-[10px] font-black text-[#1a6b7a] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
