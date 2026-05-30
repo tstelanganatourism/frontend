@@ -317,8 +317,22 @@ export default function BookingDetailsModal({
     if (type === 'invoice') setIsDownloadingInvoice(true);
     else setIsDownloadingTicket(true);
     try {
+      // 1. Get fresh signed URL for viewing (no Content-Disposition)
       const res = await apiClient.post('/api/v1/documents/signed-url', { object_key: objectKey });
-      window.open(res.data.url, '_blank');
+      const viewUrl = res.data.url;
+
+      // 2. Open in new tab for viewing
+      window.open(viewUrl, '_blank');
+
+      // 3. Immediately trigger download via backend (bakes Content-Disposition: attachment into presigned URL)
+      const filename = objectKey.split('/').pop() || `${type}.pdf`;
+      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(objectKey)}&filename=${encodeURIComponent(filename)}`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to generate secure document link');
     } finally {
@@ -326,6 +340,7 @@ export default function BookingDetailsModal({
       else setIsDownloadingTicket(false);
     }
   };
+
 
   if (!isOpen) return null;
 
@@ -618,14 +633,16 @@ export default function BookingDetailsModal({
                     )}
 
                     {booking.target_type === 'PACKAGE' && (
-                      <a
-                        href={`/print/form/${booking.public_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => {
+                          const printUrl = `/print/form/${booking.public_id}`;
+                          // Open for viewing
+                          window.open(printUrl, '_blank');
+                        }}
                         className="inline-flex justify-center items-center gap-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm transition-all active:scale-95 w-full sm:w-auto border-2 border-indigo-100 hover:border-indigo-600"
                       >
                         <FileText className="h-4 w-4" /> Print Form
-                      </a>
+                      </button>
                     )}
                   </div>
                 </div>
