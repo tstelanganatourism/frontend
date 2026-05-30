@@ -233,6 +233,8 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
                 </div>
               </div>
             </div>
+
+            <BookingsList mode="package" variantId={row.variant_id} dateStr={row.date} />
         </div>
 
         {/* Footer Section */}
@@ -345,6 +347,8 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
               </div>
             </div>
           </div>
+
+          <BookingsList mode="room" variantId={row.room_variant_id} dateStr={row.date} />
         </div>
         <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4">
           <button onClick={handleDelete} disabled={saving || row.booked_rooms > 0} className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">Delete</button>
@@ -964,39 +968,52 @@ export default function AdminInventoryPage() {
                 </div>
 
                 <div className="grid grid-cols-7">
-              {Array.from({ length: startDay }).map((_, i) => (
-                <div key={`blank-${i}`} className="min-h-[132px] border-b border-r border-slate-50 bg-slate-25 sm:min-h-[90px]" />
-              ))}
-              {Array.from({ length: totalDays }).map((_, i) => {
-                const day = i + 1;
-                const dateStr = isoDate(calYear, calMonth, day);
-                const todayStr = today.toISOString().slice(0, 10);
-                const isPast = dateStr < todayStr;
-                const rows = rowsByDate[dateStr] || [];
-                const hasInventory = rows.length > 0;
+                  {Array.from({ length: startDay }).map((_, i) => (
+                    <div key={`blank-${i}`} className="min-h-[132px] border-b border-r border-slate-50 bg-slate-25 sm:min-h-[90px]" />
+                  ))}
+                  {Array.from({ length: totalDays }).map((_, i) => {
+                    const day = i + 1;
+                    const dateStr = isoDate(calYear, calMonth, day);
+                    const todayStr = today.toISOString().slice(0, 10);
+                    const isPast = dateStr < todayStr;
+                    const rows = rowsByDate[dateStr] || [];
+                    const hasInventory = rows.length > 0;
 
-                const bgColor = isPast
-                  ? 'bg-slate-50'
-                  : hasInventory && rows.every(r => r.is_closed)
-                    ? 'bg-red-50'
-                    : hasInventory
-                      ? 'bg-white hover:bg-slate-50'
-                      : 'bg-white hover:bg-[#5ac4d7]/5 border-dashed border-[#5ac4d7]/25';
+                    const bgColor = isPast
+                      ? (hasInventory ? 'bg-slate-50 hover:bg-slate-100/80' : 'bg-slate-50')
+                      : hasInventory && rows.every(r => r.is_closed)
+                        ? 'bg-red-50'
+                        : hasInventory
+                          ? 'bg-white hover:bg-slate-50'
+                          : 'bg-white hover:bg-[#5ac4d7]/5 border-dashed border-[#5ac4d7]/25';
 
-                return (
-                  <div
-                    key={day}
-                    onClick={() => {
-                      if (isPast) return;
-                      setCreateDate(dateStr);
-                    }}
-                    className={`min-h-[132px] flex flex-col border-b border-r border-slate-100 p-2.5 transition-colors group sm:min-h-[110px] ${bgColor} ${!isPast && !hasInventory ? 'cursor-pointer' : ''}`}
-                  >
-                    <p className={`text-sm font-black shrink-0 ${isPast ? 'text-slate-300' : 'text-slate-700'}`}>{day}</p>
-                    {isPast ? (
-                      <p className="mt-1 text-[9px] text-slate-300 font-semibold shrink-0">Past</p>
-                    ) : hasInventory ? (
-                      <div className="mt-1 flex-1 overflow-y-auto space-y-1.5 pr-1" style={{ maxHeight: '140px' }}>
+                    const isToday = dateStr === todayStr;
+                    const borderClass = isToday 
+                      ? 'border-2 border-[#1a6b7a] rounded-xl z-10 relative ring-2 ring-[#1a6b7a]/10 shadow-md shadow-[#1a6b7a]/5' 
+                      : 'border-b border-r border-slate-100';
+
+                    return (
+                      <div
+                        key={day}
+                        onClick={() => {
+                          if (isPast) return;
+                          setCreateDate(dateStr);
+                        }}
+                        className={`min-h-[132px] flex flex-col p-2.5 transition-colors group sm:min-h-[110px] ${bgColor} ${borderClass} ${!isPast && !hasInventory ? 'cursor-pointer' : ''}`}
+                      >
+                        <div className="flex items-center justify-between shrink-0 mb-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className={`text-sm font-black ${isToday ? 'text-[#1a6b7a]' : isPast ? 'text-slate-350' : 'text-slate-700'}`}>{day}</p>
+                            {isPast && hasInventory && (
+                              <span className="text-[9px] font-bold text-slate-400 bg-slate-200/50 px-1.5 py-0.5 rounded uppercase tracking-wider">Past</span>
+                            )}
+                            {isToday && (
+                              <span className="text-[9px] font-black text-white bg-[#1a6b7a] px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm shadow-[#1a6b7a]/20">Today</span>
+                            )}
+                          </div>
+                        </div>
+                        {hasInventory ? (
+                          <div className="mt-1 flex-1 overflow-y-auto space-y-1.5 pr-1" style={{ maxHeight: '140px' }}>
                         {rows.map((r, idx) => {
                           const avail = activeTab === 'packages' ? r.available_seats : r.available_rooms;
                           const total = activeTab === 'packages' ? r.total_capacity : r.total_rooms;
@@ -1041,6 +1058,8 @@ export default function AdminInventoryPage() {
                           );
                         })}
                       </div>
+                    ) : isPast ? (
+                      <p className="mt-1.5 text-[9px] text-slate-350 font-semibold shrink-0">Past</p>
                     ) : loadingState ? (
                       <div className="mt-1.5 flex flex-col gap-1">
                         <div className="h-3 w-10 rounded-full bg-slate-100 animate-pulse" />

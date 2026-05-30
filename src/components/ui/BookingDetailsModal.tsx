@@ -56,6 +56,8 @@ interface BookingDetails {
   passengers: Passenger[];
   agent_id: number | null;
   agent_name: string | null;
+  agent_commission?: number | null;
+  agent_payable?: number | null;
   boarding_point: {
     title: string;
     address: string;
@@ -352,8 +354,13 @@ export default function BookingDetailsModal({
   const isPartialPaid = booking?.status === 'PARTIAL_PAID';
   const isFullyPaid = booking?.status === 'FULLY_PAID' || booking?.status === 'CONFIRMED';
   const remainingBalance = booking?.remaining_balance ?? 0;
-  const progressPct = booking && booking.total_amount > 0
-    ? Math.min(100, (booking.paid_amount / booking.total_amount) * 100)
+
+  const targetTotalAmount = booking && booking.agent_payable != null && booking.agent_payable > 0
+    ? booking.agent_payable
+    : (booking?.total_amount ?? 0);
+
+  const progressPct = booking && targetTotalAmount > 0
+    ? Math.min(100, (booking.paid_amount / targetTotalAmount) * 100)
     : 0;
 
   return (
@@ -505,11 +512,26 @@ export default function BookingDetailsModal({
                         <span className="text-lg font-black text-[#0f3d56]">{formatCurrency(booking.total_amount)}</span>
                       </div>
 
+                      {booking.agent_commission != null && booking.agent_commission > 0 && (
+                        <>
+                          <div className="flex justify-between font-semibold text-emerald-600 text-xs mt-2">
+                            <span>Agent Commission</span>
+                            <span>-{formatCurrency(booking.agent_commission)}</span>
+                          </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-slate-850">
+                            <span className="font-extrabold text-sm">Agent Net Payable</span>
+                            <span className="text-lg font-black text-[var(--color-brand-river)]">
+                              {formatCurrency(booking.agent_payable!)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+
                       {/* Payment progress */}
                       <div>
                         <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                           <span>Payment Progress</span>
-                          <span>{Math.round(progressPct)}%</span>
+                          <span>{parseFloat(progressPct.toFixed(1))}%</span>
                         </div>
                         <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                           <div

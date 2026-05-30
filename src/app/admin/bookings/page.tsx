@@ -43,6 +43,8 @@ interface BookingItem {
     id: number | null;
     full_name: string | null;
   } | null;
+  agent_commission?: number | null;
+  agent_payable?: number | null;
   passenger_count: number;
   primary_passenger_name?: string | null;
 }
@@ -438,11 +440,14 @@ export default function AdminBookingsPage() {
 
                     {/* Amount */}
                     <td className="px-5 py-4 text-right">
-                      <p className="font-black text-slate-900 text-sm">{formatINR(b.total_amount)}</p>
+                      <p className="font-black text-slate-900 text-sm">{formatINR(b.agent_payable ?? b.total_amount)}</p>
+                      {b.agent_commission != null && b.agent_commission > 0 && (
+                        <p className="text-[10px] text-orange-600 font-bold">-{formatINR(b.agent_commission)} commission</p>
+                      )}
                       {b.coupon_applied && (
                         <p className="text-[10px] text-emerald-600 font-bold">-{formatINR(b.coupon_discount)} coupon</p>
                       )}
-                      {b.remaining_balance > 0 && b.remaining_balance < b.total_amount && (
+                      {b.remaining_balance > 0 && b.remaining_balance < (b.agent_payable ?? b.total_amount) && (
                         <p className="text-[10px] text-amber-600 font-bold">{formatINR(b.remaining_balance)} due</p>
                       )}
                     </td>

@@ -144,7 +144,7 @@
   .auth-input:-webkit-autofill:hover,
   .auth-input:-webkit-autofill:focus,
   .auth-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.08) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px #080f18 inset !important;
     -webkit-text-fill-color: #ffffff !important;
     caret-color: #ffffff;
     border-color: rgba(255, 255, 255, 0.18) !important;
@@ -348,4 +348,20 @@
   to {
     transform: translateX(-50%);
   }
+}
+
+/* Razorpay Clickable Fix inside Modal/Sheet Backdrop context */
+.razorpay-container {
+  pointer-events: auto !important;
+  z-index: 2147483647 !important;
+}
+
+/* Global autofill override to force dark backgrounds and white text */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #080f18 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
 }

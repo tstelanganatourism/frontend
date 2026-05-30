@@ -210,9 +210,16 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                           onChange={(e) => handleChange(i, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                           maxLength={10}
                           pattern="[0-9]{10}"
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                          className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
+                            p.phone && p.phone.length > 0 && p.phone.length < 10
+                              ? 'border-rose-400 bg-rose-50'
+                              : 'border-slate-300'
+                          }`}
                           placeholder="10 digit mobile number"
                         />
+                        {p.phone && p.phone.length > 0 && p.phone.length < 10 && (
+                          <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Contact number must be exactly 10 digits</p>
+                        )}
                       </div>
                     )}
                   </div>

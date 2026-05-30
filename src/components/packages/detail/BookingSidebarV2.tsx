@@ -138,7 +138,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   const [paymentPercentage, setPaymentPercentage] = useState(100);
   // Custom pay-now amount in rupees (null = full payment)
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
-  
+
   const [couponCode, setCouponCode] = useState('');
   const [pendingCouponCode, setPendingCouponCode] = useState<string | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
@@ -151,7 +151,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [variantMenuOpen, setVariantMenuOpen] = useState(false);
   const [dateMenuOpen, setDateMenuOpen] = useState(false);
-  
+
   // Calendar state
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-11
@@ -177,22 +177,22 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   useEffect(() => {
     if (!packageId) return;
-    
+
     // Connect to scoped SSE endpoint
     const sse = new ReconnectingEventSource(`/api/v1/stream/packages/${packageId}`);
-    
+
     const handleUpdate = (e: MessageEvent) => {
       try {
         const payload = JSON.parse(e.data);
         const key = `${payload.variant_id}-${payload.travel_date}`;
-        
+
         // Event ordering protection: ignore stale versions
         const currentVersion = versionMapRef.current[key] || 0;
         if (payload.version < currentVersion) {
           console.warn(`[SSE] Ignored stale event for ${key} (version ${payload.version} < ${currentVersion})`);
           return;
         }
-        
+
         // Update version and apply payload
         versionMapRef.current[key] = payload.version;
         useInventoryStore.getState().applySSEPayload(payload);
@@ -200,7 +200,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         console.error('[SSE] Failed to parse event payload', err);
       }
     };
-    
+
     const handleEntityUpdate = (e: MessageEvent) => {
       try {
         const payload = JSON.parse(e.data);
@@ -221,10 +221,10 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         console.error('[SSE] Failed to parse entity event payload', err);
       }
     };
-    
+
     sse.addEventListener('INVENTORY_UPDATE', handleUpdate);
     sse.addEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
-    
+
     return () => {
       sse.removeEventListener('INVENTORY_UPDATE', handleUpdate);
       sse.removeEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
@@ -242,6 +242,17 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Proactively fetch latest agent profile/commission to prevent stale session calculations
+  useEffect(() => {
+    if (isAuthenticated && isAgent) {
+      apiClient.get('/api/v1/auth/me')
+        .then((res) => {
+          useAuthStore.getState().updateUser(res.data);
+        })
+        .catch(() => { });
+    }
+  }, [isAuthenticated, isAgent]);
 
   // Listen for variant selection from the left-side fare cards
   useEffect(() => {
@@ -295,13 +306,13 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     let m = calMonth - 1;
     let y = calYear;
     if (m < 0) { m = 11; y--; }
-    
+
     // Don't go before current month
     const today = todayIST();
     if (y < today.getFullYear() || (y === today.getFullYear() && m < today.getMonth())) {
       return;
     }
-    
+
     setCalMonth(m);
     setCalYear(y);
     setCurrentMonthStr(`${y}-${String(m + 1).padStart(2, '0')}`);
@@ -323,8 +334,12 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   const availabilityState = useMemo(() => {
     if (publicLoading) return { kind: 'loading' as const, message: 'Checking seats...' };
-    if (isPackageInactive) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
+    if (isPackageInactive && !isAdmin) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
     if (!selectedDate) return { kind: 'idle' as const, message: 'Select date to check availability' };
+    if (isAdmin) {
+      const seats = selectedSlot ? selectedSlot.available_seats : 999;
+      return { kind: 'open' as const, message: `${seats} seats (Admin Bypass)` };
+    }
     if (!selectedSlot) return { kind: 'unpublished' as const, message: 'Schedule not opened yet. Call to confirm.' };
     if (selectedSlot.status === 'CLOSED') return { kind: 'closed' as const, message: 'Date closed for booking' };
     if (selectedSlot.status === 'SOLD_OUT') return { kind: 'sold_out' as const, message: 'Sold out' };
@@ -333,7 +348,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
       return { kind: 'unpublished' as const, message: 'Seats not published yet. Call to confirm.' };
     }
     return { kind: 'open' as const, message: `${selectedSlot.available_seats} seats available` };
-  }, [publicLoading, isPackageInactive, selectedDate, selectedSlot]);
+  }, [publicLoading, isPackageInactive, selectedDate, selectedSlot, isAdmin]);
 
 
   const prices = useMemo(() => {
@@ -350,10 +365,10 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
       : positiveNumber(selectedVariant?.child_price);
 
     const rawSubtotal = (adults * baseAdult) + (children * baseChild);
-    
+
     let subtotal = rawSubtotal;
     let discount = 0;
-    
+
     if (appliedCoupon) {
       discount = appliedCoupon.discount_amount;
       subtotal = Math.max(0, rawSubtotal - discount);
@@ -363,22 +378,51 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     const gatewayFee = Math.round((subtotal + gst) * 0.01);
     const grandTotal = subtotal + gst + gatewayFee;
 
-    return { baseAdult, baseChild, rawSubtotal, discount, subtotal, gst, gatewayFee, grandTotal };
-  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon]);
+    // Agent Commission Calculations
+    const commissionPercentage = user?.commission_percentage ? Number(user.commission_percentage) : 0;
+    const commissionType = user?.commission_type || 'PERCENTAGE';
+    const commissionFixedAmount = user?.commission_fixed_amount ? Number(user.commission_fixed_amount) : 0;
+
+    let agentDiscount = 0;
+    if (isAgent) {
+      if (commissionType === 'FIXED_AMOUNT') {
+        agentDiscount = Math.min(commissionFixedAmount, grandTotal);
+      } else {
+        agentDiscount = Math.min(grandTotal, Math.round((subtotal * commissionPercentage) / 100));
+      }
+    }
+    const agentPayable = Math.max(0, grandTotal - agentDiscount);
+
+    return { baseAdult, baseChild, rawSubtotal, discount, subtotal, gst, gatewayFee, grandTotal, agentDiscount, agentPayable };
+  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent]);
+
+  const { effectivePayNow, isPartial } = useMemo(() => {
+    const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+    const minPayable = Math.ceil(finalTotal * 0.35);
+    const parsedCustom = parseInt(customPayAmount, 10);
+    const payNow = isNaN(parsedCustom) || customPayAmount === ''
+      ? finalTotal
+      : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
+    return {
+      effectivePayNow: payNow,
+      isPartial: payNow < finalTotal
+    };
+  }, [prices.agentPayable, prices.grandTotal, customPayAmount, isAgent]);
 
   // Adjust custom pay amount when total price changes (e.g., removing a passenger)
   useEffect(() => {
     setCustomPayAmount(prev => {
       if (prev === '') return prev;
       const parsed = parseInt(prev, 10);
-      const minPayable = Math.ceil(prices.grandTotal * 0.35);
+      const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+      const minPayable = Math.ceil(finalTotal * 0.35);
       if (!isNaN(parsed)) {
-        if (parsed >= prices.grandTotal) return '';
+        if (parsed >= finalTotal) return '';
         if (parsed < minPayable) return String(minPayable);
       }
       return prev;
     });
-  }, [prices.grandTotal]);
+  }, [prices.grandTotal, prices.agentPayable, isAgent]);
 
   // Live recalculation / revalidation when dependencies change
   useEffect(() => {
@@ -394,9 +438,9 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           booking_amount: prices.rawSubtotal,
           ticket_count: adults + children
         });
-        
+
         if (!isMounted) return;
-        
+
         if (response.data.valid) {
           setAppliedCoupon({
             code: appliedCoupon.code,
@@ -417,7 +461,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         setCouponSuccess(null);
       }
     };
-    
+
     // Only revalidate if we have a valid selection context
     if (prices.rawSubtotal > 0) {
       revalidate();
@@ -427,7 +471,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
       setCouponError("Coupon removed (invalid amount)");
       setCouponSuccess(null);
     }
-    
+
     return () => { isMounted = false; };
   }, [prices.rawSubtotal, packageId, selectedDate, selectedVariantId, adults, children]); // Depend on primary changing factors
 
@@ -436,12 +480,12 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     setCouponSuccess(null);
     const trimmedCode = codeToApply.trim().toUpperCase();
     setCouponCode(trimmedCode);
-    
+
     if (!trimmedCode) {
       setCouponError("Please enter a coupon code");
       return;
     }
-    
+
     if (prices.rawSubtotal <= 0) {
       setCouponError("Please select passengers and dates first to activate coupon");
       return;
@@ -456,7 +500,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         booking_amount: prices.rawSubtotal,
         ticket_count: adults + children
       });
-      
+
       if (response.data.valid) {
         setAppliedCoupon({
           code: trimmedCode,
@@ -519,11 +563,10 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   const isBookingDisabled =
     !isAuthenticated ||
-    isPackageInactive ||
+    (!isAdmin && isPackageInactive) ||
     validVariants.length === 0 ||
     !selectedDate ||
-    availabilityState.kind === 'closed' ||
-    availabilityState.kind === 'sold_out';
+    (!isAdmin && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out'));
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal
   useEffect(() => {
@@ -535,15 +578,16 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   // Strict Real-Time Locking: Clear invalid selections instantly
   useEffect(() => {
+    if (isAdmin) return; // Admins bypass auto-clearing selected invalid dates!
     // Only auto-clear if we ACTUALLY had a selected date and it just became invalid
     if (selectedDate && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out')) {
       setSelectedDate('');
       toast.error(availabilityState.message || 'Selected date is no longer available.', { duration: 5000 });
     }
-  }, [selectedDate, availabilityState.kind, availabilityState.message]);
+  }, [selectedDate, availabilityState.kind, availabilityState.message, isAdmin]);
 
   const handleBookingClick = (e: React.MouseEvent) => {
-    if (isPackageInactive) return;
+    if (isPackageInactive && !isAdmin) return;
     if (!isAuthenticated) {
       e.preventDefault();
       setShowLoginPrompt(true);
@@ -590,17 +634,18 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         })),
         payment_percentage: (() => {
           if (!customPayAmount) return 100;
-          const minPay = Math.ceil(prices.grandTotal * 0.35);
+          const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+          const minPay = Math.ceil(finalTotal * 0.35);
           const parsed = parseInt(customPayAmount, 10);
-          if (isNaN(parsed) || parsed >= prices.grandTotal) return 100;
+          if (isNaN(parsed) || parsed >= finalTotal) return 100;
           const clamped = Math.max(minPay, parsed);
-          return Math.round((clamped / prices.grandTotal) * 100);
+          return parseFloat(((clamped / finalTotal) * 100).toFixed(4));
         })(),
-        expected_amount: prices.grandTotal
+        expected_amount: isAgent ? prices.agentPayable : prices.grandTotal
       };
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
-      
+
       const { checkout_data } = res.data;
 
       if (!checkout_data || !checkout_data.key_id) {
@@ -657,6 +702,19 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         setIsProcessingCheckout(false);
       });
       rzp.open();
+
+      // Enforce pointer-events: auto on body/html to override Radix UI Dialog scroll lock blocking on mobile
+      if (typeof document !== 'undefined') {
+        document.body.style.setProperty('pointer-events', 'auto', 'important');
+        document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
+        let count = 0;
+        const interval = setInterval(() => {
+          document.body.style.setProperty('pointer-events', 'auto', 'important');
+          document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
+          count++;
+          if (count > 30) clearInterval(interval);
+        }, 100);
+      }
     } catch (err: any) {
       console.warn("Checkout failed:", err?.message || err);
       let errMsg = "Checkout failed. Please try again.";
@@ -668,9 +726,9 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         }
       } else if (err.message) {
         if (err.message.includes("Razorpay is not a constructor")) {
-            errMsg = "Payment gateway blocked. Please disable adblockers.";
+          errMsg = "Payment gateway blocked. Please disable adblockers.";
         } else {
-            errMsg = err.message;
+          errMsg = err.message;
         }
       }
       toast.error(errMsg);
@@ -684,24 +742,27 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     const firstDay = getFirstDayOfMonth(calYear, calMonth);
     const days = [];
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    
+
     // Empty cells before start of month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-9 w-9"></div>);
     }
-    
+
     // Days of month
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(calYear, calMonth, i);
       const dateStr = toYYYYMMDD(d);
       const isPast = dateStr < minDateStr;
       const isSelected = dateStr === selectedDate;
-      
+
       // Check availability if we have it for this month
       let dayStatus = 'none'; // none, available, soldout
       let isDisabled = isPast;
 
-      if (publicAvailability) {
+      if (isAdmin) {
+        dayStatus = 'available';
+        isDisabled = false;
+      } else if (publicAvailability) {
         const slot = publicAvailability.dates.find(d => d.date === dateStr && d.variant_id === selectedVariantId);
         if (slot) {
           if (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || slot.status === 'NO_INVENTORY' || slot.available_seats <= 0) {
@@ -719,7 +780,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         // If availability is still loading or could not be loaded (e.g. package is inactive), disable all dates
         isDisabled = true;
       }
-      
+
       days.push(
         <button
           key={i}
@@ -727,16 +788,16 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           disabled={isDisabled}
           onClick={() => handleDaySelect(i)}
           className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200
-            ${isDisabled 
-              ? 'text-slate-300 cursor-not-allowed line-through bg-slate-50/30' 
+            ${isDisabled
+              ? 'text-slate-300 cursor-not-allowed line-through bg-slate-50/30'
               : 'hover:bg-slate-100 text-slate-700 cursor-pointer hover:scale-105'
             }
-            ${isSelected 
-              ? 'bg-[#1a6b7a] text-white hover:bg-[#155662] font-black shadow-md shadow-[#1a6b7a]/25 scale-105' 
+            ${isSelected
+              ? 'bg-[#1a6b7a] text-white hover:bg-[#155662] font-black shadow-md shadow-[#1a6b7a]/25 scale-105'
               : ''
             }
-            ${!isSelected && dayStatus === 'available' 
-              ? 'font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 hover:scale-105 border border-emerald-100' 
+            ${!isSelected && dayStatus === 'available'
+              ? 'font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 hover:scale-105 border border-emerald-100'
               : ''
             }
           `}
@@ -745,7 +806,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         </button>
       );
     }
-    
+
     return (
       <div className="p-4 w-full">
         <div className="flex justify-between items-center mb-4 px-1">
@@ -768,7 +829,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   return (
     <div id="booking" className="w-full my-2 lg:sticky lg:top-[140px]">
       <div className="overflow-hidden lg:rounded-2xl lg:border lg:border-slate-200 bg-transparent lg:bg-white lg:shadow-[0_45px_120px_rgba(15,61,86,0.13)] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-        
+
         {/* Header */}
         <div className="hidden lg:block bg-[#0f3d56] px-5 py-4 text-white lg:rounded-t-2xl relative overflow-hidden">
           <h2 className="text-base font-black tracking-wide">Book this package</h2>
@@ -777,14 +838,13 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               {prices.baseAdult > 0 ? `₹${formatINR(prices.baseAdult)}` : 'Fare updating'}
             </span>
             {prices.baseAdult > 0 && <span className="text-xs font-semibold text-white/70">per adult</span>}
-            
+
             {/* Price Override Badge */}
             {selectedDate && selectedSlot && Number(selectedVariant?.adult_price) > 0 && prices.baseAdult !== Number(selectedVariant?.adult_price) && (
-              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 ${
-                prices.baseAdult > Number(selectedVariant?.adult_price) 
-                  ? 'bg-rose-500/20 text-rose-200 border border-rose-500/30' 
+              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 ${prices.baseAdult > Number(selectedVariant?.adult_price)
+                  ? 'bg-rose-500/20 text-rose-200 border border-rose-500/30'
                   : 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30'
-              }`}>
+                }`}>
                 {prices.baseAdult > Number(selectedVariant?.adult_price) ? (
                   <>Surge +₹{formatINR(prices.baseAdult - Number(selectedVariant?.adult_price))}</>
                 ) : (
@@ -796,7 +856,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         </div>
 
         <div className="relative space-y-3 p-0 lg:p-5 lg:pb-5">
-          
+
           {/* Active Booking Inactive Warning Banner */}
           {isPackageInactive && (
             <div className="rounded-xl border border-rose-100 bg-rose-50/70 p-3.5 text-xs text-rose-600 font-bold flex items-start gap-2.5">
@@ -809,7 +869,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               </div>
             </div>
           )}
-         {/* Side-by-Side Inputs (Highly spacious under 420px Column Grid) */}
+          {/* Side-by-Side Inputs (Highly spacious under 420px Column Grid) */}
           <div className="grid grid-cols-2 gap-3">
             {/* Variant Select */}
             <div className="relative">
@@ -818,11 +878,10 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                 type="button"
                 disabled={isPackageInactive || validVariants.length === 0}
                 onClick={() => { setVariantMenuOpen(!variantMenuOpen); setDateMenuOpen(false); }}
-                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-left text-xs font-bold shadow-sm transition ${
-                  isPackageInactive || validVariants.length === 0 
-                    ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' 
+                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-left text-xs font-bold shadow-sm transition ${isPackageInactive || validVariants.length === 0
+                    ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                     : 'bg-white text-slate-900 hover:border-[#1a6b7a] focus:border-[#1a6b7a] focus:outline-none'
-                }`}
+                  }`}
               >
                 <span className="min-w-0 truncate">{selectedVariant?.title || 'Select variant'}</span>
                 <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${variantMenuOpen ? 'rotate-180' : ''}`} />
@@ -841,9 +900,8 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                             setSelectedVariantId(variant.id);
                             setVariantMenuOpen(false);
                           }}
-                          className={`flex w-full items-start justify-between gap-3 rounded-md px-3 py-2.5 text-left transition ${
-                            selected ? 'bg-[#eef8f6] text-[#0f3d56]' : 'text-slate-700 hover:bg-slate-50'
-                          }`}
+                          className={`flex w-full items-start justify-between gap-3 rounded-md px-3 py-2.5 text-left transition ${selected ? 'bg-[#eef8f6] text-[#0f3d56]' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
                         >
                           <span className="min-w-0">
                             <span className="block text-xs font-bold">{variant.title}</span>
@@ -871,16 +929,15 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                 type="button"
                 disabled={isPackageInactive || validVariants.length === 0}
                 onClick={() => { setDateMenuOpen(!dateMenuOpen); setVariantMenuOpen(false); }}
-                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-left text-xs font-bold shadow-sm transition ${
-                  isPackageInactive || validVariants.length === 0 
-                    ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' 
+                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-left text-xs font-bold shadow-sm transition ${isPackageInactive || validVariants.length === 0
+                    ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                     : 'bg-white text-slate-900 hover:border-[#1a6b7a] focus:border-[#1a6b7a] focus:outline-none'
-                }`}
+                  }`}
               >
                 <span className="truncate">{selectedDate ? new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Select date'}</span>
                 <CalendarDays className="h-3.5 w-3.5 text-slate-500 shrink-0" />
               </button>
-              
+
               {dateMenuOpen && (
                 <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-lg border border-slate-200 bg-white shadow-lg origin-top-right w-[330px]">
                   {renderCalendar()}
@@ -888,7 +945,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               )}
             </div>
           </div>
- 
+
           {/* Live Availability Status */}
           {selectedDate && (
             <div className="text-xs">
@@ -905,7 +962,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               )}
             </div>
           )}
- 
+
           {/* Passengers */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -958,7 +1015,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                 </button>
               )}
             </div>
-            
+
             {couponError && (
               <p className="mt-2 text-xs font-bold text-rose-600 flex items-center gap-1">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {couponError}
@@ -973,150 +1030,166 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
           {/* Pricing Details */}
           <div className="pt-2.5 border-t border-slate-100 space-y-1.5 text-[12px] text-slate-500">
-             <div className="flex justify-between items-center">
-               <span>Base Fare <span className="text-[10px] text-slate-400">({adults}A, {children}C)</span></span>
-               <span className="font-bold text-slate-800">₹{formatINR(prices.rawSubtotal)}</span>
-             </div>
-             {appliedCoupon && (
-               <div className="flex justify-between items-center text-emerald-600 font-bold">
-                 <span>Discount <span className="text-[10px]">({appliedCoupon.code})</span></span>
-                 <span>-₹{formatINR(prices.discount)}</span>
-               </div>
-             )}
-             <div className="flex justify-between items-center">
-               <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
-               <span className="font-bold text-slate-800">₹{formatINR(prices.gst)}</span>
-             </div>
-             <div className="flex justify-between items-center">
-               <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
-               <span className="font-bold text-slate-800">₹{formatINR(prices.gatewayFee)}</span>
-             </div>
-             <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
-               <span>Total</span>
-               <span className="text-[#1a6b7a] text-xl">₹{formatINR(prices.grandTotal)}</span>
-             </div>
-             {paymentPercentage < 100 && (
-               <div className="border-t border-slate-150 pt-2.5 mt-2.5 space-y-2">
-                 <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                   <span>Amount Payable Now ({Math.max(35, paymentPercentage || 0)}%)</span>
-                   <span className="font-extrabold text-slate-800">₹{formatINR(Math.round(prices.grandTotal * (Math.max(35, paymentPercentage || 0) / 100)))}</span>
-                 </div>
-                 <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                   <span>Remaining Balance</span>
-                   <span className="font-extrabold text-slate-800">₹{formatINR(prices.grandTotal - Math.round(prices.grandTotal * (Math.max(35, paymentPercentage || 0) / 100)))}</span>
-                 </div>
-               </div>
-             )}
-           </div>
+            <div className="flex justify-between items-center">
+              <span>Base Fare <span className="text-[10px] text-slate-400">({adults}A, {children}C)</span></span>
+              <span className="font-bold text-slate-800">₹{formatINR(prices.rawSubtotal)}</span>
+            </div>
+            {appliedCoupon && (
+              <div className="flex justify-between items-center text-emerald-600 font-bold">
+                <span>Discount <span className="text-[10px]">({appliedCoupon.code})</span></span>
+                <span>-₹{formatINR(prices.discount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
+              <span className="font-bold text-slate-800">₹{formatINR(prices.gst)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
+              <span className="font-bold text-slate-800">₹{formatINR(prices.gatewayFee)}</span>
+            </div>
+            {isAgent ? (
+              <>
+                <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1.5 text-sm font-bold text-slate-700">
+                  <span>Tourist Total Bill</span>
+                  <span>₹{formatINR(prices.grandTotal)}</span>
+                </div>
+                <div className="flex justify-between items-center text-rose-600 font-bold">
+                  <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
+                  <span>-₹{formatINR(prices.agentDiscount)}</span>
+                </div>
+                <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-base font-black text-slate-900">
+                  <span>Net Payable Amount</span>
+                  <span className="text-[#1a6b7a] text-xl">₹{formatINR(prices.agentPayable)}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
+                <span>Total</span>
+                <span className="text-[#1a6b7a] text-xl">₹{formatINR(prices.grandTotal)}</span>
+              </div>
+            )}
+            {isPartial && (() => {
+              const displayTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+              const pctStr = paymentPercentage.toFixed(1).replace(/\.0$/, '');
+              return (
+                <div className="border-t border-slate-150 pt-2.5 mt-2.5 space-y-2">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                    <span>Amount Payable Now ({pctStr}%)</span>
+                    <span className="font-extrabold text-slate-800">₹{formatINR(effectivePayNow)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                    <span>Remaining Balance</span>
+                    <span className="font-extrabold text-slate-800">₹{formatINR(displayTotal - effectivePayNow)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
 
-           {selectedDate && (() => {
-             const minPayable = Math.ceil(prices.grandTotal * 0.35);
-             const parsedCustom = parseInt(customPayAmount, 10);
-             const effectivePayNow = isNaN(parsedCustom) || customPayAmount === '' 
-               ? prices.grandTotal 
-               : Math.min(prices.grandTotal, Math.max(minPayable, parsedCustom));
-             const isPartial = effectivePayNow < prices.grandTotal;
-             const derivedPct = Math.round((effectivePayNow / prices.grandTotal) * 100);
-             if (derivedPct !== paymentPercentage) setPaymentPercentage(derivedPct);
-             return (
-               <div className="mt-4 pt-3 border-t border-slate-100">
-                 {/* Row 1: Toggle + Amount */}
-                 <div className="flex items-center gap-2">
-                   {/* Full / Advance toggle */}
-                   <div className="flex bg-slate-100 rounded-lg p-0.5 shrink-0">
-                     <button
-                       type="button"
-                       onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); }}
-                       className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${
-                         customPayAmount === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'
-                       }`}
-                     >
-                       Full
-                     </button>
-                     <button
-                       type="button"
-                       onClick={() => {
-                         if (customPayAmount === '') {
-                           setCustomPayAmount(String(minPayable));
-                           setPaymentPercentage(35);
-                         }
-                       }}
-                       className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${
-                         customPayAmount !== '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'
-                       }`}
-                     >
-                       Advance
-                     </button>
-                   </div>
+          {selectedDate && (() => {
+            const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+            const minPayable = Math.ceil(finalTotal * 0.35);
+            const derivedPct = parseFloat(((effectivePayNow / finalTotal) * 100).toFixed(1));
+            if (derivedPct !== paymentPercentage) setPaymentPercentage(derivedPct);
+            return (
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                {/* Row 1: Toggle + Amount */}
+                <div className="flex items-center gap-2">
+                  {/* Full / Advance toggle */}
+                  <div className="flex bg-slate-100 rounded-lg p-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); }}
+                      className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'
+                        }`}
+                    >
+                      Full
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (customPayAmount === '') {
+                          setCustomPayAmount(String(minPayable));
+                          setPaymentPercentage(35);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'
+                        }`}
+                    >
+                      Advance
+                    </button>
+                  </div>
 
-                   {/* Amount input / display */}
-                   {customPayAmount !== '' ? (
-                     <div className="flex-1 flex items-center gap-1.5 bg-white border border-[#1a6b7a]/50 rounded-lg px-3 py-1.5">
-                       <span className="text-sm font-black text-slate-400">₹</span>
-                       <input
-                         type="text"
-                         inputMode="numeric"
-                         value={customPayAmount}
-                         onChange={(e) => {
-                           const val = e.target.value.replace(/[^0-9]/g, '');
-                           setCustomPayAmount(val);
-                         }}
-                         onBlur={() => {
-                           const v = parseInt(customPayAmount, 10);
-                           if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                           else if (v >= prices.grandTotal) setCustomPayAmount('');
-                           else setCustomPayAmount(String(v));
-                         }}
-                         className="flex-1 bg-transparent text-sm font-black text-slate-800 outline-none w-0 min-w-0"
-                         placeholder={String(minPayable)}
-                       />
-                       <span className="text-[10px] font-bold text-slate-400 shrink-0">pay now</span>
-                     </div>
-                   ) : (
-                     <div className="flex-1 text-right">
-                       <span className="text-sm font-black text-[#1a6b7a]">₹{formatINR(prices.grandTotal)}</span>
-                       <span className="text-[11px] text-slate-400 font-semibold ml-1">full</span>
-                     </div>
-                   )}
-                 </div>
+                  {/* Amount input / display */}
+                  {customPayAmount !== '' ? (
+                    <div className="flex-1 flex items-center gap-1.5 bg-white border border-[#1a6b7a]/50 rounded-lg px-3 py-1.5">
+                      <span className="text-sm font-black text-slate-400">₹</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={customPayAmount}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setCustomPayAmount(val);
+                        }}
+                        onBlur={() => {
+                          const v = parseInt(customPayAmount, 10);
+                          if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
+                          else if (v >= finalTotal) setCustomPayAmount('');
+                          else setCustomPayAmount(String(v));
+                        }}
+                        className="flex-1 bg-transparent text-sm font-black text-slate-800 outline-none w-0 min-w-0"
+                        placeholder={String(minPayable)}
+                      />
+                      <span className="text-[10px] font-bold text-slate-400 shrink-0">pay now</span>
+                    </div>
+                  ) : (
+                    <div className="flex-1 text-right">
+                      <span className="text-sm font-black text-[#1a6b7a]">₹{formatINR(finalTotal)}</span>
+                      <span className="text-[11px] text-slate-400 font-semibold ml-1">full</span>
+                    </div>
+                  )}
+                </div>
 
-                 {/* Row 2: Balance due / error */}
-                 {isPartial && (
-                   <div className="mt-1.5 flex justify-between items-center text-[11px] text-slate-500 font-semibold px-0.5">
-                     <span>Pay remaining online or at office</span>
-                     <span className="font-extrabold text-slate-700">₹{formatINR(prices.grandTotal - effectivePayNow)}</span>
-                   </div>
-                 )}
-                 {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
-                   <p className="mt-1 text-[10px] text-red-500 font-bold">Min advance is ₹{formatINR(minPayable)} (35%)</p>
-                 )}
-               </div>
-             );
-           })()}
- 
+                {/* Row 2: Balance due / error */}
+                {isPartial && (
+                  <div className="mt-1.5 flex justify-between items-center text-[11px] text-slate-500 font-semibold px-0.5">
+                    <span>Pay remaining online or at office</span>
+                    <span className="font-extrabold text-slate-700">₹{formatINR(finalTotal - effectivePayNow)}</span>
+                  </div>
+                )}
+                {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
+                  <p className="mt-1 text-[10px] text-red-500 font-bold">Min advance is ₹{formatINR(minPayable)} (35%)</p>
+                )}
+              </div>
+            );
+          })()}
+
           {/* CTA */}
           <button
-            disabled={isPackageInactive || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
+            disabled={(!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
             onClick={handleBookingClick}
-            className={`mt-5 w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 flex items-center justify-center ${
-              isPackageInactive || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) 
-                ? 'bg-slate-400 cursor-not-allowed shadow-none' 
+            className={`mt-5 w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 flex items-center justify-center ${(!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
+                ? 'bg-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-[#1a6b7a] hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-md'
-            }`}
+              }`}
           >
-            {isPackageInactive 
-              ? 'Bookings Closed / Inactive' 
-              : validVariants.length === 0 
-                ? 'Fare updating' 
-                : !isAuthenticated 
-                  ? 'Login to Book' 
-                  : !selectedDate 
-                    ? 'Select a date' 
-                    : availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out' 
-                      ? 'Unavailable' 
-                      : availabilityState.kind === 'open' 
-                        ? 'Book Now' 
-                        : 'Call to confirm availability'}
+            {isPackageInactive && !isAdmin
+              ? 'Bookings Closed / Inactive'
+              : validVariants.length === 0
+                ? 'Fare updating'
+                : !isAuthenticated
+                  ? 'Login to Book'
+                  : !selectedDate
+                    ? 'Select a date'
+                    : isAdmin
+                      ? 'Book Now (Admin)'
+                      : availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out'
+                        ? 'Unavailable'
+                        : availabilityState.kind === 'open'
+                          ? 'Book Now'
+                          : 'Call to confirm availability'}
           </button>
 
           {brochurePdfUrl && (
@@ -1143,7 +1216,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         cancelText="Cancel"
       />
 
-      <CheckoutPassengerModal 
+      <CheckoutPassengerModal
         isOpen={showPassengerModal}
         onClose={() => setShowPassengerModal(false)}
         onSubmit={handleCheckoutSubmit}

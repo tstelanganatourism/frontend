@@ -41,10 +41,10 @@ export default function AgentDashboardPage() {
         setLoading(true);
         const [summaryRes, bookingsRes] = await Promise.all([
           apiClient.get<DashboardSummary>('/api/v1/bookings/agent/dashboard-summary'),
-          apiClient.get<any[]>('/api/v1/bookings/agent/bookings')
+          apiClient.get<any[]>('/api/v1/bookings/agent/bookings', { params: { limit: 3 } })
         ]);
         setSummary(summaryRes.data);
-        setRecentBookings(bookingsRes.data.slice(0, 3));
+        setRecentBookings(bookingsRes.data);
       } catch (err: any) {
         setError(err?.response?.data?.detail || 'Failed to sync sales and earnings statistics.');
       } finally {

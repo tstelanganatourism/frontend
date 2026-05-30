@@ -40,15 +40,14 @@ interface BookingListItem {
 export default function AgentBookingsLedgerPage() {
   const [bookings, setBookings] = useState<BookingListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreInDB, setHasMoreInDB] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-
-  // Lazy Loading / Pagination state
-  const [visibleCount, setVisibleCount] = useState(10);
 
   // Custom Calendar state & helpers
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -99,22 +98,29 @@ export default function AgentBookingsLedgerPage() {
     const dateNumStr = String(d.getDate()).padStart(2, '0');
     setDateFilter(`${yearStr}-${monthStr}-${dateNumStr}`);
     setIsCalendarOpen(false);
-    setVisibleCount(10);
   };
 
   useEffect(() => {
-    const fetchBookings = async () => {
+    const fetchInitialBookings = async () => {
       try {
         setLoading(true);
-        const res = await apiClient.get<BookingListItem[]>('/api/v1/bookings/agent/bookings');
+        setError(null);
+        const res = await apiClient.get<BookingListItem[]>('/api/v1/bookings/agent/bookings', {
+          params: { limit: 20, offset: 0 }
+        });
         setBookings(res.data);
+        if (res.data.length < 20) {
+          setHasMoreInDB(false);
+        } else {
+          setHasMoreInDB(true);
+        }
       } catch (err: any) {
         setError(err?.response?.data?.detail || 'Failed to load client bookings List.');
       } finally {
         setLoading(false);
       }
     };
-    fetchBookings();
+    fetchInitialBookings();
   }, []);
 
   // Frontend local filtering logic
@@ -133,18 +139,31 @@ export default function AgentBookingsLedgerPage() {
     // 3. Status match
     const matchesStatus = 
       statusFilter === 'ALL' || 
-      (statusFilter === 'PENDING' && b.status === 'PENDING') ||
+      (statusFilter === 'PENDING' && (b.status === 'PENDING' || b.status === 'PARTIAL_PAID')) ||
       (statusFilter === 'FULLY_PAID' && (b.status === 'FULLY_PAID' || b.status === 'CONFIRMED')) ||
       (statusFilter === 'CANCELLED' && b.status === 'CANCELLED');
 
     return matchesSearch && matchesDate && matchesStatus;
   });
 
-  const displayedBookings = filteredBookings.slice(0, visibleCount);
-  const hasMore = filteredBookings.length > visibleCount;
+  const displayedBookings = filteredBookings;
+  const hasMore = hasMoreInDB;
 
-  const handleLoadMore = () => {
-    setVisibleCount(prev => prev + 10);
+  const handleLoadMore = async () => {
+    try {
+      setLoadingMore(true);
+      const res = await apiClient.get<BookingListItem[]>('/api/v1/bookings/agent/bookings', {
+        params: { limit: 20, offset: bookings.length }
+      });
+      setBookings(prev => [...prev, ...res.data]);
+      if (res.data.length < 20) {
+        setHasMoreInDB(false);
+      }
+    } catch (err: any) {
+      console.error('Failed to load more bookings:', err);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -210,7 +229,6 @@ export default function AgentBookingsLedgerPage() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setVisibleCount(10);
               }}
               className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)]/20 focus:border-[var(--color-brand-teal)] text-sm font-semibold transition-all bg-white"
             />
@@ -357,7 +375,6 @@ export default function AgentBookingsLedgerPage() {
               value={statusFilter}
               onChange={(val) => {
                 setStatusFilter(val);
-                setVisibleCount(10);
               }}
               options={[
                 { value: 'ALL', label: 'All Bookings' },
@@ -510,9 +527,17 @@ export default function AgentBookingsLedgerPage() {
               <button
                 type="button"
                 onClick={handleLoadMore}
-                className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-brand-river)] text-white px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-[#1a5663] transition-all hover:scale-[1.02] shadow-sm"
+                disabled={loadingMore}
+                className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-brand-river)] text-white px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-[#1a5663] transition-all hover:scale-[1.02] shadow-sm disabled:opacity-50"
               >
-                Load More Bookings
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Bookings'
+                )}
               </button>
             </div>
           )}

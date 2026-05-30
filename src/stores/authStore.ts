@@ -20,6 +20,9 @@ export interface AuthUser {
   account_status: AccountStatus;
   phone_number?: string | null;
   avatar_url?: string | null;
+  commission_percentage?: number | null;
+  commission_type?: 'PERCENTAGE' | 'FIXED_AMOUNT' | null;
+  commission_fixed_amount?: number | null;
 }
 
 interface AuthState {

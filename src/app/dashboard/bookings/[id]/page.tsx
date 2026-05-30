@@ -358,6 +358,19 @@ export default function BookingDetailPage() {
         setIsProcessingBalance(false);
       });
       rzp.open();
+
+      // Enforce pointer-events: auto on body/html to override Radix UI Dialog scroll lock blocking on mobile
+      if (typeof document !== 'undefined') {
+        document.body.style.setProperty('pointer-events', 'auto', 'important');
+        document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
+        let count = 0;
+        const interval = setInterval(() => {
+          document.body.style.setProperty('pointer-events', 'auto', 'important');
+          document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
+          count++;
+          if (count > 30) clearInterval(interval);
+        }, 100);
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Failed to initiate balance payment.");
       isPaymentActiveRef.current = false;
@@ -661,7 +674,7 @@ export default function BookingDetailPage() {
             <div className="mt-5 pt-5 border-t border-slate-100">
               <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                 <span>Payment Progress</span>
-                <span>{Math.round(progressPct)}%</span>
+                <span>{parseFloat(progressPct.toFixed(1))}%</span>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div

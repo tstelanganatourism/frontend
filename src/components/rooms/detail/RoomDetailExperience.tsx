@@ -234,12 +234,25 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [isCheckingActive, setIsCheckingActive] = useState(true);
 
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN';
+  const isAgent = user?.role === 'AGENT';
   const { Razorpay } = useRazorpay();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [customPayAmount, setCustomPayAmount] = useState<string>(''); // '' = full, else rupee amount
+
+  // Proactively fetch latest agent profile/commission to prevent stale session calculations
+  useEffect(() => {
+    if (isAuthenticated && isAgent) {
+      apiClient.get('/api/v1/auth/me')
+        .then((res) => {
+          useAuthStore.getState().updateUser(res.data);
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated, isAgent]);
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -412,6 +425,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
   // Calculate real-time available rooms for the selected dates and variant
   const maxAvailableRooms = useMemo(() => {
+    if (isAdmin) return 999;
+
     // Before dates are selected: no constraint yet (use a large number so UI doesn't block)
     if (!selectedVariantId || !arrivalDate) return 999;
 
@@ -521,6 +536,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal when SSE makes
   // selected slot unavailable (maxAvailableRooms drops to 0 or lodge marked inactive)
   useEffect(() => {
+    if (isAdmin) return; // Admins bypass auto-clearing and modal closure on availability drops
     const isNowUnavailable = arrivalDate && (maxAvailableRooms <= 0 || isLodgeInactive);
     if (isNowUnavailable && showPassengerModal) {
       setShowPassengerModal(false);
@@ -533,7 +549,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         { duration: 6000 }
       );
     }
-  }, [maxAvailableRooms, isLodgeInactive, showPassengerModal, arrivalDate]);
+  }, [maxAvailableRooms, isLodgeInactive, showPassengerModal, arrivalDate, isAdmin]);
 
   const validateCoupon = async (code: string) => {
     setValidatingCoupon(true);
@@ -601,14 +617,37 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const handleCheckoutSubmit = async (passengers: any[]) => {
     setIsProcessingCheckout(true);
     try {
-      const finalTotal = prices.grandTotal;
+      if (isAdmin) {
+        const adminPayload = {
+          target_type: 'room',
+          travel_date: arrivalDate,
+          departure_date: departureDate,
+          quantity: guests,
+          room_variant_id: selectedVariantId,
+          adult_count: guests,
+          child_count: 0,
+          slot_start: selectedSlot?.slot_start,
+          slot_end: selectedSlot?.slot_end,
+          passengers: passengers.map(p => ({
+            ...p,
+            aadhaar: p.aadhaar || undefined,
+            phone: p.phone || undefined,
+          }))
+        };
+        const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
+        toast.success(`Booking ${res.data.public_id} created successfully!`);
+        router.push(`/admin/bookings`);
+        return;
+      }
+
+      const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
       const minPayable = Math.ceil(finalTotal * 0.50);
       const parsedCustom = parseInt(customPayAmount, 10);
       const paymentPercentage = (() => {
         if (!customPayAmount) return 100;
         if (isNaN(parsedCustom) || parsedCustom >= finalTotal) return 100;
         const clamped = Math.max(minPayable, parsedCustom);
-        return Math.round((clamped / finalTotal) * 100);
+        return parseFloat(((clamped / finalTotal) * 100).toFixed(4));
       })();
 
       const payload = {
@@ -686,6 +725,19 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         setIsProcessingCheckout(false);
       });
       rzp.open();
+
+      // Enforce pointer-events: auto on body/html to override Radix UI Dialog scroll lock blocking on mobile
+      if (typeof document !== 'undefined') {
+        document.body.style.setProperty('pointer-events', 'auto', 'important');
+        document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
+        let count = 0;
+        const interval = setInterval(() => {
+          document.body.style.setProperty('pointer-events', 'auto', 'important');
+          document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
+          count++;
+          if (count > 30) clearInterval(interval);
+        }, 100);
+      }
     } catch (err: any) {
       console.error(err);
       let errMsg = "Checkout failed. Please try again.";
@@ -759,22 +811,38 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     const gatewayFee = Math.round((subtotal + gst) * 0.01);
     const grandTotal = subtotal + gst + gatewayFee;
 
-    return { rawSubtotal, discount, subtotal, gst, gatewayFee, grandTotal };
-  }, [stayDetails.totalPrice, roomsCount, price]);
+    // Agent Commission Calculations
+    const commissionPercentage = user?.commission_percentage ? Number(user.commission_percentage) : 0;
+    const commissionType = user?.commission_type || 'PERCENTAGE';
+    const commissionFixedAmount = user?.commission_fixed_amount ? Number(user.commission_fixed_amount) : 0;
+
+    let agentDiscount = 0;
+    if (isAgent) {
+      if (commissionType === 'FIXED_AMOUNT') {
+        agentDiscount = Math.min(commissionFixedAmount, grandTotal);
+      } else {
+        agentDiscount = Math.min(grandTotal, Math.round((subtotal * commissionPercentage) / 100));
+      }
+    }
+    const agentPayable = Math.max(0, grandTotal - agentDiscount);
+
+    return { rawSubtotal, discount, subtotal, gst, gatewayFee, grandTotal, agentDiscount, agentPayable };
+  }, [stayDetails.totalPrice, roomsCount, price, appliedCoupon, user, isAgent]);
 
   // Adjust custom pay amount when total price changes
   useEffect(() => {
     setCustomPayAmount(prev => {
       if (prev === '') return prev;
       const parsed = parseInt(prev, 10);
-      const minPayable = Math.ceil(prices.grandTotal * 0.50);
+      const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+      const minPayable = Math.ceil(finalTotal * 0.50);
       if (!isNaN(parsed)) {
-        if (parsed >= prices.grandTotal) return '';
+        if (parsed >= finalTotal) return '';
         if (parsed < minPayable) return String(minPayable);
       }
       return prev;
     });
-  }, [prices.grandTotal]);
+  }, [prices.grandTotal, prices.agentPayable, isAgent]);
 
   useEffect(() => {
     if (appliedCoupon) {
@@ -1091,6 +1159,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     disabled={isLodgeInactive}
                     availableDates={allAvailableDates}
                     onMonthChange={fetchRoomAvailability}
+                    isAdmin={isAdmin}
                     onChange={(val) => {
                       setArrivalDate(val);
                       const sStart = selectedSlot?.slot_start || "";
@@ -1116,6 +1185,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     disabled={isLodgeInactive}
                     availableDates={validDepartureDates}
                     onMonthChange={fetchRoomAvailability}
+                    isAdmin={isAdmin}
                     onChange={setDepartureDate}
                   />
                 </div>
@@ -1242,10 +1312,27 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
                   <span className="font-bold text-slate-800">{money(prices.gatewayFee)}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
-                  <span>Total</span>
-                  <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
-                </div>
+                {isAgent ? (
+                  <>
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-sm font-bold text-slate-700">
+                      <span>Tourist Total Bill</span>
+                      <span>{money(prices.grandTotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-rose-600 font-bold">
+                      <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
+                      <span>- {money(prices.agentDiscount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-1.5 text-base font-black text-slate-900">
+                      <span>Net Payable to Portal</span>
+                      <span className="text-[#1a6b7a] text-xl">{money(prices.agentPayable)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
+                    <span>Total</span>
+                    <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
+                  </div>
+                )}
               </div>
 
               {/* Payment + CTA */}
@@ -1256,7 +1343,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               ) : (
                 <>
                   {arrivalDate && departureDate && (() => {
-                    const finalTotal = prices.grandTotal || price * roomsCount;
+                    const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
                     const minPayable = Math.ceil(finalTotal * 0.50);
                     const parsedCustom = parseInt(customPayAmount, 10);
                     const effectivePay = isNaN(parsedCustom) || customPayAmount === ''
@@ -1354,9 +1441,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-              Total ({roomsCount} {roomsCount === 1 ? 'room' : 'rooms'})
+              Total ({roomsCount} {roomsCount === 1 ? 'room' : 'rooms'}){isAgent && prices.agentPayable < prices.grandTotal ? ' · Agent Rate' : ''}
             </p>
-            <p className="text-xl font-black text-[#102231] min-[380px]:text-2xl">{prices.grandTotal ? money(prices.grandTotal) : money(price * roomsCount)}</p>
+            <p className="text-xl font-black text-[#102231] min-[380px]:text-2xl">{(isAgent ? prices.agentPayable : prices.grandTotal) ? money(isAgent ? prices.agentPayable : prices.grandTotal) : money(price * roomsCount)}</p>
           </div>
           {isLodgeInactive ? (
             <button disabled className="flex h-12 shrink-0 items-center justify-center rounded-full bg-slate-400 px-6 text-sm font-black uppercase tracking-[0.14em] text-white cursor-not-allowed animate-none">
@@ -1391,6 +1478,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         disabled={isLodgeInactive}
                         availableDates={allAvailableDates}
                         onMonthChange={fetchRoomAvailability}
+                        isAdmin={isAdmin}
                         onChange={(val) => {
                           setArrivalDate(val);
                           const sStart = selectedSlot?.slot_start || "";
@@ -1415,6 +1503,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         disabled={isLodgeInactive}
                         availableDates={validDepartureDates}
                         onMonthChange={fetchRoomAvailability}
+                        isAdmin={isAdmin}
                         onChange={setDepartureDate}
                       />
                     </div>
@@ -1540,7 +1629,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       </div>
                       <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
                         <span>Total</span>
-                        <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
+                        <span className="text-[#1a6b7a] text-xl">{money((isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount)}</span>
                       </div>
                     </div>
 
@@ -1732,6 +1821,7 @@ const CustomDatePicker = ({
   align = 'left',
   availableDates,
   onMonthChange,
+  isAdmin = false,
 }: {
   label: string;
   value: string;
@@ -1742,6 +1832,7 @@ const CustomDatePicker = ({
   align?: 'left' | 'right';
   availableDates?: Set<string>;
   onMonthChange?: (month: string) => void;
+  isAdmin?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1848,8 +1939,8 @@ const CustomDatePicker = ({
       const isSelected = dateStr === value;
 
       // If availableDates is provided, only enable dates that are in the set
-      const hasInventory = availableDates ? availableDates.has(dateStr) : true;
-      const isDisabled = isPast || !hasInventory;
+      const hasInventory = isAdmin ? true : (availableDates ? availableDates.has(dateStr) : true);
+      const isDisabled = isAdmin ? false : (isPast || !hasInventory);
 
       days.push(
         <button
