@@ -10,20 +10,30 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Connection': 'keep-alive'
+      }
+    });
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch from url: ${response.status} ${response.statusText}`);
+      console.error(`Download proxy fetch failed: ${response.status} ${response.statusText} for URL: ${url}`);
+      return new NextResponse(`Failed to fetch from url: ${response.status}`, { status: 502 });
     }
 
-    return new NextResponse(response.body, {
+    const arrayBuffer = await response.arrayBuffer();
+
+    return new NextResponse(arrayBuffer, {
       headers: {
         'Content-Type': response.headers.get('Content-Type') || 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'no-store',
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Download proxy error:', error);
-    return new NextResponse('Error downloading file', { status: 500 });
+    return new NextResponse(`Error downloading file: ${error.message}`, { status: 500 });
   }
 }
