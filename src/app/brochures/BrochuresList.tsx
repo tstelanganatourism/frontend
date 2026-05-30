@@ -162,19 +162,23 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
           type="button"
           onClick={async (e) => {
             e.preventDefault();
-            try {
-              window.open(brochureUrl, '_blank');
+            // Derive object key from the URL
+            const match = brochureUrl.match(/private\/brochures\/[^\s?#]+/);
+            const rawKey = match ? match[0] : null;
+            // Open in new tab immediately
+            window.open(brochureUrl, '_blank');
+            // Trigger download via backend 1.5s later
+            if (rawKey) {
               setTimeout(() => {
-                const proxyUrl = `/api/download?url=${encodeURIComponent(brochureUrl)}&filename=${encodeURIComponent(pkg.slug + '-brochure.pdf')}`;
+                const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(pkg.slug + '-brochure.pdf')}`;
                 const link = document.createElement('a');
-                link.href = proxyUrl;
+                link.href = downloadUrl;
                 link.download = `${pkg.slug}-brochure.pdf`;
+                link.target = '_blank';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
               }, 1500);
-            } catch (err) {
-              console.warn("Download failed", err);
             }
           }}
           className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1a6b7a] px-4 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c]"

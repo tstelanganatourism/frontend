@@ -91,40 +91,26 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     e.preventDefault();
     if (!brochurePdfUrl) return;
 
-    const forceDownload = async (url: string) => {
-      try {
-        // 1. Open in a new tab so they can see it immediately
-        window.open(url, '_blank');
-        
-        // 2. Trigger a forced background download using our proxy
-        setTimeout(() => {
-          const proxyUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
-          const link = document.createElement('a');
-          link.href = proxyUrl;
-          link.download = `${packageSlug}-brochure.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }, 1500);
-      } catch (err) {
-        console.warn("Download failed", err);
-      }
-    };
-
     const rawKey = extractObjectKey(brochurePdfUrl);
-    if (!rawKey) {
-      await forceDownload(brochurePdfUrl);
-      return;
-    }
-
-    try {
-      const response = await apiClient.post('/api/v1/documents/signed-url', {
-        object_key: rawKey
-      });
-      await forceDownload(response.data.url);
-    } catch (err) {
-      console.error('Failed to get fresh signed URL for brochure:', err);
-      await forceDownload(brochurePdfUrl);
+    
+    if (rawKey) {
+      // Use the backend download endpoint which forces Content-Disposition: attachment
+      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
+      // Open in new tab to view
+      window.open(brochurePdfUrl, '_blank');
+      // Force download via backend (which bakes Content-Disposition into the presigned URL)
+      setTimeout(() => {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `${packageSlug}-brochure.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 1500);
+    } else {
+      // Fallback: just open in new tab
+      window.open(brochurePdfUrl, '_blank');
     }
   };
 
