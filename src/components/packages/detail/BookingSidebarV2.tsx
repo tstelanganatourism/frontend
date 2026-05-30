@@ -828,7 +828,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   return (
     <div id="booking" className="w-full my-2 lg:sticky lg:top-[140px]">
-      <div className="overflow-hidden lg:rounded-2xl lg:border lg:border-slate-200 bg-transparent lg:bg-white lg:shadow-[0_45px_120px_rgba(15,61,86,0.13)] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+      <div className="lg:overflow-hidden lg:rounded-2xl lg:border lg:border-slate-200 bg-transparent lg:bg-white lg:shadow-[0_45px_120px_rgba(15,61,86,0.13)] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
 
         {/* Header */}
         <div className="hidden lg:block bg-[#0f3d56] px-5 py-4 text-white lg:rounded-t-2xl relative overflow-hidden">
@@ -870,7 +870,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
             </div>
           )}
           {/* Side-by-Side Inputs (Highly spacious under 420px Column Grid) */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
             {/* Variant Select */}
             <div className="relative">
               <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Variant</label>
@@ -888,7 +888,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               </button>
 
               {variantMenuOpen && (
-                <div className="absolute left-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg w-[330px] origin-top-left">
+                <div className="absolute left-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg w-[calc(100vw-32px)] min-[420px]:w-[330px] origin-top-left">
                   <div className="max-h-60 overflow-y-auto p-1.5 scrollbar-thin">
                     {validVariants.length ? validVariants.map((variant) => {
                       const selected = variant.id === selectedVariantId;
@@ -939,7 +939,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               </button>
 
               {dateMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-lg border border-slate-200 bg-white shadow-lg origin-top-right w-[330px]">
+                <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-lg border border-slate-200 bg-white shadow-lg origin-top-right w-[calc(100vw-32px)] min-[420px]:w-[330px]">
                   {renderCalendar()}
                 </div>
               )}
@@ -1028,143 +1028,127 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
             )}
           </div>
 
-          {/* Pricing Details */}
-          <div className="pt-2.5 border-t border-slate-100 space-y-1.5 text-[12px] text-slate-500">
-            <div className="flex justify-between items-center">
-              <span>Base Fare <span className="text-[10px] text-slate-400">({adults}A, {children}C)</span></span>
-              <span className="font-bold text-slate-800">₹{formatINR(prices.rawSubtotal)}</span>
-            </div>
-            {appliedCoupon && (
-              <div className="flex justify-between items-center text-emerald-600 font-bold">
-                <span>Discount <span className="text-[10px]">({appliedCoupon.code})</span></span>
-                <span>-₹{formatINR(prices.discount)}</span>
+          {/* Pricing Details & Advance Payment Card */}
+          <div className="rounded-2xl border border-[#dfe8e2]/85 bg-slate-50/70 p-4 space-y-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+            <div className="space-y-2 text-xs text-slate-500">
+              <div className="flex justify-between items-center">
+                <span>Base Fare <span className="text-[10px] text-slate-400">({adults}A, {children}C)</span></span>
+                <span className="font-bold text-slate-800">₹{formatINR(prices.rawSubtotal)}</span>
               </div>
-            )}
-            <div className="flex justify-between items-center">
-              <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
-              <span className="font-bold text-slate-800">₹{formatINR(prices.gst)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
-              <span className="font-bold text-slate-800">₹{formatINR(prices.gatewayFee)}</span>
-            </div>
-            {isAgent ? (
-              <>
-                <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1.5 text-sm font-bold text-slate-700">
-                  <span>Tourist Total Bill</span>
-                  <span>₹{formatINR(prices.grandTotal)}</span>
+              {appliedCoupon && (
+                <div className="flex justify-between items-center text-emerald-600 font-bold">
+                  <span>Discount <span className="text-[10px]">({appliedCoupon.code})</span></span>
+                  <span>-₹{formatINR(prices.discount)}</span>
                 </div>
-                <div className="flex justify-between items-center text-rose-600 font-bold">
-                  <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
-                  <span>-₹{formatINR(prices.agentDiscount)}</span>
-                </div>
-                <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-base font-black text-slate-900">
-                  <span>Net Payable Amount</span>
-                  <span className="text-[#1a6b7a] text-xl">₹{formatINR(prices.agentPayable)}</span>
-                </div>
-              </>
-            ) : (
-              <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
-                <span>Total</span>
-                <span className="text-[#1a6b7a] text-xl">₹{formatINR(prices.grandTotal)}</span>
+              )}
+              <div className="flex justify-between items-center">
+                <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
+                <span className="font-bold text-slate-800">₹{formatINR(prices.gst)}</span>
               </div>
-            )}
-            {isPartial && (() => {
-              const displayTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-              const pctStr = paymentPercentage.toFixed(1).replace(/\.0$/, '');
+              <div className="flex justify-between items-center">
+                <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
+                <span className="font-bold text-slate-800">₹{formatINR(prices.gatewayFee)}</span>
+              </div>
+              {isAgent ? (
+                <>
+                  <div className="flex justify-between items-center border-t border-slate-200/60 pt-2 mt-1.5 text-xs font-bold text-slate-600">
+                    <span>Tourist Total Bill</span>
+                    <span>₹{formatINR(prices.grandTotal)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-rose-600 font-bold">
+                    <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
+                    <span>-₹{formatINR(prices.agentDiscount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-slate-300 pt-2 mt-1.5 text-sm font-black text-slate-900">
+                    <span>Net Payable Amount</span>
+                    <span className="text-[#1a6b7a] text-lg">₹{formatINR(prices.agentPayable)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between items-center border-t border-slate-200/60 pt-2 mt-1.5 text-sm font-black text-slate-900">
+                  <span>Total</span>
+                  <span className="text-[#1a6b7a] text-lg">₹{formatINR(prices.grandTotal)}</span>
+                </div>
+              )}
+            </div>
+
+            {selectedDate && !isAdmin && (() => {
+              const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+              const minPayable = Math.ceil(finalTotal * 0.35);
+              const derivedPct = parseFloat(((effectivePayNow / finalTotal) * 100).toFixed(1));
+              if (derivedPct !== paymentPercentage) setPaymentPercentage(derivedPct);
               return (
-                <div className="border-t border-slate-150 pt-2.5 mt-2.5 space-y-2">
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                    <span>Amount Payable Now ({pctStr}%)</span>
-                    <span className="font-extrabold text-slate-800">₹{formatINR(effectivePayNow)}</span>
+                <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
+                  {/* Row 1: Toggle + Amount */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                    {/* Full / Advance toggle */}
+                    <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); }}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                      >
+                        Full
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customPayAmount === '') {
+                            setCustomPayAmount(String(minPayable));
+                            setPaymentPercentage(35);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                      >
+                        Advance
+                      </button>
+                    </div>
+
+                    {/* Amount input / display */}
+                    {customPayAmount !== '' ? (
+                      <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#1a6b7a]/40 rounded-lg px-2 py-1 shadow-sm">
+                        <span className="text-xs font-black text-slate-400">₹</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={customPayAmount}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            setCustomPayAmount(val);
+                          }}
+                          onBlur={() => {
+                            const v = parseInt(customPayAmount, 10);
+                            if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
+                            else if (v >= finalTotal) setCustomPayAmount('');
+                            else setCustomPayAmount(String(v));
+                          }}
+                          className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
+                          placeholder={String(minPayable)}
+                        />
+                        <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
+                      </div>
+                    ) : (
+                      <div className="flex-1 text-right shrink-0">
+                        <span className="text-xs font-black text-[#1a6b7a]">₹{formatINR(finalTotal)}</span>
+                        <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                    <span>Remaining Balance</span>
-                    <span className="font-extrabold text-slate-800">₹{formatINR(displayTotal - effectivePayNow)}</span>
-                  </div>
+
+                  {/* Row 2: Balance due / error */}
+                  {isPartial && (
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
+                      <span>Balance due later</span>
+                      <span className="font-black text-slate-600">₹{formatINR(finalTotal - effectivePayNow)}</span>
+                    </div>
+                  )}
+                  {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
+                    <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{formatINR(minPayable)} (35%)</p>
+                  )}
                 </div>
               );
             })()}
           </div>
-
-          {selectedDate && !isAdmin && (() => {
-            const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-            const minPayable = Math.ceil(finalTotal * 0.35);
-            const derivedPct = parseFloat(((effectivePayNow / finalTotal) * 100).toFixed(1));
-            if (derivedPct !== paymentPercentage) setPaymentPercentage(derivedPct);
-            return (
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                {/* Row 1: Toggle + Amount */}
-                <div className="flex items-center gap-2">
-                  {/* Full / Advance toggle */}
-                  <div className="flex bg-slate-100 rounded-lg p-0.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); }}
-                      className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'
-                        }`}
-                    >
-                      Full
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (customPayAmount === '') {
-                          setCustomPayAmount(String(minPayable));
-                          setPaymentPercentage(35);
-                        }
-                      }}
-                      className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'
-                        }`}
-                    >
-                      Advance
-                    </button>
-                  </div>
-
-                  {/* Amount input / display */}
-                  {customPayAmount !== '' ? (
-                    <div className="flex-1 flex items-center gap-1.5 bg-white border border-[#1a6b7a]/50 rounded-lg px-3 py-1.5">
-                      <span className="text-sm font-black text-slate-400">₹</span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={customPayAmount}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setCustomPayAmount(val);
-                        }}
-                        onBlur={() => {
-                          const v = parseInt(customPayAmount, 10);
-                          if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                          else if (v >= finalTotal) setCustomPayAmount('');
-                          else setCustomPayAmount(String(v));
-                        }}
-                        className="flex-1 bg-transparent text-sm font-black text-slate-800 outline-none w-0 min-w-0"
-                        placeholder={String(minPayable)}
-                      />
-                      <span className="text-[10px] font-bold text-slate-400 shrink-0">pay now</span>
-                    </div>
-                  ) : (
-                    <div className="flex-1 text-right">
-                      <span className="text-sm font-black text-[#1a6b7a]">₹{formatINR(finalTotal)}</span>
-                      <span className="text-[11px] text-slate-400 font-semibold ml-1">full</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Row 2: Balance due / error */}
-                {isPartial && (
-                  <div className="mt-1.5 flex justify-between items-center text-[11px] text-slate-500 font-semibold px-0.5">
-                    <span>Pay remaining online or at office</span>
-                    <span className="font-extrabold text-slate-700">₹{formatINR(finalTotal - effectivePayNow)}</span>
-                  </div>
-                )}
-                {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
-                  <p className="mt-1 text-[10px] text-red-500 font-bold">Min advance is ₹{formatINR(minPayable)} (35%)</p>
-                )}
-              </div>
-            );
-          })()}
 
           {/* CTA */}
           <button
