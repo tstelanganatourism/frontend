@@ -97,13 +97,15 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         window.open(url, '_blank');
         
         // 2. Trigger a forced background download using our proxy
-        const proxyUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
-        const link = document.createElement('a');
-        link.href = proxyUrl;
-        link.download = `${packageSlug}-brochure.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        setTimeout(() => {
+          const proxyUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
+          const link = document.createElement('a');
+          link.href = proxyUrl;
+          link.download = `${packageSlug}-brochure.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }, 1500);
       } catch (err) {
         console.warn("Download failed", err);
       }

@@ -54,10 +54,22 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
           {brochurePdfUrl && (
             <button
               type="button"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.preventDefault();
-                const proxyUrl = `/api/download?url=${encodeURIComponent(brochurePdfUrl)}&filename=${encodeURIComponent(`${packageSlug}-brochure.pdf`)}`;
-                window.location.href = proxyUrl;
+                try {
+                  window.open(brochurePdfUrl, '_blank');
+                  setTimeout(() => {
+                    const proxyUrl = `/api/download?url=${encodeURIComponent(brochurePdfUrl)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
+                    const link = document.createElement('a');
+                    link.href = proxyUrl;
+                    link.download = `${packageSlug}-brochure.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }, 1500);
+                } catch (err) {
+                  console.warn("Download failed", err);
+                }
               }}
               className="text-[10px] font-black text-[#1a6b7a] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
             >

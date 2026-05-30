@@ -164,13 +164,15 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
             e.preventDefault();
             try {
               window.open(brochureUrl, '_blank');
-              const proxyUrl = `/api/download?url=${encodeURIComponent(brochureUrl)}&filename=${encodeURIComponent(pkg.slug + '-brochure.pdf')}`;
-              const link = document.createElement('a');
-              link.href = proxyUrl;
-              link.download = `${pkg.slug}-brochure.pdf`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
+              setTimeout(() => {
+                const proxyUrl = `/api/download?url=${encodeURIComponent(brochureUrl)}&filename=${encodeURIComponent(pkg.slug + '-brochure.pdf')}`;
+                const link = document.createElement('a');
+                link.href = proxyUrl;
+                link.download = `${pkg.slug}-brochure.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }, 1500);
             } catch (err) {
               console.warn("Download failed", err);
             }
