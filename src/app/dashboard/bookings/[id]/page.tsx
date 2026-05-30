@@ -380,10 +380,8 @@ export default function BookingDetailPage() {
   const paidAmount      = booking?.paid_amount ?? 0;
   const remainingAmount = booking?.remaining_balance ?? 0;
   // For agents: use agent_payable if present, else fall back to public total
-  const displayTotal     = (booking?.agent_payable != null) ? booking.agent_payable : totalAmount;
-  const displayPaid      = (booking?.agent_payable != null)
-    ? Math.max(0, displayTotal - remainingAmount)
-    : paidAmount;
+  const displayTotal     = booking?.agent_payable ?? totalAmount;
+  const displayPaid      = paidAmount;
   const displayRemaining = remainingAmount;
   const progressPct = displayTotal > 0 ? Math.min(100, (displayPaid / displayTotal) * 100) : 0;
 
