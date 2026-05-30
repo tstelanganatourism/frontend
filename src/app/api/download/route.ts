@@ -15,13 +15,10 @@ export async function GET(request: Request) {
       throw new Error(`Failed to fetch from url: ${response.status} ${response.statusText}`);
     }
 
-    const buffer = await response.arrayBuffer();
-
-    return new NextResponse(buffer, {
+    return new NextResponse(response.body, {
       headers: {
         'Content-Type': response.headers.get('Content-Type') || 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
-        // Cache control to allow browser caching if needed
         'Cache-Control': 'public, max-age=3600',
       },
     });
