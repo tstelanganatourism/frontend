@@ -381,12 +381,10 @@ export default function BookingDetailPage() {
   const remainingAmount = booking?.remaining_balance ?? 0;
   // For agents: use agent_payable if present, else fall back to public total
   const displayTotal     = (booking?.agent_payable != null) ? booking.agent_payable : totalAmount;
-  const displayPaid      = (booking?.agent_payable != null && booking?.agent_commission != null)
-    ? Math.max(0, paidAmount - (booking.agent_commission * (paidAmount / totalAmount || 0)))
+  const displayPaid      = (booking?.agent_payable != null)
+    ? Math.max(0, displayTotal - remainingAmount)
     : paidAmount;
-  const displayRemaining = (booking?.agent_payable != null)
-    ? Math.max(0, booking.agent_payable - displayPaid)
-    : remainingAmount;
+  const displayRemaining = remainingAmount;
   const progressPct = displayTotal > 0 ? Math.min(100, (displayPaid / displayTotal) * 100) : 0;
 
   // ─── Loading / error states ─────────────────────────────────────────────────
@@ -681,14 +679,14 @@ export default function BookingDetailPage() {
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-emerald-50 rounded-xl p-2.5 text-center">
                   <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wide">Paid</p>
-                  <p className="font-black text-emerald-800 mt-0.5">{formatINR(booking.paid_amount)}</p>
+                  <p className="font-black text-emerald-800 mt-0.5">{formatINR(displayPaid)}</p>
                 </div>
-                <div className={`rounded-xl p-2.5 text-center ${remainingAmount > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
-                  <p className={`text-[10px] font-bold uppercase tracking-wide ${remainingAmount > 0 ? 'text-amber-600' : 'text-slate-500'}`}>
+                <div className={`rounded-xl p-2.5 text-center ${displayRemaining > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wide ${displayRemaining > 0 ? 'text-amber-600' : 'text-slate-500'}`}>
                     Remaining
                   </p>
-                  <p className={`font-black mt-0.5 ${remainingAmount > 0 ? 'text-amber-800' : 'text-slate-500'}`}>
-                    {remainingAmount > 0 ? formatINR(remainingAmount) : 'None'}
+                  <p className={`font-black mt-0.5 ${displayRemaining > 0 ? 'text-amber-800' : 'text-slate-500'}`}>
+                    {displayRemaining > 0 ? formatINR(displayRemaining) : 'None'}
                   </p>
                 </div>
               </div>
