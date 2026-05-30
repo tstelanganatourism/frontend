@@ -350,6 +350,7 @@ export default function BookingDetailsModal({
 
   const isAdmin = user?.role === 'ADMIN';
   const isPartialPaid = booking?.status === 'PARTIAL_PAID';
+  const isFullyPaid = booking?.status === 'FULLY_PAID' || booking?.status === 'CONFIRMED';
   const remainingBalance = booking?.remaining_balance ?? 0;
   const progressPct = booking && booking.total_amount > 0
     ? Math.min(100, (booking.paid_amount / booking.total_amount) * 100)
@@ -590,7 +591,7 @@ export default function BookingDetailsModal({
 
                   {/* Right: Documents */}
                   <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
-                    {booking.status === 'FULLY_PAID' && isAdmin && (
+                    {(isFullyPaid || isAdmin) && (
                       booking.invoice_pdf_url ? (
                         <button
                           onClick={() => handleDownloadPdf(booking.invoice_pdf_url!, 'invoice')}

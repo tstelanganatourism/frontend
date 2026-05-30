@@ -12,6 +12,7 @@ interface Passenger {
   id_proof_type: string | null;
   id_proof_number: string | null;
   is_primary: boolean;
+  phone_number?: string | null;
 }
 
 interface BookingDetails {
@@ -100,7 +101,13 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   const primaryPassenger = booking.passengers?.find(p => p.is_primary) || booking.passengers?.[0];
   const billedName = primaryPassenger?.full_name || booking.user?.full_name || 'Guest User';
-  const billedPhone = (primaryPassenger as any)?.phone_number || (primaryPassenger as any)?.phone || booking.user?.phone || 'N/A';
+  const billedPhone = 
+    primaryPassenger?.phone_number || 
+    (primaryPassenger as any)?.phone || 
+    (booking as any)?.user?.phone_number || 
+    booking?.user?.phone || 
+    (booking as any)?.agent_phone ||
+    'N/A';
 
   const paymentMode = booking.pricing_snapshot?.razorpay_payment_id ? 'Online (Razorpay)' : 'Office';
   const paymentId = booking.pricing_snapshot?.razorpay_payment_id || 'N/A';
@@ -327,7 +334,10 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             {booking.passengers.map((p, idx) => (
               <tr key={idx}>
                 <td>{idx + 1}</td>
-                <td>{p.full_name} {p.is_primary ? '(Primary)' : ''}</td>
+                <td>
+                  {p.full_name} {p.is_primary ? '(Primary)' : ''}
+                  {p.phone_number && <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number}</div>}
+                </td>
                 <td>{p.age}</td>
                 <td>{p.gender || '-'}</td>
                 <td>{p.id_proof_number ? `${p.id_proof_type}: ${p.id_proof_number.slice(-4) || p.id_proof_number}` : '(Not Provided)'}</td>

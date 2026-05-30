@@ -11,6 +11,7 @@ interface Passenger {
   id_proof_type: string | null;
   id_proof_number: string | null;
   is_primary: boolean;
+  phone_number?: string | null;
 }
 
 interface BoardingPoint {
@@ -140,6 +141,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
   if (booking.adult_count > 0) parts.push(`${booking.adult_count} Adult${booking.adult_count > 1 ? 's' : ''}`);
   if (booking.child_count > 0) parts.push(`${booking.child_count} Child${booking.child_count > 1 ? 'ren' : ''}`);
   const guestSummary = parts.join(', ') || `${booking.passengers.length} Passenger${booking.passengers.length > 1 ? 's' : ''}`;
+  const primaryPassenger = booking.passengers.find(p => p.is_primary) || booking.passengers[0];
 
   return (
     <div className="wrap">
@@ -367,6 +369,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <div className="bk-icon">🎫</div>
                 <div><div className="bk-lbl">Booking ID</div><div className="bk-val">{booking.public_id}</div></div>
               </div>
+              {primaryPassenger?.phone_number && (
+                <div className="bk-row">
+                  <div className="bk-icon">📞</div>
+                  <div><div className="bk-lbl">Customer Phone</div><div className="bk-val">{primaryPassenger.phone_number}</div></div>
+                </div>
+              )}
               <div className="bk-row">
                 <div className="bk-icon">📅</div>
                 <div><div className="bk-lbl">Travel Date</div><div className="bk-val">{travelDateFormatted}</div></div>
@@ -456,6 +464,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <td>
                   {p.full_name}
                   {p.is_primary && <span className="lead-badge">LEAD</span>}
+                  {p.phone_number && <div style={{ fontSize: '8.5px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number}</div>}
                 </td>
                 <td>{p.age}</td>
                 <td>{p.gender || '—'}</td>
