@@ -111,7 +111,7 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
                 Book Now
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[24px] border-t border-[#dfe8e2]/60 bg-white px-4 pb-6 pt-0 scrollbar-none" showCloseButton>
+            <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[24px] border-t border-[#dfe8e2]/60 bg-white px-4 pb-6 pt-8 scrollbar-none" showCloseButton>
               <SheetHeader className="mb-4 text-left">
                 <SheetTitle className="text-xl font-black text-[#0f3d56] flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-[#1a6b7a]" />

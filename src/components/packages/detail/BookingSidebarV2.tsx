@@ -1087,7 +1087,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
             })()}
           </div>
 
-          {selectedDate && (() => {
+          {selectedDate && !isAdmin && (() => {
             const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
             const minPayable = Math.ceil(finalTotal * 0.35);
             const derivedPct = parseFloat(((effectivePayNow / finalTotal) * 100).toFixed(1));

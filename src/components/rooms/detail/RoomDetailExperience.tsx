@@ -1342,7 +1342,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 </button>
               ) : (
                 <>
-                  {arrivalDate && departureDate && (() => {
+                  {arrivalDate && departureDate && !isAdmin && (() => {
                     const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
                     const minPayable = Math.ceil(finalTotal * 0.50);
                     const parsedCustom = parseInt(customPayAmount, 10);
@@ -1427,7 +1427,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     </div>
                   ) : (
                     <button onClick={handleBookingClick} disabled={isProcessingCheckout} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] h-11 flex items-center justify-center disabled:opacity-60">
-                      {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Reserve Now'}
+                      {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : isAdmin ? 'Reserve Now (Admin)' : 'Reserve Now'}
                     </button>
                   )}
                 </>
@@ -1456,7 +1456,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   Reserve Now
                 </button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[24px] border-t border-slate-200 bg-white px-4 pb-6 pt-0 scrollbar-none" showCloseButton>
+              <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[24px] border-t border-slate-200 bg-white px-4 pb-6 pt-8 scrollbar-none" showCloseButton>
                 <SheetHeader className="mb-4 text-left">
                   <SheetTitle className="text-xl font-black text-[#102231] flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-[#0f8d7d]" />
@@ -1627,11 +1627,103 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
                         <span className="font-bold text-slate-800">{money(prices.gatewayFee)}</span>
                       </div>
-                      <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
-                        <span>Total</span>
-                        <span className="text-[#1a6b7a] text-xl">{money((isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount)}</span>
-                      </div>
+                      {isAgent ? (
+                        <>
+                          <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-sm font-bold text-slate-700">
+                            <span>Tourist Total Bill</span>
+                            <span>{money(prices.grandTotal)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-rose-600 font-bold">
+                            <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
+                            <span>- {money(prices.agentDiscount)}</span>
+                          </div>
+                          <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-1.5 text-base font-black text-slate-900">
+                            <span>Net Payable to Portal</span>
+                            <span className="text-[#1a6b7a] text-xl">{money(prices.agentPayable)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1.5 text-base font-black text-slate-900">
+                          <span>Total</span>
+                          <span className="text-[#1a6b7a] text-xl">{money(prices.grandTotal || price * roomsCount)}</span>
+                        </div>
+                      )}
                     </div>
+
+                    {arrivalDate && departureDate && !isAdmin && (() => {
+                      const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
+                      const minPayable = Math.ceil(finalTotal * 0.50);
+                      const parsedCustom = parseInt(customPayAmount, 10);
+                      const effectivePay = isNaN(parsedCustom) || customPayAmount === ''
+                        ? finalTotal
+                        : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
+                      const isPartial = effectivePay < finalTotal;
+                      return (
+                        <div className="pt-2.5 border-t border-slate-100 mb-4">
+                          {/* No cancellation notice */}
+                          <div className="mb-2 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
+                            <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-[10px] font-bold text-amber-700 leading-4">No cancellation — 50% advance secures your room. Balance payable before check-in.</p>
+                          </div>
+
+                          {/* Toggle + amount row */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex bg-slate-100 rounded-lg p-0.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setCustomPayAmount('')}
+                                className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
+                              >
+                                Full
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                                className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
+                              >
+                                50% Adv
+                              </button>
+                            </div>
+
+                            {customPayAmount !== '' ? (
+                              <div className="flex-1 flex items-center gap-1.5 bg-white border border-[#0f8d7d]/50 rounded-lg px-3 py-1.5">
+                                <span className="text-sm font-black text-slate-400">₹</span>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={customPayAmount}
+                                  onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                  onBlur={() => {
+                                    const v = parseInt(customPayAmount, 10);
+                                    if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
+                                    else if (v >= finalTotal) setCustomPayAmount('');
+                                    else setCustomPayAmount(String(v));
+                                  }}
+                                  className="flex-1 bg-transparent text-sm font-black text-slate-800 outline-none w-0 min-w-0"
+                                  placeholder={String(minPayable)}
+                                />
+                                <span className="text-[10px] font-bold text-slate-400 shrink-0">now</span>
+                              </div>
+                            ) : (
+                              <div className="flex-1 text-right">
+                                <span className="text-sm font-black text-[#0f8d7d]">₹{finalTotal.toLocaleString('en-IN')}</span>
+                                <span className="text-[11px] text-slate-400 font-semibold ml-1">full</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {isPartial && (
+                            <div className="mt-1.5 flex justify-between items-center text-[11px] text-slate-500 font-semibold">
+                              <span>Balance before check-in</span>
+                              <span className="font-extrabold text-slate-700">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
+                            </div>
+                          )}
+                          {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
+                            <p className="mt-1 text-[10px] text-red-500 font-bold">Min advance is ₹{minPayable.toLocaleString('en-IN')} (50%)</p>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Mobile CTA — same Razorpay flow as desktop */}
                     {arrivalDate && departureDate && maxAvailableRooms === 0 ? (
@@ -1652,7 +1744,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         disabled={isProcessingCheckout || isLodgeInactive}
                         className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Reserve & Pay Now'}
+                        {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}
                       </button>
                     )}
                   </div>
