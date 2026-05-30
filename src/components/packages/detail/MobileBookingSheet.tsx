@@ -54,22 +54,10 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
           {brochurePdfUrl && (
             <button
               type="button"
-              onClick={async (e) => {
+              onClick={(e) => {
                 e.preventDefault();
-                try {
-                  const res = await fetch(brochurePdfUrl);
-                  const blob = await res.blob();
-                  const blobUrl = window.URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = blobUrl;
-                  link.download = `${packageSlug}-brochure.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  window.URL.revokeObjectURL(blobUrl);
-                } catch (err) {
-                  window.open(brochurePdfUrl, '_blank');
-                }
+                const proxyUrl = `/api/download?url=${encodeURIComponent(brochurePdfUrl)}&filename=${encodeURIComponent(`${packageSlug}-brochure.pdf`)}`;
+                window.location.href = proxyUrl;
               }}
               className="text-[10px] font-black text-[#1a6b7a] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
             >

@@ -93,20 +93,19 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
     const forceDownload = async (url: string) => {
       try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Fetch failed");
-        const blob = await res.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
+        // 1. Open in a new tab so they can see it immediately
+        window.open(url, '_blank');
+        
+        // 2. Trigger a forced background download using our proxy
+        const proxyUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
         const link = document.createElement('a');
-        link.href = blobUrl;
+        link.href = proxyUrl;
         link.download = `${packageSlug}-brochure.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
       } catch (err) {
-        console.warn("Blob download failed, falling back to window.open", err);
-        window.open(url, '_blank');
+        console.warn("Download failed", err);
       }
     };
 
