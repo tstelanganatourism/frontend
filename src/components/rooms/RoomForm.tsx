@@ -18,10 +18,13 @@ import {
   Percent,
   BedDouble,
   ChevronDown,
-  Image as ImageIcon
+  Image as ImageIcon,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import ImageUpload from '@/components/ui/ImageUpload';
+import { motion, AnimatePresence } from 'framer-motion';
 const RichTextEditor = dynamic(() => import('@/components/ui/RichTextEditor'), { ssr: false });
 import { toast } from 'sonner';
 
@@ -90,6 +93,8 @@ interface RoomFormProps {
   initialData?: any;
   onSubmit: (data: any) => Promise<void>;
   isLoading: boolean;
+  validationErrors?: string[];
+  onClearValidationErrors?: () => void;
 }
 
 const PRESET_FACILITIES = [
@@ -126,7 +131,13 @@ const handleTimeInputChange = (val: string, setter: (v: string) => void) => {
   setter(val + ':00'); // Add seconds for backend compatibility
 };
 
-export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormProps) {
+export default function RoomForm({
+  initialData,
+  onSubmit,
+  isLoading,
+  validationErrors = [],
+  onClearValidationErrors
+}: RoomFormProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -430,6 +441,39 @@ export default function RoomForm({ initialData, onSubmit, isLoading }: RoomFormP
 
   return (
     <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-8">
+
+      {/* Validation Errors Global Alert */}
+      <AnimatePresence>
+        {validationErrors.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="p-6 bg-red-50 border-2 border-red-200 rounded-3xl shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <h3 className="text-red-900 font-bold text-lg">Action Required to Save</h3>
+              </div>
+              {onClearValidationErrors && (
+                <button
+                  type="button"
+                  onClick={onClearValidationErrors}
+                  className="p-1 rounded-lg hover:bg-red-100 text-red-500 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+            <ul className="list-disc pl-6 space-y-1">
+              {validationErrors.map((err, i) => (
+                <li key={i} className="text-red-700 font-medium text-sm">{err}</li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Action Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6">

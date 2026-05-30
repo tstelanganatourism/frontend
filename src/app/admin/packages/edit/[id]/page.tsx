@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAdminStore } from '@/stores/adminStore';
 import PackageForm from '@/components/packages/PackageForm';
 import { toast } from 'sonner';
+import { parseValidationError } from '@/lib/utils';
 
 interface EditPageProps {
   params: Promise<{ id: string }>;
@@ -38,13 +39,16 @@ export default function AdminPackageEditPage({ params }: EditPageProps) {
       
       router.push('/admin/packages');
     } catch (err: any) {
-      const serverErrors = err.response?.data?.detail?.validation_errors;
-      if (serverErrors && Array.isArray(serverErrors)) {
-        setValidationErrors(serverErrors);
-        toast.error('Publishing failed. Please fix the validation errors.');
+      const parsedErrors = parseValidationError(err);
+      setValidationErrors(parsedErrors);
+      
+      if (parsedErrors.length > 0) {
+        const errorText = parsedErrors.map(e => `• ${e}`).join('\n');
+        toast.error(`Publishing/Saving failed. Requirements not met:\n${errorText}`, {
+          duration: 7000
+        });
       } else {
-        const errMsg = err.response?.data?.detail || err.message || 'Failed to update experience';
-        toast.error(errMsg);
+        toast.error('Failed to update experience');
       }
     } finally {
       setIsUpdating(false);

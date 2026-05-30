@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAdminStore } from '@/stores/adminStore';
 import RoomForm from '@/components/rooms/RoomForm';
 import { toast } from 'sonner';
+import { parseValidationError } from '@/lib/utils';
 
 interface EditPageProps {
   params: Promise<{ id: string }>;
@@ -15,6 +16,7 @@ export default function AdminRoomEditPage({ params }: EditPageProps) {
   const resolvedParams = use(params);
   const { currentRoom, isLoading, fetchRoomById, updateRoom } = useAdminStore();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
     fetchRoomById(resolvedParams.id);
@@ -22,12 +24,23 @@ export default function AdminRoomEditPage({ params }: EditPageProps) {
 
   const handleSubmit = async (formData: any) => {
     setIsUpdating(true);
+    setValidationErrors([]);
     try {
       await updateRoom(resolvedParams.id, formData);
       toast.success('Lodge updated successfully');
       router.push('/admin/rooms');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update property');
+      const parsedErrors = parseValidationError(err);
+      setValidationErrors(parsedErrors);
+      
+      if (parsedErrors.length > 0) {
+        const errorText = parsedErrors.map(e => `• ${e}`).join('\n');
+        toast.error(`Saving failed. Requirements not met:\n${errorText}`, {
+          duration: 7000
+        });
+      } else {
+        toast.error(err.message || 'Failed to update property');
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -47,6 +60,8 @@ export default function AdminRoomEditPage({ params }: EditPageProps) {
         initialData={currentRoom} 
         onSubmit={handleSubmit} 
         isLoading={isUpdating} 
+        validationErrors={validationErrors}
+        onClearValidationErrors={() => setValidationErrors([])}
       />
     </div>
   );

@@ -14,3 +14,57 @@ export function getHdImageUrl(url: string | null | undefined): string {
   return url;
 }
 
+export function parseValidationError(err: any): string[] {
+  if (!err) return [];
+  
+  // 1. Check for standard backend validation errors nested inside response
+  const responseData = err.response?.data;
+  if (responseData) {
+    // If detail is an array (FastAPI Pydantic validation errors)
+    if (Array.isArray(responseData.detail)) {
+      return responseData.detail.map((e: any) => {
+        const fieldName = e.loc?.slice(-1)?.[0] || 'Field';
+        const formattedField = typeof fieldName === 'string' 
+          ? fieldName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          : fieldName;
+        return `${formattedField}: ${e.msg}`;
+      });
+    }
+    
+    // If detail is an object containing validation_errors (like package publish)
+    if (responseData.detail && typeof responseData.detail === 'object') {
+      const detailObj = responseData.detail;
+      if (Array.isArray(detailObj.validation_errors)) {
+        return detailObj.validation_errors;
+      }
+      if (typeof detailObj.message === 'string') {
+        return [detailObj.message];
+      }
+    }
+    
+    // If detail is a simple string
+    if (typeof responseData.detail === 'string') {
+      return [responseData.detail];
+    }
+    
+    // Fallback if data is just a string or has a message
+    if (typeof responseData === 'string') {
+      return [responseData];
+    }
+    if (responseData.message) {
+      return [responseData.message];
+    }
+  }
+
+  // 2. Check the javascript Error message
+  if (err.message) {
+    if (err.message.includes(': ') && err.message.includes(', ')) {
+      return err.message.split(', ');
+    }
+    return [err.message];
+  }
+
+  return ['An unexpected error occurred'];
+}
+
+

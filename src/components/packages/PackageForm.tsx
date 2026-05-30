@@ -214,12 +214,7 @@ export default function PackageForm({
     }
   }, [title, place, duration, slug, coverImageUrl, initialData, metaTitle, metaDescription, canonicalUrl, ogImageUrl]);
 
-  // Handle auto-clearing validation errors when fields change
-  useEffect(() => {
-    if (validationErrors.length > 0 && onClearValidationErrors) {
-      onClearValidationErrors();
-    }
-  }, [title, type, region, place, coverImageUrl, variants, itinerary, onClearValidationErrors]);
+
 
   const galleryUrls = gallery.map(g => g.image_url).filter(Boolean);
   const handleGalleryChange = (urls: string[]) => {
@@ -568,9 +563,20 @@ export default function PackageForm({
             exit={{ opacity: 0, scale: 0.95 }}
             className="p-6 bg-red-50 border-2 border-red-200 rounded-3xl shadow-sm"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-              <h3 className="text-red-900 font-bold text-lg">Action Required to Save/Publish</h3>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <h3 className="text-red-900 font-bold text-lg">Action Required to Save/Publish</h3>
+              </div>
+              {onClearValidationErrors && (
+                <button
+                  type="button"
+                  onClick={onClearValidationErrors}
+                  className="p-1 rounded-lg hover:bg-red-100 text-red-500 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
             </div>
             <ul className="list-disc pl-6 space-y-1">
               {validationErrors.map((err, i) => (
