@@ -1465,11 +1465,19 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         <Minus className="h-4 w-4" />
                       </button>
                       <span className="text-sm font-black">{guests} {guests === 1 ? 'Guest' : 'Guests'}</span>
-                      <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.min(12, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
+                      <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
-                    {selectedVariant?.capacity_per_room ? <p className="mt-2 text-xs font-bold text-slate-400">Selected category capacity: {selectedVariant.capacity_per_room} guests per room.</p> : null}
+                    <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      {selectedVariant?.capacity_per_room ? <p className="text-xs font-bold text-slate-400">Selected category capacity: {selectedVariant.capacity_per_room} guests per room.</p> : null}
+                      <p className={`text-xs font-black ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0f8d7d]'}`}>
+                        {arrivalDate && maxAvailableRooms === 0
+                          ? 'No rooms available — select different dates'
+                          : `Requires ${roomsCount} room${roomsCount !== 1 ? 's' : ''}${arrivalDate ? ` (${maxAvailableRooms} available)` : ''}`
+                        }
+                      </p>
+                    </div>
                   </div>
 
                   <div className="border-t border-slate-200 pt-5 space-y-4">
