@@ -209,9 +209,11 @@ export const useAdminStore = create<AdminState>((set) => ({
         } else {
           errMsg = err.response.data.detail;
         }
+      } else if (err.response?.data?.error?.message) {
+        errMsg = err.response.data.error.message;
       }
       set({ error: errMsg, isLoading: false });
-      throw new Error(errMsg);
+      throw err;
     }
   },
 
@@ -253,9 +255,11 @@ export const useAdminStore = create<AdminState>((set) => ({
         } else {
           errMsg = err.response.data.detail;
         }
+      } else if (err.response?.data?.error?.message) {
+        errMsg = err.response.data.error.message;
       }
       set({ error: errMsg });
-      throw new Error(errMsg);
+      throw err;
     }
   },
 
@@ -347,9 +351,11 @@ export const useAdminStore = create<AdminState>((set) => ({
         } else {
           errMsg = err.response.data.detail;
         }
+      } else if (err.response?.data?.error?.message) {
+        errMsg = err.response.data.error.message;
       }
       set({ error: errMsg, isLoading: false });
-      throw new Error(errMsg);
+      throw err;
     }
   },
 
@@ -389,9 +395,11 @@ export const useAdminStore = create<AdminState>((set) => ({
         } else {
           errMsg = err.response.data.detail;
         }
+      } else if (err.response?.data?.error?.message) {
+        errMsg = err.response.data.error.message;
       }
       set({ error: errMsg });
-      throw new Error(errMsg);
+      throw err;
     }
   },
 

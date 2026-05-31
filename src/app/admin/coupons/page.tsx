@@ -158,8 +158,10 @@ export default function AdminCouponsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredCoupons.map((coupon) => (
-                  <tr key={coupon.id} className="hover:bg-slate-50/50 transition-colors group">
+                filteredCoupons.map((coupon) => {
+                  const isExpired = coupon.valid_until ? new Date(coupon.valid_until) < new Date() : false;
+                  return (
+                    <tr key={coupon.id} className={`hover:bg-slate-50/50 transition-colors group ${isExpired ? 'opacity-85 bg-rose-50/10' : ''}`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
@@ -218,11 +220,20 @@ export default function AdminCouponsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className={`h-3.5 w-3.5 ${isExpired ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`} />
+                        <span className="text-xs flex items-center gap-1.5 flex-wrap">
                           {coupon.valid_from || coupon.valid_until ? (
-                            <>{formatDate(coupon.valid_from)} - {formatDate(coupon.valid_until)}</>
+                            <>
+                              <span className={isExpired ? 'text-rose-600 line-through opacity-70 font-semibold' : ''}>
+                                {formatDate(coupon.valid_from)} - {formatDate(coupon.valid_until)}
+                              </span>
+                              {isExpired && (
+                                <span className="inline-flex text-[9px] bg-rose-100 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-black uppercase tracking-wider scale-95 origin-left">
+                                  Expired
+                                </span>
+                              )}
+                            </>
                           ) : (
                             'Always Valid'
                           )}
@@ -269,8 +280,14 @@ export default function AdminCouponsPage() {
                             }`}
                           />
                         </button>
-                        <span className={`text-[10px] font-black uppercase tracking-wider ${coupon.is_active ? 'text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-md' : 'text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md'}`}>
-                          {coupon.is_active ? 'Active' : 'Inactive'}
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${
+                          isExpired 
+                            ? 'text-rose-700 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded-md animate-pulse' 
+                            : coupon.is_active 
+                              ? 'text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-md' 
+                              : 'text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md'
+                        }`}>
+                          {isExpired ? 'Expired' : coupon.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                     </td>
@@ -296,7 +313,8 @@ export default function AdminCouponsPage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

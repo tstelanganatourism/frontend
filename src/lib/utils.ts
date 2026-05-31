@@ -41,6 +41,23 @@ export function parseValidationError(err: any): string[] {
         return [detailObj.message];
       }
     }
+
+    // Support custom backend exceptions (AppError, VALIDATION_ERROR, etc.)
+    if (responseData.error && typeof responseData.error === 'object') {
+      const errorObj = responseData.error;
+      if (Array.isArray(errorObj.details)) {
+        return errorObj.details.map((e: any) => {
+          const fieldName = e.loc?.slice(-1)?.[0] || 'Field';
+          const formattedField = typeof fieldName === 'string' 
+            ? fieldName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+            : fieldName;
+          return `${formattedField}: ${e.msg}`;
+        });
+      }
+      if (typeof errorObj.message === 'string') {
+        return [errorObj.message];
+      }
+    }
     
     // If detail is a simple string
     if (typeof responseData.detail === 'string') {
