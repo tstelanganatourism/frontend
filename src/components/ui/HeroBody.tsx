@@ -103,17 +103,17 @@ function StatBlock({ icon: Icon, value, label }: { icon: LucideIcon; value: stri
 
 export default function HeroBody() {
   return (
-    <section className="relative isolate flex h-[calc(100dvh-4.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100dvh-5.45rem)]">
+    <section className="relative isolate flex h-[calc(100dvh-7.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100dvh-8.45rem)]">
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(2,16,30,0.96)_0%,rgba(2,24,38,0.82)_34%,rgba(2,19,32,0.36)_63%,rgba(2,19,32,0.12)_100%)]" />
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,14,26,0.16)_0%,rgba(2,14,26,0.12)_48%,rgba(2,14,26,0.72)_100%)]" />
 
-      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-center px-4 py-6 sm:px-6 sm:py-10 lg:px-10 xl:px-14 2xl:px-16">
+      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-center px-4 py-4 sm:px-6 sm:py-6 lg:px-10 xl:px-14 2xl:px-16">
         <div className="w-full">
           <div className="hidden xl:block">
             <TopFlourish />
           </div>
 
-          <div className="mb-5 flex w-full justify-center lg:mb-6 lg:justify-start">
+          <div className="mb-4 flex w-full justify-center lg:mb-5 lg:justify-start">
             <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/70 bg-slate-950/40 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(0,0,0,0.24)] backdrop-blur-md sm:px-5 sm:text-[12px]">
               <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
               <span className="truncate">Official Pappikondalu &amp; Bhadrachalam Booking</span>
@@ -140,7 +140,7 @@ export default function HeroBody() {
 
             <div className="border-l border-amber-300/58 pl-7 text-right" dir="rtl">
               <h2 className="text-[2.6rem] font-black leading-[1.08] tracking-tight text-amber-300 xl:text-[3.15rem] whitespace-nowrap">تلنگانہ اور اے پی</h2>
-              <div className="mt-2 text-[2.75rem] font-black leading-[1.14] tracking-tight text-white xl:text-[3.15rem]">بوٹ ٹورزم</div>
+              <div className="mt-2 text-[2.75rem] font-black leading-[1.14] tracking-tight text-white xl:text-[3.15rem]">بوٹ టూరిజం</div>
               <p className="mr-auto mt-5 max-w-[16rem] text-lg font-semibold leading-7 text-white/88">قدرت، سکون اور یادوں کا سفر</p>
               <div className="flex justify-end">
                 <SmallDivider />
@@ -163,7 +163,7 @@ export default function HeroBody() {
 
           </div>
 
-          <div className="mt-5 w-full max-w-[49rem] rounded-[2rem] border border-white/28 bg-slate-950/20 p-2.5 shadow-[0_16px_44px_rgba(0,0,0,0.22)] backdrop-blur-md sm:p-3 lg:mt-8">
+          <div className="mt-4 w-full max-w-[49rem] rounded-[2rem] border border-white/28 bg-slate-950/20 p-2.5 shadow-[0_16px_44px_rgba(0,0,0,0.22)] backdrop-blur-md sm:p-3 lg:mt-6">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {featurePills.map(({ icon: Icon, label }) => (
                 <div key={label} className="flex min-h-14 items-center gap-2.5 rounded-[1.45rem] px-2.5 py-2 text-[13px] font-bold leading-snug text-white sm:min-h-16 sm:gap-3 sm:px-3 sm:py-2.5 sm:text-sm">
@@ -174,7 +174,7 @@ export default function HeroBody() {
             </div>
           </div>
 
-          <div className="mt-5 grid w-full max-w-[49rem] grid-cols-2 gap-2.5 sm:flex sm:gap-5 lg:mt-6">
+          <div className="mt-4 grid w-full max-w-[49rem] grid-cols-2 gap-2.5 sm:flex sm:gap-5 lg:mt-4">
             <Link
               href="/boat-rides"
               prefetch={false}
@@ -200,7 +200,7 @@ export default function HeroBody() {
             </div>
             <div className="min-w-0 rounded-2xl border border-white/14 bg-slate-950/30 p-2.5 text-right backdrop-blur-md" dir="rtl">
               <div className="truncate text-base font-black leading-tight text-amber-300">تلنگانہ اور اے پی</div>
-              <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">بوٹ ٹورزم</div>
+              <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">بوట్ టూరిజం</div>
             </div>
             {heroStats.map(({ icon: Icon, value, label }) => (
               <div key={label} className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/14 bg-slate-950/34 p-2.5 backdrop-blur-md">
@@ -215,7 +215,7 @@ export default function HeroBody() {
             ))}
           </div>
 
-          <div className="mt-5 hidden max-w-[58rem] flex-wrap gap-2.5 md:flex lg:mt-6">
+          <div className="mt-4 hidden max-w-[58rem] flex-wrap gap-2.5 md:flex lg:mt-4">
             {bottomTags.map(({ icon: Icon, label }) => (
               <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/23 bg-slate-950/22 px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md">
                 <Icon className="h-4 w-4 text-amber-300" />
@@ -224,7 +224,7 @@ export default function HeroBody() {
             ))}
           </div>
 
-          <div className="mx-auto mt-5 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid xl:hidden">
+          <div className="mx-auto mt-4 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid xl:hidden">
             <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 backdrop-blur-md">
               <div className="text-xl font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
               <div className="mt-1 text-lg font-black leading-tight text-white">బోట్ టూరిజం</div>
@@ -232,12 +232,12 @@ export default function HeroBody() {
             </div>
             <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 text-right backdrop-blur-md" dir="rtl">
               <div className="text-xl font-black leading-tight text-amber-300">تلنگانہ اور اے پی</div>
-              <div className="mt-1 text-lg font-black leading-tight text-white">بوٹ ٹورزم</div>
+              <div className="mt-1 text-lg font-black leading-tight text-white">بوట్ టూరిజం</div>
               <p className="mt-2 text-[11px] font-semibold leading-4 text-white/78">قدرت، سکون اور یادوں کا سفر</p>
             </div>
           </div>
 
-          <div className="mx-auto mt-6 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid xl:hidden">
+          <div className="mx-auto mt-4 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid xl:hidden">
             {heroStats.map((stat) => (
               <StatBlock key={stat.label} {...stat} />
             ))}
@@ -258,13 +258,13 @@ export default function HeroBody() {
         <span className="ml-auto mt-1 block h-1 w-44 rounded-full bg-amber-300" />
       </div>
 
-      <div className="pointer-events-none absolute bottom-32 right-10 z-20 hidden items-center gap-3 lg:flex xl:gap-4">
+      <div className="pointer-events-none absolute bottom-28 right-10 z-20 hidden items-center gap-3 lg:flex xl:gap-4">
         {heroStats.map((stat) => (
           <StatBlock key={stat.label} {...stat} />
         ))}
       </div>
 
-      <div className="relative z-10 mx-auto mt-auto hidden w-full max-w-[92rem] px-4 pb-8 sm:px-6 md:block lg:px-10">
+      <div className="relative z-10 mx-auto mt-auto hidden w-full max-w-[92rem] px-4 pb-4 sm:px-6 md:block lg:px-10">
         <div className="grid gap-3 rounded-2xl border border-white/20 bg-white/92 p-3 text-slate-950 shadow-[0_18px_55px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-center lg:p-4">
           {trustItems.map(({ icon: Icon, label, sub }) => (
             <div key={label} className="flex items-center gap-3 px-1 py-1">

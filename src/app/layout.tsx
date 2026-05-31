@@ -18,6 +18,16 @@ export const metadata: Metadata = {
     template: "%s | Papikondalu Tourism"
   },
   description: "Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, Kolluru bamboo huts and premium stays with Telangana Boat Tourism.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
   keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "Telangana Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays", "bhadrachalam tourism", "telangana tourism", "andhra tourism", "boat rides"],
   authors: [{ name: "TSTG Boat Tourism" }],
   creator: "Satvik",
