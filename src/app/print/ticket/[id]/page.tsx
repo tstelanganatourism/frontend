@@ -108,6 +108,15 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
   const isFullyPaid = booking.status === 'FULLY_PAID';
 
+  // Dynamic GSTIN selection based on payment type
+  const isRazorpay = !!(
+    (booking as any).pricing_snapshot?.razorpay_payment_id ||
+    (booking as any).pricing_snapshot?.razorpay_order_id ||
+    (booking as any).payment_ledger?.some((p: any) => p.payment_method === 'RAZORPAY')
+  );
+  const gstNumber = isRazorpay ? '29AANCR6717K1ZN' : '36AALFT7063K1ZL';
+
+
   // Dynamic ticket title
   const ticketTitle = isRoom ? 'PREMIUM ROOMS' : isSightseeing ? 'SIGHTSEEING TICKET' : 'BOAT RIDE TICKET';
 
@@ -427,7 +436,8 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 DR NO:4-1-78/1<br />
                 KALYANA MANDAPAM ROAD OPP SBI ATM<br />
                 BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),<br />
-                TELANGANA-507111
+                TELANGANA-507111<br />
+                <strong>GSTIN: {gstNumber}</strong>
               </div>
               <div className="divider-v" />
               <div className="note-addr-col">

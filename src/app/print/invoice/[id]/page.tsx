@@ -111,6 +111,9 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   const paymentMode = booking.pricing_snapshot?.razorpay_payment_id ? 'Online (Razorpay)' : 'Office';
   const paymentId = booking.pricing_snapshot?.razorpay_payment_id || 'N/A';
+  const isRazorpay = paymentMode === 'Online (Razorpay)';
+  const gstNumber = isRazorpay ? '29AANCR6717K1ZN' : '36AALFT7063K1ZL';
+
 
   return (
     <AdminInvoiceGuard hasSecret={hasSecret}>
@@ -255,7 +258,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             D.no: 4 - 1 - 78/1 (Near SBI ATM),<br />
             Kalyana Mandapam Road, Opp SBI ATM,<br />
             Bhadrachalam, BHADRADRI KOTHAGUDEM Dist.,<br />
-            Telangana State - 507 111
+            Telangana State - 507 111<br />
+            <strong>GSTIN: {gstNumber}</strong>
           </div>
           <div className="company-contact">
             <div className="contact-item"><strong>📞</strong> +91 95420 69573</div>
@@ -270,6 +274,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
               <tbody>
                 <tr><td>Invoice No.</td><td>: INV-{booking.public_id}</td></tr>
                 <tr><td>Invoice Date</td><td>: {invoiceDateFormatted}</td></tr>
+                <tr><td>GSTIN</td><td>: {gstNumber}</td></tr>
                 <tr><td>Booking ID</td><td>: {booking.public_id}</td></tr>
                 <tr><td>Travel Date</td><td>: {travelDateFormatted}</td></tr>
                 <tr><td>{booking.target_type === 'ROOM' ? 'Check-In Time' : 'Reporting Time'}</td><td>: {booking.target_type === 'ROOM' ? (booking.room_checkin || "") : (booking.boarding_point?.departure_time || "")}</td></tr>

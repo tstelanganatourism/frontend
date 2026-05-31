@@ -439,6 +439,11 @@ export default function BookingDetailPage() {
   ) && !booking.has_pending_cancellation;
 
   const isFullyPaid = booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED';
+  const isRazorpay = !!(
+    booking.payment_ledger?.some(p => p.payment_method === 'RAZORPAY')
+  );
+  const gstNumber = isRazorpay ? '29AANCR6717K1ZN' : '36AALFT7063K1ZL';
+
 
   return (
     <div className="space-y-6">
@@ -628,7 +633,7 @@ export default function BookingDetailPage() {
                 <CreditCard className="h-4 w-4 text-slate-400" /> Booking Invoice
               </h3>
               <div className="text-[9px] font-bold text-slate-400 bg-slate-50 border border-slate-100 px-2 py-1 rounded">
-                GST: 36AYSPN0044M1ZZ
+                GST: {gstNumber}
               </div>
             </div>
 
