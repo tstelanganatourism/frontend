@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Map, BedDouble, User } from 'lucide-react';
+import { Home, Ship, Camera, BedDouble, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -14,16 +14,17 @@ export default function MobileBottomNav({ isStacked = false }: { isStacked?: boo
 
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Packages', href: '/packages', icon: Map },
-    { name: 'Rooms', href: '/rooms', icon: BedDouble },
+    { name: 'Boat Rides', href: '/boat-rides', icon: Ship },
+    { name: 'Sightseeings', href: '/sightseeing', icon: Camera },
+    { name: 'Rooms', href: '/stays', icon: BedDouble },
     { name: isAuthenticated ? 'Dashboard' : 'Login', href: profileHref, icon: User },
   ];
 
   const bottomClass = isStacked ? "bottom-16 sm:bottom-0" : "bottom-0";
 
   return (
-    <div className={`fixed ${bottomClass} left-0 right-0 z-50 border-t border-white/70 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-xl md:hidden`}>
-      <div className="mx-auto grid max-w-md grid-cols-4 items-center gap-1">
+    <div className={`fixed ${bottomClass} left-0 right-0 z-50 border-t border-white/80 bg-white/96 px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-1.5 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-xl md:hidden`}>
+      <div className="mx-auto grid max-w-md grid-cols-5 items-center gap-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
           const Icon = item.icon;
@@ -32,14 +33,14 @@ export default function MobileBottomNav({ isStacked = false }: { isStacked?: boo
             <Link 
               key={item.name} 
               href={item.href}
-              className={`flex min-h-14 min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-1.5 transition-all duration-200 ${
+              className={`flex min-h-[3.45rem] min-w-0 flex-col items-center justify-center rounded-[1.1rem] px-0.5 py-1 transition-all duration-200 ${
                 isActive 
-                  ? 'bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] scale-105' 
+                  ? 'bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] shadow-[inset_0_0_0_1px_rgba(26,107,122,0.08)]' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-slate-50'
               }`}
             >
-              <Icon className={`h-6 w-6 mb-1 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-              <span className={`w-full truncate text-center text-[10px] font-medium ${isActive ? 'opacity-100' : 'opacity-80'}`}>
+              <Icon className={`mb-1 h-5 w-5 min-[380px]:h-5.5 min-[380px]:w-5.5 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+              <span className={`w-full text-center text-[8px] font-bold leading-[0.7rem] min-[380px]:text-[8.75px] ${isActive ? 'opacity-100' : 'opacity-80'}`}>
                 {item.name}
               </span>
             </Link>

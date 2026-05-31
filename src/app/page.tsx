@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { ArrowRight, Compass, Mountain, Quote, Sparkles, Waves } from 'lucide-react';
+import { ArrowRight, Camera, Compass, Mountain, Quote, Sparkles, Waves } from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
 import RoomCard from '@/components/ui/RoomCard';
 import HeroSlider from '@/components/ui/HeroSlider';
@@ -54,6 +54,21 @@ const TESTIMONIALS = [
   'The rooms and cruise package felt thoughtfully matched for a weekend trip.',
 ];
 
+const SIGHTSEEING_FALLBACKS = [
+  {
+    title: 'Bhadrachalam Temple Trail',
+    copy: 'Plan a calm darshan day with local timing support, nearby stops and clean route guidance.',
+  },
+  {
+    title: 'Papikondalu View Points',
+    copy: 'Camera-ready river bends, green hill corridors and short scenic pauses around the Godavari route.',
+  },
+  {
+    title: 'Local Culture Stops',
+    copy: 'Add heritage, food and family-friendly visit points without making the day feel rushed.',
+  },
+];
+
 type FeaturedPackage = {
   id: number;
   slug: string;
@@ -99,6 +114,20 @@ async function fetchFeaturedRooms() {
     if (!res.ok) throw new Error('Failed to fetch rooms');
     const data = await res.json();
     return data.items as FeaturedRoom[];
+  } catch (err) {
+    console.error("Backend Server is unreachable or failed:", err);
+    return null;
+  }
+}
+
+async function fetchFeaturedSightseeing() {
+  try {
+    const res = await apiFetch('/api/v1/packages?type=TRIP&is_featured=true&size=3', {
+      next: { revalidate: 30, tags: ['packages'] }
+    });
+    if (!res.ok) throw new Error('Failed to fetch sightseeing packages');
+    const data = await res.json();
+    return data.items as FeaturedPackage[];
   } catch (err) {
     console.error("Backend Server is unreachable or failed:", err);
     return null;
@@ -192,6 +221,48 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="relative overflow-hidden bg-white py-14 md:py-24">
+          <div className="absolute inset-y-0 left-0 w-1/2 bg-[linear-gradient(90deg,rgba(26,107,122,0.08),transparent)]" />
+          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:px-8">
+            <div>
+              <span className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[var(--color-brand-teal)]">
+                <Camera className="h-4 w-4" />
+                Scenic Sightseeing
+              </span>
+              <h2 className="text-3xl font-black text-[var(--color-brand-river)] md:text-5xl">Temple visits, hill views and local trails planned beautifully.</h2>
+              <p className="mt-5 max-w-xl text-base font-medium leading-8 text-slate-600">
+                Add a guided sightseeing day around Bhadrachalam and Papikondalu with photo stops, pilgrimage timing and easy family-friendly routes.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-2.5">
+                {['Temple Trails', 'Photo Stops', 'Local Guidance'].map((tag) => (
+                  <span key={tag} className="inline-flex items-center rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[var(--color-brand-teal)]">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <Link href="/sightseeing" prefetch={false} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-river)] px-6 py-3 text-sm font-black text-white shadow-[0_16px_36px_rgba(15,61,86,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#154652]">
+                Explore Sightseeing <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="relative min-h-[22rem] overflow-hidden rounded-[1.75rem] shadow-[0_24px_70px_rgba(15,61,86,0.16)] md:min-h-[30rem]">
+              <Image src="/images/sightseeing-banner-2026.png" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover" />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.52))]" />
+              <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/25 bg-white/18 p-4 text-white shadow-[0_18px_45px_rgba(0,0,0,0.18)] backdrop-blur-md sm:left-6 sm:right-auto sm:max-w-sm sm:p-5">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-white/78">Curated day trips</p>
+                <p className="mt-2 text-2xl font-black leading-tight">Scenic Sightseeing Tours</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-white/82">Best for temple visits, viewpoints and short local experiences.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
+            <Suspense fallback={<ShimmerGrid count={3} />}>
+              <FeaturedSightseeing />
+            </Suspense>
+          </div>
+        </section>
+
         {/* Featured Rooms */}
         <section className="relative py-14 md:py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -259,5 +330,38 @@ async function FeaturedRooms() {
     </div>
   ) : (
     <ShimmerGrid count={3} />
+  );
+}
+
+async function FeaturedSightseeing() {
+  const packages = await fetchFeaturedSightseeing();
+
+  if (packages && packages.length > 0) {
+    return (
+      <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
+        {packages.map((pkg) => (
+          <PackageCard key={pkg.id} pkg={pkg} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      {SIGHTSEEING_FALLBACKS.map((item) => (
+        <Link
+          key={item.title}
+          href="/sightseeing"
+          prefetch={false}
+          className="group rounded-[1.35rem] border border-[#d8ece8] bg-[#f8fbfa] p-5 shadow-[0_14px_40px_rgba(15,61,86,0.08)] transition-all hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-[0_20px_50px_rgba(15,61,86,0.12)]"
+        >
+          <div className="mb-4 grid h-11 w-11 place-items-center rounded-full bg-teal-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
+            <Camera className="h-5 w-5" />
+          </div>
+          <h3 className="text-lg font-black text-[var(--color-brand-river)]">{item.title}</h3>
+          <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.copy}</p>
+        </Link>
+      ))}
+    </div>
   );
 }

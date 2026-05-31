@@ -174,22 +174,30 @@ export default function HeroBody() {
             </div>
           </div>
 
-          <div className="mt-4 grid w-full max-w-[49rem] grid-cols-2 gap-2.5 sm:flex sm:gap-5 lg:mt-4">
+          <div className="mt-5 grid w-full max-w-[58rem] grid-cols-1 gap-2.5 min-[390px]:grid-cols-3 sm:flex sm:gap-4 lg:mt-5">
             <Link
               href="/boat-rides"
               prefetch={false}
-              className="inline-flex min-h-14 flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-2.5 text-[12px] font-black text-slate-950 shadow-[0_18px_42px_rgba(251,191,36,0.34)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_rgba(251,191,36,0.46)] min-[390px]:gap-2 min-[390px]:text-sm sm:flex-none sm:gap-3 sm:px-9 sm:text-base"
+              className="inline-flex min-h-[3.25rem] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-4 text-[13px] font-black text-slate-950 shadow-[0_18px_42px_rgba(251,191,36,0.34)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_rgba(251,191,36,0.46)] min-[390px]:min-h-14 min-[390px]:px-2 min-[390px]:text-[12px] sm:flex-none sm:gap-3 sm:px-7 sm:text-base"
             >
               <Anchor className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
-              Explore Boat Rides
+              <span className="leading-tight">Boat Rides</span>
+            </Link>
+            <Link
+              href="/sightseeing"
+              prefetch={false}
+              className="inline-flex min-h-[3.25rem] flex-1 items-center justify-center gap-2 rounded-full border border-teal-200/45 bg-teal-500/92 px-4 text-[13px] font-black text-white shadow-[0_18px_42px_rgba(20,184,166,0.24)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-teal-500 hover:shadow-[0_22px_48px_rgba(20,184,166,0.34)] min-[390px]:min-h-14 min-[390px]:px-2 min-[390px]:text-[12px] sm:flex-none sm:gap-3 sm:px-7 sm:text-base"
+            >
+              <Camera className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
+              <span className="leading-tight min-[390px]:max-w-[4.5rem] min-[390px]:text-center sm:max-w-none">Scenic Sightseeing</span>
             </Link>
             <Link
               href="/stays"
               prefetch={false}
-              className="inline-flex min-h-14 flex-1 items-center justify-center gap-1.5 rounded-full border border-sky-300/45 bg-blue-950/74 px-2.5 text-[12px] font-black text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900/86 min-[390px]:gap-2 min-[390px]:text-sm sm:flex-none sm:gap-3 sm:px-9 sm:text-base"
+              className="inline-flex min-h-[3.25rem] flex-1 items-center justify-center gap-2 rounded-full border border-sky-300/45 bg-blue-950/76 px-4 text-[13px] font-black text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900/86 min-[390px]:min-h-14 min-[390px]:px-2 min-[390px]:text-[12px] sm:flex-none sm:gap-3 sm:px-7 sm:text-base"
             >
               <CalendarCheck className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
-              Book Riverside Stays
+              <span className="leading-tight min-[390px]:max-w-[4rem] min-[390px]:text-center sm:max-w-none">Riverside Stays</span>
             </Link>
           </div>
 

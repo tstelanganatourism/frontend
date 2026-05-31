@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, User, Home, Ship, BedDouble, Image as ImageIcon, Info, LogOut, LayoutDashboard, ChevronDown, Settings, FileText } from 'lucide-react';
+import { Menu, X, User, Home, Ship, BedDouble, Camera, Image as ImageIcon, Info, LogOut, LayoutDashboard, ChevronDown, Settings, FileText } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { logout } from '@/services/authService';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -14,7 +14,7 @@ import LiveBookingCount from './LiveBookingCount';
 const navLinks = [
   { name: 'Home', href: '/', icon: Home, path: '/' },
   { name: 'Boat Rides', href: '/boat-rides', icon: Ship, path: '/boat-rides' },
-  { name: 'Sightseeing', href: '/sightseeing', icon: Ship, path: '/sightseeing' },
+  { name: 'Sightseeing', href: '/sightseeing', icon: Camera, path: '/sightseeing' },
   { name: 'Accommodations', href: '/stays', icon: BedDouble, path: '/stays' },
   { name: 'Brochures', href: '/brochures', icon: FileText, path: '/brochures' },
   { name: 'Gallery', href: '/gallery', icon: ImageIcon, path: '/gallery' },
@@ -388,13 +388,13 @@ export default function PublicNavbar() {
         <AnimatePresence>
           {isOpen && (
             <>
-              {/* Glass backdrop overlay */}
+              {/* Mobile backdrop overlay */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsOpen(false)}
-                className="fixed inset-0 z-[90] bg-slate-900/30 backdrop-blur-xs lg:hidden"
+                className="fixed inset-0 z-[90] bg-slate-950/45 lg:hidden"
               />
 
               {/* Drawer Container */}
@@ -403,12 +403,12 @@ export default function PublicNavbar() {
                 animate={{ opacity: 1, height: 'auto', y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -10 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="absolute left-0 top-full z-[95] max-h-[calc(100dvh-4.25rem)] w-full overflow-y-auto border-b border-slate-200 bg-white/95 shadow-2xl backdrop-blur-md lg:hidden"
+                className="absolute left-2 right-2 top-[calc(100%+0.5rem)] z-[95] max-h-[calc(100dvh-7.5rem)] overflow-y-auto rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,61,86,0.24)] lg:hidden"
               >
                 {/* Joint States Logo Header */}
-                <div className="grid gap-3 border-b border-slate-100 px-4 py-4 sm:grid-cols-2">
-                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50/70 p-3">
-                    <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" className="h-10 w-10 shrink-0 object-contain bg-white rounded-full p-0.5 shadow-sm" />
+                <div className="grid gap-2.5 border-b border-slate-100 bg-[linear-gradient(180deg,#f8fbfb,white)] px-3 py-3 min-[420px]:grid-cols-2 min-[420px]:px-4">
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-2.5 shadow-sm">
+                    <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-0.5 shadow-sm" />
                     <div className="min-w-0 flex flex-col gap-0.5 leading-tight">
                       <div className="text-[8px] font-black uppercase tracking-wider font-outfit text-slate-500">
                         <span className="text-[var(--color-brand-teal)] font-black">Telangana</span> Boat Tourism
@@ -417,8 +417,8 @@ export default function PublicNavbar() {
                       <div className="text-[12px] font-semibold font-urdu text-slate-600 leading-normal" dir="rtl">تلنگانہ بوٹ ٹورزم</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50/70 p-3">
-                    <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism Development Corporation" className="h-10 w-10 shrink-0 object-contain bg-white rounded-full p-0.5 shadow-sm" />
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-2.5 shadow-sm">
+                    <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism Development Corporation" className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-0.5 shadow-sm" />
                     <div className="min-w-0 flex flex-col gap-0.5 leading-tight">
                       <div className="text-[8px] font-black uppercase tracking-wider font-outfit text-slate-500">
                         <span className="text-[#E0A92C] font-black">Andhra Pradesh</span> Boat Tourism
@@ -430,7 +430,7 @@ export default function PublicNavbar() {
                 </div>
 
                 {/* Mobile Links */}
-                <div className="space-y-1.5 px-4 pb-6 pt-3.5">
+                <div className="grid grid-cols-2 gap-2 px-3 pb-4 pt-3.5">
                   {navLinks.map((link) => {
                     const isActive = isLinkActive(link);
                     return (
@@ -440,48 +440,50 @@ export default function PublicNavbar() {
                         prefetch={false}
                         onClick={handleNavigate}
                         aria-current={isActive ? 'page' : undefined}
-                        className={`flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-extrabold transition-all ${isActive
-                          ? 'bg-[var(--color-brand-river)] text-white shadow-md'
-                          : 'text-[var(--color-brand-river)] active:bg-slate-50/80 hover:bg-slate-50/50'
+                        className={`flex min-h-12 items-center gap-3 rounded-2xl border px-3 py-2.5 text-[13px] font-extrabold transition-all ${isActive
+                          ? 'border-[var(--color-brand-river)] bg-[var(--color-brand-river)] text-white shadow-[0_10px_22px_rgba(15,61,86,0.18)]'
+                          : 'border-slate-100 bg-slate-50/75 text-[var(--color-brand-river)] active:bg-teal-50 hover:bg-teal-50'
                           }`}
                       >
-                        <link.icon className={`h-4.5 w-4.5 ${isActive ? 'text-[var(--color-brand-sand)]' : 'text-slate-400'}`} />
-                        {link.name}
+                        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${isActive ? 'bg-white/12 text-[var(--color-brand-sand)]' : 'bg-white text-slate-400 shadow-sm'}`}>
+                          <link.icon className="h-4.5 w-4.5" />
+                        </span>
+                        <span className="min-w-0 truncate">{link.name}</span>
                       </Link>
                     );
                   })}
 
                   {/* Auth Actions in Mobile Drawer */}
-                  <div className="pt-4 border-t border-slate-100 mt-4 px-1 space-y-2">
+                  <div className="col-span-2 mt-1 border-t border-slate-100 pt-3">
                     {!isHydrated ? (
                       <div className="w-full h-10 bg-slate-50 animate-pulse rounded-xl" />
                     ) : isAuthenticated ? (
-                      <>
+                      <div className="grid gap-2">
                         <Link
                           href={user?.role === 'ADMIN' ? "/admin/dashboard" : user?.role === 'AGENT' ? "/agent/dashboard" : "/dashboard"}
                           prefetch={false}
                           onClick={() => setIsOpen(false)}
-                          className="flex items-center gap-3.5 py-2.5 text-sm font-extrabold text-[var(--color-brand-river)] hover:pl-1 transition-all"
+                          className="flex items-center gap-3 rounded-2xl bg-teal-50 px-3 py-2.5 text-sm font-extrabold text-[var(--color-brand-river)] transition-all hover:bg-teal-100"
                         >
                           <LayoutDashboard className="h-4.5 w-4.5 text-[var(--color-brand-teal)]" />
                           {user?.role === 'ADMIN' ? 'Admin Dashboard' : user?.role === 'AGENT' ? 'Agent Dashboard' : 'User Dashboard'}
                         </Link>
                         <button
                           onClick={() => { setIsLogoutModalOpen(true); }}
-                          className="flex items-center gap-3.5 py-2.5 text-sm font-extrabold text-red-600 w-full text-left hover:pl-1 transition-all"
+                          className="flex w-full items-center gap-3 rounded-2xl bg-red-50 px-3 py-2.5 text-left text-sm font-extrabold text-red-600 transition-all hover:bg-red-100"
                         >
                           <LogOut className="h-4.5 w-4.5 text-red-500" />
                           Logout Account
                         </button>
-                      </>
+                      </div>
                     ) : (
                       <Link
                         href="/login"
                         prefetch={false}
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center gap-3.5 py-2.5 text-sm font-extrabold text-slate-600 hover:pl-1 transition-all"
+                        className="flex items-center justify-center gap-3 rounded-2xl bg-[var(--color-brand-river)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_22px_rgba(15,61,86,0.18)] transition-all hover:bg-[#154652]"
                       >
-                        <User className="h-4.5 w-4.5 text-slate-400" />
+                        <User className="h-4.5 w-4.5 text-white/82" />
                         Account Login
                       </Link>
                     )}
