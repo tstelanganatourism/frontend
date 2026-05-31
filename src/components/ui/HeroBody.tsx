@@ -2,8 +2,6 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
 import {
   Anchor,
   BadgeCheck,
@@ -40,6 +38,11 @@ const trustItems = [
   { icon: BadgeCheck, label: 'Government Approved', sub: 'Safe & Trusted' },
   { icon: Headphones, label: '24/7 Booking Support', sub: 'Quick & Reliable' },
   { icon: Globe2, label: 'Secure Payments', sub: 'Razorpay Protected' },
+];
+
+const heroStats = [
+  { icon: Users, value: '20+', label: 'Years Experience' },
+  { icon: Globe2, value: '100K+', label: 'Happy Travellers' },
 ];
 
 function TopFlourish() {
@@ -82,29 +85,17 @@ function SmallDivider() {
   );
 }
 
-function Laurel({ flip = false }: { flip?: boolean }) {
+function StatBlock({ icon: Icon, value, label }: { icon: LucideIcon; value: string; label: string }) {
   return (
-    <svg viewBox="0 0 44 72" className={`h-16 w-10 text-amber-300/90 ${flip ? '-scale-x-100' : ''}`} fill="none" aria-hidden="true">
-      <path d="M34 6 C12 18 6 47 24 66" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M28 15 C18 14 13 20 12 29" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M23 28 C13 29 8 36 10 45" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M24 43 C15 46 12 54 16 62" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M29 16 C25 19 21 21 15 21 C18 17 22 15 29 16Z" fill="currentColor" opacity="0.95" />
-      <path d="M23 29 C19 33 15 35 9 35 C12 31 16 29 23 29Z" fill="currentColor" opacity="0.95" />
-      <path d="M24 44 C20 49 17 52 12 53 C14 48 18 45 24 44Z" fill="currentColor" opacity="0.95" />
-    </svg>
-  );
-}
-
-function StatBlock({ icon: Icon, value, label }: { icon: LucideIcon; value: string; label: ReactNode }) {
-  return (
-    <div className="text-center">
-      <div className="flex items-center justify-center gap-2 text-amber-300">
-        <Icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" strokeWidth={2.1} />
-        <div className="text-4xl font-black leading-none sm:text-[2.65rem] lg:text-[2.35rem] xl:text-[2.65rem]">{value}</div>
+    <div className="flex min-w-0 items-center gap-2.5 rounded-2xl border border-white/18 bg-slate-950/34 px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-md sm:px-4">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-300 text-slate-950 shadow-[0_10px_26px_rgba(251,191,36,0.22)] sm:h-10 sm:w-10">
+        <Icon className="h-5 w-5 sm:h-5.5 sm:w-5.5" strokeWidth={2.2} />
       </div>
-      <div className="mt-2 text-[10px] font-black uppercase leading-4 tracking-[0.12em] text-white/88 sm:text-[11px]">
-        {label}
+      <div className="min-w-0">
+        <div className="text-[1.7rem] font-black leading-none text-amber-300 sm:text-[2rem] lg:text-[2.1rem] xl:text-[2.35rem]">{value}</div>
+        <div className="mt-1 truncate text-[9px] font-black uppercase leading-3 tracking-[0.1em] text-white/82 sm:text-[10px]">
+          {label}
+        </div>
       </div>
     </div>
   );
@@ -112,22 +103,17 @@ function StatBlock({ icon: Icon, value, label }: { icon: LucideIcon; value: stri
 
 export default function HeroBody() {
   return (
-    <section className="relative isolate flex min-h-[calc(100svh-7rem)] flex-col overflow-hidden text-white lg:min-h-[calc(100svh-7.25rem)]">
+    <section className="relative isolate flex h-[calc(100dvh-4.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100dvh-5.45rem)]">
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(2,16,30,0.96)_0%,rgba(2,24,38,0.82)_34%,rgba(2,19,32,0.36)_63%,rgba(2,19,32,0.12)_100%)]" />
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,14,26,0.16)_0%,rgba(2,14,26,0.12)_48%,rgba(2,14,26,0.72)_100%)]" />
 
-      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-center px-4 py-8 sm:px-6 sm:py-10 lg:px-10 xl:px-14 2xl:px-16">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="w-full"
-        >
+      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-center px-4 py-6 sm:px-6 sm:py-10 lg:px-10 xl:px-14 2xl:px-16">
+        <div className="w-full">
           <div className="hidden xl:block">
             <TopFlourish />
           </div>
 
-          <div className="mb-6 flex w-full justify-center lg:justify-start">
+          <div className="mb-5 flex w-full justify-center lg:mb-6 lg:justify-start">
             <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/70 bg-slate-950/40 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(0,0,0,0.24)] backdrop-blur-md sm:px-5 sm:text-[12px]">
               <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
               <span className="truncate">Official Pappikondalu &amp; Bhadrachalam Booking</span>
@@ -177,7 +163,7 @@ export default function HeroBody() {
 
           </div>
 
-          <div className="mt-7 w-full max-w-[49rem] rounded-[2rem] border border-white/28 bg-slate-950/20 p-2.5 shadow-[0_16px_44px_rgba(0,0,0,0.22)] backdrop-blur-md sm:p-3 lg:mt-8">
+          <div className="mt-5 w-full max-w-[49rem] rounded-[2rem] border border-white/28 bg-slate-950/20 p-2.5 shadow-[0_16px_44px_rgba(0,0,0,0.22)] backdrop-blur-md sm:p-3 lg:mt-8">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {featurePills.map(({ icon: Icon, label }) => (
                 <div key={label} className="flex min-h-14 items-center gap-2.5 rounded-[1.45rem] px-2.5 py-2 text-[13px] font-bold leading-snug text-white sm:min-h-16 sm:gap-3 sm:px-3 sm:py-2.5 sm:text-sm">
@@ -188,7 +174,7 @@ export default function HeroBody() {
             </div>
           </div>
 
-          <div className="mt-6 grid w-full max-w-[49rem] grid-cols-2 gap-2.5 sm:flex sm:gap-5">
+          <div className="mt-5 grid w-full max-w-[49rem] grid-cols-2 gap-2.5 sm:flex sm:gap-5 lg:mt-6">
             <Link
               href="/boat-rides"
               prefetch={false}
@@ -207,7 +193,29 @@ export default function HeroBody() {
             </Link>
           </div>
 
-          <div className="mt-6 flex max-w-[58rem] flex-wrap gap-2.5">
+          <div className="mx-auto mt-3 grid w-full max-w-[25rem] grid-cols-2 gap-2 md:hidden">
+            <div className="min-w-0 rounded-2xl border border-white/14 bg-slate-950/30 p-2.5 backdrop-blur-md">
+              <div className="truncate text-base font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
+              <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">బోట్ టూరిజం</div>
+            </div>
+            <div className="min-w-0 rounded-2xl border border-white/14 bg-slate-950/30 p-2.5 text-right backdrop-blur-md" dir="rtl">
+              <div className="truncate text-base font-black leading-tight text-amber-300">تلنگانہ اور اے پی</div>
+              <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">بوٹ ٹورزم</div>
+            </div>
+            {heroStats.map(({ icon: Icon, value, label }) => (
+              <div key={label} className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/14 bg-slate-950/34 p-2.5 backdrop-blur-md">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-300 text-slate-950">
+                  <Icon className="h-4.5 w-4.5" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-2xl font-black leading-none text-amber-300">{value}</div>
+                  <div className="mt-0.5 truncate text-[8px] font-black uppercase tracking-[0.08em] text-white/82">{label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 hidden max-w-[58rem] flex-wrap gap-2.5 md:flex lg:mt-6">
             {bottomTags.map(({ icon: Icon, label }) => (
               <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/23 bg-slate-950/22 px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md">
                 <Icon className="h-4 w-4 text-amber-300" />
@@ -216,7 +224,7 @@ export default function HeroBody() {
             ))}
           </div>
 
-          <div className="mx-auto mt-5 grid max-w-[25rem] grid-cols-2 gap-3 xl:hidden">
+          <div className="mx-auto mt-5 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid xl:hidden">
             <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 backdrop-blur-md">
               <div className="text-xl font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
               <div className="mt-1 text-lg font-black leading-tight text-white">బోట్ టూరిజం</div>
@@ -229,17 +237,16 @@ export default function HeroBody() {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:hidden">
-            <div className="flex items-center justify-center gap-3">
-              <Laurel />
-              <StatBlock icon={Users} value="20+" label={<>Years of<br />Experience</>} />
-            </div>
-            <div className="flex items-center justify-center gap-3">
-              <StatBlock icon={Globe2} value="100K+" label={<>Happy<br />Travellers</>} />
-              <Laurel flip />
+          <div className="mx-auto mt-6 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid xl:hidden">
+            {heroStats.map((stat) => (
+              <StatBlock key={stat.label} {...stat} />
+            ))}
+            <div className="col-span-2 flex items-center justify-center gap-2 rounded-full border border-amber-300/35 bg-amber-300/12 px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
+              <BadgeCheck className="h-4 w-4 shrink-0 text-amber-300" />
+              Verified support from booking to boarding
             </div>
           </div>
-        </motion.div>
+        </div>
 
       </div>
 
@@ -251,15 +258,13 @@ export default function HeroBody() {
         <span className="ml-auto mt-1 block h-1 w-44 rounded-full bg-amber-300" />
       </div>
 
-      <div className="pointer-events-none absolute bottom-32 right-10 z-20 hidden items-center gap-5 lg:flex xl:gap-7">
-        <Laurel />
-        <StatBlock icon={Users} value="20+" label={<>Years of<br />Experience</>} />
-        <span className="h-16 w-px bg-amber-300/50" />
-        <StatBlock icon={Globe2} value="100K+" label={<>Happy<br />Travellers</>} />
-        <Laurel flip />
+      <div className="pointer-events-none absolute bottom-32 right-10 z-20 hidden items-center gap-3 lg:flex xl:gap-4">
+        {heroStats.map((stat) => (
+          <StatBlock key={stat.label} {...stat} />
+        ))}
       </div>
 
-      <div className="relative z-10 mx-auto mt-auto pb-8 w-full max-w-[92rem] px-4 sm:px-6 lg:px-10">
+      <div className="relative z-10 mx-auto mt-auto hidden w-full max-w-[92rem] px-4 pb-8 sm:px-6 md:block lg:px-10">
         <div className="grid gap-3 rounded-2xl border border-white/20 bg-white/92 p-3 text-slate-950 shadow-[0_18px_55px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-center lg:p-4">
           {trustItems.map(({ icon: Icon, label, sub }) => (
             <div key={label} className="flex items-center gap-3 px-1 py-1">

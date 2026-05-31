@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Zap } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LiveBookingCount() {
   const [count, setCount] = useState<number>(10000);
@@ -27,21 +26,13 @@ export default function LiveBookingCount() {
   }, []);
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 sm:px-3 sm:py-1 shadow-sm transition-all hover:bg-orange-100">
-      <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-orange-500 fill-orange-500" />
-      <div className="flex items-baseline gap-0.5 sm:gap-1">
-        <AnimatePresence mode="popLayout">
-          <motion.span
-            key={count}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="text-[10px] sm:text-[11px] font-black tracking-tight text-orange-700"
-          >
-            {count.toLocaleString()}
-          </motion.span>
-        </AnimatePresence>
-        <span className="text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wide text-orange-600/80 hidden min-[360px]:inline">
+    <div className="flex min-w-0 shrink-0 items-center gap-0.5 rounded-full border border-orange-200 bg-orange-50 px-1.5 py-1 shadow-sm transition-all hover:bg-orange-100 min-[380px]:gap-1 min-[380px]:px-2 sm:px-3">
+      <Zap className="h-3 w-3 shrink-0 text-orange-500 fill-orange-500 sm:h-3.5 sm:w-3.5" />
+      <div className="flex min-w-0 items-baseline gap-0.5 sm:gap-1">
+        <span className="text-[9.5px] font-black tracking-tight text-orange-700 min-[380px]:text-[10px] sm:text-[11px]">
+          {count.toLocaleString()}
+        </span>
+        <span className="hidden text-[8px] font-extrabold uppercase tracking-wide text-orange-600/80 min-[420px]:inline sm:text-[10px]">
           Bookings
         </span>
       </div>

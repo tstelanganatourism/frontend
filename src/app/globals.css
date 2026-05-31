@@ -232,6 +232,56 @@
     animation-play-state: paused;
   }
 
+  .home-page-opener {
+    position: relative;
+    isolation: isolate;
+    margin-top: -1px;
+    border-top-left-radius: clamp(1.5rem, 4.5vw, 4.5rem);
+    border-top-right-radius: clamp(1.5rem, 4.5vw, 4.5rem);
+    box-shadow: 0 -28px 80px rgba(2, 14, 26, 0.32);
+    transform-origin: top center;
+    will-change: transform, filter;
+  }
+
+  .home-page-opener::before {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: clamp(2.25rem, 5vw, 5.5rem);
+    pointer-events: none;
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(247, 244, 237, 0.74) 48%, rgba(247, 244, 237, 0)),
+      radial-gradient(70% 115% at 50% 0%, rgba(15, 61, 86, 0.16), rgba(15, 61, 86, 0) 66%);
+  }
+
+  .home-page-opener::after {
+    content: "";
+    position: absolute;
+    z-index: 4;
+    top: clamp(0.75rem, 1.4vw, 1.15rem);
+    left: 50%;
+    width: min(11rem, 42vw);
+    height: 0.28rem;
+    pointer-events: none;
+    border-radius: 999px;
+    background: rgba(15, 61, 86, 0.16);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset;
+    transform: translateX(-50%);
+  }
+
+  @supports (animation-timeline: view()) {
+    .home-page-opener {
+      animation: page-opener both cubic-bezier(0.16, 1, 0.3, 1);
+      animation-timeline: view();
+      animation-range: entry 0% entry 44%;
+    }
+  }
+
   @media (max-width: 768px) {
     .hero-cinema-slide,
     .hero-light-sweep {
@@ -243,6 +293,15 @@
       display: none;
     }
 
+    .home-page-opener {
+      border-top-left-radius: 2rem;
+      border-top-right-radius: 2rem;
+      box-shadow: 0 -20px 58px rgba(2, 14, 26, 0.34);
+      animation: none;
+      filter: none;
+      transform: none;
+    }
+
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -250,6 +309,7 @@
     .hero-light-sweep,
     .premium-tag-pulse,
     .promo-marquee,
+    .home-page-opener,
     .shimmer-surface::after {
       animation: none;
     }
@@ -360,6 +420,17 @@
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes page-opener {
+  0% {
+    filter: brightness(0.96);
+    transform: perspective(1400px) rotateX(7deg) translateY(1.4rem) scale(0.988);
+  }
+  100% {
+    filter: brightness(1);
+    transform: perspective(1400px) rotateX(0deg) translateY(0) scale(1);
   }
 }
 

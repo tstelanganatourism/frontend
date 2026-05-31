@@ -73,7 +73,7 @@ export default function PublicNavbar() {
       toast.success('Successfully logged out. See you soon!');
       router.push('/');
       setIsOpen(false);
-    } catch (err) {
+    } catch {
       toast.error('Logout failed. Please try again.');
     }
   };
@@ -82,41 +82,41 @@ export default function PublicNavbar() {
     <>
       <nav
         className={`sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b ${isScrolled
-          ? 'py-1.5 bg-white/80 backdrop-blur-xl shadow-[0_12px_30px_-5px_rgba(15,61,86,0.08)] border-[#d9e6ea]/60'
-          : 'py-2.5 bg-white/95 backdrop-blur-lg shadow-[0_4px_20px_-10px_rgba(15,61,86,0.04)] border-[#d9e6ea]/30'
+          ? 'py-1.5 bg-white/90 backdrop-blur-xl shadow-[0_12px_30px_-5px_rgba(15,61,86,0.08)] border-[#d9e6ea]/60'
+          : 'py-2 bg-white/95 backdrop-blur-lg shadow-[0_4px_20px_-10px_rgba(15,61,86,0.04)] border-[#d9e6ea]/30 sm:py-2.5'
           }`}
       >
-        <div className="w-full px-3 sm:px-5 lg:px-6 xl:px-8">
-          <div className="flex items-center justify-between gap-2 lg:gap-4">
+        <div className="w-full px-2.5 min-[380px]:px-3 sm:px-5 lg:px-6 xl:px-8">
+          <div className="flex min-w-0 items-center justify-between gap-1.5 min-[380px]:gap-2 lg:gap-4">
 
             {/* Logo Section (Left) */}
-            <div className="flex shrink-0 items-center">
+            <div className="flex min-w-0 flex-1 items-center lg:flex-none">
               <Link 
                 href="/" 
                 prefetch={false} 
-                className="group flex items-center gap-3 rounded-2xl p-1.5 transition-all duration-500 hover:bg-gradient-to-r hover:from-slate-50/90 hover:to-teal-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] hover:scale-[1.02] active:scale-[0.98]"
+                className="group flex min-w-0 items-center gap-2 rounded-xl p-1 transition-all duration-500 hover:bg-gradient-to-r hover:from-slate-50/90 hover:to-teal-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] active:scale-[0.98] sm:gap-3 sm:rounded-2xl sm:p-1.5 lg:hover:scale-[1.02]"
               >
                 <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[var(--color-brand-teal)]/30 group-hover:shadow-[0_0_24px_rgba(26,107,122,0.18)] ${
-                  isScrolled ? 'h-11 w-11' : 'h-[54px] w-[54px]'
+                  isScrolled ? 'h-10 w-10 sm:h-11 sm:w-11' : 'h-11 w-11 sm:h-[54px] sm:w-[54px]'
                 }`}>
                   <img
                     src="/telangana-tourism-logo.svg"
                     alt="Telangana Boat Tourism"
                     className={`transition-all duration-500 object-contain group-hover:scale-105 ${
-                      isScrolled ? 'h-9 w-9' : 'h-[46px] w-[46px]'
+                      isScrolled ? 'h-8 w-8 sm:h-9 sm:w-9' : 'h-9 w-9 sm:h-[46px] sm:w-[46px]'
                     }`}
                   />
                   {/* Subtle pulsing background glow behind logo */}
                   <span className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-teal-400/10 to-emerald-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
                 </span>
-                <span className="flex flex-col gap-0.5 leading-[1.15] transition-all duration-300">
-                  <span className="block text-[10px] sm:text-[11.5px] font-black uppercase tracking-[0.06em] font-outfit text-slate-500 transition-all duration-300 group-hover:translate-x-0.5">
+                <span className="flex min-w-0 flex-col gap-0.5 leading-[1.12] transition-all duration-300 sm:leading-[1.15]">
+                  <span className="block truncate text-[9px] font-black uppercase tracking-[0.04em] font-outfit text-slate-500 transition-all duration-300 group-hover:translate-x-0.5 min-[380px]:text-[9.5px] sm:text-[11.5px] sm:tracking-[0.06em]">
                     <span className="bg-gradient-to-r from-[var(--color-brand-teal)] to-emerald-600 bg-clip-text text-transparent font-extrabold">Telangana</span> Boat Tourism
                   </span>
-                  <span className="block whitespace-nowrap text-[11px] sm:text-[13px] font-bold font-telugu tracking-wide text-slate-800 group-hover:text-[var(--color-brand-teal)] transition-colors duration-300">
+                  <span className="block truncate whitespace-nowrap text-[10.5px] font-bold font-telugu tracking-wide text-slate-800 group-hover:text-[var(--color-brand-teal)] transition-colors duration-300 min-[380px]:text-[11px] sm:text-[13px]">
                     తెలంగాణ బోట్ టూరిజం
                   </span>
-                  <span className="block text-[12px] sm:text-[14px] font-semibold font-urdu text-slate-600 group-hover:text-emerald-700 transition-colors duration-300 tracking-wide mt-[-1px] mb-[-1px]" dir="rtl">
+                  <span className="hidden truncate text-[11px] font-semibold font-urdu text-slate-600 group-hover:text-emerald-700 transition-colors duration-300 tracking-wide mt-[-1px] mb-[-1px] min-[360px]:block sm:text-[14px]" dir="rtl">
                     تلنگانہ بوٹ ٹورزم
                   </span>
                 </span>
@@ -173,7 +173,7 @@ export default function PublicNavbar() {
             </div>
 
             {/* Action Buttons & Right Side Logos (Right) */}
-            <div className="flex shrink-0 items-center justify-end gap-2 xl:gap-3">
+            <div className="flex shrink-0 items-center justify-end gap-1 min-[380px]:gap-1.5 sm:gap-2 xl:gap-3">
               {/* Auth / Account */}
               {!isHydrated ? (
                 <div className="hidden h-9 w-20 animate-pulse rounded-full bg-slate-100 lg:block" />
@@ -374,7 +374,7 @@ export default function PublicNavbar() {
               {/* Mobile Menu Toggle (Hamburger) - Visible below lg (1024px) */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="cursor-pointer rounded-full p-2 text-[var(--color-brand-river)] transition-colors hover:bg-slate-100 lg:hidden focus:outline-none"
+                className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full text-[var(--color-brand-river)] transition-colors hover:bg-slate-100 lg:hidden focus:outline-none"
                 aria-label="Toggle menu"
               >
                 {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -394,7 +394,7 @@ export default function PublicNavbar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsOpen(false)}
-                className="fixed inset-0 top-[60px] z-[90] bg-slate-900/30 backdrop-blur-xs lg:hidden"
+                className="fixed inset-0 z-[90] bg-slate-900/30 backdrop-blur-xs lg:hidden"
               />
 
               {/* Drawer Container */}
@@ -403,7 +403,7 @@ export default function PublicNavbar() {
                 animate={{ opacity: 1, height: 'auto', y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -10 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="absolute left-0 top-full w-full border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-2xl z-[95] overflow-hidden lg:hidden"
+                className="absolute left-0 top-full z-[95] max-h-[calc(100dvh-4.25rem)] w-full overflow-y-auto border-b border-slate-200 bg-white/95 shadow-2xl backdrop-blur-md lg:hidden"
               >
                 {/* Joint States Logo Header */}
                 <div className="grid gap-3 border-b border-slate-100 px-4 py-4 sm:grid-cols-2">
