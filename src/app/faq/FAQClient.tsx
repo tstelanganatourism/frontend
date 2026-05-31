@@ -57,7 +57,7 @@ export default function FAQClient() {
   }, [visibleFaqs]);
 
   return (
-    <div className="min-h-screen bg-[#f7faf9]">
+    <div className="bg-[#f7faf9]">
       <section className="relative overflow-hidden bg-[var(--color-brand-river)] px-4 py-20 text-white sm:px-6 md:py-28 lg:px-8">
         <div className="absolute inset-0">
           <img

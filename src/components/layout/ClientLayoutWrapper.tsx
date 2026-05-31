@@ -50,7 +50,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       <Suspense fallback={<div className="h-16 border-b border-border bg-white" />}>
         <PublicNavbar />
       </Suspense>
-      <main className="flex-1 w-full relative pb-[136px] md:pb-0 min-h-[calc(100vh-4rem)]">
+      <main className={`w-full relative md:pb-0 ${showStickyBar ? 'pb-[72px]' : showMobileNav ? 'pb-[68px]' : ''}`}>
         {children}
       </main>
       <PublicFooter />

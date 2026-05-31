@@ -221,7 +221,7 @@ export default function BrochuresList({ data }: { data?: PackageData }) {
   }, [activeFilter, brochurePackages, query]);
 
   return (
-    <div className="min-h-screen bg-[#f6f3ec]">
+    <div className="bg-[#f6f3ec]">
       <section className="relative overflow-hidden bg-[#0f3d56] pb-16 pt-28 sm:pb-20 sm:pt-36">
         <Image
           src={heroImages[0].src}

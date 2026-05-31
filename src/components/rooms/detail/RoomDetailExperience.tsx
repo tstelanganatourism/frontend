@@ -880,7 +880,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   });
 
   return (
-    <main className="min-h-screen bg-[#f5faf9] pb-36 text-[#102231] lg:pb-0">
+    <main className="bg-[#f5faf9] pb-20 text-[#102231] lg:pb-0">
       <section className="relative overflow-hidden bg-[#062d3c]">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,#062d3c_0%,#0c7b78_58%,#f4b44e_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(255,255,255,0.22),transparent_26%),linear-gradient(180deg,rgba(3,24,35,0.08),rgba(3,24,35,0.7))]" />
@@ -923,7 +923,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   : 'A verified stay with room categories, facilities, location, and reservation details shown clearly before booking.'}
               </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
                 <HeroFact icon={IndianRupee} label="Starts from" value={price ? money(price) : money(room.starting_price)} />
                 <HeroFact icon={BedDouble} label="Categories" value={`${validVariants.length || 1} option${validVariants.length === 1 ? '' : 's'}`} />
                 <HeroFact icon={Clock} label="Check-in" value={cleanTime(room.slot_start)} />
@@ -931,36 +931,39 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/18 bg-white p-2 shadow-2xl shadow-slate-950/18">
-              <div className="relative overflow-hidden rounded-lg bg-slate-950">
-                <div className="relative aspect-[4/3] min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
-                  <Image src={activeImage.image_url} alt={activeImage.alt_text || room.lodge_name} fill priority className="scale-110 object-cover opacity-35 blur-2xl" sizes="(max-width: 1024px) 100vw, 720px" />
-                  <Image src={getHdImageUrl(activeImage.image_url)} alt={activeImage.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" unoptimized quality={100} />
-                  <button type="button" onClick={() => setLightboxOpen(true)} className="absolute inset-0 z-10" aria-label="Open stay photos" />
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent p-3 sm:p-4">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/92 px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm">
-                      <Camera className="h-3.5 w-3.5" />
-                      {slides.length} Photo{slides.length === 1 ? '' : 's'}
-                    </span>
-                    <span className="hidden rounded-full bg-slate-950/65 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/10 sm:inline-flex">
-                      {room.total_rooms ? `${room.total_rooms} rooms` : 'Managed stay'}
-                    </span>
+            <div className="min-w-0 rounded-xl border border-white/18 bg-white p-2 shadow-2xl shadow-slate-950/18">
+              <div className="relative">
+                <div className="relative overflow-hidden rounded-lg bg-slate-950">
+                  <div className="relative aspect-[4/3] min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
+                    <Image src={activeImage.image_url} alt={activeImage.alt_text || room.lodge_name} fill priority className="scale-110 object-cover opacity-35 blur-2xl" sizes="(max-width: 1024px) 100vw, 720px" />
+                    <Image src={getHdImageUrl(activeImage.image_url)} alt={activeImage.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" unoptimized quality={100} />
+                    <button type="button" onClick={() => setLightboxOpen(true)} className="absolute inset-0 z-10" aria-label="Open stay photos" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent p-3 sm:p-4">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/92 px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm">
+                        <Camera className="h-3.5 w-3.5" />
+                        {slides.length} Photo{slides.length === 1 ? '' : 's'}
+                      </span>
+                      <span className="hidden rounded-full bg-slate-950/65 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/10 sm:inline-flex">
+                        {room.total_rooms ? `${room.total_rooms} rooms` : 'Managed stay'}
+                      </span>
+                    </div>
                   </div>
-                  {slides.length > 1 ? (
-                    <>
-                      <button type="button" onClick={() => moveSlide('left')} className="absolute left-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition hover:scale-105" aria-label="Previous photo">
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      <button type="button" onClick={() => moveSlide('right')} className="absolute right-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition hover:scale-105" aria-label="Next photo">
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </>
-                  ) : null}
                 </div>
+                {slides.length > 1 ? (
+                  <>
+                    <button type="button" onClick={() => moveSlide('left')} className="absolute left-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition hover:scale-105" aria-label="Previous photo">
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button type="button" onClick={() => moveSlide('right')} className="absolute right-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition hover:scale-105" aria-label="Next photo">
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </>
+                ) : null}
               </div>
 
+
               {slides.length > 1 ? (
-                <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-5">
+                <div className="mt-2 grid grid-cols-4 gap-1.5 min-[480px]:gap-2 min-[480px]:grid-cols-5">
                   {slides.slice(0, 5).map((slide, index) => (
                     <button key={slide.id || index} type="button" onClick={() => setActiveSlide(index)} className={`relative aspect-[4/3] overflow-hidden rounded-md border transition ${index === activeSlide ? 'border-[#1a6b7a] ring-2 ring-[#1a6b7a]/20' : 'border-slate-200 opacity-75 hover:opacity-100'}`} aria-label={`Show photo ${index + 1}`}>
                       <Image src={slide.image_url} alt={slide.alt_text || `Stay photo ${index + 1}`} fill sizes="120px" className="object-cover" />
@@ -1812,7 +1815,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 };
 
 const HeroFact = ({ icon: Icon, label, value, className = '' }: { icon: typeof Clock; label: string; value: string; className?: string }) => (
-  <div className={`min-h-[118px] rounded-lg border border-white/15 bg-[#174b55] p-4 shadow-lg shadow-slate-950/10 ${className}`}>
+  <div className={`min-h-[118px] overflow-hidden rounded-lg border border-white/15 bg-[#174b55] p-4 shadow-lg shadow-slate-950/10 ${className}`}>
     <Icon className="mb-3 h-4 w-4 text-amber-200" />
     <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/65">{label}</p>
     <p className="mt-2 break-words text-[13px] font-black leading-5 text-white min-[460px]:line-clamp-2 sm:text-sm">{value}</p>

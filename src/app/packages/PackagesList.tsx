@@ -146,7 +146,7 @@ export default function PackagesList({
   const heroImagePosition = isBoatRide ? 'center 58%' : isSightseeing ? 'center 54%' : 'center';
 
   return (
-    <div className="min-h-screen bg-[#f6f3ec]">
+    <div className="bg-[#f6f3ec]">
       {/* Dynamic SEO Hero Banner */}
       <div className="relative min-h-[23rem] overflow-hidden bg-[#071f2f] pb-12 pt-24 sm:min-h-[28rem] sm:pb-16 sm:pt-32">
         <Image
@@ -202,7 +202,7 @@ export default function PackagesList({
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8 lg:pb-16">
+      <div className="mx-auto max-w-7xl px-4 py-8 pb-8 sm:px-6 lg:px-8 lg:pb-16">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           <aside className="hidden lg:col-span-1 lg:block">
             <PackageFilters />

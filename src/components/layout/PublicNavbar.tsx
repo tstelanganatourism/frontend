@@ -91,20 +91,33 @@ export default function PublicNavbar() {
 
             {/* Logo Section (Left) */}
             <div className="flex shrink-0 items-center">
-              <Link href="/" prefetch={false} className="group flex items-center gap-2 rounded-2xl p-1 transition-all duration-300 hover:bg-slate-50/80">
-                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_6px_16px_rgba(15,61,86,0.06)] ring-1 ring-slate-100 transition-all duration-300 ${isScrolled ? 'h-9 w-9' : 'h-11 w-11'
-                  }`}>
+              <Link 
+                href="/" 
+                prefetch={false} 
+                className="group flex items-center gap-3 rounded-2xl p-1.5 transition-all duration-500 hover:bg-gradient-to-r hover:from-slate-50/90 hover:to-teal-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[var(--color-brand-teal)]/30 group-hover:shadow-[0_0_24px_rgba(26,107,122,0.18)] ${
+                  isScrolled ? 'h-11 w-11' : 'h-[54px] w-[54px]'
+                }`}>
                   <img
-                    src="/aptdc-logo.svg"
-                    alt="Andhra Pradesh Tourism Development Corporation"
-                    className={`transition-all duration-300 object-contain ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'
-                      }`}
+                    src="/telangana-tourism-logo.svg"
+                    alt="Telangana Boat Tourism"
+                    className={`transition-all duration-500 object-contain group-hover:scale-105 ${
+                      isScrolled ? 'h-9 w-9' : 'h-[46px] w-[46px]'
+                    }`}
                   />
+                  {/* Subtle pulsing background glow behind logo */}
+                  <span className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-teal-400/10 to-emerald-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
                 </span>
-                <span className="leading-tight transition-all duration-300">
-                  <span className="block text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Andhra Pradesh</span>
-                  <span className="block whitespace-nowrap text-[12px] sm:text-[13px] font-extrabold tracking-tight text-[var(--color-brand-river)] group-hover:text-[var(--color-brand-teal)] transition-colors">
-                    Official Boat Tourism
+                <span className="flex flex-col gap-0.5 leading-[1.15] transition-all duration-300">
+                  <span className="block text-[10px] sm:text-[11.5px] font-black uppercase tracking-[0.06em] font-outfit text-slate-500 transition-all duration-300 group-hover:translate-x-0.5">
+                    <span className="bg-gradient-to-r from-[var(--color-brand-teal)] to-emerald-600 bg-clip-text text-transparent font-extrabold">Telangana</span> Boat Tourism
+                  </span>
+                  <span className="block whitespace-nowrap text-[11px] sm:text-[13px] font-bold font-telugu tracking-wide text-slate-800 group-hover:text-[var(--color-brand-teal)] transition-colors duration-300">
+                    తెలంగాణ బోట్ టూరిజం
+                  </span>
+                  <span className="block text-[12px] sm:text-[14px] font-semibold font-urdu text-slate-600 group-hover:text-emerald-700 transition-colors duration-300 tracking-wide mt-[-1px] mb-[-1px]" dir="rtl">
+                    تلنگانہ بوٹ ٹورزم
                   </span>
                 </span>
               </Link>
@@ -326,22 +339,37 @@ export default function PublicNavbar() {
                 Book Now
               </Link>
 
-              {/* Telangana Tourism Logo (Right) */}
-              <div className="hidden items-center gap-2 rounded-2xl p-1 transition-all duration-300 hover:bg-slate-50/80 xl:flex">
-                <span className="hidden text-right leading-tight 2xl:block">
-                  <span className="block text-[9px] font-black uppercase tracking-[0.25em] text-slate-600">Telangana</span>
-                  <span className="block whitespace-nowrap text-[13px] font-extrabold tracking-tight text-[var(--color-brand-river)]">Official Tourism</span>
+              {/* Andhra Pradesh Tourism Logo (Right) */}
+              <Link 
+                href="/boat-rides" 
+                prefetch={false}
+                className="group hidden items-center gap-3 rounded-2xl p-1.5 transition-all duration-500 hover:bg-gradient-to-l hover:from-slate-50/90 hover:to-amber-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] hover:scale-[1.02] active:scale-[0.98] xl:flex"
+              >
+                <span className="hidden text-right flex-col gap-0.5 leading-[1.15] transition-all duration-300 xl:flex">
+                  <span className="block text-[10px] sm:text-[11.5px] font-black uppercase tracking-[0.06em] font-outfit text-slate-500 transition-all duration-300 group-hover:-translate-x-0.5">
+                    <span className="bg-gradient-to-l from-[#E0A92C] to-amber-600 bg-clip-text text-transparent font-extrabold">Andhra Pradesh</span> Boat Tourism
+                  </span>
+                  <span className="block whitespace-nowrap text-[11px] sm:text-[13px] font-bold font-telugu tracking-wide text-slate-800 group-hover:text-[#E0A92C] transition-colors duration-300">
+                    ఆంధ్రప్రదేశ్ బోట్ టూరిజం
+                  </span>
+                  <span className="block text-[12px] sm:text-[14px] font-semibold font-urdu text-slate-600 group-hover:text-amber-700 transition-colors duration-300 tracking-wide mt-[-1px] mb-[-1px]" dir="rtl">
+                    آندھرا پردیش بوٹ ٹورزم
+                  </span>
                 </span>
-                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_6px_16px_rgba(15,61,86,0.06)] ring-1 ring-slate-100 transition-all duration-300 ${isScrolled ? 'h-9 w-9' : 'h-11 w-11'
-                  }`}>
+                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[#E0A92C]/30 group-hover:shadow-[0_0_24px_rgba(224,169,44,0.18)] ${
+                  isScrolled ? 'h-11 w-11' : 'h-[54px] w-[54px]'
+                }`}>
                   <img
-                    src="/telangana-tourism-logo.svg"
-                    alt="Telangana Tourism"
-                    className={`transition-all duration-300 object-contain ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'
-                      }`}
+                    src="/aptdc-logo.svg"
+                    alt="Andhra Pradesh Boat Tourism"
+                    className={`transition-all duration-500 object-contain group-hover:scale-105 ${
+                      isScrolled ? 'h-9 w-9' : 'h-[46px] w-[46px]'
+                    }`}
                   />
+                  {/* Subtle pulsing background glow behind logo */}
+                  <span className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tl from-amber-400/10 to-orange-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
                 </span>
-              </div>
+              </Link>
 
               {/* Mobile Menu Toggle (Hamburger) - Visible below lg (1024px) */}
               <button
@@ -380,17 +408,23 @@ export default function PublicNavbar() {
                 {/* Joint States Logo Header */}
                 <div className="grid gap-3 border-b border-slate-100 px-4 py-4 sm:grid-cols-2">
                   <div className="flex items-center gap-3 rounded-2xl bg-slate-50/70 p-3">
-                    <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism Development Corporation" className="h-9 w-9 shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[9px] font-black uppercase tracking-wider text-slate-400">Andhra Pradesh</div>
-                      <div className="truncate text-xs font-extrabold text-[var(--color-brand-river)]">Official Boat Tourism</div>
+                    <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" className="h-10 w-10 shrink-0 object-contain bg-white rounded-full p-0.5 shadow-sm" />
+                    <div className="min-w-0 flex flex-col gap-0.5 leading-tight">
+                      <div className="text-[8px] font-black uppercase tracking-wider font-outfit text-slate-500">
+                        <span className="text-[var(--color-brand-teal)] font-black">Telangana</span> Boat Tourism
+                      </div>
+                      <div className="truncate text-[11px] font-bold font-telugu text-slate-800">తెలంగాణ బోట్ టూరిజం</div>
+                      <div className="text-[12px] font-semibold font-urdu text-slate-600 leading-normal" dir="rtl">تلنگانہ بوٹ ٹورزم</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-2xl bg-slate-50/70 p-3">
-                    <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" className="h-9 w-9 shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[9px] font-black uppercase tracking-wider text-slate-400">Telangana</div>
-                      <div className="truncate text-xs font-extrabold text-[var(--color-brand-river)]">Official Tourism</div>
+                    <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism Development Corporation" className="h-10 w-10 shrink-0 object-contain bg-white rounded-full p-0.5 shadow-sm" />
+                    <div className="min-w-0 flex flex-col gap-0.5 leading-tight">
+                      <div className="text-[8px] font-black uppercase tracking-wider font-outfit text-slate-500">
+                        <span className="text-[#E0A92C] font-black">Andhra Pradesh</span> Boat Tourism
+                      </div>
+                      <div className="truncate text-[11px] font-bold font-telugu text-slate-800">ఆంధ్రప్రదేశ్ బోట్ టూరిజం</div>
+                      <div className="text-[12px] font-semibold font-urdu text-slate-600 leading-normal" dir="rtl">آندھرا پردیش بوٹ ٹورزم</div>
                     </div>
                   </div>
                 </div>

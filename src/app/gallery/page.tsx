@@ -80,7 +80,7 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="bg-[#F9F9F7] min-h-screen">
+    <div className="bg-[#F9F9F7]">
       {/* Premium Hero Header */}
       <div className="relative h-[45vh] min-h-[320px] w-full flex items-center justify-center overflow-hidden">
         <Image

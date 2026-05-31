@@ -30,7 +30,7 @@ const TOURISM_METRICS = [
 
 export default function AboutPage() {
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white">
       {/* Cinematic Hero Section */}
       <div className="relative h-[35vh] min-h-[500px] flex items-center justify-center overflow-hidden">
         <img
