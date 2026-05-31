@@ -720,7 +720,15 @@ export default function BookingDetailPage() {
               <span className="font-extrabold flex items-center gap-1.5 mb-1 text-red-900">
                 <AlertCircle className="h-3.5 w-3.5" /> MANDATORY REQUIREMENT
               </span>
-              Both the <strong>Printed Ticket</strong> and the <strong>Customer Detail Form</strong> must be printed, filled out, and submitted at the owner's reporting address to collect your manual ticket before proceeding to your ride or room.
+              {booking.target_type === 'ROOM' ? (
+                <>
+                  The <strong>Printed Ticket</strong> must be printed and submitted at the owner's reporting address to collect your manual ticket before proceeding to your room.
+                </>
+              ) : (
+                <>
+                  Both the <strong>Printed Ticket</strong> and the <strong>Customer Detail Form</strong> must be printed, filled out, and submitted at the owner's reporting address to collect your manual ticket before proceeding to your ride.
+                </>
+              )}
             </div>
             <a
               href="https://wa.me/919542069573"
