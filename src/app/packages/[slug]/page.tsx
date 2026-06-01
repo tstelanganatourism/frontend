@@ -53,6 +53,8 @@ type PackageDetail = {
 };
 type JsonLdObject = Record<string, unknown>;
 
+const SITE_ORIGIN = 'https://www.tsboattourism.org';
+
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
     const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 30, tags: ['packages', `package:${slug}`] } });
@@ -63,28 +65,79 @@ const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | n
   }
 });
 
+function absUrl(url?: string | null) {
+  if (!url) return undefined;
+  return url.startsWith('http') ? url : `${SITE_ORIGIN}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
+function canonicalForPackage(pkg: PackageDetail) {
+  return absUrl(pkg.canonical_url || `/packages/${pkg.slug}`)!;
+}
+
+function cleanText(value?: string | null, maxLength = 155) {
+  const text = (value || '').replace(/\s+/g, ' ').trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+function getSeoDescription(pkg: PackageDetail) {
+  if (pkg.meta_description) return cleanText(pkg.meta_description, 160);
+
+  const location = pkg.place || pkg.region || 'Bhadrachalam and Papikondalu';
+  const duration = pkg.duration ? ` ${pkg.duration}` : '';
+  return cleanText(
+    `Book ${pkg.title}${duration} with Telangana Boat Tourism. Official Papikondalu boat tour package booking from ${location}, with itinerary, pricing, boarding details, and support.`,
+    160
+  );
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const pkg = await fetchPackageDetail(slug);
   if (!pkg) return { title: 'Package Not Found' };
 
-  const description = pkg.meta_description || pkg.description?.slice(0, 160) || `${pkg.title} tour booking with itinerary, inclusions, FAQs, and verified operator support.`;
+  const description = getSeoDescription(pkg);
+  const title = pkg.meta_title || `${pkg.title} - Official Tour Package Booking`;
+  const canonical = canonicalForPackage(pkg);
+  const image = absUrl(pkg.og_image_url || pkg.cover_image_url);
 
   return {
-    title: pkg.meta_title || `${pkg.title} | Premium Papikondalu Tour Booking`,
+    title,
     description,
-    alternates: { canonical: pkg.canonical_url || `/packages/${pkg.slug}` },
+    alternates: { canonical },
+    keywords: [
+      pkg.title,
+      `${pkg.title} booking`,
+      `${pkg.title} tour package`,
+      'Papikondalu boat booking',
+      'Bhadrachalam tour package',
+      'Godavari river cruise booking',
+      ...pkg.tags,
+    ],
     openGraph: {
-      title: pkg.meta_title || pkg.title,
+      title,
       description,
-      images: pkg.og_image_url || pkg.cover_image_url ? [{ url: pkg.og_image_url || pkg.cover_image_url! }] : [],
+      url: canonical,
+      siteName: 'Telangana Boat Tourism',
+      images: image ? [{ url: image, width: 1200, height: 630, alt: pkg.title }] : [],
       type: 'website',
+      locale: 'en_IN',
     },
     twitter: {
       card: 'summary_large_image',
-      title: pkg.meta_title || pkg.title,
+      title,
       description,
-      images: pkg.og_image_url || pkg.cover_image_url ? [pkg.og_image_url || pkg.cover_image_url!] : [],
+      images: image ? [image] : [],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
   };
 }
@@ -117,23 +170,35 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
   if (!pkg) notFound();
 
   const price = getPositiveStartingPrice(pkg) || 0;
-  const canonical = pkg.canonical_url || `/packages/${pkg.slug}`;
-
-  // Ensure all JSON-LD URLs are absolute — schema.org mandates fully-qualified URLs.
-  const SITE_ORIGIN = 'https://www.tsboattourism.org';
-  const abs = (url?: string | null) =>
-    url ? (url.startsWith('http') ? url : `${SITE_ORIGIN}${url}`) : undefined;
-
-  const absoluteCanonical = abs(canonical)!;
-  const absoluteImage = abs(pkg.cover_image_url);
+  const absoluteCanonical = canonicalForPackage(pkg);
+  const absoluteImage = absUrl(pkg.cover_image_url);
+  const seoDescription = getSeoDescription(pkg);
+  const durationLabel = getDurationLabel(pkg);
 
   // Structured schema markup for premium SEO indexability
   const jsonLd: JsonLdObject[] = [
     {
       '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: pkg.meta_title || pkg.title,
+      description: seoDescription,
+      url: absoluteCanonical,
+      image: absoluteImage,
+      isPartOf: {
+        '@type': 'WebSite',
+        name: 'Telangana Boat Tourism',
+        url: SITE_ORIGIN,
+      },
+      about: {
+        '@type': 'TouristTrip',
+        name: pkg.title,
+      },
+    },
+    {
+      '@context': 'https://schema.org',
       '@type': 'TouristTrip',
       name: pkg.title,
-      description: pkg.description,
+      description: seoDescription,
       image: absoluteImage,
       url: absoluteCanonical,
       touristType: ['Family travelers', 'Nature travelers', 'Pilgrimage travelers'],
@@ -149,6 +214,37 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         name: `Day ${day.day_number}: ${day.title}`,
         description: day.description,
       })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: pkg.title,
+      description: seoDescription,
+      image: absoluteImage ? [absoluteImage] : undefined,
+      url: absoluteCanonical,
+      brand: {
+        '@type': 'Organization',
+        name: 'Telangana Boat Tourism',
+        url: SITE_ORIGIN,
+      },
+      category: 'Travel Package',
+      additionalProperty: [
+        { '@type': 'PropertyValue', name: 'Duration', value: durationLabel },
+        { '@type': 'PropertyValue', name: 'Region', value: pkg.region || 'Papikondalu' },
+        { '@type': 'PropertyValue', name: 'Package Type', value: pkg.type },
+      ],
+      offers: {
+        '@type': 'Offer',
+        price,
+        priceCurrency: 'INR',
+        availability: 'https://schema.org/InStock',
+        url: absoluteCanonical,
+        seller: {
+          '@type': 'TravelAgency',
+          name: 'Telangana Boat Tourism',
+          url: SITE_ORIGIN,
+        },
+      },
     },
     {
       '@context': 'https://schema.org',

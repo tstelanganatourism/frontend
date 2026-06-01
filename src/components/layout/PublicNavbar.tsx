@@ -86,14 +86,14 @@ export default function PublicNavbar() {
           : 'py-2 bg-white/95 backdrop-blur-lg shadow-[0_4px_20px_-10px_rgba(15,61,86,0.04)] border-[#d9e6ea]/30 sm:py-2.5'
           }`}
       >
-        <div className="w-full px-2.5 min-[380px]:px-3 sm:px-5 lg:px-6 xl:px-8">
-          <div className="flex min-w-0 items-center justify-between gap-1.5 min-[380px]:gap-2 lg:gap-2 xl:gap-4 2xl:gap-6">
+        <div className="w-full px-2.5 min-[380px]:px-3 sm:px-5 min-[980px]:px-6 xl:px-8">
+          <div className="flex min-w-0 items-center justify-between gap-1.5 min-[380px]:gap-2 min-[980px]:gap-2 xl:gap-4 2xl:gap-6">
 
             {/* Logo Section (Left) */}
-            <div className="flex min-w-0 flex-1 items-center lg:flex-none lg:flex-shrink-0">
+            <div className="flex min-w-0 flex-1 items-center min-[980px]:flex-none min-[980px]:flex-shrink-0">
               <Link 
                 href="/" 
-                className="group flex min-w-0 items-center gap-2 rounded-xl p-1 transition-all duration-500 hover:bg-gradient-to-r hover:from-slate-50/90 hover:to-teal-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] active:scale-[0.98] sm:gap-3 sm:rounded-2xl sm:p-1.5 lg:hover:scale-[1.02]"
+                className="group flex min-w-0 items-center gap-2 rounded-xl p-1 transition-all duration-500 hover:bg-gradient-to-r hover:from-slate-50/90 hover:to-teal-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] active:scale-[0.98] sm:gap-3 sm:rounded-2xl sm:p-1.5 min-[980px]:hover:scale-[1.02]"
               >
                 <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[var(--color-brand-teal)]/30 group-hover:shadow-[0_0_24px_rgba(26,107,122,0.18)] ${
                   isScrolled ? 'h-10 w-10 sm:h-11 sm:w-11' : 'h-11 w-11 sm:h-[54px] sm:w-[54px]'
@@ -123,7 +123,7 @@ export default function PublicNavbar() {
             </div>
 
             {/* Desktop Navigation (Center) - Visible from lg (1024px) */}
-            <div className="hidden min-w-0 flex-1 justify-center lg:flex lg:px-1 xl:px-2 2xl:px-4">
+            <div className="hidden min-w-0 flex-1 justify-center min-[980px]:flex min-[980px]:px-1 xl:px-2 2xl:px-4">
               <div className="relative flex min-w-0 items-center gap-0 2xl:gap-0.5 py-1">
                 {navLinks.map((link, index) => {
                   const isActive = isLinkActive(link);
@@ -135,7 +135,7 @@ export default function PublicNavbar() {
                       onMouseEnter={() => setHoveredIndex(index)}
                       onMouseLeave={() => setHoveredIndex(null)}
                       aria-current={isActive ? 'page' : undefined}
-                      className="relative inline-flex h-9 items-center justify-center rounded-full lg:px-1.5 lg:text-[10px] xl:px-2.5 xl:text-[11.5px] 2xl:px-3.5 2xl:text-[13px] font-extrabold transition-colors duration-200"
+                      className="relative inline-flex h-9 items-center justify-center rounded-full min-[980px]:px-1.5 min-[980px]:text-[10px] xl:px-2.5 xl:text-[11.5px] 2xl:px-3.5 2xl:text-[13px] font-extrabold transition-colors duration-200"
                       style={{ color: isActive ? '#ffffff' : 'var(--color-brand-river)' }}
                     >
                       {/* Active Background Pill */}
@@ -170,12 +170,12 @@ export default function PublicNavbar() {
             </div>
 
             {/* Action Buttons & Right Side Logos (Right) */}
-            <div className="flex shrink-0 items-center justify-end gap-1 min-[380px]:gap-1.5 lg:gap-1.5 xl:gap-2.5 2xl:gap-3">
+            <div className="flex shrink-0 items-center justify-end gap-1 min-[380px]:gap-1.5 min-[980px]:gap-1.5 xl:gap-2.5 2xl:gap-3">
               {/* Auth / Account */}
               {!isHydrated ? (
-                <div className="hidden h-9 w-20 animate-pulse rounded-full bg-slate-100 lg:block" />
+                <div className="hidden h-9 w-20 animate-pulse rounded-full bg-slate-100 min-[980px]:block" />
               ) : isAuthenticated ? (
-                <div className="relative hidden lg:block" ref={dropdownRef}>
+                <div className="relative hidden min-[980px]:block" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white p-1 pr-2.5 transition-all hover:bg-slate-50 hover:border-slate-350 hover:shadow-md active:scale-[0.98] shadow-sm xl:pr-3.5"
@@ -192,7 +192,7 @@ export default function PublicNavbar() {
                     <span className="text-[11.5px] xl:text-[13px] font-outfit font-black text-slate-700 max-w-[65px] xl:max-w-[90px] truncate select-none leading-none flex items-center">
                       {user?.full_name?.split(' ')[0] || 'Account'}
                     </span>
-                    <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform duration-300 shrink-0 lg:ml-0.5" />
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform duration-300 shrink-0 min-[980px]:ml-0.5" />
                   </button>
 
                   {/* Profile Dropdown Menu */}
@@ -315,7 +315,7 @@ export default function PublicNavbar() {
                 <Link
                   href="/login"
                   onClick={handleNavigate}
-                  className="hidden items-center gap-1 rounded-full lg:px-1.5 lg:text-[10.5px] xl:px-2.5 xl:text-xs 2xl:px-4 font-extrabold text-[var(--color-brand-river)] transition-colors hover:bg-slate-50/80 lg:flex"
+                  className="hidden items-center gap-1 rounded-full min-[980px]:px-1.5 min-[980px]:text-[10.5px] xl:px-2.5 xl:text-xs 2xl:px-4 font-extrabold text-[var(--color-brand-river)] transition-colors hover:bg-slate-50/80 min-[980px]:flex"
                 >
                   <User className="h-3.5 w-3.5" />
                   <span className="hidden xl:inline">Login</span>
@@ -329,7 +329,7 @@ export default function PublicNavbar() {
               <Link
                 href="/boat-rides"
                 onClick={handleNavigate}
-                className="relative hidden overflow-hidden rounded-full bg-[var(--color-brand-river)] lg:px-3.5 lg:py-1.5 lg:text-[10.5px] xl:px-4.5 xl:py-2 xl:text-[11.5px] 2xl:px-5 2xl:text-xs font-black text-white shadow-[0_8px_20px_rgba(15,61,86,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,61,86,0.25)] hover:bg-[#154652] active:translate-y-0 lg:inline-flex group/btn"
+                className="relative hidden overflow-hidden rounded-full bg-[var(--color-brand-river)] min-[980px]:px-3.5 min-[980px]:py-1.5 min-[980px]:text-[10.5px] xl:px-4.5 xl:py-2 xl:text-[11.5px] 2xl:px-5 2xl:text-xs font-black text-white shadow-[0_8px_20px_rgba(15,61,86,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,61,86,0.25)] hover:bg-[#154652] active:translate-y-0 min-[980px]:inline-flex group/btn"
               >
                 Book Now
               </Link>
@@ -368,7 +368,7 @@ export default function PublicNavbar() {
               {/* Mobile Menu Toggle (Hamburger) - Visible below lg (1024px) */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full text-[var(--color-brand-river)] transition-colors hover:bg-slate-100 lg:hidden focus:outline-none"
+                className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full text-[var(--color-brand-river)] transition-colors hover:bg-slate-100 min-[980px]:hidden focus:outline-none"
                 aria-label="Toggle menu"
               >
                 {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -388,7 +388,7 @@ export default function PublicNavbar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsOpen(false)}
-                className="fixed inset-0 z-[90] bg-slate-950/45 lg:hidden"
+                className="fixed inset-0 z-[90] bg-slate-950/45 min-[980px]:hidden"
               />
 
               {/* Drawer Container */}
@@ -397,7 +397,7 @@ export default function PublicNavbar() {
                 animate={{ opacity: 1, height: 'auto', y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -10 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="absolute left-2 right-2 top-[calc(100%+0.5rem)] z-[95] max-h-[calc(100dvh-7.5rem)] overflow-y-auto rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,61,86,0.24)] lg:hidden"
+                className="absolute left-2 right-2 top-[calc(100%+0.5rem)] z-[95] max-h-[calc(100dvh-7.5rem)] overflow-y-auto rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,61,86,0.24)] min-[980px]:hidden"
               >
                 {/* Joint States Logo Header */}
                 <div className="grid gap-2.5 border-b border-slate-100 bg-[linear-gradient(180deg,#f8fbfb,white)] px-3 py-3 min-[420px]:grid-cols-2 min-[420px]:px-4">

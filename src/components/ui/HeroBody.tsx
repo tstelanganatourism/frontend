@@ -361,7 +361,7 @@ export default function HeroBody() {
       {/* ─── Main Content ─────────────────────────────────────────────── */}
       <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-start pt-14 sm:items-center sm:pt-4 px-8 py-4 sm:px-12 sm:py-6 md:px-16 lg:px-20 xl:px-24 2xl:px-28">
         <div className="w-full">
-          <div className="hidden xl:block">
+          <div className="hidden min-[980px]:block">
             <TopFlourish />
           </div>
           {/* Badge */}
@@ -661,7 +661,7 @@ export default function HeroBody() {
 
           {/* ─── md bilingual cards ─── */}
           {isDefault && (
-            <div className="mx-auto mt-4 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid xl:hidden">
+            <div className="mx-auto mt-4 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid min-[980px]:hidden">
               <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 backdrop-blur-md">
                 <div className="text-xl font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
                 <div className="mt-1 text-lg font-black leading-tight text-white">బోట్ టూరిజం</div>
@@ -677,7 +677,7 @@ export default function HeroBody() {
 
           {/* ─── Stats (md) ─── */}
           {isDefault && (
-            <div className="mx-auto mt-4 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid xl:hidden">
+            <div className="mx-auto mt-4 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid min-[980px]:hidden">
               {heroStats.map((stat) => (
                 <StatBlock key={stat.label} {...stat} />
               ))}

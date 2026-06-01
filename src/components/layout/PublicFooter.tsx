@@ -21,8 +21,8 @@ export default function PublicFooter() {
 
   return (
     <footer className={`bg-[var(--color-brand-river)] pt-10 text-white md:pb-8 border-t border-white/5 ${hasStackedMobileBars ? 'pb-[calc(10.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(6.75rem+env(safe-area-inset-bottom))]'}`}>
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className={`mb-8 grid min-w-0 grid-cols-1 gap-8 sm:grid-cols-2 lg:items-start ${isHomePage ? 'lg:grid-cols-[1fr_0.55fr_0.55fr_1.1fr_1.45fr]' : 'lg:grid-cols-[1.2fr_0.7fr_0.7fr_1.2fr]'}`}>
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 min-[980px]:px-8">
+        <div className={`mb-8 grid min-w-0 grid-cols-1 gap-8 sm:grid-cols-2 min-[980px]:items-start ${isHomePage ? 'min-[980px]:grid-cols-[1fr_0.55fr_0.55fr_1.1fr_1.45fr]' : 'min-[980px]:grid-cols-[1.2fr_0.7fr_0.7fr_1.2fr]'}`}>
 
           {/* Brand Info */}
           <div className="min-w-0 space-y-4">
@@ -67,7 +67,7 @@ export default function PublicFooter() {
           </div>
 
           {/* Quick Links & Support (2-column on mobile) */}
-          <div className="grid min-w-0 grid-cols-2 gap-4 sm:col-span-2 lg:contents">
+          <div className="grid min-w-0 grid-cols-2 gap-4 sm:col-span-2 min-[980px]:contents">
             <div className="min-w-0">
               <h3 className="text-xs font-bold mb-3 text-[var(--color-brand-sand)] uppercase tracking-wider">Quick Links</h3>
               <ul className="space-y-2">
@@ -88,7 +88,7 @@ export default function PublicFooter() {
           </div>
 
           {/* Contact */}
-          <div className="min-w-0 sm:col-span-2 lg:col-span-1">
+          <div className="min-w-0 sm:col-span-2 min-[980px]:col-span-1">
             <h3 className="text-xs font-bold mb-3 text-[var(--color-brand-sand)] uppercase tracking-wider">Contact Us</h3>
             <ul className="space-y-2.5">
               <li className="flex items-start gap-2.5">
@@ -116,11 +116,11 @@ export default function PublicFooter() {
 
           {/* Conditional Map (Now visible on all screens if on Homepage) */}
           {isHomePage && (
-            <div className="min-h-48 overflow-hidden rounded-xl border border-white/10 shadow-lg sm:col-span-2 lg:col-span-1">
+            <div className="min-h-48 overflow-hidden rounded-xl border border-white/10 shadow-lg sm:col-span-2 min-[980px]:col-span-1">
               <iframe
                 title="Footer Map"
                 src={MAP_EMBED_URL}
-                className="w-full h-48 lg:h-64"
+                className="w-full h-48 min-[980px]:h-64"
                 style={{ border: 0 }}
                 allowFullScreen
                 loading="lazy"

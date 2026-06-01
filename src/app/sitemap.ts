@@ -7,16 +7,39 @@ type SitemapListItem = {
 
 type SitemapListResponse = {
   items?: SitemapListItem[];
+  has_next?: boolean;
+  page?: number;
 };
+
+async function fetchAllSlugs(endpoint: string) {
+  const slugs: string[] = [];
+  let page = 1;
+
+  while (page <= 20) {
+    const res = await apiFetch(`${endpoint}?page=${page}&size=100`);
+    if (!res.ok) break;
+
+    const data = (await res.json()) as SitemapListResponse;
+    const items = data.items || [];
+    slugs.push(...items.map((item) => item.slug).filter(Boolean));
+
+    if (!data.has_next || items.length === 0) break;
+    page += 1;
+  }
+
+  return slugs;
+}
  
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsboattourism.org';
   
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
+    { url: `${baseUrl}/packages`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.95 },
     { url: `${baseUrl}/boat-rides`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/sightseeing`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/stays`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+    { url: `${baseUrl}/rooms`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/brochures`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/gallery`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
@@ -27,36 +50,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let dynamicRoutes: MetadataRoute.Sitemap = [];
 
   try {
-    const [packagesRes, roomsRes] = await Promise.all([
-      apiFetch('/api/v1/packages?size=100'),
-      apiFetch('/api/v1/rooms?size=100')
+    const [packageSlugs, roomSlugs] = await Promise.all([
+      fetchAllSlugs('/api/v1/packages'),
+      fetchAllSlugs('/api/v1/rooms')
     ]);
 
-    if (packagesRes.ok) {
-      const packagesData = (await packagesRes.json()) as SitemapListResponse;
-      const items = packagesData.items || [];
-      dynamicRoutes = dynamicRoutes.concat(
-        items.map((pkg) => ({
-          url: `${baseUrl}/packages/${pkg.slug}`,
-          lastModified: new Date(),
-          changeFrequency: 'weekly',
-          priority: 0.8,
-        }))
-      );
-    }
+    dynamicRoutes = dynamicRoutes.concat(
+      packageSlugs.map((slug) => ({
+        url: `${baseUrl}/packages/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.9,
+      }))
+    );
 
-    if (roomsRes.ok) {
-      const roomsData = (await roomsRes.json()) as SitemapListResponse;
-      const items = roomsData.items || [];
-      dynamicRoutes = dynamicRoutes.concat(
-        items.map((room) => ({
-          url: `${baseUrl}/stays/${room.slug}`,
-          lastModified: new Date(),
-          changeFrequency: 'weekly',
-          priority: 0.7,
-        }))
-      );
-    }
+    dynamicRoutes = dynamicRoutes.concat(
+      roomSlugs.map((slug) => ({
+        url: `${baseUrl}/stays/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      }))
+    );
   } catch (error) {
     console.error("Failed to fetch dynamic sitemap routes", error);
   }

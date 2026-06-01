@@ -179,18 +179,22 @@ export default function PackageForm({
 
   useEffect(() => {
     if (!initialData) {
+      const cleanTitle = title.trim();
+      const cleanPlace = place.trim();
+      const cleanDur = duration.trim();
+      const locationLabel = cleanPlace || 'Bhadrachalam and Papikondalu';
+
       // 1. Auto-generate Meta Title
-      const expectedTitle = title.trim() ? `${title.trim()} - Book Now` : '';
+      const expectedTitle = cleanTitle ? `${cleanTitle} - Official Tour Package Booking` : '';
       if (!metaTitle || metaTitle === lastGeneratedMetaTitleRef.current) {
         setMetaTitle(expectedTitle);
         lastGeneratedMetaTitleRef.current = expectedTitle;
       }
 
       // 2. Auto-generate Meta Description
-      const cleanPlace = place.trim() ? ` in ${place.trim()}` : '';
-      const cleanDur = duration.trim() ? `. Duration: ${duration.trim()}` : '';
-      const expectedDesc = title.trim() 
-        ? `Book ${title.trim()}${cleanPlace}${cleanDur}. Experience premium boat rides, scenic Godavari river cruises, and cottages. Reserve your tickets online today!`
+      const durationText = cleanDur ? ` ${cleanDur}` : '';
+      const expectedDesc = cleanTitle
+        ? `Book ${cleanTitle}${durationText} with Telangana Boat Tourism. Official Papikondalu boat tour package booking from ${locationLabel}, with itinerary, pricing, boarding details, and support.`
         : '';
       if (!metaDescription || metaDescription === lastGeneratedMetaDescRef.current) {
         setMetaDescription(expectedDesc);
