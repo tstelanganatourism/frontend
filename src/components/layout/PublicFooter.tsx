@@ -29,7 +29,7 @@ export default function PublicFooter() {
             <div className="flex flex-col gap-5 mb-2">
               <Link href="/" className="group flex min-w-0 items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
                 <div className="grid place-items-center h-11 w-11 shrink-0 rounded-full bg-white p-1 shadow-sm">
-                  <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism" className="h-full w-full object-contain" />
+                  <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism" width={44} height={44} loading="lazy" className="h-full w-full object-contain" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60">Andhra Pradesh</div>
@@ -39,7 +39,7 @@ export default function PublicFooter() {
               
               <div className="group flex min-w-0 items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
                 <div className="grid place-items-center h-11 w-11 shrink-0 rounded-full bg-white p-1 shadow-sm">
-                  <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" className="h-full w-full object-contain" />
+                  <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" width={44} height={44} loading="lazy" className="h-full w-full object-contain" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60">Telangana</div>

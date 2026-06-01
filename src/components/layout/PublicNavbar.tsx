@@ -101,6 +101,8 @@ export default function PublicNavbar() {
                   <img
                     src="/telangana-tourism-logo.svg"
                     alt="Telangana Boat Tourism"
+                    width={46}
+                    height={46}
                     className={`transition-all duration-500 object-contain group-hover:scale-105 ${
                       isScrolled ? 'h-8 w-8 sm:h-9 sm:w-9' : 'h-9 w-9 sm:h-[46px] sm:w-[46px]'
                     }`}
@@ -172,10 +174,11 @@ export default function PublicNavbar() {
             {/* Action Buttons & Right Side Logos (Right) */}
             <div className="flex shrink-0 items-center justify-end gap-1 min-[380px]:gap-1.5 min-[980px]:gap-1.5 xl:gap-2.5 2xl:gap-3">
               {/* Auth / Account */}
-              {!isHydrated ? (
-                <div className="hidden h-9 w-20 animate-pulse rounded-full bg-slate-100 min-[980px]:block" />
-              ) : isAuthenticated ? (
-                <div className="relative hidden min-[980px]:block" ref={dropdownRef}>
+              <div className="hidden min-w-[90px] justify-end min-[980px]:flex">
+                {!isHydrated ? (
+                  <div className="h-9 w-20 animate-pulse rounded-full bg-slate-100" />
+                ) : isAuthenticated ? (
+                  <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white p-1 pr-2.5 transition-all hover:bg-slate-50 hover:border-slate-350 hover:shadow-md active:scale-[0.98] shadow-sm xl:pr-3.5"
@@ -315,12 +318,13 @@ export default function PublicNavbar() {
                 <Link
                   href="/login"
                   onClick={handleNavigate}
-                  className="hidden items-center gap-1 rounded-full min-[980px]:px-1.5 min-[980px]:text-[10.5px] xl:px-2.5 xl:text-xs 2xl:px-4 font-extrabold text-[var(--color-brand-river)] transition-colors hover:bg-slate-50/80 min-[980px]:flex"
+                  className="flex items-center gap-1 rounded-full px-1.5 text-[10.5px] xl:px-2.5 xl:text-xs 2xl:px-4 font-extrabold text-[var(--color-brand-river)] transition-colors hover:bg-slate-50/80"
                 >
                   <User className="h-3.5 w-3.5" />
                   <span className="hidden xl:inline">Login</span>
                 </Link>
               )}
+              </div>
 
               {/* Live Booking Count */}
               <LiveBookingCount />
@@ -356,6 +360,8 @@ export default function PublicNavbar() {
                   <img
                     src="/aptdc-logo.svg"
                     alt="Andhra Pradesh Boat Tourism"
+                    width={46}
+                    height={46}
                     className={`transition-all duration-500 object-contain group-hover:scale-105 ${
                       isScrolled ? 'h-9 w-9' : 'h-[46px] w-[46px]'
                     }`}
@@ -402,7 +408,7 @@ export default function PublicNavbar() {
                 {/* Joint States Logo Header */}
                 <div className="grid gap-2.5 border-b border-slate-100 bg-[linear-gradient(180deg,#f8fbfb,white)] px-3 py-3 min-[420px]:grid-cols-2 min-[420px]:px-4">
                   <div className="flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-2.5 shadow-sm">
-                    <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-0.5 shadow-sm" />
+                    <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-0.5 shadow-sm" />
                     <div className="min-w-0 flex flex-col gap-0.5 leading-tight">
                       <div className="text-[8px] font-black uppercase tracking-wider font-outfit text-slate-500">
                         <span className="text-[var(--color-brand-teal)] font-black">Telangana</span> Boat Tourism
@@ -412,7 +418,7 @@ export default function PublicNavbar() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-2.5 shadow-sm">
-                    <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism Development Corporation" className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-0.5 shadow-sm" />
+                    <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism Development Corporation" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-0.5 shadow-sm" />
                     <div className="min-w-0 flex flex-col gap-0.5 leading-tight">
                       <div className="text-[8px] font-black uppercase tracking-wider font-outfit text-slate-500">
                         <span className="text-[#E0A92C] font-black">Andhra Pradesh</span> Boat Tourism

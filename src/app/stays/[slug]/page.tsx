@@ -51,6 +51,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!room) return { title: 'Stay Not Found' };
   const description = room.meta_description || room.description?.replace(/<[^>]+>/g, '').slice(0, 160) || `${room.lodge_name} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
 
+  const image = room.og_image_url || room.cover_image_url;
+  const absImage = image ? (image.startsWith('http') ? image : `https://www.tsboattourism.org${image}`) : undefined;
+
   return {
     title: room.meta_title || `${room.lodge_name} | Premium Riverside Stay`,
     description,
@@ -58,14 +61,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: room.meta_title || room.lodge_name,
       description,
-      images: room.og_image_url || room.cover_image_url ? [{ url: room.og_image_url || room.cover_image_url! }] : [],
+      images: absImage ? [{ url: absImage }] : [],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
       title: room.meta_title || room.lodge_name,
       description,
-      images: room.og_image_url || room.cover_image_url ? [room.og_image_url || room.cover_image_url!] : [],
+      images: absImage ? [absImage] : [],
     },
   };
 }
@@ -80,7 +83,7 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
   const canonical = room.canonical_url || `/stays/${room.slug}`;
 
   // Ensure all JSON-LD URLs are absolute — schema.org mandates fully-qualified URLs.
-  const SITE_ORIGIN = 'https://telanganaboattourism.com';
+  const SITE_ORIGIN = 'https://www.tsboattourism.org';
   const abs = (url?: string | null) =>
     url ? (url.startsWith('http') ? url : `${SITE_ORIGIN}${url}`) : undefined;
 

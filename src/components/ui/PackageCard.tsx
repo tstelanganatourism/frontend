@@ -181,7 +181,7 @@ function PackageCard({ pkg }: PackageProps) {
           </span>
         </div>
 
-        <h3 className="mb-2 text-[1.25rem] font-black leading-tight text-[var(--color-brand-river)] line-clamp-2 transition-colors group-hover/card:text-[var(--color-brand-teal)]">
+        <h3 className="mb-2 min-h-[3.125rem] text-[1.25rem] font-black leading-tight text-[var(--color-brand-river)] line-clamp-2 transition-colors group-hover/card:text-[var(--color-brand-teal)]">
           {pkg.title}
         </h3>
 
