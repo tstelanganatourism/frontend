@@ -35,6 +35,55 @@ function isoDate(year: number, month: number, day: number) {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+type RoomSlotOption = {
+  label: string;
+  slot_start: string;
+  slot_end: string;
+};
+
+type RoomSlotSource = {
+  title?: string | null;
+  slot_start?: string | null;
+  slot_end?: string | null;
+};
+
+type RoomSource = {
+  slot_start?: string | null;
+  slot_end?: string | null;
+  booking_slots?: RoomSlotSource[] | null;
+};
+
+function shortTime(value?: string | null) {
+  return value ? value.slice(0, 5) : '';
+}
+
+function getConfiguredRoomSlots(room?: RoomSource | null): RoomSlotOption[] {
+  if (!room) return [];
+
+  const slots: RoomSlotOption[] = [];
+  const seen = new Set<string>();
+  const addSlot = (slot_start?: string | null, slot_end?: string | null, label?: string | null) => {
+    if (!slot_start || !slot_end) return;
+    const key = `${shortTime(slot_start)}-${shortTime(slot_end)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    slots.push({
+      label: label?.trim() || `${shortTime(slot_start)} to ${shortTime(slot_end)}`,
+      slot_start,
+      slot_end,
+    });
+  };
+
+  addSlot(room.slot_start, room.slot_end, 'Primary slot');
+  if (Array.isArray(room.booking_slots)) {
+    room.booking_slots.forEach((slot) => {
+      addSlot(slot?.slot_start ?? null, slot?.slot_end ?? null, slot?.title ?? null);
+    });
+  }
+
+  return slots;
+}
+
 // ─── Status Cell ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
@@ -365,7 +414,21 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
 
 // ─── Generate/Create Modals (Shared Logic) ───────────────────────────────────
 
-function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated, defaultCapacity }: { mode: 'package' | 'room', entityId: number, currentMonth: string, onClose: () => void, onGenerated: () => void, defaultCapacity?: number }) {
+function GenerateModal({
+  mode,
+  entityId,
+  onClose,
+  onGenerated,
+  defaultCapacity,
+  roomSlots = [],
+}: {
+  mode: 'package' | 'room',
+  entityId: number,
+  onClose: () => void,
+  onGenerated: () => void,
+  defaultCapacity?: number,
+  roomSlots?: RoomSlotOption[],
+}) {
   const { generateInventory, generateRoomInventory } = useInventoryStore();
   const today = todayIST();
   const minISO = today.toISOString().slice(0, 10);
@@ -376,7 +439,12 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated, def
     return d.toISOString().slice(0, 10);
   });
   const [capacity, setCapacity] = useState(defaultCapacity ?? (mode === 'package' ? 500 : 20));
+  const [slotCapacities, setSlotCapacities] = useState<Record<string, number>>(() => {
+    const fallback = defaultCapacity ?? 20;
+    return Object.fromEntries(roomSlots.map((slot) => [`${slot.slot_start}-${slot.slot_end}`, fallback]));
+  });
   const [loading, setLoading] = useState(false);
+  const hasRoomSlotInputs = mode === 'room' && roomSlots.length > 0;
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -385,7 +453,21 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated, def
       if (mode === 'package') {
         result = await generateInventory({ variant_id: entityId, from_date: fromDate, to_date: toDate, total_capacity: capacity });
       } else {
-        result = await generateRoomInventory({ room_variant_id: entityId, from_date: fromDate, to_date: toDate, override_total_rooms: capacity });
+        const slot_capacities = hasRoomSlotInputs
+          ? roomSlots.map((slot) => ({
+              slot_start: slot.slot_start,
+              slot_end: slot.slot_end,
+              total_rooms: slotCapacities[`${slot.slot_start}-${slot.slot_end}`] ?? capacity,
+            }))
+          : undefined;
+
+        result = await generateRoomInventory({
+          room_variant_id: entityId,
+          from_date: fromDate,
+          to_date: toDate,
+          override_total_rooms: capacity,
+          slot_capacities,
+        });
       }
       toast.success(result.message);
       onGenerated();
@@ -399,13 +481,13 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated, def
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-lg max-h-[95vh] overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="bg-[#0f3d56] px-6 py-4 rounded-t-2xl">
           <h3 className="text-base font-black text-white flex items-center gap-2">
             <Zap className="h-4 w-4 text-[#5ac4d7]" /> Generate {mode === 'package' ? 'Package' : 'Room'} Inventory
           </h3>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="max-h-[70vh] overflow-y-auto p-6 space-y-4 custom-scrollbar">
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">From Date</label>
             <CustomDatePicker value={fromDate} onChange={setFromDate} min={minISO} />
@@ -414,11 +496,57 @@ function GenerateModal({ mode, entityId, currentMonth, onClose, onGenerated, def
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">To Date</label>
             <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} />
           </div>
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Default Capacity per day</label>
+          <div className={hasRoomSlotInputs ? 'rounded-2xl border border-slate-200 bg-slate-50 p-4' : ''}>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+              {mode === 'room' ? 'Default rooms per slot' : 'Default Capacity per day'}
+            </label>
             <input type="number" min={1} max={10000} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || (mode === 'package' ? 500 : 20))}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+            {hasRoomSlotInputs && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSlotCapacities(Object.fromEntries(roomSlots.map((slot) => [`${slot.slot_start}-${slot.slot_end}`, capacity])));
+                }}
+                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#0f3d56]/20 bg-white px-3 py-2 text-xs font-black text-[#0f3d56] transition-colors hover:bg-[#5ac4d7]/10"
+              >
+                <Sliders className="h-3.5 w-3.5" /> Apply to all timings
+              </button>
+            )}
           </div>
+
+          {hasRoomSlotInputs && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">Rooms by timing</p>
+                <p className="mt-1 text-sm font-medium text-slate-500">
+                  Set the opening count once here. Every generated date will use these counts for the matching time slot.
+                </p>
+              </div>
+              {roomSlots.map((slot) => {
+                const key = `${slot.slot_start}-${slot.slot_end}`;
+                return (
+                  <div key={key} className="grid grid-cols-[1fr_116px] items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-900">{slot.label}</p>
+                      <p className="mt-0.5 text-xs font-bold text-slate-500">{shortTime(slot.slot_start)} to {shortTime(slot.slot_end)}</p>
+                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={10000}
+                      value={slotCapacities[key] ?? capacity}
+                      onChange={(e) => {
+                        const next = Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : 0;
+                        setSlotCapacities((prev) => ({ ...prev, [key]: Math.max(0, next) }));
+                      }}
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-right text-sm font-black text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4 rounded-b-2xl">
           <button onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancel</button>
@@ -738,6 +866,7 @@ export default function AdminInventoryPage() {
 
   const selectedRoom = typeof roomList.find === 'function' ? roomList.find((r) => r.id === selectedRoomId) : undefined;
   const roomVariants = selectedRoom?.variants ?? [];
+  const selectedRoomSlots = getConfiguredRoomSlots(selectedRoom);
 
   // Auto-select package
   useEffect(() => {
@@ -1115,10 +1244,10 @@ export default function AdminInventoryPage() {
           <GenerateModal
             mode={activeTab === 'packages' ? 'package' : 'room'}
             entityId={activeTab === 'packages' ? selectedVariantId! : selectedRoomVariantId!}
-            currentMonth={formatMonth(calYear, calMonth)}
             onClose={() => setShowGenerate(false)}
             onGenerated={refresh}
             defaultCapacity={activeTab === 'rooms' && selectedRoomVariant?.total_rooms ? selectedRoomVariant.total_rooms : undefined}
+            roomSlots={activeTab === 'rooms' ? selectedRoomSlots : []}
           />
         );
       })()}

@@ -19,7 +19,7 @@ export default function TopLoader() {
       color="#5ac4d7" 
       showSpinner={false} 
       height={3} 
-      crawl={true}
+      crawl={false}
     />
   );
 }

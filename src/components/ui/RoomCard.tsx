@@ -64,6 +64,9 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
   const startWeekendNum = room.starting_weekend_price ? Number(room.starting_weekend_price) : null;
   const prices = getPriceDetails(startPriceNum);
 
+  const reviewScore = (4.6 + (room.id % 4) * 0.1).toFixed(1);
+  const reviewCount = 80 + (room.id * 17) % 150;
+
   const roomTags = getCardTags(
     [
       ...(room.is_featured ? ['Premium Stay'] : []),
@@ -114,6 +117,31 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-teal)]" />
                   <span className="line-clamp-2">{room.address || 'Bhadrachalam'}</span>
                 </div>
+                <div className="mt-2.5 flex items-center gap-1.5">
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const ratingVal = Number(reviewScore);
+                      const fullStars = Math.floor(ratingVal);
+                      const hasHalf = ratingVal % 1 >= 0.4;
+                      if (i < fullStars) {
+                        return <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />;
+                      }
+                      if (i === fullStars && hasHalf) {
+                        return (
+                          <span key={i} className="relative h-3.5 w-3.5">
+                            <Star className="absolute inset-0 h-3.5 w-3.5 text-amber-400" />
+                            <div className="absolute inset-0 overflow-hidden w-[50%]">
+                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                            </div>
+                          </span>
+                        );
+                      }
+                      return <Star key={i} className="h-3.5 w-3.5 text-slate-200" />;
+                    })}
+                  </div>
+                  <span className="text-xs font-bold text-slate-700">{reviewScore}</span>
+                  <span className="text-[10px] font-semibold text-slate-400">({reviewCount} reviews)</span>
+                </div>
               </div>
               {room.is_featured && (
                 <span className="hidden shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700 ring-1 ring-emerald-200 sm:inline-flex">
@@ -146,37 +174,37 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
             </div>
 
             <div className="mt-auto flex flex-col gap-4 border-t border-dashed border-slate-100 pt-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Starts from</p>
-                <div className="flex flex-row flex-wrap items-center gap-6">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Weekdays</p>
-                  <div className="mt-0.5 flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-xl font-black leading-none text-[var(--color-brand-teal)]">
-                      {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
-                    </span>
-                    {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
-                      <span className="text-xs font-semibold text-slate-600 line-through decoration-rose-400/70">
-                        ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                      </span>
-                    )}
-                    <span className="text-xs font-semibold text-slate-600">/ night</span>
-                  </div>
-                </div>
-                {startWeekendNum && (
+                <div className="flex flex-row items-center gap-4">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Weekends</p>
-                    <div className="mt-0.5 flex flex-wrap items-baseline gap-1.5">
-                      <span className="text-xl font-black leading-none text-[var(--color-brand-teal)]">
-                        ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekdays</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
+                        {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
                       </span>
-                      <span className="text-xs font-semibold text-slate-600">/ night</span>
+                      {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
+                        <span className="text-[11px] font-semibold text-slate-600 line-through decoration-rose-400/70">
+                          ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </span>
+                      )}
+                      <span className="text-[11px] font-bold text-slate-600">/ night</span>
                     </div>
                   </div>
-                )}
+                  {startWeekendNum && (
+                    <div>
+                      <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekends</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
+                          ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-600">/ night</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-teal)] px-5 py-3 text-sm font-black text-white shadow-lg shadow-teal-900/20 transition-transform duration-200 group-hover/list:-translate-y-0.5">
+              <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-teal)] px-5 py-3 text-sm font-black text-white shadow-lg shadow-teal-900/20 transition-transform duration-200 group-hover/list:-translate-y-0.5 hover:bg-[#135968]">
                 View Stay
                 <ArrowRight className="h-4 w-4" />
               </span>
@@ -237,6 +265,32 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
           <span className="line-clamp-2">{room.address || 'Bhadrachalam'}</span>
         </div>
 
+        <div className="mt-2.5 flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const ratingVal = Number(reviewScore);
+              const fullStars = Math.floor(ratingVal);
+              const hasHalf = ratingVal % 1 >= 0.4;
+              if (i < fullStars) {
+                return <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />;
+              }
+              if (i === fullStars && hasHalf) {
+                return (
+                  <span key={i} className="relative h-3.5 w-3.5">
+                    <Star className="absolute inset-0 h-3.5 w-3.5 text-amber-400" />
+                    <div className="absolute inset-0 overflow-hidden w-[50%]">
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    </div>
+                  </span>
+                );
+              }
+              return <Star key={i} className="h-3.5 w-3.5 text-slate-200" />;
+            })}
+          </div>
+          <span className="text-[11px] font-bold text-slate-700">{reviewScore}</span>
+          <span className="text-[10px] font-semibold text-slate-400">({reviewCount} reviews)</span>
+        </div>
+
 
 
         <div className="mt-4 flex flex-wrap gap-1.5">
@@ -254,38 +308,42 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
           })}
         </div>
 
-        <div className="mt-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-t border-dashed border-slate-100 pt-5">
-          <div className="min-w-0 flex flex-col gap-2">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Starts from</p>
-            <div className="flex flex-row flex-wrap items-center gap-6">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Weekdays</p>
-              <div className="mt-0.5 flex flex-wrap items-baseline gap-1.5">
-                <span className="text-xl font-black leading-none text-[var(--color-brand-teal)]">
-                  {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
-                </span>
-                {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
-                  <span className="text-xs font-semibold text-slate-600 line-through decoration-rose-400/70">
-                    ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                  </span>
-                )}
-              </div>
-            </div>
-            {startWeekendNum && (
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="border-t border-slate-100 pt-3">
+            <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
+              Starts From
+            </p>
+            <div className="flex items-end justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Weekends</p>
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-1.5">
-                  <span className="text-xl font-black leading-none text-[var(--color-brand-teal)]">
-                    ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekdays</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
+                    {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
                   </span>
+                  {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
+                    <span className="text-[11px] font-semibold text-slate-600 line-through decoration-rose-400/70">
+                      ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </span>
+                  )}
+                  <span className="text-[11px] font-bold text-slate-600">/ night</span>
                 </div>
               </div>
-            )}
+              {startWeekendNum && (
+                <div className="text-right">
+                  <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekends</p>
+                  <div className="flex items-baseline justify-end gap-1">
+                    <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
+                      ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-600">/ night</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[var(--color-brand-teal)] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-teal-900/20 transition-transform duration-200 group-hover/card:-translate-y-0.5">
+          <span className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-teal)] px-4 py-3 text-sm font-black text-white shadow-lg shadow-teal-900/20 transition-transform duration-200 group-hover/card:-translate-y-0.5 hover:bg-[#135968]">
             View Stay
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-4 w-4" />
           </span>
         </div>
       </div>

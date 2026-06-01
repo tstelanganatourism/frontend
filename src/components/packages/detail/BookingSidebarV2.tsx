@@ -540,6 +540,17 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     };
 
     window.addEventListener('apply-coupon', handleAutoApplyEvent);
+    
+    // Check localStorage in case the user copied a coupon before this component mounted (e.g. Mobile Bottom Sheet)
+    const storedCoupon = localStorage.getItem('pending_coupon');
+    if (storedCoupon) {
+      const trimmedCode = storedCoupon.trim().toUpperCase();
+      setCouponCode(trimmedCode);
+      setPendingCouponCode(trimmedCode);
+      setCouponSuccess("Coupon code filled! Select dates & passengers to apply.");
+      localStorage.removeItem('pending_coupon');
+    }
+
     return () => {
       window.removeEventListener('apply-coupon', handleAutoApplyEvent);
     };
@@ -690,6 +701,11 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         theme: { color: "#1a6b7a" },
         modal: {
           ondismiss: () => {
+            apiClient.post('/api/v1/payments/record-failure', {
+              razorpay_order_id: checkout_data.razorpay_order_id,
+              error_code: 'USER_DISMISSED',
+              error_description: 'Customer closed Razorpay checkout before payment completion.',
+            }).catch((err) => console.warn('Failed to record payment dismissal', err));
             toast.error("Payment not done, please try again");
             setIsProcessingCheckout(false);
           }
@@ -698,7 +714,17 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
       const rzp = new Razorpay(options);
       rzp.on("payment.failed", function (response: any) {
-        toast.error(`Payment Failed: ${response.error.description}`);
+        const error = response?.error || {};
+        apiClient.post('/api/v1/payments/record-failure', {
+          razorpay_order_id: error.metadata?.order_id || checkout_data.razorpay_order_id,
+          razorpay_payment_id: error.metadata?.payment_id,
+          error_code: error.code,
+          error_description: error.description,
+          error_source: error.source,
+          error_step: error.step,
+          error_reason: error.reason,
+        }).catch((err) => console.warn('Failed to record payment failure', err));
+        toast.error(`Payment Failed: ${error.description || 'Please try again.'}`);
         setIsProcessingCheckout(false);
       });
       rzp.open();
@@ -1152,14 +1178,16 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
           {/* CTA */}
           <button
-            disabled={(!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
+            disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
             onClick={handleBookingClick}
-            className={`mt-5 w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 flex items-center justify-center ${(!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
+            className={`mt-5 w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 flex items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
                 ? 'bg-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-[#1a6b7a] hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-md'
               }`}
           >
-            {isPackageInactive && !isAdmin
+            {isProcessingCheckout ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : isPackageInactive && !isAdmin
               ? 'Bookings Closed / Inactive'
               : validVariants.length === 0
                 ? 'Fare updating'

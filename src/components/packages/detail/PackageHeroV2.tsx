@@ -192,14 +192,8 @@ export const PackageHeroV2 = ({
               {...lightboxHandlers}
             >
               <div className="relative aspect-[4/3] min-h-[280px] sm:aspect-[16/10] lg:min-h-[470px]">
-                <Image
-                  src={activeSlide.image_url}
-                  alt={activeSlide.alt_text || title}
-                  fill
-                  priority
-                  className="scale-110 object-cover opacity-20 blur-xl"
-                  sizes="(max-width: 1024px) 100vw, 720px"
-                />
+                {/* Removed heavily blurred background image to improve frontend performance */}
+                <div className="absolute inset-0 bg-slate-900/40" />
                 <Image
                   src={activeSlide.image_url}
                   alt={activeSlide.alt_text || title}
@@ -268,7 +262,7 @@ export const PackageHeroV2 = ({
                     }`}
                     aria-label={`Show photo ${idx + 1}`}
                   >
-                    <Image src={slide.image_url} alt={slide.alt_text || `Photo ${idx + 1}`} fill sizes="120px" className="object-cover" />
+                    <Image src={slide.image_url || fallbackImage} alt={slide.alt_text || `Photo ${idx + 1}`} fill sizes="120px" className="object-cover" />
                     {idx === 4 && slides.length > 5 ? (
                       <span className="absolute inset-0 flex items-center justify-center bg-slate-950/65 text-xs font-black text-white">
                         +{slides.length - 5}

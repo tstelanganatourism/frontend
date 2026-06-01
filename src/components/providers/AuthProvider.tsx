@@ -20,6 +20,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     isInitialized.current = true;
 
     const initAuth = async () => {
+      // INSTANT HYDRATION FOR GUESTS: 
+      // If the user doesn't have the session flag, don't even make the API call.
+      const hasSession = typeof window !== 'undefined' ? localStorage.getItem('has_session') : null;
+      if (!hasSession) {
+        setHydrated();
+        return;
+      }
+
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Auth hydration timeout')), 8000)
       );

@@ -65,6 +65,8 @@ export default function CouponPopup({ targetType, targetId }: CouponPopupProps) 
     // Dispatch custom window event to automatically fill and apply the copied coupon
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('apply-coupon', { detail: { code } }));
+      // Also save to localStorage in case the checkout component hasn't mounted yet (e.g. Mobile Sheet)
+      localStorage.setItem('pending_coupon', code);
     }
     
     // Give them a moment to see the "Copied!" state, then close it

@@ -45,8 +45,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
   isAuthenticated: false,
   isHydrated: false,
 
-  setAuth: (user, accessToken) =>
-    set({ user, accessToken, isAuthenticated: true }),
+  setAuth: (user, accessToken) => {
+    if (typeof window !== 'undefined') localStorage.setItem('has_session', '1');
+    set({ user, accessToken, isAuthenticated: true });
+  },
 
   updateUser: (user) =>
     set({ user }),
@@ -54,8 +56,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
   updateAccessToken: (token) =>
     set({ accessToken: token }),
 
-  clearAuth: () =>
-    set({ user: null, accessToken: null, isAuthenticated: false }),
+  clearAuth: () => {
+    if (typeof window !== 'undefined') localStorage.removeItem('has_session');
+    set({ user: null, accessToken: null, isAuthenticated: false });
+  },
 
   setHydrated: () =>
     set({ isHydrated: true }),

@@ -156,7 +156,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
     <div className="wrap">
       <style dangerouslySetInnerHTML={{
         __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Nastaliq+Urdu:wght@600;700&family=Noto+Sans+Telugu:wght@600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
         @page { size: A4 portrait; margin: 6mm 8mm; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -172,23 +172,44 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         /* ── HEADER ── */
         .header {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 12px 16px; background: #fff;
+          gap: 12px; padding: 12px 16px; background: #fff;
           border-bottom: 3px solid #2e7d32;
         }
-        .header-left { display: flex; align-items: center; gap: 8px; }
-        .header-left img { height: 50px; width: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd; }
-        .header-left-text { font-size: 9px; line-height: 1.5; }
-        .header-left-text .ap-ts { font-size: 13px; font-weight: 900; color: #d32f2f; }
-        .header-left-text .official { font-size: 10px; font-weight: 800; color: #0a2351; }
-        .header-left-text .tagline { font-size: 9px; font-style: italic; color: #2e7d32; font-weight: 600; }
-        .header-center img { height: 65px; width: 65px; border-radius: 50%; object-fit: contain; }
-        .header-right { display: flex; align-items: center; gap: 8px; text-align: right; }
-        .header-right-text { display: flex; flex-direction: column; }
-        .header-right img { height: 50px; width: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd; }
-        .header-right .brand-tstg { font-size: 11px; font-weight: 900; color: #d32f2f; letter-spacing: 1px; }
-        .header-right .brand-boat { font-size: 18px; font-weight: 900; color: #0a2351; letter-spacing: 0.5px; }
-        .header-right .brand-tourism { font-size: 18px; font-weight: 900; color: #d32f2f; letter-spacing: 0.5px; }
-        .header-right .brand-sub { font-size: 10px; font-weight: 700; color: #2e7d32; letter-spacing: 2px; }
+        .state-brand {
+          display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1;
+        }
+        .state-brand.ap { flex-direction: row-reverse; text-align: right; }
+        .state-brand img {
+          height: 50px; width: 50px; border-radius: 50%; object-fit: contain;
+          border: 2px solid #ddd; background: #fff; padding: 2px; flex-shrink: 0;
+        }
+        .state-copy { display: flex; min-width: 0; flex-direction: column; gap: 1px; line-height: 1.15; }
+        .state-en {
+          font-size: 10px; font-weight: 900; color: #475569;
+          text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+        }
+        .state-name-ts { color: #1a6b7a; font-weight: 900; }
+        .state-name-ap { color: #e0a92c; font-weight: 900; }
+        .state-telugu {
+          font-family: 'Noto Sans Telugu', 'Inter', sans-serif;
+          font-size: 11px; font-weight: 800; color: #0f172a; white-space: nowrap;
+        }
+        .state-urdu {
+          font-family: 'Noto Nastaliq Urdu', 'Inter', sans-serif;
+          font-size: 10px; font-weight: 700; color: #475569; white-space: nowrap;
+        }
+        .header-center {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          width: 122px; flex-shrink: 0; text-align: center;
+        }
+        .header-center img {
+          height: 56px; width: 56px; border-radius: 50%; object-fit: contain;
+          background: #fff; box-shadow: 0 0 0 1px #e2e8f0;
+        }
+        .platform-text {
+          margin-top: 4px; font-size: 8px; font-weight: 900; color: #0a2351;
+          text-transform: uppercase; letter-spacing: 0.7px; line-height: 1.2;
+        }
 
         /* ── TICKET TITLE ── */
         .ticket-title-wrap { text-align: center; padding: 14px 0 8px; background: #fff; }
@@ -334,24 +355,25 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
 
       {/* ═══════ HEADER ═══════ */}
       <div className="header">
-        <div className="header-left">
-          <img src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779358705/b66b077a-69fa-4625-8b49-9a168efde88f.png" alt="AP Tourism" />
-          <div className="header-left-text">
-            <div className="ap-ts">AP &amp; TS</div>
-            <div className="official">OFFICIAL TOURISM</div>
-            <div className="tagline">Incredible Experiences!</div>
+        <div className="state-brand ts">
+          <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" />
+          <div className="state-copy">
+            <div className="state-en"><span className="state-name-ts">Telangana</span> Boat Tourism</div>
+            <div className="state-telugu">తెలంగాణ బోట్ టూరిజం</div>
+            <div className="state-urdu" dir="rtl">تلنگانہ بوٹ ٹورزم</div>
           </div>
         </div>
         <div className="header-center">
-          <img src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779105269/ts_tours/epedimxa5joepegptegp.jpg" alt="Telangana Boat Tourism" />
+          <img src="/icon-512x512.png" alt="Telangana and AP Boat Tourism" />
+          <div className="platform-text">Official Booking Platform</div>
         </div>
-        <div className="header-right">
-          <div className="header-right-text">
-            <div className="brand-tstg">TSTG</div>
-            <div><span className="brand-boat">BOAT </span><span className="brand-tourism">TOURISM</span></div>
-            <div className="brand-sub">PAPIKONDALU</div>
+        <div className="state-brand ap">
+          <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism" />
+          <div className="state-copy">
+            <div className="state-en"><span className="state-name-ap">Andhra Pradesh</span> Boat Tourism</div>
+            <div className="state-telugu">ఆంధ్రప్రదేశ్ బోట్ టూరిజం</div>
+            <div className="state-urdu" dir="rtl">آندھرا پردیش بوٹ ٹورزم</div>
           </div>
-          <img src="/logos/ts-tourism.png" alt="Telangana Tourism" />
         </div>
       </div>
 

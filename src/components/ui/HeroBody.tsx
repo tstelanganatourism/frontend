@@ -446,7 +446,6 @@ export default function HeroBody() {
                     <Link
                       key={index}
                       href={btn.href}
-                      prefetch={false}
                       className={
                         btn.styleType === 'primary'
                           ? "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-4 text-[12px] font-black text-slate-950 shadow-[0_18px_42px_rgba(251,191,36,0.34)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_rgba(251,191,36,0.46)] sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
@@ -455,7 +454,7 @@ export default function HeroBody() {
                             : "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border border-sky-300/45 bg-blue-950/74 px-4 text-[12px] font-black text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900/86 sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
                       }
                     >
-                      <Icon className={`h-5 w-5 shrink-0 ${btn.styleType === 'primary' ? 'animate-pulse' : ''}`} />
+                      <Icon className="h-5 w-5 shrink-0" />
                       <span className="whitespace-nowrap">{btn.label}</span>
                     </Link>
                   );
@@ -528,7 +527,6 @@ export default function HeroBody() {
                         <Link
                           key={index}
                           href={btn.href}
-                          prefetch={false}
                           className={
                             btn.styleType === 'primary'
                               ? "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-4 text-[12px] font-black text-slate-950 shadow-[0_18px_42px_rgba(251,191,36,0.34)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_rgba(251,191,36,0.46)] sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"

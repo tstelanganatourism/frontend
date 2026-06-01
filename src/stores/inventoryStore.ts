@@ -44,6 +44,11 @@ export interface RoomGenerateRequest {
   from_date: string;
   to_date: string;
   override_total_rooms?: number;
+  slot_capacities?: Array<{
+    slot_start: string;
+    slot_end: string;
+    total_rooms: number;
+  }>;
 }
 
 export interface RoomUpdateRequest {

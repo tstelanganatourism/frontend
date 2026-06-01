@@ -79,7 +79,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
   if (!isOpen) return null;
 
   return (
-    <DialogPrimitive.Root open={isOpen} onOpenChange={(val) => !val && onClose()} modal={!isProcessing}>
+    <DialogPrimitive.Root open={isOpen} onOpenChange={(val) => { if (!val && !isProcessing) onClose(); }} modal={true}>
       <DialogPrimitive.Portal>
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4">
           <DialogPrimitive.Overlay className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" />

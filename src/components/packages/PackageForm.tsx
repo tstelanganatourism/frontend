@@ -114,6 +114,7 @@ export default function PackageForm({
   const [brochureValidation, setBrochureValidation] = useState<any>(null);
   const [isValidatingBrochure, setIsValidatingBrochure] = useState(false);
   const [isGeneratingBrochure, setIsGeneratingBrochure] = useState(false);
+  const [shouldRegenerateOnSave, setShouldRegenerateOnSave] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const lastRevalidatedBrochureRef = useRef<string | null>(null);
@@ -298,7 +299,7 @@ export default function PackageForm({
     if (!initialData?.id) return;
 
     // Inline confirmation check to bypass browser popup blockers
-    if (activeBrochureUrl && !showRegenConfirm) {
+    if (activeBrochureUrl && !showRegenConfirm && !shouldRegenerateOnSave) {
       setShowRegenConfirm(true);
       // Auto-reset the confirmation state after 3.5 seconds
       setTimeout(() => setShowRegenConfirm(false), 3500);
@@ -306,19 +307,8 @@ export default function PackageForm({
     }
 
     setShowRegenConfirm(false);
-    setIsGeneratingBrochure(true);
-    try {
-      if (onAutosave) {
-        await onAutosave(getPayload());
-      }
-      await apiClient.post(`/api/v1/admin/packages/${initialData.id}/regenerate-brochure`);
-      toast.success('Latest package changes saved. Brochure generation started!');
-      checkBrochureValidation();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail?.message || 'Failed to trigger brochure generation');
-    } finally {
-      setIsGeneratingBrochure(false);
-    }
+    setShouldRegenerateOnSave(true);
+    toast.success('Brochure queued for generation. It will be generated when you click Save Changes.');
   };
 
   const openBrochurePdf = async (urlTarget: string) => {
@@ -531,6 +521,20 @@ export default function PackageForm({
     }
     try {
       await onSubmit(getPayload());
+      
+      if (shouldRegenerateOnSave && initialData?.id) {
+        setIsGeneratingBrochure(true);
+        try {
+          await apiClient.post(`/api/v1/admin/packages/${initialData.id}/regenerate-brochure`);
+          toast.success('Brochure generation started in the background!');
+          setShouldRegenerateOnSave(false);
+          checkBrochureValidation();
+        } catch (err: any) {
+          toast.error(err.response?.data?.detail?.message || 'Failed to trigger brochure generation');
+        } finally {
+          setIsGeneratingBrochure(false);
+        }
+      }
     } catch (err: any) {
       // Error handled by parent
     }
@@ -754,6 +758,8 @@ export default function PackageForm({
                                 <><Loader2 className="h-3.5 w-3.5 animate-spin text-[#5ac4d7]" /> {brochureValidation?.status === 'QUEUED' ? 'Queued...' : 'Generating...'}</>
                               ) : showRegenConfirm ? (
                                 <><AlertTriangle className="h-3.5 w-3.5" /> Click again to confirm</>
+                              ) : shouldRegenerateOnSave ? (
+                                <><RefreshCw className="h-3.5 w-3.5 text-amber-500" /> Will Generate on Save</>
                               ) : brochureValidation?.status === 'FAILED' ? (
                                 <><RefreshCw className="h-3.5 w-3.5" /> Retry Generation</>
                               ) : activeBrochureUrl ? (

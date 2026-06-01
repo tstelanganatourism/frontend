@@ -604,7 +604,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   };
 
 
-
   const handleBookingClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isLodgeInactive) return;
@@ -720,13 +719,30 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         },
         theme: { color: "#0f8d7d" },
         modal: {
-          ondismiss: () => setIsProcessingCheckout(false)
+          ondismiss: () => {
+            apiClient.post('/api/v1/payments/record-failure', {
+              razorpay_order_id: checkout_data.razorpay_order_id,
+              error_code: 'USER_DISMISSED',
+              error_description: 'Customer closed Razorpay checkout before payment completion.',
+            }).catch((err) => console.warn('Failed to record payment dismissal', err));
+            setIsProcessingCheckout(false);
+          }
         }
       };
 
       const rzp = new Razorpay(options);
       rzp.on("payment.failed", function (response: any) {
-        toast.error(`Payment Failed: ${response.error.description}`);
+        const error = response?.error || {};
+        apiClient.post('/api/v1/payments/record-failure', {
+          razorpay_order_id: error.metadata?.order_id || checkout_data.razorpay_order_id,
+          razorpay_payment_id: error.metadata?.payment_id,
+          error_code: error.code,
+          error_description: error.description,
+          error_source: error.source,
+          error_step: error.step,
+          error_reason: error.reason,
+        }).catch((err) => console.warn('Failed to record payment failure', err));
+        toast.error(`Payment Failed: ${error.description || 'Please try again.'}`);
         setIsProcessingCheckout(false);
       });
       rzp.open();
@@ -850,6 +866,37 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   }, [prices.grandTotal, prices.agentPayable, isAgent]);
 
   useEffect(() => {
+    const handleAutoApplyEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const code = customEvent.detail?.code;
+      if (code) {
+        const trimmedCode = code.trim().toUpperCase();
+        setCouponCode(trimmedCode);
+        if (prices.rawSubtotal > 0) {
+          validateCoupon(trimmedCode);
+        } else {
+          setCouponSuccess("Coupon code filled! Select dates & rooms to apply.");
+          setCouponError(null);
+        }
+      }
+    };
+
+    window.addEventListener('apply-coupon', handleAutoApplyEvent);
+    
+    const storedCoupon = localStorage.getItem('pending_coupon');
+    if (storedCoupon) {
+      const trimmedCode = storedCoupon.trim().toUpperCase();
+      setCouponCode(trimmedCode);
+      setCouponSuccess("Coupon code filled! Select dates & rooms to apply.");
+      localStorage.removeItem('pending_coupon');
+    }
+
+    return () => {
+      window.removeEventListener('apply-coupon', handleAutoApplyEvent);
+    };
+  }, [prices.rawSubtotal]);
+
+  useEffect(() => {
     if (appliedCoupon) {
       validateCoupon(appliedCoupon.code);
     }
@@ -935,8 +982,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               <div className="relative">
                 <div className="relative overflow-hidden rounded-lg bg-slate-950">
                   <div className="relative aspect-[4/3] min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
-                    <Image src={activeImage.image_url} alt={activeImage.alt_text || room.lodge_name} fill priority className="scale-110 object-cover opacity-35 blur-2xl" sizes="(max-width: 1024px) 100vw, 720px" />
-                    <Image src={getHdImageUrl(activeImage.image_url)} alt={activeImage.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" unoptimized quality={100} />
+                    <div className="absolute inset-0 bg-slate-900/40" />
+                    <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" unoptimized quality={100} />
                     <button type="button" onClick={() => setLightboxOpen(true)} className="absolute inset-0 z-10" aria-label="Open stay photos" />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent p-3 sm:p-4">
                       <span className="inline-flex items-center gap-2 rounded-full bg-white/92 px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm">
@@ -966,7 +1013,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 <div className="mt-2 grid grid-cols-4 gap-1.5 min-[480px]:gap-2 min-[480px]:grid-cols-5">
                   {slides.slice(0, 5).map((slide, index) => (
                     <button key={slide.id || index} type="button" onClick={() => setActiveSlide(index)} className={`relative aspect-[4/3] overflow-hidden rounded-md border transition ${index === activeSlide ? 'border-[#1a6b7a] ring-2 ring-[#1a6b7a]/20' : 'border-slate-200 opacity-75 hover:opacity-100'}`} aria-label={`Show photo ${index + 1}`}>
-                      <Image src={slide.image_url} alt={slide.alt_text || `Stay photo ${index + 1}`} fill sizes="120px" className="object-cover" />
+                      <Image src={slide.image_url || fallbackImage} alt={slide.alt_text || `Stay photo ${index + 1}`} fill sizes="120px" className="object-cover" />
                       {index === 4 && slides.length > 5 ? <span className="absolute inset-0 flex items-center justify-center bg-slate-950/65 text-xs font-black text-white">+{slides.length - 5}</span> : null}
                     </button>
                   ))}
@@ -1117,7 +1164,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30"
                     aria-label={`View photo ${index + 1}`}
                   >
-                    <Image src={getHdImageUrl(slide.image_url)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" unoptimized quality={100} />
+                    <Image src={getHdImageUrl(slide.image_url || fallbackImage)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" unoptimized quality={100} />
                   </button>
                 ))}
               </div>

@@ -85,7 +85,7 @@ function SourceBadge({ source }: { source: string }) {
     : isAdmin
     ? 'bg-violet-50 text-violet-700 border-violet-200'
     : 'bg-slate-50 text-slate-500 border-slate-200';
-  const label = isAgent ? 'Agent' : source === 'ADMIN_DIRECT' ? 'Admin Direct' : isAdmin ? 'Admin' : 'Direct';
+  const label = isAgent ? 'Agent' : source === 'ADMIN_DIRECT' ? 'Admin Direct' : isAdmin ? 'Admin' : 'Tourist';
   return (
     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${color}`}>
       {label}

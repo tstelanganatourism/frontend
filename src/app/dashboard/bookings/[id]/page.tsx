@@ -305,11 +305,15 @@ export default function BookingDetailPage() {
 
       if (!checkout_data?.key_id) {
         toast.error("Failed to initialize payment gateway. Please try again.");
+        isPaymentActiveRef.current = false;
+        setIsProcessingBalance(false);
         return;
       }
 
       if (!Razorpay) {
         toast.error("Payment gateway is still loading. Please refresh the page.");
+        isPaymentActiveRef.current = false;
+        setIsProcessingBalance(false);
         return;
       }
 
@@ -344,6 +348,11 @@ export default function BookingDetailPage() {
         theme: { color: "#1a6b7a" },
         modal: {
           ondismiss: () => {
+            apiClient.post('/api/v1/payments/record-failure', {
+              razorpay_order_id: checkout_data.razorpay_order_id,
+              error_code: 'USER_DISMISSED',
+              error_description: 'Customer closed Razorpay checkout before payment completion.',
+            }).catch((err) => console.warn('Failed to record payment dismissal', err));
             toast.error("Payment not completed.");
             isPaymentActiveRef.current = false;
             setIsProcessingBalance(false);
@@ -353,7 +362,17 @@ export default function BookingDetailPage() {
 
       const rzp = new Razorpay(options);
       rzp.on("payment.failed", (response: any) => {
-        toast.error(`Payment Failed: ${response.error.description}`);
+        const error = response?.error || {};
+        apiClient.post('/api/v1/payments/record-failure', {
+          razorpay_order_id: error.metadata?.order_id || checkout_data.razorpay_order_id,
+          razorpay_payment_id: error.metadata?.payment_id,
+          error_code: error.code,
+          error_description: error.description,
+          error_source: error.source,
+          error_step: error.step,
+          error_reason: error.reason,
+        }).catch((err) => console.warn('Failed to record payment failure', err));
+        toast.error(`Payment Failed: ${error.description || 'Please try again.'}`);
         isPaymentActiveRef.current = false;
         setIsProcessingBalance(false);
       });

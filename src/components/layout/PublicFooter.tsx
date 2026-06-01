@@ -71,18 +71,18 @@ export default function PublicFooter() {
             <div className="min-w-0">
               <h3 className="text-xs font-bold mb-3 text-[var(--color-brand-sand)] uppercase tracking-wider">Quick Links</h3>
               <ul className="space-y-2">
-                <li><Link href="/about" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">About Us</Link></li>
-                <li><Link href="/boat-rides" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Boat Rides</Link></li>
-                <li><Link href="/sightseeing" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Sightseeing</Link></li>
-                <li><Link href="/stays" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Accommodations</Link></li>
+                <li><Link href="/about" className="text-white/60 hover:text-white transition-colors text-[11px]">About Us</Link></li>
+                <li><Link href="/boat-rides" className="text-white/60 hover:text-white transition-colors text-[11px]">Boat Rides</Link></li>
+                <li><Link href="/sightseeing" className="text-white/60 hover:text-white transition-colors text-[11px]">Sightseeing</Link></li>
+                <li><Link href="/stays" className="text-white/60 hover:text-white transition-colors text-[11px]">Accommodations</Link></li>
               </ul>
             </div>
 
             <div className="min-w-0">
               <h3 className="text-xs font-bold mb-3 text-[var(--color-brand-sand)] uppercase tracking-wider">Support</h3>
               <ul className="space-y-2">
-                <li><Link href="/faq" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">FAQs</Link></li>
-                <li><Link href="/terms" prefetch={false} className="text-white/60 hover:text-white transition-colors text-[11px]">Terms & Conditions</Link></li>
+                <li><Link href="/faq" className="text-white/60 hover:text-white transition-colors text-[11px]">FAQs</Link></li>
+                <li><Link href="/terms" className="text-white/60 hover:text-white transition-colors text-[11px]">Terms & Conditions</Link></li>
               </ul>
             </div>
           </div>

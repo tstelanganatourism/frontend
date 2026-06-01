@@ -15,7 +15,7 @@ const navLinks = [
   { name: 'Home', href: '/', icon: Home, path: '/' },
   { name: 'Boat Rides', href: '/boat-rides', icon: Ship, path: '/boat-rides' },
   { name: 'Sightseeing', href: '/sightseeing', icon: Camera, path: '/sightseeing' },
-  { name: 'Stays', href: '/stays', icon: BedDouble, path: '/stays' },
+  { name: 'Accommodation', href: '/stays', icon: BedDouble, path: '/stays' },
   { name: 'Brochures', href: '/brochures', icon: FileText, path: '/brochures' },
   { name: 'Gallery', href: '/gallery', icon: ImageIcon, path: '/gallery' },
   { name: 'About Us', href: '/about', icon: Info, path: '/about' },
@@ -93,7 +93,6 @@ export default function PublicNavbar() {
             <div className="flex min-w-0 flex-1 items-center lg:flex-none lg:flex-shrink-0">
               <Link 
                 href="/" 
-                prefetch={false} 
                 className="group flex min-w-0 items-center gap-2 rounded-xl p-1 transition-all duration-500 hover:bg-gradient-to-r hover:from-slate-50/90 hover:to-teal-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] active:scale-[0.98] sm:gap-3 sm:rounded-2xl sm:p-1.5 lg:hover:scale-[1.02]"
               >
                 <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[var(--color-brand-teal)]/30 group-hover:shadow-[0_0_24px_rgba(26,107,122,0.18)] ${
@@ -132,7 +131,6 @@ export default function PublicNavbar() {
                     <Link
                       key={link.name}
                       href={link.href}
-                      prefetch={false}
                       onClick={handleNavigate}
                       onMouseEnter={() => setHoveredIndex(index)}
                       onMouseLeave={() => setHoveredIndex(null)}
@@ -153,7 +151,6 @@ export default function PublicNavbar() {
                       <AnimatePresence>
                         {hoveredIndex === index && !isActive && (
                           <motion.span
-                            layoutId="hoverNavBackground"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
@@ -317,7 +314,6 @@ export default function PublicNavbar() {
               ) : (
                 <Link
                   href="/login"
-                  prefetch={false}
                   onClick={handleNavigate}
                   className="hidden items-center gap-1 rounded-full lg:px-1.5 lg:text-[10.5px] xl:px-2.5 xl:text-xs 2xl:px-4 font-extrabold text-[var(--color-brand-river)] transition-colors hover:bg-slate-50/80 lg:flex"
                 >
@@ -332,7 +328,6 @@ export default function PublicNavbar() {
               {/* Book Now Action Button */}
               <Link
                 href="/boat-rides"
-                prefetch={false}
                 onClick={handleNavigate}
                 className="relative hidden overflow-hidden rounded-full bg-[var(--color-brand-river)] lg:px-3.5 lg:py-1.5 lg:text-[10.5px] xl:px-4.5 xl:py-2 xl:text-[11.5px] 2xl:px-5 2xl:text-xs font-black text-white shadow-[0_8px_20px_rgba(15,61,86,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,61,86,0.25)] hover:bg-[#154652] active:translate-y-0 lg:inline-flex group/btn"
               >
@@ -342,7 +337,6 @@ export default function PublicNavbar() {
               {/* Andhra Pradesh Tourism Logo (Right) */}
               <Link 
                 href="/boat-rides" 
-                prefetch={false}
                 className="group hidden items-center gap-3 rounded-2xl p-1.5 transition-all duration-500 hover:bg-gradient-to-l hover:from-slate-50/90 hover:to-amber-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] hover:scale-[1.02] active:scale-[0.98] xl:flex"
               >
                 <span className="hidden text-right flex-col gap-0.5 leading-[1.15] transition-all duration-300 xl:flex">
@@ -437,7 +431,6 @@ export default function PublicNavbar() {
                       <Link
                         key={link.name}
                         href={link.href}
-                        prefetch={false}
                         onClick={handleNavigate}
                         aria-current={isActive ? 'page' : undefined}
                         className={`flex min-h-12 items-center gap-3 rounded-2xl border px-3 py-2.5 text-[13px] font-extrabold transition-all ${isActive
@@ -479,7 +472,6 @@ export default function PublicNavbar() {
                     ) : (
                       <Link
                         href="/login"
-                        prefetch={false}
                         onClick={() => setIsOpen(false)}
                         className="flex items-center justify-center gap-3 rounded-2xl bg-[var(--color-brand-river)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_22px_rgba(15,61,86,0.18)] transition-all hover:bg-[#154652]"
                       >

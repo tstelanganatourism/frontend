@@ -16,7 +16,7 @@ export default function MobileBottomNav({ isStacked = false }: { isStacked?: boo
     { name: 'Home', href: '/', icon: Home },
     { name: 'Boat Rides', href: '/boat-rides', icon: Ship },
     { name: 'Sightseeings', href: '/sightseeing', icon: Camera },
-    { name: 'Rooms', href: '/stays', icon: BedDouble },
+    { name: 'Accommodation', href: '/stays', icon: BedDouble },
     { name: isAuthenticated ? 'Dashboard' : 'Login', href: profileHref, icon: User },
   ];
 
