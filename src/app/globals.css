@@ -449,3 +449,30 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: #ffffff !important;
   caret-color: #ffffff !important;
 }
+
+/* Premium custom scrollbar styling for a high-end, responsive feel */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f7f4ed; /* Seamless blend with brand-warm background */
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-teal); /* Sleek brand-teal thumb */
+  border-radius: 5px;
+  border: 2px solid #f7f4ed; /* Premium breathing spacing border */
+  transition: background-color 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-river); /* Transitions to dark brand-river on hover */
+}
+
+/* Firefox standard scrollbar alignment */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-teal) #f7f4ed;
+}

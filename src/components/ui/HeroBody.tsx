@@ -359,13 +359,13 @@ export default function HeroBody() {
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,14,26,0.16)_0%,rgba(2,14,26,0.12)_48%,rgba(2,14,26,0.72)_100%)]" />
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-start pt-14 sm:items-center sm:pt-4 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 xl:px-14 2xl:px-16">
+      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-start pt-14 sm:items-center sm:pt-4 px-8 py-4 sm:px-12 sm:py-6 md:px-16 lg:px-20 xl:px-24 2xl:px-28">
         <div className="w-full">
           <div className="hidden xl:block">
             <TopFlourish />
           </div>
           {/* Badge */}
-          <div className={`mb-4 flex w-full lg:mb-5 lg:justify-start ${isDefault ? 'justify-center' : 'justify-start px-8 sm:px-12 md:px-0'}`}>
+          <div className={`mb-4 flex w-full lg:mb-5 lg:justify-start ${isDefault ? 'justify-center' : 'justify-start'}`}>
             <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/70 bg-slate-950/40 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(0,0,0,0.24)] backdrop-blur-md sm:px-5 sm:text-[12px]">
               <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
               <span className="truncate">
@@ -385,17 +385,17 @@ export default function HeroBody() {
             <>
               {/* DESKTOP 3-column layout (xl+) */}
               <div
-                className={`hidden max-w-[78rem] grid-cols-[0.86fr_1.38fr_0.86fr] items-start gap-5 xl:grid xl:gap-7 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+                className={`hidden max-w-[82rem] grid-cols-[0.9fr_1.2fr_0.9fr] items-start gap-6 xl:grid xl:gap-8 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
               >
-                <div className="border-r border-amber-300/58 pr-7">
-                  <h2 className="text-[2.75rem] font-black leading-[1.03] tracking-tight text-amber-300 xl:text-[3.3rem] whitespace-nowrap">తెలంగాణ & ఏపీ</h2>
-                  <div className="mt-2 text-[2.75rem] font-black leading-[1.02] tracking-tight text-white xl:text-[3.15rem]">బోట్ టూరిజం</div>
-                  <p className="mt-5 max-w-[16rem] text-lg font-semibold leading-7 text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
+                <div className="border-r border-amber-300/58 pr-7 pl-6">
+                  <h2 className="text-[1.85rem] xl:text-[2.2rem] 2xl:text-[2.8rem] font-black leading-[1.1] tracking-tight text-amber-300">తెలంగాణ & ఏపీ</h2>
+                  <div className="mt-2 text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.1] tracking-tight text-white">బోట్ టూరిజం</div>
+                  <p className="mt-5 max-w-[16rem] text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
                   <SmallDivider />
                 </div>
 
-                <div className="px-1">
-                  <h1 className="font-serif text-[3.25rem] font-black leading-[0.96] tracking-normal xl:text-[4.15rem]">
+                <div className="px-2">
+                  <h1 className="font-serif text-[2.85rem] font-black leading-[0.96] tracking-normal xl:text-[3.45rem] 2xl:text-[4.15rem]">
                     <span className="block whitespace-nowrap text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.28)]">
                       Telangana & AP
                     </span>
@@ -404,16 +404,16 @@ export default function HeroBody() {
                     </span>
                   </h1>
                   <TitleOrnament />
-                  <p className="mt-3 text-lg font-semibold leading-7 text-white/92 xl:text-xl">
+                  <p className="mt-3 text-base xl:text-lg 2xl:text-xl font-semibold leading-relaxed text-white/92">
                     Journey into Nature, Peace & Culture
                   </p>
                   <SmallDivider />
                 </div>
 
-                <div className="border-l border-amber-300/58 pl-7 text-right" dir="rtl">
-                  <h2 className="text-[2.6rem] font-black leading-[1.08] tracking-tight text-amber-300 xl:text-[3.15rem] whitespace-nowrap">تلنگانہ اور اے پی</h2>
-                  <div className="mt-2 text-[2.75rem] font-black leading-[1.14] tracking-tight text-white xl:text-[3.15rem]">بوٹ ٹورزم</div>
-                  <p className="mr-auto mt-5 max-w-[16rem] text-lg font-semibold leading-7 text-white/88">قدرت، سکون اور یادوں کا سفر</p>
+                <div className="border-l border-amber-300/58 pl-7 pr-6 text-right" dir="rtl">
+                  <h2 className="text-[1.75rem] xl:text-[2.15rem] 2xl:text-[2.7rem] font-black leading-[1.2] tracking-tight text-amber-300">تلنگانہ اور اے پی</h2>
+                  <div className="mt-2 text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.2] tracking-tight text-white">بوٹ ٹورزم</div>
+                  <p className="mr-auto mt-5 max-w-[16rem] text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">قدرت، سکون اور یادوں کا سفر</p>
                   <div className="flex justify-end">
                     <SmallDivider />
                   </div>
@@ -439,7 +439,7 @@ export default function HeroBody() {
               </div>
 
               {/* RENDER DEFAULT CTA BUTTONS */}
-              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center xl:justify-start px-8 sm:px-12 xl:px-0 mx-auto xl:mx-0 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center xl:justify-start transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                 {currentButtons.map((btn, index) => {
                   const Icon = btn.icon;
                   return (
@@ -467,7 +467,7 @@ export default function HeroBody() {
             <div
               className={`w-full max-w-[76rem] transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
             >
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.28fr_0.72fr] lg:gap-10 lg:items-center px-8 sm:px-12 md:px-0">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.28fr_0.72fr] lg:gap-10 lg:items-center px-0">
                 {/* Column 1: Core Info */}
                 <div className="border-l-4 border-amber-400 pl-4 sm:pl-6 md:pl-8">
                   {/* Category Pill for details page */}
@@ -714,7 +714,7 @@ export default function HeroBody() {
             type="button"
             onClick={goPrev}
             aria-label="Previous slide"
-            className="absolute left-3 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:left-5 sm:p-3 hidden sm:block"
+            className="absolute left-4 lg:left-6 xl:left-8 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:p-3 hidden sm:block"
           >
             <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
@@ -722,7 +722,7 @@ export default function HeroBody() {
             type="button"
             onClick={goNext}
             aria-label="Next slide"
-            className="absolute right-3 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:right-5 sm:p-3 hidden sm:block"
+            className="absolute right-4 lg:right-6 xl:right-8 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:p-3 hidden sm:block"
           >
             <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
