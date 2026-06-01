@@ -64,7 +64,7 @@ export default function AdminPackageEditPage({ params }: EditPageProps) {
   }
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto py-8 px-6">
+    <div className="w-full max-w-[1600px] mx-auto py-4 px-0 sm:py-8 sm:px-6">
       <PackageForm 
         initialData={currentPackage} 
         onSubmit={handleSubmit}

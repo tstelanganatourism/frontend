@@ -476,7 +476,7 @@ export default function RoomForm({
       </AnimatePresence>
 
       {/* Action Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 sm:pb-6 bg-[#f8fafc]/95 backdrop-blur-sm relative z-10 sm:sticky sm:top-20 sm:z-20 pt-4 px-4 -mx-4 sm:px-2 sm:-mx-2">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -751,9 +751,12 @@ export default function RoomForm({
                   type="checkbox"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="h-4.5 w-4.5 rounded border-slate-300 text-[#5ac4d7] focus:ring-[#5ac4d7]"
+                  className="h-4.5 w-4.5 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
                 />
-                <span className="text-sm font-semibold text-slate-700">Feature this property on homepage</span>
+                <div>
+                  <span className="block text-sm font-bold text-slate-800">Add to Home Carousel</span>
+                  <span className="block text-xs font-medium text-slate-500 mt-0.5">Shows as a slide in the homepage hero with cover image &amp; Book Now button</span>
+                </div>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input

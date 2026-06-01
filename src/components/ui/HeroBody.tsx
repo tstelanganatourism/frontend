@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -8,15 +9,23 @@ import {
   BedDouble,
   Camera,
   CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Compass,
   Globe2,
   Headphones,
   Home,
+  MapPin,
+  Package,
   ShieldCheck,
   Ship,
   Sparkles,
   Users,
   type LucideIcon,
 } from 'lucide-react';
+
+// ─── Static data (unchanged) ────────────────────────────────────────────────
 
 const featurePills = [
   { icon: Ship, label: 'Scenic\nGodavari Cruises' },
@@ -44,6 +53,44 @@ const heroStats = [
   { icon: Users, value: '20+', label: 'Years Experience' },
   { icon: Globe2, value: '100K+', label: 'Happy Travellers' },
 ];
+
+// ─── Default fallback slide (Godavari main) ─────────────────────────────────
+
+const DEFAULT_SLIDE = {
+  type: 'default' as const,
+  slug: '',
+  title: 'Telangana & AP Boat Tourism',
+  description: 'Journey into Nature, Peace & Culture',
+  cover_image_url: '/home/godavari-hero-banner.png',
+  starting_price: null,
+  region: null,
+  duration: null,
+  place: null,
+  address: null,
+  package_type: null,
+  starting_weekend_price: null,
+  child_price: null,
+};
+
+type ApiSlide = {
+  type: 'package' | 'room';
+  slug: string;
+  title: string;
+  description: string | null;
+  cover_image_url: string | null;
+  starting_price: number | null;
+  region: string | null;
+  duration: string | null;
+  place: string | null;
+  address: string | null;
+  package_type: string | null;
+  starting_weekend_price: number | null;
+  child_price: number | null;
+};
+
+type Slide = typeof DEFAULT_SLIDE | ApiSlide;
+
+// ─── SVG decorators ─────────────────────────────────────────────────────────
 
 function TopFlourish() {
   return (
@@ -101,164 +148,551 @@ function StatBlock({ icon: Icon, value, label }: { icon: LucideIcon; value: stri
   );
 }
 
+// ─── Price formatter ─────────────────────────────────────────────────────────
+
+function formatPrice(price: number | null) {
+  if (!price) return null;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
+}
+
+// ─── Main HeroBody Component ─────────────────────────────────────────────────
+
 export default function HeroBody() {
+  const [slides, setSlides] = useState<Slide[]>([DEFAULT_SLIDE]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [progressKey, setProgressKey] = useState(0);
+  const isTransitioningRef = useRef(false);
+
+  // Fetch carousel slides from API
+  useEffect(() => {
+    fetch('/api/v1/carousel')
+      .then((res) => res.ok ? res.json() : Promise.reject())
+      .then((apiSlides: ApiSlide[]) => {
+        if (apiSlides && apiSlides.length > 0) {
+          // Always keep the default main slide first, then API slides
+          setSlides([DEFAULT_SLIDE, ...apiSlides]);
+        }
+      })
+      .catch(() => {
+        // Keep default slide on error
+      });
+  }, []);
+
+  const goTo = useCallback((index: number) => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setActiveIndex(index);
+      setProgressKey(k => k + 1);
+      setIsTransitioning(false);
+      isTransitioningRef.current = false;
+    }, 300);
+  }, []);
+
+  const goNext = useCallback(() => {
+    goTo((activeIndex + 1) % slides.length);
+  }, [activeIndex, slides.length, goTo]);
+
+  const goPrev = useCallback(() => {
+    goTo((activeIndex - 1 + slides.length) % slides.length);
+  }, [activeIndex, slides.length, goTo]);
+
+  // Auto-advance timer (5s per slide)
+  useEffect(() => {
+    if (isPaused || slides.length <= 1) return;
+    const timer = setTimeout(() => {
+      goTo((activeIndex + 1) % slides.length);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [activeIndex, isPaused, slides.length, goTo]);
+
+  const activeSlide = slides[activeIndex];
+  const isDefault = activeSlide.type === 'default';
+  const isPackage = activeSlide.type === 'package';
+  const isRoom = activeSlide.type === 'room';
+
+  const isBoatRideSlide = isPackage && (
+    (activeSlide as ApiSlide).package_type === 'TOUR' ||
+    (activeSlide as ApiSlide).slug?.toLowerCase().includes('boat') ||
+    (activeSlide as ApiSlide).slug?.toLowerCase().includes('cruise') ||
+    (activeSlide as ApiSlide).slug?.toLowerCase().includes('ride') ||
+    (activeSlide as ApiSlide).slug?.toLowerCase().includes('launch') ||
+    (activeSlide as ApiSlide).title?.toLowerCase().includes('boat') ||
+    (activeSlide as ApiSlide).title?.toLowerCase().includes('cruise') ||
+    (activeSlide as ApiSlide).title?.toLowerCase().includes('ride')
+  );
+
+  const isSightseeingSlide = isPackage && !isBoatRideSlide;
+
+  // Compute CTA paths, labels, and icons
+  let bookLink = '/boat-rides';
+  let primaryLabel = 'Explore Boat Rides';
+  let PrimaryIcon = Ship;
+
+  let secondLink = '/stays';
+  let secondLabel = 'Book Riverside Stays';
+  let SecondIcon = BedDouble;
+
+  if (!isDefault) {
+    if (isRoom) {
+      bookLink = `/stays/${activeSlide.slug}`;
+      primaryLabel = 'Book Stay Now';
+      PrimaryIcon = BedDouble;
+
+      secondLink = '/stays';
+      secondLabel = 'Browse Stays';
+      SecondIcon = Home;
+    } else if (isBoatRideSlide) {
+      bookLink = `/packages/${activeSlide.slug}`;
+      primaryLabel = 'Book Package Now';
+      PrimaryIcon = Anchor;
+
+      secondLink = '/boat-rides';
+      secondLabel = 'Browse More Boat Rides';
+      SecondIcon = Ship;
+    } else { // Sightseeing
+      bookLink = `/packages/${activeSlide.slug}`;
+      primaryLabel = 'Book Package Now';
+      PrimaryIcon = Compass;
+
+      secondLink = '/sightseeing';
+      secondLabel = 'Browse More Sightseeing';
+      SecondIcon = Camera;
+    }
+  }
+
+  // Define dynamic buttons list for the active slide
+  type HeroButton = {
+    href: string;
+    label: string;
+    icon: React.ElementType;
+    styleType: 'primary' | 'secondary' | 'accent';
+  };
+
+  const getSlideButtons = (): HeroButton[] => {
+    if (isDefault) {
+      return [
+        {
+          href: '/boat-rides',
+          label: 'Explore Boat Rides',
+          icon: Ship,
+          styleType: 'primary',
+        },
+        {
+          href: '/sightseeing',
+          label: 'Explore Sightseeing',
+          icon: Camera,
+          styleType: 'accent',
+        },
+        {
+          href: '/stays',
+          label: 'Book Riverside Stays',
+          icon: BedDouble,
+          styleType: 'secondary',
+        },
+      ];
+    }
+
+    return [
+      {
+        href: bookLink,
+        label: primaryLabel,
+        icon: PrimaryIcon,
+        styleType: 'primary',
+      },
+      {
+        href: secondLink,
+        label: secondLabel,
+        icon: SecondIcon,
+        styleType: 'secondary',
+      },
+    ];
+  };
+
+  const currentButtons = getSlideButtons();
+
+  // Background image URL
+  const bgImage = activeSlide.cover_image_url || '/home/godavari-hero-banner.png';
+
   return (
-    <section className="relative isolate flex h-[calc(100dvh-7.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100dvh-8.45rem)]">
+    <section
+      className="relative isolate flex h-[calc(100dvh-7.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100dvh-8.45rem)]"
+      onMouseEnter={() => {
+        if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+          setIsPaused(true);
+        }
+      }}
+      onMouseLeave={() => {
+        if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+          setIsPaused(false);
+        }
+      }}
+    >
+      {/* ─── Background Images (all preloaded, cross-fade on active) ─── */}
+      {slides.map((slide, idx) => {
+        const imgSrc = slide.cover_image_url || '/home/godavari-hero-banner.png';
+        return (
+          <div
+            key={idx}
+            className={`absolute inset-0 -z-10 transition-opacity duration-700 ${idx === activeIndex ? 'opacity-100' : 'opacity-0'}`}
+            aria-hidden={idx !== activeIndex}
+          >
+            <Image
+              src={imgSrc}
+              alt={slide.title}
+              fill
+              priority={idx === 0}
+              fetchPriority={idx === 0 ? 'high' : 'low'}
+              sizes="(max-width: 640px) 640px, (max-width: 1080px) 1080px, 100vw"
+              className={`object-cover transition-transform duration-[6000ms] ${idx === activeIndex ? 'scale-105' : 'scale-100'}`}
+              quality={75}
+            />
+          </div>
+        );
+      })}
+
+      {/* ─── Overlays ────────────────────────────────────────────────── */}
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(2,16,30,0.96)_0%,rgba(2,24,38,0.82)_34%,rgba(2,19,32,0.36)_63%,rgba(2,19,32,0.12)_100%)]" />
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,14,26,0.16)_0%,rgba(2,14,26,0.12)_48%,rgba(2,14,26,0.72)_100%)]" />
 
-      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-center px-4 py-4 sm:px-6 sm:py-6 lg:px-10 xl:px-14 2xl:px-16">
+      {/* ─── Main Content ─────────────────────────────────────────────── */}
+      <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-start pt-14 sm:items-center sm:pt-4 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 xl:px-14 2xl:px-16">
         <div className="w-full">
           <div className="hidden xl:block">
             <TopFlourish />
           </div>
-
-          <div className="mb-4 flex w-full justify-center lg:mb-5 lg:justify-start">
+          {/* Badge */}
+          <div className={`mb-4 flex w-full lg:mb-5 lg:justify-start ${isDefault ? 'justify-center' : 'justify-start px-8 sm:px-12 md:px-0'}`}>
             <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/70 bg-slate-950/40 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(0,0,0,0.24)] backdrop-blur-md sm:px-5 sm:text-[12px]">
               <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
-              <span className="truncate">Official Pappikondalu &amp; Bhadrachalam Booking</span>
+              <span className="truncate">
+                {isDefault
+                  ? 'Official Pappikondalu & Bhadrachalam Booking'
+                  : isRoom
+                    ? 'Verified Riverside Stay'
+                    : isBoatRideSlide
+                      ? 'Scenic Godavari Cruise'
+                      : 'Heritage & Sightseeing Tour'}
+              </span>
             </div>
           </div>
 
-          <div className="hidden max-w-[78rem] grid-cols-[0.86fr_1.38fr_0.86fr] items-start gap-5 xl:grid xl:gap-7">
-            <div className="border-r border-amber-300/58 pr-7">
-              <h2 className="text-[2.75rem] font-black leading-[1.03] tracking-tight text-amber-300 xl:text-[3.3rem] whitespace-nowrap">తెలంగాణ & ఏపీ</h2>
-              <div className="mt-2 text-[2.75rem] font-black leading-[1.02] tracking-tight text-white xl:text-[3.15rem]">బోట్ టూరిజం</div>
-              <p className="mt-5 max-w-[16rem] text-lg font-semibold leading-7 text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
-              <SmallDivider />
-            </div>
+          {/* ─── MAIN CONTENT LAYOUT ─── */}
+          {isDefault ? (
+            <>
+              {/* DESKTOP 3-column layout (xl+) */}
+              <div
+                className={`hidden max-w-[78rem] grid-cols-[0.86fr_1.38fr_0.86fr] items-start gap-5 xl:grid xl:gap-7 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+              >
+                <div className="border-r border-amber-300/58 pr-7">
+                  <h2 className="text-[2.75rem] font-black leading-[1.03] tracking-tight text-amber-300 xl:text-[3.3rem] whitespace-nowrap">తెలంగాణ & ఏపీ</h2>
+                  <div className="mt-2 text-[2.75rem] font-black leading-[1.02] tracking-tight text-white xl:text-[3.15rem]">బోట్ టూరిజం</div>
+                  <p className="mt-5 max-w-[16rem] text-lg font-semibold leading-7 text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
+                  <SmallDivider />
+                </div>
 
-            <div className="px-1">
-              <h1 className="font-serif text-[3.25rem] font-black leading-[0.96] tracking-normal xl:text-[4.15rem]">
-                <span className="block whitespace-nowrap text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.28)]">Telangana & AP</span>
-                <span className="block whitespace-nowrap text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.28)]">Boat Tourism</span>
-              </h1>
-              <TitleOrnament />
-              <p className="mt-3 text-lg font-semibold leading-7 text-white/92 xl:text-xl">Journey into Nature, Peace &amp; Culture</p>
-              <SmallDivider />
-            </div>
+                <div className="px-1">
+                  <h1 className="font-serif text-[3.25rem] font-black leading-[0.96] tracking-normal xl:text-[4.15rem]">
+                    <span className="block whitespace-nowrap text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.28)]">
+                      Telangana & AP
+                    </span>
+                    <span className="block whitespace-nowrap text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.28)]">
+                      Boat Tourism
+                    </span>
+                  </h1>
+                  <TitleOrnament />
+                  <p className="mt-3 text-lg font-semibold leading-7 text-white/92 xl:text-xl">
+                    Journey into Nature, Peace & Culture
+                  </p>
+                  <SmallDivider />
+                </div>
 
-            <div className="border-l border-amber-300/58 pl-7 text-right" dir="rtl">
-              <h2 className="text-[2.6rem] font-black leading-[1.08] tracking-tight text-amber-300 xl:text-[3.15rem] whitespace-nowrap">تلنگانہ اور اے پی</h2>
-              <div className="mt-2 text-[2.75rem] font-black leading-[1.14] tracking-tight text-white xl:text-[3.15rem]">بوٹ టూరిజం</div>
-              <p className="mr-auto mt-5 max-w-[16rem] text-lg font-semibold leading-7 text-white/88">قدرت، سکون اور یادوں کا سفر</p>
-              <div className="flex justify-end">
-                <SmallDivider />
+                <div className="border-l border-amber-300/58 pl-7 text-right" dir="rtl">
+                  <h2 className="text-[2.6rem] font-black leading-[1.08] tracking-tight text-amber-300 xl:text-[3.15rem] whitespace-nowrap">تلنگانہ اور اے پی</h2>
+                  <div className="mt-2 text-[2.75rem] font-black leading-[1.14] tracking-tight text-white xl:text-[3.15rem]">بوٹ ٹورزم</div>
+                  <p className="mr-auto mt-5 max-w-[16rem] text-lg font-semibold leading-7 text-white/88">قدرت، سکون اور یادوں کا سفر</p>
+                  <div className="flex justify-end">
+                    <SmallDivider />
+                  </div>
+                </div>
+              </div>
+
+              {/* MOBILE centered layout (xl:hidden) */}
+              <div
+                className={`xl:hidden transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+              >
+                <div className="mx-auto max-w-[25rem] border-x border-amber-300/55 px-4 text-center">
+                  <h1 className="font-serif text-[clamp(2.3rem,9vw,3.2rem)] font-black leading-[0.95] tracking-normal">
+                    <span className="block text-amber-300 font-bold">Telangana & AP</span>
+                    <span className="block text-white font-bold">Boat Tourism</span>
+                  </h1>
+                  <div className="mx-auto flex justify-center">
+                    <TitleOrnament />
+                  </div>
+                  <p className="mt-3 text-sm font-bold leading-6 text-white/92 line-clamp-2">
+                    Journey into Nature, Peace & Culture
+                  </p>
+                </div>
+              </div>
+
+              {/* RENDER DEFAULT CTA BUTTONS */}
+              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center xl:justify-start px-8 sm:px-12 xl:px-0 mx-auto xl:mx-0 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+                {currentButtons.map((btn, index) => {
+                  const Icon = btn.icon;
+                  return (
+                    <Link
+                      key={index}
+                      href={btn.href}
+                      prefetch={false}
+                      className={
+                        btn.styleType === 'primary'
+                          ? "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-4 text-[12px] font-black text-slate-950 shadow-[0_18px_42px_rgba(251,191,36,0.34)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_rgba(251,191,36,0.46)] sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
+                          : btn.styleType === 'accent'
+                            ? "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border border-teal-350 bg-teal-950/74 px-4 text-[12px] font-black text-white shadow-[0_18px_42px_rgba(20,80,90,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-teal-900/86 sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
+                            : "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border border-sky-300/45 bg-blue-950/74 px-4 text-[12px] font-black text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900/86 sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
+                      }
+                    >
+                      <Icon className={`h-5 w-5 shrink-0 ${btn.styleType === 'primary' ? 'animate-pulse' : ''}`} />
+                      <span className="whitespace-nowrap">{btn.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            /* Premium responsive dynamic slide layout (Pure English) */
+            <div
+              className={`w-full max-w-[76rem] transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+            >
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.28fr_0.72fr] lg:gap-10 lg:items-center px-8 sm:px-12 md:px-0">
+                {/* Column 1: Core Info */}
+                <div className="border-l-4 border-amber-400 pl-4 sm:pl-6 md:pl-8">
+                  {/* Category Pill for details page */}
+                  <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-md bg-amber-400/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-300">
+                    {isRoom ? 'Accommodation' : isBoatRideSlide ? 'Boat Cruise' : 'Sightseeing Tour'}
+                  </div>
+
+                  <h1 className="font-serif text-[clamp(1.75rem,3.8vw,3.2rem)] font-black leading-[1.08] tracking-tight text-white">
+                    <span className="block text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
+                      {activeSlide.title}
+                    </span>
+                  </h1>
+                  
+                  <div className="mt-2 max-w-[20rem]">
+                    <TitleOrnament />
+                  </div>
+
+                  {/* Sub-info tags row */}
+                  <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-white">
+                    {activeSlide.place && (
+                      <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 sm:px-4 sm:py-2 backdrop-blur-sm">
+                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-300" />
+                        {activeSlide.place}
+                      </span>
+                    )}
+                    {activeSlide.duration && (
+                      <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 sm:px-4 sm:py-2 backdrop-blur-sm">
+                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-300" />
+                        {activeSlide.duration}
+                      </span>
+                    )}
+                    {activeSlide.starting_price && (
+                      <span className="flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/15 px-3 py-1.5 sm:px-4 sm:py-2 text-amber-300 backdrop-blur-sm font-extrabold lg:hidden">
+                        {isRoom ? 'Weekday' : 'Adult'}: {formatPrice(activeSlide.starting_price)}
+                      </span>
+                    )}
+                    {isPackage && activeSlide.child_price && (
+                      <span className="flex items-center gap-1.5 rounded-full border border-amber-300/15 bg-amber-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-amber-250 backdrop-blur-sm font-extrabold lg:hidden">
+                        Child: {formatPrice(activeSlide.child_price)}
+                      </span>
+                    )}
+                    {isRoom && activeSlide.starting_weekend_price && (
+                      <span className="flex items-center gap-1.5 rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-sky-300 backdrop-blur-sm font-extrabold lg:hidden">
+                        Weekend: {formatPrice(activeSlide.starting_weekend_price)}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-4 max-w-[44rem] text-xs font-medium leading-relaxed text-white/92 sm:text-base sm:leading-7 drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+                    {activeSlide.description || 'Experience the beauty of Godavari with our government-approved premier package tours.'}
+                  </p>
+
+                  {/* CTA Buttons in Column 1 */}
+                  <div className="mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[36rem]">
+                    {currentButtons.map((btn, index) => {
+                      const Icon = btn.icon;
+                      return (
+                        <Link
+                          key={index}
+                          href={btn.href}
+                          prefetch={false}
+                          className={
+                            btn.styleType === 'primary'
+                              ? "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-4 text-[12px] font-black text-slate-950 shadow-[0_18px_42px_rgba(251,191,36,0.34)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_rgba(251,191,36,0.46)] sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
+                              : btn.styleType === 'accent'
+                                ? "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border border-teal-350 bg-teal-950/74 px-4 text-[12px] font-black text-white shadow-[0_18px_42px_rgba(20,80,90,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-teal-900/86 sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
+                                : "inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border border-sky-300/45 bg-blue-950/74 px-4 text-[12px] font-black text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900/86 sm:flex-none sm:gap-3 sm:px-7 sm:text-sm lg:px-9 lg:text-base"
+                          }
+                        >
+                          <Icon className={`h-5 w-5 shrink-0 ${btn.styleType === 'primary' ? 'animate-pulse' : ''}`} />
+                          <span className="whitespace-nowrap">{btn.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Column 2: Premium Pricing Breakdown Card */}
+                <div className="hidden lg:block">
+                  <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-slate-950/50 p-6 backdrop-blur-md shadow-[0_24px_55px_rgba(0,0,0,0.4)]">
+                    {/* Glowing highlight */}
+                    <div className="absolute -top-10 -right-10 h-32 w-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
+                    <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-amber-300">
+                      Pricing & Rates
+                    </h3>
+                    <p className="mt-1 text-lg font-black text-white">
+                      {isRoom ? 'Premium Stay Rates' : 'All-Inclusive Fares'}
+                    </p>
+
+                    <div className="mt-4 space-y-4">
+                      {/* Price Row 1 */}
+                      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                        <div>
+                          <p className="text-xs font-bold text-white/70">
+                            {isRoom ? 'Weekday Stay (Sun - Thu)' : 'Adult Package Ticket'}
+                          </p>
+                          <p className="text-[10px] text-white/50">{isRoom ? 'Per night, double occupancy' : 'Standard all-inclusive passenger'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-amber-300">
+                            {formatPrice(activeSlide.starting_price)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Price Row 2 */}
+                      {isRoom && activeSlide.starting_weekend_price ? (
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                          <div>
+                            <p className="text-xs font-bold text-white/70">Weekend Stay (Fri - Sat)</p>
+                            <p className="text-[10px] text-white/50">Subject to room availability</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-black text-sky-300">
+                              {formatPrice(activeSlide.starting_weekend_price)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : isPackage && activeSlide.child_price ? (
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                          <div>
+                            <p className="text-xs font-bold text-white/70">Child Ticket (Ages 4-10)</p>
+                            <p className="text-[10px] text-white/50">Children under 4 travel free</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-black text-amber-300">
+                              {formatPrice(activeSlide.child_price)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                          <div>
+                            <p className="text-xs font-bold text-white/70">Booking Assistance</p>
+                            <p className="text-[10px] text-white/50">24/7 boarding assistance</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-emerald-400">Included</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Trust pill */}
+                      <div className="flex items-center gap-2 rounded-xl bg-amber-400/10 px-3 py-2 text-[10px] font-semibold text-amber-300">
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-amber-300" />
+                        <span>APTDC & Telangana Tourism Partner</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="xl:hidden">
-            <div className="mx-auto max-w-[25rem] border-x border-amber-300/55 px-4 text-center">
-              <h1 className="font-serif text-[clamp(2.5rem,11vw,3.8rem)] font-black leading-[0.92] tracking-normal">
-                <span className="block text-amber-300">Telangana & AP</span>
-                <span className="block text-white">Boat</span>
-                <span className="block text-white">Tourism</span>
-              </h1>
-              <div className="mx-auto flex justify-center">
-                <TitleOrnament />
+          {/* ─── Mobile bilingual mini-cards ─── */}
+          {isDefault && (
+            <div className="mx-auto mt-3 grid w-full max-w-[25rem] grid-cols-2 gap-2 md:hidden">
+              <div className="min-w-0 rounded-2xl border border-white/14 bg-slate-950/30 p-2.5 backdrop-blur-md">
+                <div className="truncate text-base font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
+                <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">బోట్ టూరిజం</div>
               </div>
-              <p className="mt-3 text-base font-bold leading-6 text-white/92">Journey into Nature, Peace &amp; Culture</p>
-            </div>
-
-          </div>
-
-          <div className="mt-4 w-full max-w-[49rem] rounded-[2rem] border border-white/28 bg-slate-950/20 p-2.5 shadow-[0_16px_44px_rgba(0,0,0,0.22)] backdrop-blur-md sm:p-3 lg:mt-6">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {featurePills.map(({ icon: Icon, label }) => (
-                <div key={label} className="flex min-h-14 items-center gap-2.5 rounded-[1.45rem] px-2.5 py-2 text-[13px] font-bold leading-snug text-white sm:min-h-16 sm:gap-3 sm:px-3 sm:py-2.5 sm:text-sm">
-                  <Icon className="h-7 w-7 shrink-0 text-white sm:h-8 sm:w-8" strokeWidth={1.8} />
-                  <span className="whitespace-pre-line">{label}</span>
+              <div className="min-w-0 rounded-2xl border border-white/14 bg-slate-950/30 p-2.5 text-right backdrop-blur-md" dir="rtl">
+                <div className="truncate text-base font-black leading-tight text-amber-300">تلنگانہ اور اے پی</div>
+                <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">بوٹ ٹورزم</div>
+              </div>
+              {heroStats.map(({ icon: Icon, value, label }) => (
+                <div key={label} className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/14 bg-slate-950/34 p-2.5 backdrop-blur-md">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-300 text-slate-950">
+                    <Icon className="h-4.5 w-4.5" strokeWidth={2.2} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-2xl font-black leading-none text-amber-300">{value}</div>
+                    <div className="mt-0.5 truncate text-[8px] font-black uppercase tracking-[0.08em] text-white/82">{label}</div>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          )}
 
-          <div className="mt-5 grid w-full max-w-[58rem] grid-cols-1 gap-2.5 min-[390px]:grid-cols-3 sm:flex sm:gap-4 lg:mt-5">
-            <Link
-              href="/boat-rides"
-              prefetch={false}
-              className="inline-flex min-h-[3.25rem] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-4 text-[13px] font-black text-slate-950 shadow-[0_18px_42px_rgba(251,191,36,0.34)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_rgba(251,191,36,0.46)] min-[390px]:min-h-14 min-[390px]:px-2 min-[390px]:text-[12px] sm:flex-none sm:gap-3 sm:px-7 sm:text-base"
-            >
-              <Anchor className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
-              <span className="leading-tight">Boat Rides</span>
-            </Link>
-            <Link
-              href="/sightseeing"
-              prefetch={false}
-              className="inline-flex min-h-[3.25rem] flex-1 items-center justify-center gap-2 rounded-full border border-teal-200/45 bg-teal-500/92 px-4 text-[13px] font-black text-white shadow-[0_18px_42px_rgba(20,184,166,0.24)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-teal-500 hover:shadow-[0_22px_48px_rgba(20,184,166,0.34)] min-[390px]:min-h-14 min-[390px]:px-2 min-[390px]:text-[12px] sm:flex-none sm:gap-3 sm:px-7 sm:text-base"
-            >
-              <Camera className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
-              <span className="leading-tight min-[390px]:max-w-[4.5rem] min-[390px]:text-center sm:max-w-none">Scenic Sightseeing</span>
-            </Link>
-            <Link
-              href="/stays"
-              prefetch={false}
-              className="inline-flex min-h-[3.25rem] flex-1 items-center justify-center gap-2 rounded-full border border-sky-300/45 bg-blue-950/76 px-4 text-[13px] font-black text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900/86 min-[390px]:min-h-14 min-[390px]:px-2 min-[390px]:text-[12px] sm:flex-none sm:gap-3 sm:px-7 sm:text-base"
-            >
-              <CalendarCheck className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
-              <span className="leading-tight min-[390px]:max-w-[4rem] min-[390px]:text-center sm:max-w-none">Riverside Stays</span>
-            </Link>
-          </div>
+          {/* ─── Bottom tags (md+) ─── */}
+          {isDefault && (
+            <div className="mt-4 hidden max-w-[58rem] flex-wrap gap-2.5 md:flex lg:mt-4">
+              {bottomTags.map(({ icon: Icon, label }) => (
+                <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/23 bg-slate-950/22 px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md">
+                  <Icon className="h-4 w-4 text-amber-300" />
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
 
-          <div className="mx-auto mt-3 grid w-full max-w-[25rem] grid-cols-2 gap-2 md:hidden">
-            <div className="min-w-0 rounded-2xl border border-white/14 bg-slate-950/30 p-2.5 backdrop-blur-md">
-              <div className="truncate text-base font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
-              <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">బోట్ టూరిజం</div>
-            </div>
-            <div className="min-w-0 rounded-2xl border border-white/14 bg-slate-950/30 p-2.5 text-right backdrop-blur-md" dir="rtl">
-              <div className="truncate text-base font-black leading-tight text-amber-300">تلنگانہ اور اے پی</div>
-              <div className="mt-0.5 truncate text-sm font-black leading-tight text-white">بوట్ టూరిజం</div>
-            </div>
-            {heroStats.map(({ icon: Icon, value, label }) => (
-              <div key={label} className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/14 bg-slate-950/34 p-2.5 backdrop-blur-md">
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-300 text-slate-950">
-                  <Icon className="h-4.5 w-4.5" strokeWidth={2.2} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-2xl font-black leading-none text-amber-300">{value}</div>
-                  <div className="mt-0.5 truncate text-[8px] font-black uppercase tracking-[0.08em] text-white/82">{label}</div>
-                </div>
+          {/* ─── md bilingual cards ─── */}
+          {isDefault && (
+            <div className="mx-auto mt-4 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid xl:hidden">
+              <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 backdrop-blur-md">
+                <div className="text-xl font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
+                <div className="mt-1 text-lg font-black leading-tight text-white">బోట్ టూరిజం</div>
+                <p className="mt-2 text-[11px] font-semibold leading-4 text-white/78">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-4 hidden max-w-[58rem] flex-wrap gap-2.5 md:flex lg:mt-4">
-            {bottomTags.map(({ icon: Icon, label }) => (
-              <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/23 bg-slate-950/22 px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md">
-                <Icon className="h-4 w-4 text-amber-300" />
-                {label}
-              </span>
-            ))}
-          </div>
-
-          <div className="mx-auto mt-4 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid xl:hidden">
-            <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 backdrop-blur-md">
-              <div className="text-xl font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
-              <div className="mt-1 text-lg font-black leading-tight text-white">బోట్ టూరిజం</div>
-              <p className="mt-2 text-[11px] font-semibold leading-4 text-white/78">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
+              <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 text-right backdrop-blur-md" dir="rtl">
+                <div className="text-xl font-black leading-tight text-amber-300">تلنگانہ اور اے پی</div>
+                <div className="mt-1 text-lg font-black leading-tight text-white">بوٹ ٹورزم</div>
+                <p className="mt-2 text-[11px] font-semibold leading-4 text-white/78">قدرت، سکون اور یادوں کا سفر</p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 text-right backdrop-blur-md" dir="rtl">
-              <div className="text-xl font-black leading-tight text-amber-300">تلنگانہ اور اے پی</div>
-              <div className="mt-1 text-lg font-black leading-tight text-white">بوట్ టూరిజం</div>
-              <p className="mt-2 text-[11px] font-semibold leading-4 text-white/78">قدرت، سکون اور یادوں کا سفر</p>
-            </div>
-          </div>
+          )}
 
-          <div className="mx-auto mt-4 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid xl:hidden">
-            {heroStats.map((stat) => (
-              <StatBlock key={stat.label} {...stat} />
-            ))}
-            <div className="col-span-2 flex items-center justify-center gap-2 rounded-full border border-amber-300/35 bg-amber-300/12 px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
-              <BadgeCheck className="h-4 w-4 shrink-0 text-amber-300" />
-              Verified support from booking to boarding
+          {/* ─── Stats (md) ─── */}
+          {isDefault && (
+            <div className="mx-auto mt-4 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid xl:hidden">
+              {heroStats.map((stat) => (
+                <StatBlock key={stat.label} {...stat} />
+              ))}
+              <div className="col-span-2 flex items-center justify-center gap-2 rounded-full border border-amber-300/35 bg-amber-300/12 px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
+                <BadgeCheck className="h-4 w-4 shrink-0 text-amber-300" />
+                Verified support from booking to boarding
+              </div>
             </div>
-          </div>
+          )}
         </div>
-
       </div>
 
-      {/* Floating Elements relative to full screen */}
+      {/* ─── Floating right elements (2xl) ─── */}
       <div className="pointer-events-none absolute right-8 top-[17%] z-20 hidden text-right 2xl:block">
         <div className="font-serif text-5xl italic leading-[0.92] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.45)]">Explore</div>
         <div className="mt-1 text-2xl font-semibold italic text-white/88">the Beauty of</div>
@@ -272,6 +706,90 @@ export default function HeroBody() {
         ))}
       </div>
 
+      {/* ─── Carousel Controls ─────────────────────────────────────────── */}
+      {slides.length > 1 && (
+        <>
+          {/* Left / Right Arrows (Shown only on sm+ to prevent mobile overlapping) */}
+          <button
+            type="button"
+            onClick={goPrev}
+            aria-label="Previous slide"
+            className="absolute left-3 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:left-5 sm:p-3 hidden sm:block"
+          >
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            aria-label="Next slide"
+            className="absolute right-3 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:right-5 sm:p-3 hidden sm:block"
+          >
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+          </button>
+
+          {/* Slide indicators and mini arrow controls inside a unified glass pill at bottom */}
+          <div className="absolute bottom-[5.5rem] left-1/2 z-30 -translate-x-1/2 md:bottom-[5rem]">
+            <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/45 px-3 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.3)] backdrop-blur-md">
+              {/* Left Arrow Tap for Mobile */}
+              <button
+                type="button"
+                onClick={goPrev}
+                aria-label="Previous slide"
+                className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:hidden"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {/* Progress dots */}
+              <div className="flex gap-2">
+                {slides.map((slide, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => goTo(idx)}
+                    aria-label={`Go to slide ${idx + 1}`}
+                    className="relative h-1 overflow-hidden rounded-full bg-white/30 transition-all hover:bg-white/50"
+                    style={{ width: idx === activeIndex ? '2.5rem' : '0.625rem' }}
+                  >
+                    {idx === activeIndex && (
+                      <span
+                        key={`${progressKey}-${isPaused}`}
+                        className="absolute inset-y-0 left-0 rounded-full bg-amber-300"
+                        style={{
+                          animation: isPaused ? 'none' : `progress-fill 5s linear forwards`,
+                          width: isPaused ? '0%' : '100%',
+                        }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Right Arrow Tap for Mobile */}
+              <button
+                type="button"
+                onClick={goNext}
+                aria-label="Next slide"
+                className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:hidden"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Slide type label badge */}
+          {!isDefault && (
+            <div className="absolute bottom-[5.5rem] right-4 z-30 md:right-8 md:bottom-[5rem] hidden sm:block">
+              <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-md">
+                {isPackage ? <Package className="h-3 w-3 text-amber-300" /> : <BedDouble className="h-3 w-3 text-sky-300" />}
+                {isPackage ? 'Tour Package' : 'Riverside Stay'}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ─── Trust Bar ────────────────────────────────────────────────── */}
       <div className="relative z-10 mx-auto mt-auto hidden w-full max-w-[92rem] px-4 pb-4 sm:px-6 md:block lg:px-10">
         <div className="grid gap-3 rounded-2xl border border-white/20 bg-white/92 p-3 text-slate-950 shadow-[0_18px_55px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-center lg:p-4">
           {trustItems.map(({ icon: Icon, label, sub }) => (
@@ -292,6 +810,14 @@ export default function HeroBody() {
           </div>
         </div>
       </div>
+
+      {/* ─── CSS for progress bar animation ──────────────────────────── */}
+      <style>{`
+        @keyframes progress-fill {
+          from { transform: scaleX(0); transform-origin: left; }
+          to { transform: scaleX(1); transform-origin: left; }
+        }
+      `}</style>
     </section>
   );
 }

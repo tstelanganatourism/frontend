@@ -15,7 +15,7 @@ const navLinks = [
   { name: 'Home', href: '/', icon: Home, path: '/' },
   { name: 'Boat Rides', href: '/boat-rides', icon: Ship, path: '/boat-rides' },
   { name: 'Sightseeing', href: '/sightseeing', icon: Camera, path: '/sightseeing' },
-  { name: 'Accommodations', href: '/stays', icon: BedDouble, path: '/stays' },
+  { name: 'Stays', href: '/stays', icon: BedDouble, path: '/stays' },
   { name: 'Brochures', href: '/brochures', icon: FileText, path: '/brochures' },
   { name: 'Gallery', href: '/gallery', icon: ImageIcon, path: '/gallery' },
   { name: 'About Us', href: '/about', icon: Info, path: '/about' },
@@ -87,10 +87,10 @@ export default function PublicNavbar() {
           }`}
       >
         <div className="w-full px-2.5 min-[380px]:px-3 sm:px-5 lg:px-6 xl:px-8">
-          <div className="flex min-w-0 items-center justify-between gap-1.5 min-[380px]:gap-2 lg:gap-4">
+          <div className="flex min-w-0 items-center justify-between gap-1.5 min-[380px]:gap-2 lg:gap-2 xl:gap-4 2xl:gap-6">
 
             {/* Logo Section (Left) */}
-            <div className="flex min-w-0 flex-1 items-center lg:flex-none">
+            <div className="flex min-w-0 flex-1 items-center lg:flex-none lg:flex-shrink-0">
               <Link 
                 href="/" 
                 prefetch={false} 
@@ -124,8 +124,8 @@ export default function PublicNavbar() {
             </div>
 
             {/* Desktop Navigation (Center) - Visible from lg (1024px) */}
-            <div className="hidden min-w-0 flex-1 justify-center lg:flex px-1 2xl:px-6">
-              <div className="relative flex min-w-0 items-center gap-0.5 2xl:gap-1 py-1">
+            <div className="hidden min-w-0 flex-1 justify-center lg:flex lg:px-1 xl:px-2 2xl:px-4">
+              <div className="relative flex min-w-0 items-center gap-0 2xl:gap-0.5 py-1">
                 {navLinks.map((link, index) => {
                   const isActive = isLinkActive(link);
                   return (
@@ -137,7 +137,7 @@ export default function PublicNavbar() {
                       onMouseEnter={() => setHoveredIndex(index)}
                       onMouseLeave={() => setHoveredIndex(null)}
                       aria-current={isActive ? 'page' : undefined}
-                      className="relative inline-flex h-9 items-center justify-center rounded-full px-2.5 text-[11.5px] font-extrabold transition-colors duration-200 xl:px-3 2xl:px-4 2xl:text-[13px]"
+                      className="relative inline-flex h-9 items-center justify-center rounded-full lg:px-1.5 lg:text-[10px] xl:px-2.5 xl:text-[11.5px] 2xl:px-3.5 2xl:text-[13px] font-extrabold transition-colors duration-200"
                       style={{ color: isActive ? '#ffffff' : 'var(--color-brand-river)' }}
                     >
                       {/* Active Background Pill */}
@@ -173,7 +173,7 @@ export default function PublicNavbar() {
             </div>
 
             {/* Action Buttons & Right Side Logos (Right) */}
-            <div className="flex shrink-0 items-center justify-end gap-1 min-[380px]:gap-1.5 sm:gap-2 xl:gap-3">
+            <div className="flex shrink-0 items-center justify-end gap-1 min-[380px]:gap-1.5 lg:gap-1.5 xl:gap-2.5 2xl:gap-3">
               {/* Auth / Account */}
               {!isHydrated ? (
                 <div className="hidden h-9 w-20 animate-pulse rounded-full bg-slate-100 lg:block" />
@@ -181,7 +181,7 @@ export default function PublicNavbar() {
                 <div className="relative hidden lg:block" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1 pr-3.5 transition-all hover:bg-slate-50 hover:border-slate-350 hover:shadow-md active:scale-[0.98] shadow-sm"
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white p-1 pr-2.5 transition-all hover:bg-slate-50 hover:border-slate-350 hover:shadow-md active:scale-[0.98] shadow-sm xl:pr-3.5"
                   >
                     <div className="h-7 w-7 rounded-full bg-[#0f3d56] flex items-center justify-center text-white text-xs font-black overflow-hidden shadow-inner ring-2 ring-slate-100 select-none">
                       {user?.avatar_url ? (
@@ -192,10 +192,10 @@ export default function PublicNavbar() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[13px] font-extrabold text-slate-700 max-w-[90px] truncate select-none leading-none flex items-center">
+                    <span className="text-[11.5px] xl:text-[13px] font-outfit font-black text-slate-700 max-w-[65px] xl:max-w-[90px] truncate select-none leading-none flex items-center">
                       {user?.full_name?.split(' ')[0] || 'Account'}
                     </span>
-                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-300 shrink-0 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform duration-300 shrink-0 lg:ml-0.5" />
                   </button>
 
                   {/* Profile Dropdown Menu */}
@@ -319,7 +319,7 @@ export default function PublicNavbar() {
                   href="/login"
                   prefetch={false}
                   onClick={handleNavigate}
-                  className="hidden items-center gap-1.5 rounded-full px-2 py-2 text-xs font-extrabold text-[var(--color-brand-river)] transition-colors hover:bg-slate-50/80 lg:flex xl:px-3 2xl:px-4"
+                  className="hidden items-center gap-1 rounded-full lg:px-1.5 lg:text-[10.5px] xl:px-2.5 xl:text-xs 2xl:px-4 font-extrabold text-[var(--color-brand-river)] transition-colors hover:bg-slate-50/80 lg:flex"
                 >
                   <User className="h-3.5 w-3.5" />
                   <span className="hidden xl:inline">Login</span>
@@ -334,7 +334,7 @@ export default function PublicNavbar() {
                 href="/boat-rides"
                 prefetch={false}
                 onClick={handleNavigate}
-                className="relative hidden overflow-hidden rounded-full bg-[var(--color-brand-river)] px-4 py-2 text-[11px] font-black text-white shadow-[0_8px_20px_rgba(15,61,86,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,61,86,0.25)] hover:bg-[#154652] active:translate-y-0 lg:inline-flex xl:px-5 xl:text-xs group/btn"
+                className="relative hidden overflow-hidden rounded-full bg-[var(--color-brand-river)] lg:px-3.5 lg:py-1.5 lg:text-[10.5px] xl:px-4.5 xl:py-2 xl:text-[11.5px] 2xl:px-5 2xl:text-xs font-black text-white shadow-[0_8px_20px_rgba(15,61,86,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,61,86,0.25)] hover:bg-[#154652] active:translate-y-0 lg:inline-flex group/btn"
               >
                 Book Now
               </Link>

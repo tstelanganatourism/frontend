@@ -5,7 +5,6 @@ import type { Metadata } from 'next';
 import { ArrowRight, Camera, Compass, Mountain, Quote, Sparkles, Waves } from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
 import RoomCard from '@/components/ui/RoomCard';
-import HeroSlider from '@/components/ui/HeroSlider';
 import HeroBody from '@/components/ui/HeroBody';
 import { ShimmerGrid } from '@/components/ui/SkeletonLoader';
 import { apiFetch } from '@/lib/api';
@@ -155,14 +154,8 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ─── Cinematic Hero Section ─────────────────────────────────────── */}
       <section className="sticky top-0 w-full overflow-hidden bg-slate-950">
-        {/* Background slider */}
-        <div className="absolute inset-0 z-0">
-          <HeroSlider />
-        </div>
-        {/* Foreground hero content */}
-        <div className="relative z-10">
-          <HeroBody />
-        </div>
+        {/* HeroBody manages its own background images & carousel */}
+        <HeroBody />
       </section>
 
       <div className="home-page-opener relative z-20 bg-[#f7f4ed]">
@@ -221,37 +214,53 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden bg-white py-14 md:py-24">
-          <div className="absolute inset-y-0 left-0 w-1/2 bg-[linear-gradient(90deg,rgba(26,107,122,0.08),transparent)]" />
-          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:px-8">
+        <section className="relative overflow-hidden bg-[#f4f8f6] py-16 md:py-28">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.94)_0%,rgba(240,249,247,0.9)_44%,rgba(255,248,235,0.78)_100%)]" />
+          <div className="absolute inset-0 opacity-[0.45] [background-image:linear-gradient(rgba(15,61,86,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(15,61,86,0.045)_1px,transparent_1px)] [background-size:48px_48px]" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#f59e0b_0%,#1697a6_42%,#0f3d56_100%)]" />
+          <div className="relative mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:px-8">
             <div>
-              <span className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[var(--color-brand-teal)]">
-                <Camera className="h-4 w-4" />
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#9bdde4] bg-white/80 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#116a75] shadow-[0_10px_30px_rgba(15,61,86,0.08)] backdrop-blur">
+                <Camera className="h-4 w-4 text-[#0e8795]" />
                 Scenic Sightseeing
               </span>
-              <h2 className="text-3xl font-black text-[var(--color-brand-river)] md:text-5xl">Temple visits, hill views and local trails planned beautifully.</h2>
-              <p className="mt-5 max-w-xl text-base font-medium leading-8 text-slate-600">
+              <h2 className="max-w-2xl text-4xl font-black leading-[0.98] text-[var(--color-brand-river)] md:text-6xl">
+                Temple visits, hill views and local trails planned beautifully.
+              </h2>
+              <p className="mt-6 max-w-xl text-base font-semibold leading-8 text-slate-600 md:text-lg">
                 Add a guided sightseeing day around Bhadrachalam and Papikondalu with photo stops, pilgrimage timing and easy family-friendly routes.
               </p>
               <div className="mt-7 flex flex-wrap gap-2.5">
-                {['Temple Trails', 'Photo Stops', 'Local Guidance'].map((tag) => (
-                  <span key={tag} className="inline-flex items-center rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[var(--color-brand-teal)]">
+                {['Temple Trails', 'Photo Stops', 'Local Guidance'].map((tag, index) => (
+                  <span key={tag} className="inline-flex items-center gap-2 rounded-full border border-[#bde6df] bg-white/75 px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#116a75] shadow-sm backdrop-blur">
+                    <span className={`h-2 w-2 rounded-full ${index === 1 ? 'bg-amber-400' : index === 2 ? 'bg-[#0f3d56]' : 'bg-[#1697a6]'}`} />
                     {tag}
                   </span>
                 ))}
               </div>
-              <Link href="/sightseeing" prefetch={false} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-river)] px-6 py-3 text-sm font-black text-white shadow-[0_16px_36px_rgba(15,61,86,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#154652]">
-                Explore Sightseeing <ArrowRight className="h-4 w-4" />
+              <Link href="/sightseeing" prefetch={false} className="group mt-9 inline-flex items-center gap-3 rounded-full bg-[var(--color-brand-river)] px-6 py-3.5 text-sm font-black text-white shadow-[0_22px_48px_rgba(15,61,86,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#154652] hover:shadow-[0_28px_62px_rgba(15,61,86,0.3)]">
+                Explore Sightseeing
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-white/14 transition-transform group-hover:translate-x-0.5">
+                  <ArrowRight className="h-4 w-4" />
+                </span>
               </Link>
             </div>
 
-            <div className="relative min-h-[22rem] overflow-hidden rounded-[1.75rem] shadow-[0_24px_70px_rgba(15,61,86,0.16)] md:min-h-[30rem]">
-              <Image src="/images/sightseeing-banner-2026.png" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover" />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.52))]" />
-              <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/25 bg-white/18 p-4 text-white shadow-[0_18px_45px_rgba(0,0,0,0.18)] backdrop-blur-md sm:left-6 sm:right-auto sm:max-w-sm sm:p-5">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-white/78">Curated day trips</p>
-                <p className="mt-2 text-2xl font-black leading-tight">Scenic Sightseeing Tours</p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-white/82">Best for temple visits, viewpoints and short local experiences.</p>
+            <div className="relative">
+              <div className="absolute -inset-3 rounded-[2.2rem] border border-white/70 bg-white/45 shadow-[0_28px_90px_rgba(15,61,86,0.12)]" />
+              <div className="relative min-h-[22rem] overflow-hidden rounded-[1.75rem] border border-white/80 shadow-[0_34px_90px_rgba(15,61,86,0.2)] md:min-h-[30rem]">
+                <Image src="/images/sightseeing-banner-2026.png" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover transition-transform duration-700 hover:scale-105" />
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,28,0.78)_0%,rgba(5,18,28,0.22)_48%,rgba(5,18,28,0.04)_100%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.62))]" />
+                <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                  Premium Local Routes
+                </div>
+                <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/25 bg-slate-950/34 p-4 text-white shadow-[0_22px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:left-6 sm:right-auto sm:max-w-sm sm:p-5">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">Curated day trips</p>
+                  <p className="mt-2 text-2xl font-black leading-tight">Scenic Sightseeing Tours</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-white/84">Best for temple visits, viewpoints and short local experiences.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -347,19 +356,29 @@ async function FeaturedSightseeing() {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      {SIGHTSEEING_FALLBACKS.map((item) => (
+    <div className="grid gap-5 md:grid-cols-3">
+      {SIGHTSEEING_FALLBACKS.map((item, index) => (
         <Link
           key={item.title}
           href="/sightseeing"
           prefetch={false}
-          className="group rounded-[1.35rem] border border-[#d8ece8] bg-[#f8fbfa] p-5 shadow-[0_14px_40px_rgba(15,61,86,0.08)] transition-all hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-[0_20px_50px_rgba(15,61,86,0.12)]"
+          className="group relative overflow-hidden rounded-[1.35rem] border border-white/80 bg-white/78 p-5 shadow-[0_18px_55px_rgba(15,61,86,0.1)] backdrop-blur transition-all hover:-translate-y-1 hover:border-[#9bdde4] hover:shadow-[0_26px_70px_rgba(15,61,86,0.16)]"
         >
-          <div className="mb-4 grid h-11 w-11 place-items-center rounded-full bg-teal-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
-            <Camera className="h-5 w-5" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#f59e0b,#1697a6,#0f3d56)] opacity-80" />
+          <div className="mb-5 flex items-center justify-between">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e8fbfa] text-[#116a75] shadow-[0_12px_30px_rgba(22,151,166,0.12)] transition-colors group-hover:bg-[var(--color-brand-river)] group-hover:text-white">
+              <Camera className="h-5 w-5" />
+            </div>
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-300 transition-colors group-hover:text-amber-500">
+              0{index + 1}
+            </span>
           </div>
           <h3 className="text-lg font-black text-[var(--color-brand-river)]">{item.title}</h3>
           <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.copy}</p>
+          <div className="mt-5 flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-[#116a75]">
+            View Route
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+          </div>
         </Link>
       ))}
     </div>

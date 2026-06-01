@@ -19,6 +19,12 @@ export default function FileUpload({ value, onChange, label, accept = "applicati
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
+    const acceptedTypes = accept.split(',').map((type) => type.trim()).filter(Boolean);
+    if (acceptedTypes.length > 0 && !acceptedTypes.includes(file.type)) {
+      toast.error(`Please upload a valid ${fileTypeLabel}.`);
+      return;
+    }
+
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -31,8 +37,12 @@ export default function FileUpload({ value, onChange, label, accept = "applicati
       });
       onChange(response.data.url);
       toast.success('File uploaded successfully');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to upload file');
+    } catch (err: unknown) {
+      const responseData = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { detail?: string } | string } }).response?.data
+        : undefined;
+      const detail = typeof responseData === 'string' ? responseData : responseData?.detail;
+      toast.error(detail || 'Failed to upload file');
     } finally {
       setIsUploading(false);
     }
@@ -80,13 +90,13 @@ export default function FileUpload({ value, onChange, label, accept = "applicati
       {label && <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>}
       
       {value ? (
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 min-h-[96px] flex items-center justify-between gap-4 transition-all hover:border-emerald-200">
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-5 min-h-[96px] flex items-center justify-between gap-3 sm:gap-4 transition-all hover:border-emerald-200">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="p-3 bg-emerald-100/70 rounded-xl text-emerald-600 shrink-0">
               <FileText className="h-6 w-6" />
             </div>
             <div className="text-left min-w-0">
-              <p className="text-sm font-bold text-slate-800 truncate max-w-[240px] md:max-w-[400px]" title={getDisplayFilename(value)}>
+              <p className="text-sm font-bold text-slate-800 truncate" title={getDisplayFilename(value)}>
                 {getDisplayFilename(value)}
               </p>
               <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">

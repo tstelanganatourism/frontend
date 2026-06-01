@@ -57,6 +57,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
+  const getPageTitle = () => {
+    const segments = pathname.split('/').filter(Boolean);
+    if (segments.length === 0) return 'Dashboard';
+    
+    if (segments.includes('edit')) {
+      const parent = segments[segments.indexOf('edit') - 1];
+      const type = parent === 'rooms' ? 'Room' : 'Package';
+      return `Edit ${type}`;
+    }
+    
+    if (segments.includes('create')) {
+      const parent = segments[segments.indexOf('create') - 1];
+      const type = parent === 'rooms' ? 'Room' : 'Package';
+      return `Create ${type}`;
+    }
+
+    const lastSegment = segments[segments.length - 1];
+    if (/^\d+$/.test(lastSegment)) {
+      return 'Details';
+    }
+
+    return lastSegment.replace('-', ' ');
+  };
+
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
@@ -148,7 +172,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="lg:pl-72">
           
           {/* Top Header */}
-          <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md sm:px-8">
+          <header className="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md sm:px-8">
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
@@ -159,7 +183,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div>
                 <h2 className="text-sm font-medium text-slate-500">Welcome back, {user?.full_name || 'Admin'}</h2>
                 <p className="text-lg font-bold text-slate-900 capitalize">
-                  {pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard'}
+                  {getPageTitle()}
                 </p>
               </div>
             </div>

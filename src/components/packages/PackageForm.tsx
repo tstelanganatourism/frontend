@@ -552,7 +552,7 @@ export default function PackageForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-8">
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-5 sm:space-y-8">
 
       {/* Validation Errors Global Alert */}
       <AnimatePresence>
@@ -588,8 +588,8 @@ export default function PackageForm({
       </AnimatePresence>
 
       {/* Action Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6 bg-white/50 backdrop-blur-sm sticky top-0 z-10 pt-4 px-2 -mx-2">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 sm:pb-6 bg-[#f8fafc]/95 backdrop-blur-sm relative z-10 sm:sticky sm:top-20 sm:z-20 pt-4 px-4 -mx-4 sm:px-2 sm:-mx-2">
+        <div className="flex min-w-0 items-start gap-3 sm:items-center">
           <button
             type="button"
             onClick={() => router.push('/admin/packages')}
@@ -597,8 +597,8 @@ export default function PackageForm({
           >
             <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
           </button>
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 leading-tight">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight break-words">
               {initialData ? `${title}` : 'Create New Package'}
             </h1>
             <p className="text-sm text-slate-500 mt-1">Configure itinerary, pricing, pickup points and more.</p>
@@ -607,7 +607,7 @@ export default function PackageForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="flex items-center gap-2 rounded-xl bg-[#0f3d56] px-6 py-3 text-sm font-bold text-white shadow-xl shadow-[#0f3d56]/20 transition-all hover:-translate-y-1 hover:bg-[#1a4f6d] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-6 py-3 text-sm font-bold text-white shadow-xl shadow-[#0f3d56]/20 transition-all hover:-translate-y-1 hover:bg-[#1a4f6d] disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -641,15 +641,14 @@ export default function PackageForm({
       </div>
 
       {/* Active Tab Panel */}
-      <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
+      <div className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-8 shadow-sm">
 
         {/* Tab 1: Basic Info */}
         {activeTab === 'basic' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl border border-slate-200 p-8 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#5ac4d7]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+            <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-8 shadow-sm relative overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-[#5ac4d7]" />
                     Package Brochure PDF
@@ -692,7 +691,7 @@ export default function PackageForm({
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm md:w-80 shrink-0">
+                <div className="w-full bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm md:w-80 shrink-0">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Pre-flight Checklist</span>
                     {isValidatingBrochure && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
@@ -878,16 +877,16 @@ export default function PackageForm({
             </div>
 
             <div className="pt-4 border-t border-slate-100 grid gap-6 sm:grid-cols-2">
-              <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-[#5ac4d7]/30 transition-all">
+              <label className="flex items-center gap-3 cursor-pointer group bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/60 hover:border-amber-400/50 transition-all">
                 <input
                   type="checkbox"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="h-5 w-5 rounded border-slate-300 text-[#5ac4d7] focus:ring-[#5ac4d7]"
+                  className="h-5 w-5 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
                 />
                 <div>
-                  <span className="block text-sm font-bold text-slate-800">Featured Package</span>
-                  <span className="block text-xs font-medium text-slate-500 mt-0.5">Show prominently on the homepage</span>
+                  <span className="block text-sm font-bold text-slate-800">Add to Home Carousel</span>
+                  <span className="block text-xs font-medium text-slate-500 mt-0.5">Shows as a slide in the homepage hero with cover image &amp; Book Now button</span>
                 </div>
               </label>
 
