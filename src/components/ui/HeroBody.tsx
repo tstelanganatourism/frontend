@@ -383,19 +383,19 @@ export default function HeroBody() {
           {/* ─── MAIN CONTENT LAYOUT ─── */}
           {isDefault ? (
             <>
-              {/* DESKTOP 3-column layout (xl+) */}
+              {/* DESKTOP 3-column layout (lg+) */}
               <div
-                className={`hidden max-w-[82rem] grid-cols-[0.9fr_1.2fr_0.9fr] items-start gap-6 xl:grid xl:gap-8 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+                className={`hidden max-w-[82rem] grid-cols-[0.9fr_1.2fr_0.9fr] items-start gap-4 min-[980px]:grid min-[980px]:gap-6 xl:gap-8 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
               >
-                <div className="border-r border-amber-300/58 pr-7 pl-6">
-                  <h2 className="text-[1.85rem] xl:text-[2.2rem] 2xl:text-[2.8rem] font-black leading-[1.1] tracking-tight text-amber-300">తెలంగాణ & ఏపీ</h2>
-                  <div className="mt-2 text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.1] tracking-tight text-white">బోట్ టూరిజం</div>
-                  <p className="mt-5 max-w-[16rem] text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
+                <div className="border-r border-amber-300/58 pr-4 min-[980px]:pr-7 pl-2 min-[980px]:pl-6">
+                  <h2 className="text-[1.4rem] min-[980px]:text-[1.85rem] xl:text-[2.2rem] 2xl:text-[2.8rem] font-black leading-[1.1] tracking-tight text-amber-300">తెలంగాణ & ఏపీ</h2>
+                  <div className="mt-2 text-[1.5rem] min-[980px]:text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.1] tracking-tight text-white">బోట్ టూరిజం</div>
+                  <p className="mt-3 min-[980px]:mt-5 max-w-[16rem] text-xs min-[980px]:text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
                   <SmallDivider />
                 </div>
 
                 <div className="px-2">
-                  <h1 className="font-serif text-[2.85rem] font-black leading-[0.96] tracking-normal xl:text-[3.45rem] 2xl:text-[4.15rem]">
+                  <h1 className="font-serif text-[2.2rem] min-[980px]:text-[2.85rem] font-black leading-[0.96] tracking-normal xl:text-[3.45rem] 2xl:text-[4.15rem]">
                     <span className="block whitespace-nowrap text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.28)]">
                       Telangana & AP
                     </span>
@@ -404,25 +404,25 @@ export default function HeroBody() {
                     </span>
                   </h1>
                   <TitleOrnament />
-                  <p className="mt-3 text-base xl:text-lg 2xl:text-xl font-semibold leading-relaxed text-white/92">
+                  <p className="mt-3 text-sm min-[980px]:text-base xl:text-lg 2xl:text-xl font-semibold leading-relaxed text-white/92">
                     Journey into Nature, Peace & Culture
                   </p>
                   <SmallDivider />
                 </div>
 
-                <div className="border-l border-amber-300/58 pl-7 pr-6 text-right" dir="rtl">
-                  <h2 className="text-[1.75rem] xl:text-[2.15rem] 2xl:text-[2.7rem] font-black leading-[1.2] tracking-tight text-amber-300">تلنگانہ اور اے پی</h2>
-                  <div className="mt-2 text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.2] tracking-tight text-white">بوٹ ٹورزم</div>
-                  <p className="mr-auto mt-5 max-w-[16rem] text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">قدرت، سکون اور یادوں کا سفر</p>
+                <div className="border-l border-amber-300/58 pl-4 min-[980px]:pl-7 pr-2 min-[980px]:pr-6 text-right" dir="rtl">
+                  <h2 className="text-[1.3rem] min-[980px]:text-[1.75rem] xl:text-[2.15rem] 2xl:text-[2.7rem] font-black leading-[1.2] tracking-tight text-amber-300">تلنگانہ اور اے پی</h2>
+                  <div className="mt-2 text-[1.5rem] min-[980px]:text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.2] tracking-tight text-white">بوٹ ٹورزم</div>
+                  <p className="mr-auto mt-3 min-[980px]:mt-5 max-w-[16rem] text-xs min-[980px]:text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">قدرت، سکون اور یادوں کا سفر</p>
                   <div className="flex justify-end">
                     <SmallDivider />
                   </div>
                 </div>
               </div>
 
-              {/* MOBILE centered layout (xl:hidden) */}
+              {/* MOBILE centered layout (< 980px) */}
               <div
-                className={`xl:hidden transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+                className={`min-[980px]:hidden transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
               >
                 <div className="mx-auto max-w-[25rem] border-x border-amber-300/55 px-4 text-center">
                   <h1 className="font-serif text-[clamp(2.3rem,9vw,3.2rem)] font-black leading-[0.95] tracking-normal">
@@ -439,7 +439,7 @@ export default function HeroBody() {
               </div>
 
               {/* RENDER DEFAULT CTA BUTTONS */}
-              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center xl:justify-start transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center min-[980px]:justify-start transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                 {currentButtons.map((btn, index) => {
                   const Icon = btn.icon;
                   return (
