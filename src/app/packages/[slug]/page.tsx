@@ -31,6 +31,7 @@ type PackageDetail = {
   type: string;
   duration?: string | null;
   region?: string | null;
+  place?: string | null;
   description?: string | null;
   cover_image_url?: string | null;
   brochure_pdf_url?: string | null;

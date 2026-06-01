@@ -9,8 +9,12 @@ import { logout } from '@/services/authService';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import LiveBookingCount from './LiveBookingCount';
+import dynamic from 'next/dynamic';
 
+const LiveBookingCount = dynamic(() => import('./LiveBookingCount'), { 
+  ssr: false, 
+  loading: () => <div className="hidden h-9 w-24 animate-pulse rounded-full bg-slate-100 lg:flex" /> 
+});
 const navLinks = [
   { name: 'Home', href: '/', icon: Home, path: '/' },
   { name: 'Boat Rides', href: '/boat-rides', icon: Ship, path: '/boat-rides' },

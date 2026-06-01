@@ -198,7 +198,7 @@ export default function HomePage() {
                 const Icon = item.icon;
                 return (
                   <article key={item.title} className={`group relative min-h-[25rem] overflow-hidden rounded-[1.75rem] ${index === 1 ? 'md:translate-y-8' : ''}`}>
-                    <Image src={item.image} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <Image src={item.image} alt={item.title} fill loading="lazy" sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.82))]" />
                     <div className="absolute inset-x-0 bottom-0 p-6">
                       <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/15 backdrop-blur-md">
@@ -249,7 +249,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="absolute -inset-3 rounded-[2.2rem] border border-white/70 bg-white/45 shadow-[0_28px_90px_rgba(15,61,86,0.12)]" />
               <div className="relative min-h-[22rem] overflow-hidden rounded-[1.75rem] border border-white/80 shadow-[0_34px_90px_rgba(15,61,86,0.2)] md:min-h-[30rem]">
-                <Image src="/images/sightseeing-banner-2026.png" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover transition-transform duration-700 hover:scale-105" />
+                <Image src="/images/sightseeing-banner-2026.png" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill loading="lazy" sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover transition-transform duration-700 hover:scale-105" />
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,28,0.78)_0%,rgba(5,18,28,0.22)_48%,rgba(5,18,28,0.04)_100%)]" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.62))]" />
                 <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-md">
