@@ -56,25 +56,11 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
               type="button"
               onClick={async (e) => {
                 e.preventDefault();
-                const match = brochurePdfUrl.match(/private\/brochures\/[^\s?#]+/);
-                const rawKey = match ? match[0] : null;
+                const match = brochurePdfUrl.match(/(private\/[^?#]+)/);
+                const rawKey = match ? decodeURIComponent(match[1]) : null;
 
                 if (rawKey) {
-                  // Get fresh signed URL for viewing (no Content-Disposition)
-                  let viewUrl = brochurePdfUrl;
-                  try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/signed-url`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ object_key: rawKey })
-                    });
-                    if (res.ok) { const data = await res.json(); viewUrl = data.url; }
-                  } catch {}
-
-                  // 1. Open in new tab for viewing
-                  window.open(viewUrl, '_blank');
-
-                  // 2. Instantly trigger download via backend
+                  // Instantly trigger download via backend
                   const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
                   const link = document.createElement('a');
                   link.href = downloadUrl;
@@ -83,7 +69,14 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
                   link.click();
                   document.body.removeChild(link);
                 } else {
-                  window.open(brochurePdfUrl, '_blank');
+                  // Fallback for external URLs
+                  const link = document.createElement('a');
+                  link.href = brochurePdfUrl;
+                  link.download = `${packageSlug}-brochure.pdf`;
+                  link.target = "_blank";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
                 }
               }}
               className="text-[10px] font-black text-[#1a6b7a] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"

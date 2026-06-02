@@ -29,11 +29,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth hydration timeout')), 8000)
+        setTimeout(() => reject(new Error('Auth hydration timeout')), 30000)
       );
 
       try {
-        // Run refresh token request with a strict 8-second safety timeout around refreshToken() only
+        // Run refresh token request with a strict 30-second safety timeout around refreshToken() only
         await Promise.race([refreshToken(), timeoutPromise]);
       } catch (error: any) {
         // Handle explicit 401/403 credentials rejection safely

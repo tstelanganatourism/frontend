@@ -175,10 +175,10 @@ function AdminLoginContent() {
             <ShieldAlert className="h-7 w-7 text-violet-400 relative z-10" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white uppercase sm:text-4xl bg-gradient-to-r from-white via-white to-violet-300 bg-clip-text text-transparent">
-            Super Admin Portal
+            Administration Portal
           </h1>
           <p className="mt-2 text-xs font-medium uppercase tracking-widest text-violet-400/60">
-            Restricted Admin Console
+            Secure Access Console
           </p>
         </div>
 

@@ -418,7 +418,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               {isRoom && (
                 <div className="bk-row">
                   <div className="bk-icon">📅</div>
-                  <div><div className="bk-lbl">Check-Out Date</div><div className="bk-val">{booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() : 'TBA'}</div></div>
+                  <div><div className="bk-lbl">Check-Out Date</div><div className="bk-val">{booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase() : 'TBA'}</div></div>
                 </div>
               )}
               <div className="bk-row">

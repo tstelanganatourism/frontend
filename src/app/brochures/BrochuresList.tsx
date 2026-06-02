@@ -162,25 +162,10 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
           type="button"
           onClick={async (e) => {
             e.preventDefault();
-            const match = brochureUrl.match(/private\/brochures\/[^\s?#]+/);
-            const rawKey = match ? match[0] : null;
+            const match = brochureUrl.match(/(private\/[^?#]+)/);
+            const rawKey = match ? decodeURIComponent(match[1]) : null;
 
             if (rawKey) {
-              // Get fresh signed URL for viewing (no Content-Disposition)
-              let viewUrl = brochureUrl;
-              try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/signed-url`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ object_key: rawKey })
-                });
-                if (res.ok) { const data = await res.json(); viewUrl = data.url; }
-              } catch {}
-
-              // 1. Open in new tab for viewing
-              window.open(viewUrl, '_blank');
-
-              // 2. Instantly trigger download via backend
               const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(pkg.slug + '-brochure.pdf')}`;
               const link = document.createElement('a');
               link.href = downloadUrl;
@@ -189,7 +174,13 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
               link.click();
               document.body.removeChild(link);
             } else {
-              window.open(brochureUrl, '_blank');
+              const link = document.createElement('a');
+              link.href = brochureUrl;
+              link.download = `${pkg.slug}-brochure.pdf`;
+              link.target = "_blank";
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
             }
           }}
           className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1a6b7a] px-4 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c]"

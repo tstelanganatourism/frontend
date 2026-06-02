@@ -74,15 +74,9 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   const extractObjectKey = (url: string): string | null => {
     if (!url) return null;
-    if (url.startsWith('private/')) return url;
-    try {
-      const parsed = new URL(url);
-      const path = parsed.pathname.startsWith('/') ? parsed.pathname.slice(1) : parsed.pathname;
-      if (path.startsWith('private/')) {
-        return decodeURIComponent(path);
-      }
-    } catch (e) {
-      if (url.startsWith('private/')) return url;
+    const match = url.match(/(private\/[^?#]+)/);
+    if (match) {
+      return decodeURIComponent(match[1]);
     }
     return null;
   };
@@ -94,19 +88,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     const rawKey = extractObjectKey(brochurePdfUrl);
 
     if (rawKey) {
-      // Get a fresh signed URL (no Content-Disposition) purely for viewing in new tab
-      let viewUrl = brochurePdfUrl;
-      try {
-        const response = await apiClient.post('/api/v1/documents/signed-url', { object_key: rawKey });
-        viewUrl = response.data.url;
-      } catch {
-        // fallback to cached URL
-      }
-
-      // 1. Open the view URL in a new tab (displays the PDF, no download)
-      window.open(viewUrl, '_blank');
-
-      // 2. Immediately trigger the backend download (Content-Disposition: attachment baked in)
+      // Immediately trigger the backend download (Content-Disposition: attachment baked in)
       const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -115,8 +97,14 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
       link.click();
       document.body.removeChild(link);
     } else {
-      // No key — just open in new tab
-      window.open(brochurePdfUrl, '_blank');
+      // No key — download via external URL
+      const link = document.createElement('a');
+      link.href = brochurePdfUrl;
+      link.download = `${packageSlug}-brochure.pdf`;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 

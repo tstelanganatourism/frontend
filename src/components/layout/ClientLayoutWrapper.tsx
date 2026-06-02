@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
 import dynamic from 'next/dynamic';
@@ -17,7 +17,6 @@ interface ClientLayoutWrapperProps {
 
 export default function ClientLayoutWrapper({ children, promoBanner }: ClientLayoutWrapperProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const isAdminOrAgentPage = pathname?.startsWith('/admin') && !pathname?.endsWith('/login');
   const isPrintPage = pathname?.startsWith('/print');
 
@@ -37,7 +36,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
 
   if (isAdminOrAgentPage || isPrintPage) {
     return (
-      <main className="flex-1 w-full relative min-h-screen">
+      <main className={`flex-1 w-full relative min-h-screen ${isDashboardPage ? 'pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:pb-0' : ''}`}>
         {children}
         {isDashboardPage && <StickyConversionBar />}
       </main>

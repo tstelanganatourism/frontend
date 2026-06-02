@@ -128,3 +128,9 @@ export async function getMe(): Promise<AuthUser> {
   const res = await apiClient.get<AuthUser>('/api/v1/auth/me');
   return res.data;
 }
+
+export async function updateProfile(data: { full_name?: string; phone_number?: string; avatar_url?: string }): Promise<AuthUser> {
+  const res = await apiClient.put<AuthUser>('/api/v1/auth/me', data);
+  useAuthStore.getState().setAuth(res.data, useAuthStore.getState().accessToken || '');
+  return res.data;
+}

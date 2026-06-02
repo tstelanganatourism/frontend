@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function WhatsAppFAB({ hiddenOnMobile = false }: { hiddenOnMobile?: boolean }) {
   const whatsappNumber = '919542069573';
-  const message = 'Hello! I am interested in booking a Papikondalu tour with Telangana Boat Tourism Central Booking Office.';
+  const message = 'Hello Telangana Boat Tourism, I would like help with booking or enquiring about boat rides, sightseeing packages, rooms, or travel services.';
   
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 

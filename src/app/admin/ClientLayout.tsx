@@ -105,11 +105,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Logo Area */}
             <div className="flex h-20 items-center border-b border-white/10 px-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#5ac4d7]">
-                  <ShieldCheck className="h-6 w-6 text-slate-900" />
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#5ac4d7] text-slate-900 font-bold">
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+                  ) : (
+                    <ShieldCheck className="h-6 w-6" />
+                  )}
                 </div>
-                <div>
-                  <h1 className="text-lg font-black tracking-tight">TS ADMIN</h1>
+                <div className="min-w-0">
+                  <h1 className="truncate text-base font-black tracking-tight">{user?.full_name || 'Admin'}</h1>
                   <p className="text-[10px] uppercase tracking-widest text-white/40">Control Center</p>
                 </div>
               </div>
