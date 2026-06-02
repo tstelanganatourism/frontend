@@ -110,6 +110,7 @@ export default function RootLayout({
                   "latitude": 17.6685,
                   "longitude": 80.8936
                 },
+                "priceRange": "$$",
                 "openingHoursSpecification": {
                   "@type": "OpeningHoursSpecification",
                   "dayOfWeek": [
