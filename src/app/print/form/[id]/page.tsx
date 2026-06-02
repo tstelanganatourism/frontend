@@ -124,7 +124,7 @@ export default async function PrintFormPage({
       <div className="page-container">
         <div className="form-border">
           <div className="form-header">
-            <img src="/logos/ts-tourism.png" className="logo-img" alt="Telangana Tourism" />
+            <img src="/telangana-tourism-logo.svg" className="logo-img" alt="Telangana Tourism" />
             <div className="title-block">
               <h1>CUSTOMER DETAIL FORM</h1>
               <h2>TELANGANA BOAT TOURISM</h2>
@@ -133,7 +133,7 @@ export default async function PrintFormPage({
                 {booking.package_title} {booking.variant_title && booking.variant_title !== '—' && `- ${booking.variant_title}`}
               </h4>
             </div>
-            <img src="/logos/ap-tourism.png" className="logo-img" alt="AP Tourism" />
+            <img src="/aptdc-logo.svg" className="logo-img" alt="AP Tourism" />
           </div>
 
           <div className="meta-row">

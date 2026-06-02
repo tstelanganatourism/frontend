@@ -237,8 +237,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
         {/* HEADER */}
         <div className="header-row">
           <div className="header-logos">
-            <img src="/logos/ap-tourism.png" className="logo-img" alt="AP Tourism" />
-            <img src="/logos/ts-tourism.png" className="logo-img" alt="TS Tourism" />
+            <img src="/aptdc-logo.svg" className="logo-img" alt="AP Tourism" />
+            <img src="/telangana-tourism-logo.svg" className="logo-img" alt="Telangana Tourism" />
           </div>
           <div className="header-center">
             <h1>INVOICE</h1>
