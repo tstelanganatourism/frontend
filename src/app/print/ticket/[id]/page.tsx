@@ -4,6 +4,8 @@ import { apiFetch } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import PrintAction from '@/components/ui/PrintAction';
 
+export const dynamic = 'force-dynamic';
+
 interface Passenger {
   full_name: string;
   age: number;
@@ -48,7 +50,9 @@ interface BookingDetails {
   agent_phone?: string | null;
   room_checkin?: string | null;
   room_checkout?: string | null;
+  room_checkout_date?: string | null;
   room_address?: string | null;
+  room_highlights?: { title: string; icon: string }[];
   itinerary?: { day_number: number; title: string; timing: string; duration?: string | null; meal_included?: boolean; description: string }[];
 }
 
@@ -80,9 +84,10 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
 
   let booking: BookingDetails | null = null;
   try {
-    const res = await apiFetch(`/api/v1/bookings/${id}`);
+    const res = await apiFetch(`/api/v1/bookings/${id}`, { cache: 'no-store' });
     if (res.status === 200) {
       booking = await res.json();
+      console.log("=== TICKET PAGE FETCHED BOOKING ===", id, "room_checkout_date:", booking?.room_checkout_date);
     }
   } catch (err) {
     console.error("Failed to fetch booking details for print:", err);
@@ -408,12 +413,24 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               )}
               <div className="bk-row">
                 <div className="bk-icon">📅</div>
-                <div><div className="bk-lbl">Travel Date</div><div className="bk-val">{travelDateFormatted}</div></div>
+                <div><div className="bk-lbl">{isRoom ? 'Check-In Date' : 'Travel Date'}</div><div className="bk-val">{travelDateFormatted}</div></div>
               </div>
+              {isRoom && (
+                <div className="bk-row">
+                  <div className="bk-icon">📅</div>
+                  <div><div className="bk-lbl">Check-Out Date</div><div className="bk-val">{booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() : 'TBA'}</div></div>
+                </div>
+              )}
               <div className="bk-row">
                 <div className="bk-icon">🕒</div>
                 <div><div className="bk-lbl">{isRoom ? 'Check-In Time' : 'Reporting Time'}</div><div className="bk-val">{reportingTime}</div></div>
               </div>
+              {isRoom && (
+                <div className="bk-row">
+                  <div className="bk-icon">🕒</div>
+                  <div><div className="bk-lbl">Check-Out Time</div><div className="bk-val">{booking.room_checkout || 'TBA'}</div></div>
+                </div>
+              )}
               <div className="bk-row">
                 <div className="bk-icon">📍</div>
                 <div><div className="bk-lbl">{isRoom ? 'Lodge / Hotel' : 'Reporting Point'}</div><div className="bk-val">{boardingTitle}</div></div>
@@ -548,17 +565,27 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <div className="jt-event">
                   <div className="jt-dot-col"><div className="jt-dot" /><div className="jt-line" /></div>
                   <div className="jt-time">{booking.room_checkin || 'Check-In'}</div>
-                  <div className="jt-desc">Check-in at {booking.package_title}</div>
+                  <div className="jt-desc">Check-in at {booking.package_title}<br/><span style={{fontSize: '8.5px', color: '#666', fontWeight: 700}}>{travelDateFormatted}</span></div>
                 </div>
-                <div className="jt-event">
-                  <div className="jt-dot-col"><div className="jt-dot" /><div className="jt-line" /></div>
-                  <div className="jt-time">During Stay</div>
-                  <div className="jt-desc">Enjoy lodge facilities &amp; local sightseeing</div>
-                </div>
+                {booking.room_highlights && booking.room_highlights.length > 0 ? (
+                  booking.room_highlights.map((hi, i) => (
+                    <div className="jt-event" key={`hi-${i}`}>
+                      <div className="jt-dot-col"><div className="jt-dot" style={{background: '#e2e8f0', borderColor: '#94a3b8'}} /><div className="jt-line" /></div>
+                      <div className="jt-time" style={{color: '#64748b'}}>Service</div>
+                      <div className="jt-desc">{hi.title}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="jt-event">
+                    <div className="jt-dot-col"><div className="jt-dot" /><div className="jt-line" /></div>
+                    <div className="jt-time">During Stay</div>
+                    <div className="jt-desc">Enjoy lodge facilities &amp; local sightseeing</div>
+                  </div>
+                )}
                 <div className="jt-event">
                   <div className="jt-dot-col"><div className="jt-dot" /></div>
                   <div className="jt-time">{booking.room_checkout || 'Check-Out'}</div>
-                  <div className="jt-desc">Check-out &amp; Departure</div>
+                  <div className="jt-desc">Check-out &amp; Departure<br/><span style={{fontSize: '8.5px', color: '#666', fontWeight: 700}}>{booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric', weekday: 'long' }).toUpperCase() : ''}</span></div>
                 </div>
               </div>
             ) : allEvents.length > 0 ? (
@@ -584,12 +611,21 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         <div className="rules-grid">
           <div className="rule-box">
             <div className="rule-box-title">⛔ Cancellation Policy</div>
-            <ul>
-              <li>Cancellation can be requested only before 7 days of the reporting date.</li>
-              <li>A cancellation fee of 35% will be applicable on the total amount.</li>
-              <li>Contact us on WhatsApp to raise a cancellation request.</li>
-            </ul>
-            <div className="rule-alert">Cancellation will be confirmed only after admin approval.</div>
+            {isRoom ? (
+              <ul>
+                <li>Room bookings are strictly non-cancellable and non-refundable.</li>
+                <li>Please contact our support desk for extreme emergencies.</li>
+              </ul>
+            ) : (
+              <>
+                <ul>
+                  <li>Cancellation can be requested only before 7 days of the reporting date.</li>
+                  <li>A cancellation fee of 35% will be applicable on the total amount.</li>
+                  <li>Contact us on WhatsApp to raise a cancellation request.</li>
+                </ul>
+                <div className="rule-alert">Cancellation will be confirmed only after admin approval.</div>
+              </>
+            )}
           </div>
           <div className="rule-box">
             <div className="rule-box-title">📋 Terms &amp; Conditions</div>
@@ -609,7 +645,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <>
                   <li>Present this voucher at reception during check-in.</li>
                   <li>Carry original valid ID proof for all guests.</li>
-                  <li>Standard check-in 12:00 PM, check-out 11:00 AM.</li>
+                  <li>Check-in is {booking.room_checkin || '12:00 PM'}, check-out is {booking.room_checkout || '11:00 AM'}.</li>
                   <li>Damage to property will attract extra charges.</li>
                 </>
               ) : (

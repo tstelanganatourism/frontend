@@ -622,7 +622,8 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
             ...p,
             aadhaar: p.aadhaar || undefined,
             phone: p.phone || undefined,
-          }))
+          })),
+          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
         toast.success(`Booking ${res.data.public_id} created successfully!`);
@@ -1098,7 +1099,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               )}
             </div>
 
-            {selectedDate && !isAdmin && (() => {
+            {selectedDate && (() => {
               const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
               const minPayable = Math.ceil(finalTotal * 0.35);
               const derivedPct = parseFloat(((effectivePayNow / finalTotal) * 100).toFixed(1));

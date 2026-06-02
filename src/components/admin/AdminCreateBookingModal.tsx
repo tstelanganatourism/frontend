@@ -251,7 +251,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {targetType === 'package' ? (
-              <div className="space-y-1">
+              <div className="space-y-1 sm:col-span-2">
                 <PremiumSelect
                   label="Select Package / Variant"
                   value={variantId}
@@ -261,26 +261,26 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 />
               </div>
             ) : (
-              <>
-                <div className="space-y-1">
-                  <PremiumSelect
-                    label="Select Room / Variant"
-                    value={roomVariantId}
-                    onChange={setRoomVariantId}
-                    options={roomOptions}
-                    placeholder="-- Choose Room Variant --"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-600">Check-out Date</label>
-                  <CustomDatePicker label="Check-out Date" value={departureDate} onChange={setDepartureDate} allowPast={true} />
-                </div>
-              </>
+              <div className="space-y-1 sm:col-span-2">
+                <PremiumSelect
+                  label="Select Room / Variant"
+                  value={roomVariantId}
+                  onChange={setRoomVariantId}
+                  options={roomOptions}
+                  placeholder="-- Choose Room Variant --"
+                />
+              </div>
             )}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-600">{targetType === 'room' ? 'Check-in Date' : 'Travel Date'}</label>
               <CustomDatePicker label={targetType === 'room' ? 'Check-in' : 'Travel Date'} value={travelDate} onChange={setTravelDate} allowPast={true} />
             </div>
+            {targetType === 'room' && (
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-600">Check-out Date</label>
+                <CustomDatePicker label="Check-out Date" value={departureDate} onChange={setDepartureDate} allowPast={true} />
+              </div>
+            )}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-600">Adults</label>
               <input type="number" min="1" max="50" value={adultCount} onChange={(e) => setAdultCount(Math.max(1, parseInt(e.target.value) || 1))}
@@ -302,7 +302,18 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 <p className="text-[10px] text-slate-500 font-semibold">Includes 5% GST & 1% Gateway Fee</p>
               </div>
               <div className="w-1/2">
-                <label className="text-xs font-bold text-slate-600 block mb-1">Amount Collected Now</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-600">Amount Collected Now</label>
+                  {estimatedTotal > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setAmountPaid(Math.ceil(estimatedTotal / 2).toString())}
+                      className="text-[10px] font-black text-[#1a6b7a] hover:underline"
+                    >
+                      Fill 50% Adv
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">₹</span>
                   <input type="number" min="0" placeholder="e.g. 1000 or leave empty for full" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)}

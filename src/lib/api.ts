@@ -17,6 +17,9 @@ const getApiBaseUrl = () => {
     return '';
   }
   // SSR: full URL required
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://127.0.0.1:8000';
+  }
   return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 };
 

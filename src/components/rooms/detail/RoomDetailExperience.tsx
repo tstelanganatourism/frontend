@@ -275,9 +275,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [detailedAvailability, setDetailedAvailability] = useState<Record<string, Record<number, Record<string, number>>>>({}); // date -> variant_id -> slotKey -> available_rooms
   const [roomAvailLoading, setRoomAvailLoading] = useState(false);
 
-  const fetchRoomAvailability = async (monthStr: string) => {
-    // Skip if already fetched for this month
-    if (roomAvailability[monthStr] !== undefined) return;
+  const fetchRoomAvailability = async (monthStr: string, force = false) => {
+    // Skip if already fetched for this month and we are not forcing a refetch
+    if (!force && roomAvailability[monthStr] !== undefined) return;
     setRoomAvailLoading(true);
     try {
       const res = await apiClient.get(`/api/v1/rooms/${room.slug}/availability`, { params: { month: monthStr } });
@@ -371,18 +371,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         // Update room availability calendar
         const monthStr = travel_date.slice(0, 7);
         if (is_closed || available <= 0) {
-          // Use stable ref to avoid stale closure
-          fetchRoomAvailabilityRef.current(monthStr);
-          // Remove from open set immediately so calendar reflects it
-          setRoomAvailability(prev => {
-            const next = { ...prev };
-            if (next[monthStr]) {
-              const s = new Set(next[monthStr]);
-              s.delete(travel_date);
-              next[monthStr] = s;
-            }
-            return next;
-          });
+          // Force a full refetch of the month to correctly evaluate if the entire date is closed
+          // (since another variant or slot might still be open on this date)
+          fetchRoomAvailabilityRef.current(monthStr, true);
         } else {
           setRoomAvailability(prev => {
             const next = { ...prev };
@@ -430,8 +421,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
   // Calculate real-time available rooms for the selected dates and variant
   const maxAvailableRooms = useMemo(() => {
-    if (isAdmin) return 999;
-
     // Before dates are selected: no constraint yet (use a large number so UI doesn't block)
     if (!selectedVariantId || !arrivalDate) return 999;
 
@@ -636,7 +625,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             ...p,
             aadhaar: p.aadhaar || undefined,
             phone: p.phone || undefined,
-          }))
+          })),
+          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
         toast.success(`Booking ${res.data.public_id} created successfully!`);
@@ -1209,7 +1199,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     disabled={isLodgeInactive}
                     availableDates={allAvailableDates}
                     onMonthChange={fetchRoomAvailability}
-                    isAdmin={isAdmin}
                     onChange={(val) => {
                       setArrivalDate(val);
                       const sStart = selectedSlot?.slot_start || "";
@@ -1235,7 +1224,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     disabled={isLodgeInactive}
                     availableDates={validDepartureDates}
                     onMonthChange={fetchRoomAvailability}
-                    isAdmin={isAdmin}
                     onChange={setDepartureDate}
                   />
                 </div>
@@ -1392,7 +1380,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   )}
                 </div>
 
-                {arrivalDate && departureDate && !isAdmin && (() => {
+                {arrivalDate && departureDate && (() => {
                   const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
                   const minPayable = Math.ceil(finalTotal * 0.50);
                   const parsedCustom = parseInt(customPayAmount, 10);
@@ -1478,7 +1466,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     </div>
                   ) : (
                     <button onClick={handleBookingClick} disabled={isProcessingCheckout} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] h-11 flex items-center justify-center disabled:opacity-60">
-                      {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : isAdmin ? 'Reserve Now (Admin)' : 'Reserve Now'}
+                      {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve Now'}
                     </button>
                   )}
                 </>
@@ -1533,7 +1521,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         disabled={isLodgeInactive}
                         availableDates={allAvailableDates}
                         onMonthChange={fetchRoomAvailability}
-                        isAdmin={isAdmin}
                         onChange={(val) => {
                           setArrivalDate(val);
                           const sStart = selectedSlot?.slot_start || "";
@@ -1558,7 +1545,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         disabled={isLodgeInactive}
                         availableDates={validDepartureDates}
                         onMonthChange={fetchRoomAvailability}
-                        isAdmin={isAdmin}
                         onChange={setDepartureDate}
                       />
                     </div>
@@ -1707,7 +1693,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         )}
                       </div>
 
-                      {arrivalDate && departureDate && !isAdmin && (() => {
+                      {arrivalDate && departureDate && (() => {
                         const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
                         const minPayable = Math.ceil(finalTotal * 0.50);
                         const parsedCustom = parseInt(customPayAmount, 10);
@@ -1802,10 +1788,19 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         disabled={isProcessingCheckout || isLodgeInactive}
                         className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}
+                        {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}
                       </button>
                     )}
                   </div>
+                  <ConfirmModal
+                    isOpen={showLoginPrompt}
+                    onClose={() => setShowLoginPrompt(false)}
+                    onConfirm={() => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`)}
+                    title="Verification Required"
+                    message="Please log in to continue booking your reservation."
+                    confirmText="Proceed to Login"
+                    cancelText="Cancel"
+                  />
                 </div>
               </SheetContent>
             </Sheet>
@@ -1971,7 +1966,6 @@ const CustomDatePicker = ({
   align = 'left',
   availableDates,
   onMonthChange,
-  isAdmin = false,
 }: {
   label: string;
   value: string;
@@ -1982,7 +1976,6 @@ const CustomDatePicker = ({
   align?: 'left' | 'right';
   availableDates?: Set<string>;
   onMonthChange?: (month: string) => void;
-  isAdmin?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2089,8 +2082,8 @@ const CustomDatePicker = ({
       const isSelected = dateStr === value;
 
       // If availableDates is provided, only enable dates that are in the set
-      const hasInventory = isAdmin ? true : (availableDates ? availableDates.has(dateStr) : true);
-      const isDisabled = isAdmin ? false : (isPast || !hasInventory);
+      const hasInventory = availableDates ? availableDates.has(dateStr) : true;
+      const isDisabled = isPast || !hasInventory;
 
       days.push(
         <button

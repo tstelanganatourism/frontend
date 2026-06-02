@@ -53,6 +53,8 @@ interface BookingDetails {
   variant_title: string;
 
   room_checkin?: string | null;
+  room_checkout?: string | null;
+  room_checkout_date?: string | null;
   passengers: Passenger[];
   agent_id: number | null;
   agent_name: string | null;
@@ -435,11 +437,19 @@ export default function BookingDetailsModal({
                   {/* Travel Parameters */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 bg-slate-50/50 rounded-2xl border border-slate-100 p-5">
                     <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Travel Date</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">{booking.target_type === 'ROOM' ? 'Check-in Date' : 'Travel Date'}</span>
                       <span className="text-sm font-bold text-slate-800">
                         {new Date(booking.travel_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
+                    {booking.target_type === 'ROOM' && (
+                      <div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Check-out Date</span>
+                        <span className="text-sm font-bold text-slate-800">
+                          {booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'TBA'}
+                        </span>
+                      </div>
+                    )}
                     <div>
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
                         {booking.target_type === 'ROOM' ? 'Check-in Time' : 'Reporting Time'}
@@ -450,6 +460,14 @@ export default function BookingDetailsModal({
                           : (booking.boarding_point?.departure_time || 'TBA')} {booking.target_type === 'ROOM' && booking.room_checkin ? '' : '(IST)'}
                       </span>
                     </div>
+                    {booking.target_type === 'ROOM' && (
+                      <div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Check-out Time</span>
+                        <span className="text-sm font-bold text-slate-800">
+                          {booking.room_checkout || 'TBA'}
+                        </span>
+                      </div>
+                    )}
                     <div>
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Passengers</span>
                       <span className="text-sm font-bold text-slate-800">

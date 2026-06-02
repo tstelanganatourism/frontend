@@ -63,6 +63,7 @@ interface BookingDetails {
   target_type: string;
   room_checkin?: string | null;
   room_checkout?: string | null;
+  room_checkout_date?: string | null;
   room_address?: string | null;
   passengers: Passenger[];
   agent_id: number | null;
@@ -453,7 +454,7 @@ export default function BookingDetailPage() {
   todayObj.setHours(0, 0, 0, 0);
   const diffDays = Math.ceil((travelDateObj.getTime() - todayObj.getTime()) / (1000 * 60 * 60 * 24));
   const isEligibleToCancel = diffDays > 7;
-  const canCancel = (
+  const canCancel = booking.target_type !== 'ROOM' && (
     booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED' || booking.status === 'PARTIAL_PAID'
   ) && !booking.has_pending_cancellation;
 
@@ -549,15 +550,25 @@ export default function BookingDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 mb-8">
+            <div className={`grid grid-cols-2 ${booking.target_type === 'ROOM' ? 'sm:grid-cols-4' : ''} gap-6 mb-8`}>
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
-                  <Calendar className="h-4 w-4 text-slate-400" /> Travel Date
+                  <Calendar className="h-4 w-4 text-slate-400" /> {booking.target_type === 'ROOM' ? 'Check-in Date' : 'Travel Date'}
                 </p>
                 <p className="font-bold text-slate-800 text-sm">
                   {new Date(booking.travel_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </p>
               </div>
+              {booking.target_type === 'ROOM' && (
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                    <Calendar className="h-4 w-4 text-slate-400" /> Check-out Date
+                  </p>
+                  <p className="font-bold text-slate-800 text-sm">
+                    {booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'TBA'}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
                   <Clock className="h-4 w-4 text-slate-400" /> {booking.target_type === 'ROOM' ? 'Check-in Time' : 'Reporting Time'}
@@ -568,6 +579,16 @@ export default function BookingDetailPage() {
                     : (booking.boarding_point?.departure_time || 'TBA')} {booking.target_type === 'ROOM' && booking.room_checkin ? '' : '(IST)'}
                 </p>
               </div>
+              {booking.target_type === 'ROOM' && (
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                    <Clock className="h-4 w-4 text-slate-400" /> Check-out Time
+                  </p>
+                  <p className="font-bold text-slate-800 text-sm">
+                    {booking.room_checkout || 'TBA'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Boarding Point */}

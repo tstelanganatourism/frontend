@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Telangana Boat Tourism',
-    short_name: 'TS Tours',
+    short_name: 'Telangana Boat Tourism',
     description: 'Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, and premium stays.',
     start_url: '/',
     display: 'standalone',

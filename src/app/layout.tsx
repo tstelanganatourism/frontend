@@ -13,6 +13,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tsboattourism.org"),
+  applicationName: "Telangana Boat Tourism",
+  manifest: "/manifest.webmanifest",
   title: {
     default: "Telangana Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
     template: "%s | Telangana Boat Tourism"
@@ -31,6 +33,11 @@ export const metadata: Metadata = {
   keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "Telangana Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays", "bhadrachalam tourism", "telangana tourism", "andhra tourism", "boat rides"],
   authors: [{ name: "TSTG Boat Tourism" }],
   creator: "Satvik",
+  appleWebApp: {
+    capable: true,
+    title: "Telangana Boat Tourism",
+    statusBarStyle: "default",
+  },
   openGraph: {
     type: "website",
     locale: "en_IN",
