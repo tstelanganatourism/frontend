@@ -20,9 +20,9 @@ export const metadata: Metadata = {
   description: "Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, Kolluru bamboo huts and premium stays with Telangana Boat Tourism.",
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=2" },
+      { url: "/icon-192x192.png?v=2", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png?v=2", sizes: "512x512", type: "image/png" },
     ],
     apple: [
       { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
