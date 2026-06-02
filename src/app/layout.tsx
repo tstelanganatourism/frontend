@@ -14,8 +14,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tsboattourism.org"),
   title: {
-    default: "Papikondalu Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
-    template: "%s | Papikondalu Tourism"
+    default: "Telangana Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
+    template: "%s | Telangana Boat Tourism"
   },
   description: "Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, Kolluru bamboo huts and premium stays with Telangana Boat Tourism.",
   icons: {
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: "https://www.tsboattourism.org",
-    title: "Papikondalu Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
+    title: "Telangana Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
     description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
-    siteName: "Papikondalu Tourism",
+    siteName: "Telangana Boat Tourism",
     images: [{
       url: "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg",
       width: 1200,
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Papikondalu Tourism | Best Bhadrachalam Tours",
+    title: "Telangana Boat Tourism | Best Bhadrachalam Tours",
     description: "Your premium gateway to the Godavari river, Papikondalu hills and Bhadrachalam travel packages.",
     images: ["https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg"],
   },
@@ -90,7 +90,7 @@ export default function RootLayout({
                 "@context": "https://schema.org",
                 "@type": "TravelAgency",
                 "name": "Telangana Boat Tourism",
-                "alternateName": "Papikondalu Tourism",
+                "alternateName": "TS Boat Tourism",
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org",
                 "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org"}/logo.png`,
                 "image": "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg",
@@ -99,7 +99,7 @@ export default function RootLayout({
                 "email": "tsboattourismservices@gmail.com",
                 "address": {
                   "@type": "PostalAddress",
-                  "streetAddress": "4-1-76/1 (Near SBI ATM), Kalyana Mandapam Road, Opp SBI ATM",
+                  "streetAddress": "near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm",
                   "addressLocality": "Bhadrachalam",
                   "addressRegion": "Telangana",
                   "postalCode": "507111",

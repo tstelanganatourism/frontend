@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Login | Papikondalu Tourism',
+  title: 'Login | Telangana Boat Tourism',
   robots: { index: false, follow: false },
 };
 

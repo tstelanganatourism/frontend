@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { AlertCircle, CheckCircle2, FileText, Mail, Phone, RefreshCcw, Scale, Shield } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Terms, Cancellation & Refund Policy | Papikondalu Tourism',
+  title: 'Terms, Cancellation & Refund Policy | Telangana Boat Tourism',
   description:
     'Read booking terms, cancellation rules, refund policy, privacy policy and travel conditions for Papikondalu tours and Bhadrachalam packages.',
   alternates: { canonical: '/terms' },
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     'Papikondalu cancellation policy',
     'Papikondalu refund policy',
     'Bhadrachalam tour terms',
-    'Papikondalu tourism terms and conditions',
+    'Telangana Boat Tourism terms and conditions',
   ],
 };
 

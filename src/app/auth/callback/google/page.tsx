@@ -60,7 +60,7 @@ export default function GoogleCallbackPage() {
           {error ? (
             <img 
               src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
-              alt="Papikondalu Tourism Logo" 
+              alt="Telangana Boat Tourism Logo" 
               className="h-full w-full object-contain rounded-2xl opacity-40 grayscale"
             />
           ) : (
@@ -71,7 +71,7 @@ export default function GoogleCallbackPage() {
             >
               <img 
                 src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
-                alt="Papikondalu Tourism Logo" 
+                alt="Telangana Boat Tourism Logo" 
                 className="h-full w-full object-contain rounded-2xl"
               />
             </motion.div>

@@ -87,12 +87,12 @@ function LoginContent() {
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
             <img 
               src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
-              alt="Papikondalu Tourism Logo" 
+              alt="Telangana Boat Tourism Logo" 
               className="h-full w-full object-contain rounded-xl"
             />
           </div>
           <h1 className="text-2xl font-black text-white">Welcome back</h1>
-          <p className="mt-1 text-sm text-white/60">Sign in to your Papikondalu Tourism account</p>
+          <p className="mt-1 text-sm text-white/60">Sign in to your Telangana Boat Tourism account</p>
         </div>
 
         {/* Card */}

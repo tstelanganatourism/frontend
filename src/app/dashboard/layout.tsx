@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import ClientLayout from './ClientLayout';
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Papikondalu Tourism',
+  title: 'Dashboard | Telangana Boat Tourism',
   robots: { index: false, follow: false },
 };
 

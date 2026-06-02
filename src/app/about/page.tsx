@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/about' },
   keywords: [
     'Telangana Boat Tourism',
-    'Papikondalu tourism office',
+    'Telangana Boat Tourism office',
     'Bhadrachalam travel agency',
     'Papikondalu boat tours',
     'best tours in Bhadrachalam',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const MAPS_LOCATION_URL = 'https://maps.app.goo.gl/6YDfViEq3RLuvNN36?g_st=awb';
 
 const OFFICE_ADDRESS =
-  'Telangana Boat Tourism Central Booking Office, D.No. 4-1-78/1, Kalyana Mandapam Road, Opp SBI ATM, Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana - 507111';
+  'Telangana Boat Tourism, near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm, Bhadrachalam, Telangana 507111';
 
 const TOURISM_METRICS = [
   { number: '20+', title: 'Years in tourism', text: 'Local Godavari expertise since 2004.' },

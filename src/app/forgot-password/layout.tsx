@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Forgot Password | Papikondalu Tourism',
+  title: 'Forgot Password | Telangana Boat Tourism',
   robots: { index: false, follow: false },
 };
 

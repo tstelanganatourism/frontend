@@ -72,12 +72,12 @@ export default function SignupPage() {
           <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
             <img 
               src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
-              alt="Papikondalu Tourism Logo" 
+              alt="Telangana Boat Tourism Logo" 
               className="h-full w-full object-contain rounded-xl"
             />
           </div>
           <h1 className="text-xl font-black text-white">Create your account</h1>
-          <p className="mt-1 text-xs text-white/60">Join Papikondalu Tourism for exclusive deals</p>
+          <p className="mt-1 text-xs text-white/60">Join Telangana Boat Tourism for exclusive deals</p>
         </div>
 
         <div className="rounded-3xl border border-white/12 bg-white/8 p-6 backdrop-blur-2xl shadow-[0_32px_80px_rgba(0,0,0,0.45)]">
