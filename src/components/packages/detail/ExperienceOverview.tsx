@@ -68,25 +68,33 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
     return null;
   };
 
-  const handleDownloadBrochure = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleDownloadBrochure = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const brochureUrl = activeBrochureUrl;
     if (!brochureUrl) return;
 
     const rawKey = extractObjectKey(brochureUrl);
+
+    // If it's a plain public URL (not a private R2 key), just open it directly
     if (!rawKey) {
-      window.open(brochureUrl, '_blank');
+      window.open(brochureUrl, '_blank', 'noopener,noreferrer');
       return;
     }
 
+    // For private R2 objects, request a fresh signed URL from backend
     try {
       const response = await apiClient.post('/api/v1/documents/signed-url', {
         object_key: rawKey
       });
-      window.open(response.data.url, '_blank');
-    } catch (err) {
-      console.error('Failed to get fresh signed URL for brochure:', err);
-      window.open(brochureUrl, '_blank');
+      if (response.data?.url) {
+        window.open(response.data.url, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('Brochure is not available yet. Please contact support or try again later.');
+      }
+    } catch (err: unknown) {
+      console.error('Failed to get signed URL for brochure:', err);
+      // Do NOT fall back to the raw private URL - it will show an ugly XML error page
+      alert('Brochure could not be loaded. The file may not have been generated yet. Please contact our team for assistance.');
     }
   };
 
@@ -256,15 +264,13 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                   <p className="text-sm font-semibold text-slate-600">Download complete itinerary and package details as PDF.</p>
                 </div>
               </div>
-              <a
-                href={activeBrochureUrl}
+              <button
+                type="button"
                 onClick={handleDownloadBrochure}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-[#1a6b7a] px-6 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c] md:mt-0 md:w-auto"
               >
                 Download PDF
-              </a>
+              </button>
             </div>
           )}
         </div>

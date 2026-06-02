@@ -349,7 +349,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
       {/* ─── Main Content ─────────────────────────────────────────────── */}
       <div className="relative z-10 mr-auto ml-0 flex w-full max-w-[120rem] flex-1 items-start pt-14 sm:items-center sm:pt-4 px-8 py-4 sm:px-12 sm:py-6 md:px-16 lg:px-20 xl:px-24 2xl:px-28">
         <div className="w-full">
-          <div className="hidden min-[980px]:block">
+          <div className="hidden lg:block">
             <TopFlourish />
           </div>
           {/* Badge */}
@@ -373,17 +373,17 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
             <>
               {/* DESKTOP 3-column layout (lg+) */}
               <div
-                className={`hidden max-w-[82rem] grid-cols-[0.9fr_1.2fr_0.9fr] items-start gap-4 min-[980px]:grid min-[980px]:gap-6 xl:gap-8 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+                className={`hidden max-w-[82rem] grid-cols-[0.9fr_1.2fr_0.9fr] items-start gap-4 lg:grid lg:gap-6 xl:gap-8 transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
               >
-                <div className="border-r border-amber-300/58 pr-4 min-[980px]:pr-7 pl-2 min-[980px]:pl-6">
-                  <h2 className="text-[1.4rem] min-[980px]:text-[1.85rem] xl:text-[2.2rem] 2xl:text-[2.8rem] font-black leading-[1.1] tracking-tight text-amber-300">తెలంగాణ & ఏపీ</h2>
-                  <div className="mt-2 text-[1.5rem] min-[980px]:text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.1] tracking-tight text-white">బోట్ టూరిజం</div>
-                  <p className="mt-3 min-[980px]:mt-5 max-w-[16rem] text-xs min-[980px]:text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
+                <div className="border-r border-amber-300/58 pr-4 lg:pr-7 pl-2 lg:pl-6">
+                  <h2 className="text-[1.4rem] lg:text-[1.85rem] xl:text-[2.2rem] 2xl:text-[2.8rem] font-black leading-[1.1] tracking-tight text-amber-300">తెలంగాణ & ఏపీ</h2>
+                  <div className="mt-2 text-[1.5rem] lg:text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.1] tracking-tight text-white">బోట్ టూరిజం</div>
+                  <p className="mt-3 lg:mt-5 max-w-[16rem] text-xs lg:text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">ప్రకృతితో ఒక అందమైన ప్రయాణం</p>
                   <SmallDivider />
                 </div>
 
                 <div className="px-2">
-                  <h1 className="font-serif text-[2.2rem] min-[980px]:text-[2.85rem] font-black leading-[0.96] tracking-normal xl:text-[3.45rem] 2xl:text-[4.15rem]">
+                  <h1 className="font-serif text-[2.2rem] lg:text-[2.85rem] font-black leading-[0.96] tracking-normal xl:text-[3.45rem] 2xl:text-[4.15rem]">
                     <span className="block whitespace-nowrap text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.28)]">
                       Telangana & AP
                     </span>
@@ -392,16 +392,16 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                     </span>
                   </h1>
                   <TitleOrnament />
-                  <p className="mt-3 text-sm min-[980px]:text-base xl:text-lg 2xl:text-xl font-semibold leading-relaxed text-white/92">
+                  <p className="mt-3 text-sm lg:text-base xl:text-lg 2xl:text-xl font-semibold leading-relaxed text-white/92">
                     Journey into Nature, Peace & Culture
                   </p>
                   <SmallDivider />
                 </div>
 
-                <div className="border-l border-amber-300/58 pl-4 min-[980px]:pl-7 pr-2 min-[980px]:pr-6 text-right" dir="rtl">
-                  <h2 className="text-[1.3rem] min-[980px]:text-[1.75rem] xl:text-[2.15rem] 2xl:text-[2.7rem] font-black leading-[1.2] tracking-tight text-amber-300">تلنگانہ اور اے پی</h2>
-                  <div className="mt-2 text-[1.5rem] min-[980px]:text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.2] tracking-tight text-white">بوٹ ٹورزم</div>
-                  <p className="mr-auto mt-3 min-[980px]:mt-5 max-w-[16rem] text-xs min-[980px]:text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">قدرت، سکون اور یادوں کا سفر</p>
+                <div className="border-l border-amber-300/58 pl-4 lg:pl-7 pr-2 lg:pr-6 text-right" dir="rtl">
+                  <h2 className="text-[1.3rem] lg:text-[1.75rem] xl:text-[2.15rem] 2xl:text-[2.7rem] font-black leading-[1.2] tracking-tight text-amber-300">تلنگانہ اور اے پی</h2>
+                  <div className="mt-2 text-[1.5rem] lg:text-[1.85rem] xl:text-[2.1rem] 2xl:text-[2.6rem] font-black leading-[1.2] tracking-tight text-white">بوٹ ٹورزم</div>
+                  <p className="mr-auto mt-3 lg:mt-5 max-w-[16rem] text-xs lg:text-sm xl:text-[15px] 2xl:text-lg font-semibold leading-relaxed text-white/88">قدرت، سکون اور یادوں کا سفر</p>
                   <div className="flex justify-end">
                     <SmallDivider />
                   </div>
@@ -410,7 +410,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
 
               {/* MOBILE centered layout (< 980px) */}
               <div
-                className={`min-[980px]:hidden transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+                className={`lg:hidden transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
               >
                 <div className="mx-auto max-w-[25rem] border-x border-amber-300/55 px-4 text-center">
                   <h1 className="font-serif text-[clamp(2.3rem,9vw,3.2rem)] font-black leading-[0.95] tracking-normal">
@@ -427,7 +427,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               </div>
 
               {/* RENDER DEFAULT CTA BUTTONS */}
-              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center min-[980px]:justify-start transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center lg:justify-start transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                 {currentButtons.map((btn, index) => {
                   const Icon = btn.icon;
                   return (
@@ -649,7 +649,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
 
           {/* ─── md bilingual cards ─── */}
           {isDefault && (
-            <div className="mx-auto mt-4 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid min-[980px]:hidden">
+            <div className="mx-auto mt-4 hidden max-w-[25rem] grid-cols-2 gap-3 md:grid lg:hidden">
               <div className="rounded-2xl border border-white/13 bg-slate-950/28 p-3 backdrop-blur-md">
                 <div className="text-xl font-black leading-tight text-amber-300">తెలంగాణ & ఏపీ</div>
                 <div className="mt-1 text-lg font-black leading-tight text-white">బోట్ టూరిజం</div>
@@ -665,7 +665,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
 
           {/* ─── Stats (md) ─── */}
           {isDefault && (
-            <div className="mx-auto mt-4 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid min-[980px]:hidden">
+            <div className="mx-auto mt-4 hidden w-full max-w-[25rem] grid-cols-2 gap-2.5 md:grid lg:hidden">
               {heroStats.map((stat) => (
                 <StatBlock key={stat.label} {...stat} />
               ))}

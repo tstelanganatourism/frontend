@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
 
-const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3809.849929281358!2d80.88166527581907!3d17.667925396556113!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9d062f4c079%3A0x59e5318d95327bde!2sAP%20TOURISM%20PAPIKONDALU!5e0!3m2!1sen!2sin!4v1715840615123!5m2!1sen!2sin';
+const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15206.499265526056!2d80.88424!3d17.66792!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9d062f4c079%3A0x59e5318d95327bde!2sAP%20TOURISM%20PAPIKONDALU!5e0!3m2!1sen!2sin!4v1780377741415!5m2!1sen!2sin';
 
 const socialLinks = [
   { label: 'Facebook', href: '#', icon: <FacebookIcon /> },
@@ -16,41 +17,41 @@ const socialLinks = [
 
 export default function PublicFooter() {
   const pathname = usePathname();
-  const isHomePage = pathname === '/';
   const hasStackedMobileBars = !!pathname?.startsWith('/dashboard');
 
   return (
-    <footer className={`bg-[var(--color-brand-river)] pt-10 text-white md:pb-8 border-t border-white/5 ${hasStackedMobileBars ? 'pb-[calc(10.75rem+env(safe-area-inset-bottom))]' : 'pb-[calc(6.75rem+env(safe-area-inset-bottom))]'}`}>
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 min-[980px]:px-8">
-        <div className={`mb-8 grid min-w-0 grid-cols-1 gap-8 sm:grid-cols-2 min-[980px]:items-start ${isHomePage ? 'min-[980px]:grid-cols-[1fr_0.55fr_0.55fr_1.1fr_1.45fr]' : 'min-[980px]:grid-cols-[1.2fr_0.7fr_0.7fr_1.2fr]'}`}>
+    <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${hasStackedMobileBars ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]' : 'pb-[calc(7rem+env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+      <div className="w-full px-4 sm:px-6 min-[980px]:px-8 min-[1280px]:px-10">
+        <div className="grid min-w-0 grid-cols-1 gap-6 min-[760px]:grid-cols-[1fr_0.9fr] min-[1120px]:grid-cols-[0.9fr_0.72fr_1.1fr_1.15fr] min-[1120px]:items-start min-[1120px]:gap-7 min-[1500px]:grid-cols-[0.9fr_0.7fr_1.08fr_1.22fr] min-[1500px]:gap-8">
 
           {/* Brand Info */}
-          <div className="min-w-0 space-y-4">
-            <div className="flex flex-col gap-5 mb-2">
+          <div className="min-w-0 rounded-xl border border-white/0 p-0 min-[1120px]:pr-4">
+            <div className="flex flex-col gap-3.5">
               <Link href="/" className="group flex min-w-0 items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
-                <div className="grid place-items-center h-11 w-11 shrink-0 rounded-full bg-white p-1 shadow-sm">
-                  <img src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism" width={44} height={44} loading="lazy" className="h-full w-full object-contain" />
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white p-1 shadow-sm ring-1 ring-white/40">
+                  <Image src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism" width={44} height={44} className="h-full w-full object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60">Andhra Pradesh</div>
-                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white group-hover:text-[var(--color-brand-sand)] transition-colors">Official Boat Tourism</div>
+                  <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">Andhra Pradesh</div>
+                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white transition-colors group-hover:text-[var(--color-brand-sand)]">Official Boat Tourism</div>
                 </div>
               </Link>
               
               <div className="group flex min-w-0 items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
-                <div className="grid place-items-center h-11 w-11 shrink-0 rounded-full bg-white p-1 shadow-sm">
-                  <img src="/telangana-tourism-logo.svg" alt="Telangana Tourism" width={44} height={44} loading="lazy" className="h-full w-full object-contain" />
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white p-1 shadow-sm ring-1 ring-white/40">
+                  <Image src="/telangana-tourism-logo.svg" alt="Telangana Tourism" width={44} height={44} className="h-full w-full object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60">Telangana</div>
+                  <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">Telangana</div>
                   <div className="truncate text-[13px] font-extrabold tracking-tight text-white transition-colors">Official Tourism</div>
                 </div>
               </div>
             </div>
-            <p className="text-white/70 text-[11px] leading-relaxed max-w-xs">
+            <p className="mt-4 max-w-sm text-[12px] leading-relaxed text-white/72">
               Experience the breathtaking beauty of the Godavari river and majestic hills. Your premium journey starts here.
             </p>
-            <div className="flex gap-2">
+            <div className="mt-4 flex gap-2">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
@@ -58,7 +59,7 @@ export default function PublicFooter() {
                   aria-label={social.label}
                   target={social.href.startsWith('http') ? '_blank' : undefined}
                   rel={social.href.startsWith('http') ? 'noreferrer' : undefined}
-                  className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white transition-all hover:bg-white hover:text-[var(--color-brand-river)]"
+                  className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-all hover:-translate-y-0.5 hover:bg-white hover:text-[var(--color-brand-river)]"
                 >
                   {social.icon}
                 </a>
@@ -66,78 +67,89 @@ export default function PublicFooter() {
             </div>
           </div>
 
-          {/* Quick Links & Support (2-column on mobile) */}
-          <div className="grid min-w-0 grid-cols-2 gap-4 sm:col-span-2 min-[980px]:contents">
+          {/* Links */}
+          <div className="grid min-w-0 grid-cols-2 gap-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 min-[760px]:grid-cols-1 min-[1120px]:grid-cols-2">
             <div className="min-w-0">
-              <h3 className="text-xs font-bold mb-3 text-[var(--color-brand-sand)] uppercase tracking-wider">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><Link href="/about" className="text-white/60 hover:text-white transition-colors text-[11px]">About Us</Link></li>
-                <li><Link href="/boat-rides" className="text-white/60 hover:text-white transition-colors text-[11px]">Boat Rides</Link></li>
-                <li><Link href="/sightseeing" className="text-white/60 hover:text-white transition-colors text-[11px]">Sightseeing</Link></li>
-                <li><Link href="/stays" className="text-white/60 hover:text-white transition-colors text-[11px]">Accommodations</Link></li>
+              <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Quick Links</h3>
+              <ul className="space-y-2.5">
+                <li><Link href="/about" className="text-[12px] text-white/65 transition-colors hover:text-white">About Us</Link></li>
+                <li><Link href="/boat-rides" className="text-[12px] text-white/65 transition-colors hover:text-white">Boat Rides</Link></li>
+                <li><Link href="/sightseeing" className="text-[12px] text-white/65 transition-colors hover:text-white">Sightseeing</Link></li>
+                <li><Link href="/stays" className="text-[12px] text-white/65 transition-colors hover:text-white">Accommodations</Link></li>
               </ul>
             </div>
 
             <div className="min-w-0">
-              <h3 className="text-xs font-bold mb-3 text-[var(--color-brand-sand)] uppercase tracking-wider">Support</h3>
-              <ul className="space-y-2">
-                <li><Link href="/faq" className="text-white/60 hover:text-white transition-colors text-[11px]">FAQs</Link></li>
-                <li><Link href="/terms" className="text-white/60 hover:text-white transition-colors text-[11px]">Terms & Conditions</Link></li>
+              <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Support</h3>
+              <ul className="space-y-2.5">
+                <li><Link href="/faq" className="text-[12px] text-white/65 transition-colors hover:text-white">FAQs</Link></li>
+                <li><Link href="/terms" className="text-[12px] text-white/65 transition-colors hover:text-white">Terms & Conditions</Link></li>
               </ul>
             </div>
           </div>
 
           {/* Contact */}
-          <div className="min-w-0 sm:col-span-2 min-[980px]:col-span-1">
-            <h3 className="text-xs font-bold mb-3 text-[var(--color-brand-sand)] uppercase tracking-wider">Contact Us</h3>
-            <ul className="space-y-2.5">
+          <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 min-[760px]:col-span-2 min-[1120px]:col-span-1">
+            <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Contact Us</h3>
+            <ul className="grid gap-2.5 sm:grid-cols-2 min-[1120px]:grid-cols-1">
               <li className="flex items-start gap-2.5">
-                <MapPin className="h-3.5 w-3.5 text-[var(--color-brand-teal)] shrink-0 mt-0.5" />
-                <span className="min-w-0 text-white/70 text-[11px] leading-relaxed">Telangana Boat Tourism Central Booking Office, D.No. 4-1-78/1, Kalyana Mandapam Road, Opp SBI ATM, Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana - 507111.</span>
+                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><MapPin className="h-3.5 w-3.5" /></span>
+                <span className="min-w-0 text-[12px] leading-relaxed text-white/72">Telangana Boat Tourism Central Booking Office, D.No. 4-1-78/1, Kalyana Mandapam Road, Opp SBI ATM, Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana - 507111.</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <Phone className="h-3.5 w-3.5 text-[var(--color-brand-teal)] shrink-0" />
-                <span className="min-w-0 text-white/70 text-[11px] leading-relaxed">+91 95420 69573, +91 984 984 89 82, +91 984 984 89 83, +91 984 984 89 38</span>
+                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Phone className="h-3.5 w-3.5" /></span>
+                <span className="min-w-0 text-[12px] leading-relaxed text-white/72">+91 95420 69573, +91 984 984 89 82, +91 984 984 89 83, +91 984 984 89 38</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <Clock className="h-3.5 w-3.5 text-[var(--color-brand-teal)] shrink-0 mt-0.5" />
-                <span className="text-white/70 text-[11px]">Reporting time: 7:00 AM to 7:30 AM</span>
+                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Clock className="h-3.5 w-3.5" /></span>
+                <span className="text-[12px] leading-relaxed text-white/72">Reporting time: 7:00 AM to 7:30 AM</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-brand-teal)] shrink-0 mt-0.5" />
-                <span className="text-white/70 text-[11px]">Carry Aadhaar Xerox for all passengers and submit it at the boat point.</span>
+                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><ShieldCheck className="h-3.5 w-3.5" /></span>
+                <span className="text-[12px] leading-relaxed text-white/72">Carry Aadhaar Xerox for all passengers and submit it at the boat point.</span>
               </li>
-              <li className="flex items-start gap-2.5">
-                <Mail className="h-3.5 w-3.5 text-[var(--color-brand-teal)] shrink-0" />
-                <span className="min-w-0 break-all text-white/70 text-[11px]">tsboattourismservices@gmail.com</span>
+              <li className="flex items-start gap-2.5 sm:col-span-2">
+                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Mail className="h-3.5 w-3.5" /></span>
+                <span className="min-w-0 break-words text-[12px] leading-relaxed text-white/72">tsboattourismservices@gmail.com</span>
               </li>
             </ul>
           </div>
 
-          {/* Conditional Map (Now visible on all screens if on Homepage) */}
-          {isHomePage && (
-            <div className="min-h-48 overflow-hidden rounded-xl border border-white/10 shadow-lg sm:col-span-2 min-[980px]:col-span-1">
+          {/* Map */}
+          <div className="min-w-0 overflow-hidden rounded-xl border border-white/12 bg-white/[0.04] p-2 shadow-[0_14px_40px_rgba(0,0,0,0.12)] min-[760px]:col-span-2 min-[1120px]:col-span-1">
+            <div className="mb-2 flex items-center justify-between gap-3 px-1.5">
+              <h3 className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">AP Tourism Papikondalu</h3>
+              <a
+                href="https://www.google.com/maps/place/AP+TOURISM+PAPIKONDALU"
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 text-[11px] font-bold text-[var(--color-brand-teal)] transition-colors hover:text-white"
+              >
+                Open Maps
+              </a>
+            </div>
+            <div className="h-40 overflow-hidden rounded-lg border border-white/15 bg-white/10 sm:h-48 lg:h-56 2xl:h-64">
               <iframe
-                title="Footer Map"
+                title="AP Tourism Papikondalu map"
                 src={MAP_EMBED_URL}
-                className="w-full h-48 min-[980px]:h-64"
+                className="h-full w-full"
                 style={{ border: 0 }}
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
-          )}
+          </div>
 
         </div>
 
         {/* Bottom Bar */}
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-center md:flex-row md:text-left">
-          <p className="text-white/65 text-[10px] text-center md:text-left">
+        <div className="mt-3 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-4 text-center sm:flex-row sm:pr-20 sm:text-left md:pr-24">
+          <p className="text-center text-[10px] text-white/62 sm:text-left">
             © {new Date().getFullYear()} Papikondalu Tourism. All rights reserved.
           </p>
-          <div className="flex items-center gap-1 text-white/70 text-[11px] font-medium">
-            Made with <Heart className="h-3 w-3 text-red-500 fill-red-500 mx-0.5" /> by <a href="https://wa.me/918886154275" target="_blank" rel="noreferrer" className="text-white font-bold hover:text-[var(--color-brand-teal)] transition-colors">Satvik</a>
+          <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
+            Made with <Heart className="mx-0.5 h-3 w-3 fill-red-500 text-red-500" /> by <a href="https://wa.me/918886154275" target="_blank" rel="noreferrer" className="font-bold text-white transition-colors hover:text-[var(--color-brand-teal)]">Satvik</a>
           </div>
         </div>
       </div>
