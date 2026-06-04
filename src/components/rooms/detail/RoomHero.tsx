@@ -49,7 +49,7 @@ export const RoomHero = ({ lodgeName, coverImage, address, isFeatured, startingP
             <div className="rounded-2xl border border-white/16 bg-white/12 p-4 backdrop-blur-md">
               <BedDouble className="mb-4 h-5 w-5 text-[#e5dac5]" />
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/54">Rooms</p>
-              <p className="mt-2 text-sm font-bold text-white">{totalRooms ? `${totalRooms} listed rooms` : 'Variant based'}</p>
+              <p className="mt-2 text-sm font-bold text-white">{totalRooms ? `${totalRooms} listed rooms` : 'Room Options'}</p>
             </div>
             <div className="rounded-2xl border border-white/16 bg-white/12 p-4 backdrop-blur-md">
               <Sparkles className="mb-4 h-5 w-5 text-[#e5dac5]" />

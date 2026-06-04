@@ -1066,7 +1066,7 @@ export const BookingSidebarV2 = ({
           <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
             {/* Variant Select */}
             <div className="relative" ref={variantMenuRef}>
-              <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Variant</label>
+              <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Package Type</label>
               <button
                 type="button"
                 disabled={isPackageInactive || validVariants.length === 0}
@@ -1079,7 +1079,7 @@ export const BookingSidebarV2 = ({
                     : 'border-slate-200 bg-white hover:border-[#1a6b7a]/50 text-slate-800'
                 }`}
               >
-                <span className="min-w-0 truncate">{selectedVariant?.title || 'Select variant'}</span>
+                <span className="min-w-0 truncate">{selectedVariant?.title || 'Select package type'}</span>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${variantMenuOpen ? 'rotate-180 text-[#1a6b7a]' : ''}`} />
               </button>
 
@@ -1113,7 +1113,7 @@ export const BookingSidebarV2 = ({
                       );
                     }) : (
                       <div className="px-3 py-4 text-xs font-semibold text-amber-700">
-                        Fare variants are being updated. Please call to confirm.
+                        Package options are being updated. Please call to confirm.
                       </div>
                     )}
                   </div>
@@ -1220,7 +1220,7 @@ export const BookingSidebarV2 = ({
                         : 'bg-white border-slate-200 text-slate-500 hover:border-[#1a6b7a]/60'
                     }`}
                   >
-                    🚗 Private
+                    🚗 Separate Vehicle
                   </button>
                 )}
               </div>
