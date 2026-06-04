@@ -42,6 +42,22 @@ type PackageDetail = {
   meta_description?: string | null;
   tags: string[];
   starting_price?: number | null;
+  has_transport?: boolean;
+  transport_options?: Array<{
+    id: number;
+    type: 'SHARED' | 'SEPARATE_VEHICLE';
+    title: string;
+    capacity?: number;
+    adult_price?: number | string | null;
+    child_price?: number | string | null;
+    weekend_adult_price?: number | string | null;
+    weekend_child_price?: number | string | null;
+    fixed_price?: number | string | null;
+    weekend_fixed_price?: number | string | null;
+  }>;
+  has_refreshments?: boolean;
+  refreshment_adult_price?: number | string | null;
+  refreshment_child_price?: number | string | null;
   variants: Variant[];
   gallery: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
   itinerary: Array<{ id: number; day_number: number; title: string; description?: string | null; icon?: string | null; sort_order: number }>;
@@ -361,6 +377,11 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
             packageId={pkg.id}
             packageSlug={pkg.slug}
             brochurePdfUrl={pkg.generated_brochure_url || pkg.brochure_pdf_url}
+            hasTransport={pkg.has_transport}
+            transportOptions={pkg.transport_options}
+            hasRefreshments={pkg.has_refreshments}
+            refreshmentAdultPrice={pkg.refreshment_adult_price}
+            refreshmentChildPrice={pkg.refreshment_child_price}
           />
         </aside>
 
@@ -373,6 +394,11 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         packageId={pkg.id}
         packageSlug={pkg.slug}
         brochurePdfUrl={pkg.generated_brochure_url || pkg.brochure_pdf_url}
+        hasTransport={pkg.has_transport}
+        transportOptions={pkg.transport_options}
+        hasRefreshments={pkg.has_refreshments}
+        refreshmentAdultPrice={pkg.refreshment_adult_price}
+        refreshmentChildPrice={pkg.refreshment_child_price}
       />
 
       <CouponPopup targetType="PACKAGE" targetId={pkg.id} />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/stores/authStore';
-import { User, Mail, Phone, Edit2, Camera, Loader2 } from 'lucide-react';
+import { User, Mail, Phone, Edit2, Camera, Loader2, Building2, Percent, IndianRupee, FileText, MapPin } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
@@ -12,6 +12,8 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+  const [address, setAddress] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -23,6 +25,8 @@ export default function ProfilePage() {
       setFullName(user.full_name || '');
       setPhoneNumber(user.phone_number || '');
       setAvatarUrl(user.avatar_url || '');
+      setGstNumber(user.gst_number || '');
+      setAddress(user.address || '');
     }
   }, [user, isEditingProfile]);
 
@@ -89,6 +93,8 @@ export default function ProfilePage() {
         full_name: fullName.trim(),
         phone_number: phoneNumber.trim() || null,
         avatar_url: avatarUrl || null,
+        gst_number: gstNumber.trim() || null,
+        address: address.trim() || null,
       });
       updateUser(response.data);
       toast.success('Profile updated successfully!');
@@ -167,8 +173,15 @@ export default function ProfilePage() {
               className="hidden" 
             />
 
-            <div className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-inset ring-green-600/20">
-              Verified Account
+            <div className="inline-flex flex-col gap-2 items-center">
+              <div className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-inset ring-green-600/20">
+                Verified Account
+              </div>
+              {user?.role === 'AGENT' && (
+                <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#0f3d56] ring-1 ring-inset ring-[#0f3d56]/20">
+                  AGENT_{String(user.id).padStart(3, '0')}
+                </div>
+              )}
             </div>
           </div>
 
@@ -217,6 +230,93 @@ export default function ProfilePage() {
                 <div className="text-slate-800 font-bold py-2">{user?.phone_number || 'Not provided'}</div>
               )}
             </div>
+
+            {/* Agent Specific Details */}
+            {user?.role === 'AGENT' && (
+              <>
+                <div className="sm:col-span-2 my-2 border-t border-slate-100 pt-6">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f3d56] mb-4">Agent Business Information</h3>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <Building2 className="h-4 w-4 text-[#5ac4d7]" /> Company Name
+                  </label>
+                  <div className="text-slate-800 font-bold py-2">
+                    {user?.company_name || <span className="text-slate-400 font-normal italic">Not configured</span>}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <FileText className="h-4 w-4 text-[#5ac4d7]" /> GST Number
+                  </label>
+                  {isEditingProfile ? (
+                    <input 
+                      type="text" 
+                      value={gstNumber} 
+                      onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                      placeholder="Enter GSTIN"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#5ac4d7] focus:ring-1 focus:ring-[#5ac4d7] font-semibold text-slate-800 transition-all" 
+                    />
+                  ) : (
+                    <div className="text-slate-800 font-bold py-2">
+                      {user?.gst_number || <span className="text-slate-400 font-normal italic">Not configured</span>}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <MapPin className="h-4 w-4 text-[#5ac4d7]" /> Address
+                  </label>
+                  {isEditingProfile ? (
+                    <textarea 
+                      value={address} 
+                      onChange={(e) => setAddress(e.target.value)}
+                      rows={3}
+                      placeholder="Enter business address"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#5ac4d7] focus:ring-1 focus:ring-[#5ac4d7] font-semibold text-slate-800 transition-all resize-none" 
+                    />
+                  ) : (
+                    <div className="text-slate-800 font-bold py-2 whitespace-pre-wrap">
+                      {user?.address || <span className="text-slate-400 font-normal italic">Not configured</span>}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    {user?.commission_type === 'PERCENTAGE' ? (
+                      <Percent className="h-4 w-4 text-[#5ac4d7]" />
+                    ) : (
+                      <IndianRupee className="h-4 w-4 text-[#5ac4d7]" />
+                    )}
+                    Commission Settings
+                  </label>
+                  <div className="text-slate-800 font-bold py-2">
+                    {user?.commission_type === 'PERCENTAGE' ? (
+                      <span>Percentage-based: <strong className="text-green-600">{user?.commission_percentage}%</strong></span>
+                    ) : user?.commission_type === 'FIXED_AMOUNT' ? (
+                      <span>Fixed Amount per seat/booking: <strong className="text-green-600">₹{user?.commission_fixed_amount}</strong></span>
+                    ) : (
+                      <span className="text-slate-400 font-normal italic">No commission configured</span>
+                    )}
+                  </div>
+                </div>
+
+                {user?.admin_notes && (
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <FileText className="h-4 w-4 text-[#5ac4d7]" /> Admin Notes / Instructions
+                    </label>
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-slate-700 font-medium text-sm leading-relaxed whitespace-pre-line">
+                      {user.admin_notes}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
             {isEditingProfile && (
               <div className="sm:col-span-2 pt-4">

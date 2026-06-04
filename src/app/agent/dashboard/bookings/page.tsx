@@ -4,18 +4,26 @@ import React, { useEffect, useState, useRef } from 'react';
 import { 
   Ticket, 
   Search, 
-  Calendar, 
+  Calendar,
+  SlidersHorizontal, 
   ChevronRight, 
   ChevronLeft,
+  Filter,
+  AlertCircle,
   Loader2, 
   X, 
   UserCheck, 
   Users, 
-  TrendingUp 
+  TrendingUp,
+  Download,
+  UserPlus,
+  FileText
 } from 'lucide-react';
+import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import PremiumSelect from '@/components/ui/PremiumSelect';
+import { getTransportSelections, hasRefreshment, money } from '@/lib/bookingDisplay';
 
 interface BookingListItem {
   id: number;
@@ -34,6 +42,13 @@ interface BookingListItem {
   created_at: string | null;
   package_title: string;
   variant_title: string;
+  target_type: 'PACKAGE' | 'ROOM';
+  room_checkin?: string | null;
+  room_checkout?: string | null;
+  room_checkout_date?: string | null;
+  package_departure_time?: string | null;
+  has_refreshment_addon?: boolean;
+  pricing_snapshot?: any;
   passenger_names: string[];
 }
 
@@ -431,7 +446,10 @@ export default function AgentBookingsLedgerPage() {
             Showing {displayedBookings.length} of {filteredBookings.length} bookings matched.
           </div>
           
-          {displayedBookings.map((b) => (
+          {displayedBookings.map((b) => {
+            const transports = getTransportSelections(b.pricing_snapshot);
+            const refreshmentIncluded = hasRefreshment(b);
+            return (
             <div 
               key={b.id} 
               className="bg-white rounded-3xl shadow-sm border border-border overflow-hidden transition-all hover:shadow-md group flex flex-col md:flex-row"
@@ -457,10 +475,37 @@ export default function AgentBookingsLedgerPage() {
                     </h3>
                     <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">{b.variant_title}</p>
                     
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mt-4">
-                      <Calendar className="h-4 w-4 text-slate-400" /> 
-                      <span>Travel Date: <strong className="text-slate-700">{b.travel_date}</strong></span>
+                    <div className="mt-4">
+                    <BookingDateDisplay 
+                        targetType={b.target_type} 
+                        travelDate={b.travel_date}
+                        roomCheckin={b.room_checkin}
+                        roomCheckout={b.room_checkout}
+                        roomCheckoutDate={b.room_checkout_date}
+                        packageDepartureTime={b.package_departure_time}
+                        compact={false}
+                        className="!text-xs"
+                      />
                     </div>
+                    {(transports.length > 0 || refreshmentIncluded || b.target_type === 'ROOM') && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {b.target_type === 'ROOM' && (
+                          <span className="rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 ring-1 ring-indigo-200">
+                            {b.room_checkin || 'Check-in TBA'} to {b.room_checkout || 'Check-out TBA'}
+                          </span>
+                        )}
+                        {transports.slice(0, 2).map((ts, idx) => (
+                          <span key={idx} className="rounded-full bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200">
+                            {Number(ts.quantity || 1) > 1 ? `${ts.quantity}x ` : ''}{ts.title}
+                          </span>
+                        ))}
+                        {refreshmentIncluded && (
+                          <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                            Refreshments
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Passenger details */}
@@ -487,17 +532,17 @@ export default function AgentBookingsLedgerPage() {
                   <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
                     <div>
                       <span className="text-slate-400 font-medium">Subtotal</span>
-                      <p className="font-bold text-slate-700">₹{b.subtotal_amount.toLocaleString('en-IN')}</p>
+                      <p className="font-bold text-slate-700">{money(b.subtotal_amount)}</p>
                     </div>
                     {b.coupon_discount > 0 && (
                       <div>
                         <span className="text-slate-400 font-medium">Discount ({b.coupon_applied})</span>
-                        <p className="font-bold text-red-600">-₹{b.coupon_discount.toLocaleString('en-IN')}</p>
+                        <p className="font-bold text-red-600">-{money(b.coupon_discount)}</p>
                       </div>
                     )}
                     <div>
                       <span className="text-slate-400 font-medium">GST & Fees</span>
-                      <p className="font-bold text-slate-700">₹{(b.gst_amount + b.gateway_fee).toLocaleString('en-IN')}</p>
+                      <p className="font-bold text-slate-700">{money(b.gst_amount + b.gateway_fee)}</p>
                     </div>
                   </div>
 
@@ -505,7 +550,7 @@ export default function AgentBookingsLedgerPage() {
                     <div className="text-right min-w-[100px] sm:min-w-[120px]">
                       <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Tourist Bill</span>
                       <p className="font-black text-xl text-slate-800 tracking-tight leading-none mt-1">
-                        ₹{b.total_amount.toLocaleString('en-IN')}
+                        {money(b.total_amount)}
                       </p>
                     </div>
                     
@@ -519,7 +564,8 @@ export default function AgentBookingsLedgerPage() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {/* Load More Pagination Trigger */}
           {hasMore && (

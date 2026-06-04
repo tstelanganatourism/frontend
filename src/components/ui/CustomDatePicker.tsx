@@ -25,9 +25,14 @@ export const CustomDatePicker = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const parseDateLocal = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
   const baseDate = useMemo(() => {
-    if (value) return new Date(value);
-    if (min) return new Date(min);
+    if (value) return parseDateLocal(value);
+    if (min) return parseDateLocal(min);
     return new Date();
   }, [value, min]);
 
@@ -76,7 +81,7 @@ export const CustomDatePicker = ({
   const prevMonth = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!allowPast) {
-      const minD = min ? new Date(min) : new Date();
+      const minD = min ? parseDateLocal(min) : new Date();
       if (calYear < minD.getFullYear() || (calYear === minD.getFullYear() && calMonth <= minD.getMonth())) return;
     }
     if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }
@@ -108,7 +113,7 @@ export const CustomDatePicker = ({
     return days;
   };
 
-  const formattedDate = value ? new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : placeholder;
+  const formattedDate = value ? parseDateLocal(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : placeholder;
 
   return (
     <div className="relative w-full" ref={containerRef}>
@@ -116,7 +121,13 @@ export const CustomDatePicker = ({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full text-left rounded-lg border px-3 py-2 text-sm font-semibold transition-all h-[42px] flex items-center gap-2 ${disabled ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-85 text-slate-400' : 'bg-white border-slate-300 cursor-pointer hover:border-[#1a6b7a] focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a]'}`}
+        className={`w-full text-left rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-all h-[42px] flex items-center gap-2 outline-none ${
+          disabled 
+            ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-85 text-slate-400' 
+            : isOpen
+            ? 'border-[#1a6b7a] bg-white ring-2 ring-[#1a6b7a]/15 shadow-md shadow-[#1a6b7a]/5 text-slate-900 font-extrabold'
+            : 'border-slate-200 bg-white hover:border-[#1a6b7a]/50 text-slate-800'
+        }`}
       >
         <CalendarDays className="h-4 w-4 text-[#1a6b7a]" />
         <span>{formattedDate}</span>

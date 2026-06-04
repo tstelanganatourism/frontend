@@ -27,10 +27,10 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function AvatarInitials({ name }: { name: string }) {
-  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initials = (name || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#5ac4d7] to-[#0f3d56] flex items-center justify-center text-white text-xs font-black shadow-sm">
-      {initials}
+      {initials || '?'}
     </div>
   );
 }
@@ -54,10 +54,13 @@ export default function AdminAgentsPage() {
   const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
-    fetchAgents('', statusFilter, 1, agentsLimit).finally(() => {
-      setIsInitialMount(false);
-    });
-  }, [fetchAgents, statusFilter, agentsLimit]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchAgents(searchVal, statusFilter, 1, agentsLimit).finally(() => {
+        setIsInitialMount(false);
+      });
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [fetchAgents, searchVal, statusFilter, agentsLimit]);
 
   const handleDeleteConfirm = async () => {
     if (selectedAgentId) {
@@ -267,8 +270,8 @@ export default function AdminAgentsPage() {
           currentPage={agentsPage}
           totalItems={agentsTotal}
           pageSize={agentsLimit}
-          onPageChange={(page) => fetchAgents('', statusFilter, page, agentsLimit)}
-          onPageSizeChange={(size) => fetchAgents('', statusFilter, 1, size)}
+          onPageChange={(page) => fetchAgents(searchVal, statusFilter, page, agentsLimit)}
+          onPageSizeChange={(size) => fetchAgents(searchVal, statusFilter, 1, size)}
         />
       </div>
 

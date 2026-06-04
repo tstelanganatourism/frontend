@@ -40,9 +40,20 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
         {/* Sidebar */}
         <aside className="w-full md:w-64 shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden sticky top-32">
-            <div className="p-4 bg-[var(--color-brand-river)] text-white">
-              <h2 className="text-lg font-bold">My Account</h2>
-              <p className="text-sm opacity-80">Agent Portal</p>
+            <div className="p-4 bg-[var(--color-brand-river)] text-white flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full overflow-hidden bg-white/20 flex items-center justify-center shrink-0">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-white font-black text-sm">
+                    {user?.full_name?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'A'}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-black truncate">{user?.full_name || 'Agent'}</h2>
+                <p className="text-xs opacity-70">Agent Portal</p>
+              </div>
             </div>
             <nav className="p-2 space-y-1">
               {navItems.map((item) => {

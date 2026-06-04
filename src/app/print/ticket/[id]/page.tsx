@@ -3,6 +3,16 @@ import crypto from 'crypto';
 import { apiFetch } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import PrintAction from '@/components/ui/PrintAction';
+import {
+  describeTransport,
+  getBaseFareExcludingAddons,
+  getCapturedPayments,
+  getRefreshmentAmount,
+  getTransportSelections,
+  hasRefreshment,
+  money,
+  type PaymentLedgerEntry,
+} from '@/lib/bookingDisplay';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,18 +52,32 @@ interface BookingDetails {
   created_at: string | null;
   package_title: string;
   variant_title: string;
+  package_type?: 'TOUR' | 'TRIP';
   target_type?: 'PACKAGE' | 'ROOM';
   boarding_point: BoardingPoint | null;
   passengers: Passenger[];
   agent_id: number | null;
   agent_name: string | null;
   agent_phone?: string | null;
+  agent_gst?: string | null;
+  agent_company?: string | null;
   room_checkin?: string | null;
   room_checkout?: string | null;
   room_checkout_date?: string | null;
   room_address?: string | null;
   room_highlights?: { title: string; icon: string }[];
   itinerary?: { day_number: number; title: string; timing: string; duration?: string | null; meal_included?: boolean; description: string }[];
+  pricing_snapshot?: any;
+  has_refreshment_addon?: boolean;
+  payment_ledger?: PaymentLedgerEntry[];
+  cancellation_details?: {
+    status: string;
+    reason: string;
+    cancellation_fee?: number | null;
+    refund_amount?: number | null;
+    requested_at?: string | null;
+    processed_at?: string | null;
+  };
 }
 
 interface PageProps {
@@ -97,33 +121,36 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
     return notFound();
   }
 
-  const isRoom = booking.target_type === 'ROOM';
-  const isSightseeing = booking.package_title.toLowerCase().includes('sightseeing') || booking.package_title.toLowerCase().includes('local') || booking.package_title.toLowerCase().includes('tour');
-
   const travelDateObj = new Date(booking.travel_date);
   const travelDateFormatted = travelDateObj.toLocaleDateString('en-IN', {
     day: '2-digit', month: 'long', year: 'numeric'
   }).toUpperCase() + ', ' + travelDateObj.toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase();
 
-  const reportingTime = isRoom ? (booking.room_checkin || '') : (booking.boarding_point?.departure_time || '');
+  const isRoom = booking.target_type === 'ROOM';
+  const isBoatRide = booking.package_type === 'TOUR';
+  const ticketTitle = isRoom ? 'HOTEL/RESORT TICKET' : (isBoatRide ? 'BOAT RIDE TICKET' : 'SIGHTSEEING TICKET');
+
+  const reportingTime = isRoom ? (booking.room_checkin || 'TBA') : (booking.boarding_point?.departure_time || 'TBA');
   const boardingTitle = isRoom
     ? (booking.package_title)
-    : (booking.boarding_point?.title || 'Bhadrachalam TSTG Tourism Office');
+    : (booking.boarding_point?.title || 'Bhadrachalam Tourism Office');
 
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
   const isFullyPaid = booking.status === 'FULLY_PAID';
+  const passengerCount = booking.adult_count + booking.child_count;
+  const transportSelections = getTransportSelections(booking.pricing_snapshot);
+  const refreshmentIncluded = hasRefreshment(booking);
+  const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
+  const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
+  const capturedPayments = getCapturedPayments(booking.payment_ledger);
 
   // Dynamic GSTIN selection based on payment type
   const isRazorpay = !!(
-    (booking as any).pricing_snapshot?.razorpay_payment_id ||
-    (booking as any).pricing_snapshot?.razorpay_order_id ||
-    (booking as any).payment_ledger?.some((p: any) => p.payment_method === 'RAZORPAY')
+    booking.pricing_snapshot?.razorpay_payment_id ||
+    booking.pricing_snapshot?.razorpay_order_id ||
+    booking.payment_ledger?.some((p) => p.payment_method === 'RAZORPAY')
   );
   const gstNumber = isRazorpay ? '29AANCR6717K1ZN' : '36AALFT7063K1ZL';
-
-
-  // Dynamic ticket title
-  const ticketTitle = isRoom ? 'PREMIUM ROOMS' : isSightseeing ? 'SIGHTSEEING TICKET' : 'BOAT RIDE TICKET';
 
   // Parse itinerary events
   type TlEvent = { time: string; desc: string };
@@ -303,6 +330,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         .pay-card { width: 42%; border: 1.5px solid #ddd; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
         .pay-row { display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10px; border-bottom: 1px solid #f1f5f9; color: #555; font-weight: 600; }
         .pay-row span:last-child { font-weight: 700; color: #1e293b; text-align: right; }
+        .pay-row small { display: block; color: #64748b; font-size: 7.5px; line-height: 1.35; margin-top: 1px; font-weight: 700; }
         .pay-total { display: flex; justify-content: space-between; padding: 6px 10px; font-size: 11px; font-weight: 900; color: #0a2351; background: #e8eaf6; border-top: 2px solid #9fa8da; }
         .pay-paid { display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10.5px; font-weight: 800; color: #2e7d32; background: #e8f5e9; }
         .pay-bal { display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10.5px; font-weight: 800; color: #d32f2f; background: #ffebee; }
@@ -443,6 +471,26 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <div className="bk-icon">👥</div>
                 <div><div className="bk-lbl">Total Passengers</div><div className="bk-val">{guestSummary}</div></div>
               </div>
+              {(transportSelections.length > 0 || refreshmentIncluded) && (
+                <div className="bk-row">
+                  <div className="bk-icon">🚐</div>
+                  <div>
+                    <div className="bk-lbl">Addons & Transport</div>
+                    <div className="bk-val text-[10px] space-y-1 mt-0.5">
+                      {transportSelections.map((ts, i) => (
+                        <div key={i}>
+                          • {ts.title} ({describeTransport(ts, passengerCount)})
+                        </div>
+                      ))}
+                      {refreshmentIncluded && (
+                        <div>
+                          • Refreshments Included ({passengerCount} pax)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -477,6 +525,15 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),<br />
                 TELANGANA-507111<br />
                 <strong>GSTIN: {gstNumber}</strong>
+                {booking.agent_gst && (
+                  <>
+                    <br />
+                    <strong>Agent GSTIN: {booking.agent_gst}</strong>
+                    {booking.agent_company && (
+                      <> ({booking.agent_company})</>
+                    )}
+                  </>
+                )}
               </div>
               <div className="divider-v" />
               <div className="note-addr-col">
@@ -534,21 +591,74 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
           {/* Payment Summary */}
           <div className="pay-card">
             <div className="sec-hdr">Payment Summary</div>
-            <div className="pay-row"><span>Package Price ({guestSummary})</span><span>₹ {booking.subtotal_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            {booking.coupon_discount > 0 && (
-              <div className="pay-row" style={{ color: '#2e7d32' }}><span>Discount ({booking.coupon_applied})</span><span>−₹ {booking.coupon_discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            )}
-            <div className="pay-row"><span>Taxes (GST @ 5%)</span><span>₹ {booking.gst_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            <div className="pay-row"><span>Convenience Fee</span><span>₹ {booking.gateway_fee.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            <div className="pay-total"><span>TOTAL AMOUNT</span><span>₹ {booking.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            <div className="pay-paid"><span>AMOUNT PAID</span><span>₹ {totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            {booking.remaining_balance > 0 && (
-              <div className="pay-bal"><span>REMAINING BALANCE</span><span>₹ {booking.remaining_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            )}
-            <div className="pay-status-row" style={{ color: isFullyPaid ? '#2e7d32' : booking.remaining_balance > 0 ? '#e65100' : '#d32f2f' }}>
-              <span>PAYMENT STATUS</span>
-              <span>{isFullyPaid ? 'FULLY PAID' : booking.remaining_balance > 0 ? 'PARTIAL PAYMENT' : booking.status.replace(/_/g, ' ')}</span>
+            <div className="pay-row">
+              <span>
+                {isRoom ? 'Room Tariff' : 'Package Fare'}
+                <small>{booking.variant_title} | {guestSummary}</small>
+              </span>
+              <span>{money(baseFare, 2)}</span>
             </div>
+            {isRoom && (
+              <div className="pay-row">
+                <span>
+                  Stay Details
+                  <small>Check-in {booking.room_checkin || 'TBA'} | Check-out {booking.room_checkout || 'TBA'}</small>
+                </span>
+                <span>Included</span>
+              </div>
+            )}
+            {transportSelections.map((ts, idx) => (
+              <div className="pay-row" key={`transport-${idx}`}>
+                <span>
+                  {ts.title || 'Transport'}
+                  <small>{describeTransport(ts, passengerCount)}</small>
+                </span>
+                <span>{money(ts.item_total || 0, 2)}</span>
+              </div>
+            ))}
+            {refreshmentIncluded && (
+              <div className="pay-row">
+                <span>
+                  Refreshments
+                  <small>Included for {passengerCount} pax</small>
+                </span>
+                <span>{refreshmentAmount > 0 ? money(refreshmentAmount, 2) : 'Included'}</span>
+              </div>
+            )}
+            {booking.coupon_discount > 0 && (
+              <div className="pay-row" style={{ color: '#2e7d32' }}><span>Discount ({booking.coupon_applied})</span><span>−{money(booking.coupon_discount, 2)}</span></div>
+            )}
+            <div className="pay-row"><span>Taxes (GST @ 5%)</span><span>{money(booking.gst_amount, 2)}</span></div>
+            <div className="pay-row"><span>Convenience Fee</span><span>{money(booking.gateway_fee, 2)}</span></div>
+            <div className="pay-total"><span>TOTAL AMOUNT</span><span>{money(booking.total_amount, 2)}</span></div>
+            <div className="pay-paid"><span>AMOUNT PAID</span><span>{money(totalPaid, 2)}</span></div>
+            {booking.remaining_balance > 0 && (
+              <div className="pay-bal"><span>REMAINING BALANCE</span><span>{money(booking.remaining_balance, 2)}</span></div>
+            )}
+            {capturedPayments.length > 0 && (
+              <div className="pay-note">
+                <span className="pay-note-icon">✓</span>
+                <span>
+                  Payments: {capturedPayments.map((payment) => `${money(payment.amount, 2)} ${payment.payment_method}`).join(', ')}
+                </span>
+              </div>
+            )}
+            <div className="pay-status-row" style={{ color: booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? '#d32f2f' : isFullyPaid ? '#2e7d32' : booking.remaining_balance > 0 ? '#e65100' : '#d32f2f' }}>
+              <span>PAYMENT STATUS</span>
+              <span>{booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? booking.status : isFullyPaid ? 'FULLY PAID' : booking.remaining_balance > 0 ? 'PARTIAL PAYMENT' : booking.status.replace(/_/g, ' ')}</span>
+            </div>
+            {(booking.status === 'CANCELLED' || booking.status === 'REFUNDED') && booking.cancellation_details && (
+              <>
+                <div className="pay-row" style={{ color: '#d32f2f', fontWeight: 'bold' }}>
+                  <span>Cancellation Charges</span>
+                  <span>{money(booking.cancellation_details.cancellation_fee || 0, 2)}</span>
+                </div>
+                <div className="pay-row" style={{ color: '#2e7d32', fontWeight: 'bold', backgroundColor: '#f0fdf4', padding: '4px 8px', borderRadius: '4px', margin: '4px 0' }}>
+                  <span>AMOUNT REFUNDED</span>
+                  <span>{money(booking.cancellation_details.refund_amount || 0, 2)}</span>
+                </div>
+              </>
+            )}
             {booking.remaining_balance > 0 && (
               <div className="pay-note">
                 <span className="pay-note-icon">ℹ️</span>
@@ -565,13 +675,13 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <div className="jt-event">
                   <div className="jt-dot-col"><div className="jt-dot" /><div className="jt-line" /></div>
                   <div className="jt-time">{booking.room_checkin || 'Check-In'}</div>
-                  <div className="jt-desc">Check-in at {booking.package_title}<br/><span style={{fontSize: '8.5px', color: '#666', fontWeight: 700}}>{travelDateFormatted}</span></div>
+                  <div className="jt-desc">Check-in at {booking.package_title}<br /><span style={{ fontSize: '8.5px', color: '#666', fontWeight: 700 }}>{travelDateFormatted}</span></div>
                 </div>
                 {booking.room_highlights && booking.room_highlights.length > 0 ? (
                   booking.room_highlights.map((hi, i) => (
                     <div className="jt-event" key={`hi-${i}`}>
-                      <div className="jt-dot-col"><div className="jt-dot" style={{background: '#e2e8f0', borderColor: '#94a3b8'}} /><div className="jt-line" /></div>
-                      <div className="jt-time" style={{color: '#64748b'}}>Service</div>
+                      <div className="jt-dot-col"><div className="jt-dot" style={{ background: '#e2e8f0', borderColor: '#94a3b8' }} /><div className="jt-line" /></div>
+                      <div className="jt-time" style={{ color: '#64748b' }}>Service</div>
                       <div className="jt-desc">{hi.title}</div>
                     </div>
                   ))
@@ -585,7 +695,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <div className="jt-event">
                   <div className="jt-dot-col"><div className="jt-dot" /></div>
                   <div className="jt-time">{booking.room_checkout || 'Check-Out'}</div>
-                  <div className="jt-desc">Check-out &amp; Departure<br/><span style={{fontSize: '8.5px', color: '#666', fontWeight: 700}}>{booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric', weekday: 'long' }).toUpperCase() : ''}</span></div>
+                  <div className="jt-desc">Check-out &amp; Departure<br /><span style={{ fontSize: '8.5px', color: '#666', fontWeight: 700 }}>{booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric', weekday: 'long' }).toUpperCase() : ''}</span></div>
                 </div>
               </div>
             ) : allEvents.length > 0 ? (
@@ -597,7 +707,16 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                       {i < allEvents.length - 1 && <div className="jt-line" />}
                     </div>
                     <div className="jt-time">{ev.time}</div>
-                    <div className="jt-desc">{ev.desc}</div>
+                    <div className="jt-desc">
+                      {ev.desc.split(/\.\s+(?=[A-Z])|\n+/).filter(Boolean).map((sentence, idx) => {
+                        const trimmed = sentence.trim();
+                        return (
+                          <span key={idx} style={{ display: 'block', marginBottom: '4px' }}>
+                            {trimmed.endsWith('.') ? trimmed : `${trimmed}.`}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -664,7 +783,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
           <div className="agent-bar">
             <div>
               <span className="agent-bar-label">Booked via Agent</span>{' '}
-              <strong>AGT-{booking.agent_id} · {booking.agent_name}</strong>
+              <strong>AGENT_{String(booking.agent_id).padStart(3, '0')} · {booking.agent_name} {booking.agent_company ? `(${booking.agent_company})` : ''}</strong>
+              {booking.agent_gst && (
+                <span className="ml-2 pl-2 border-l border-slate-600">
+                  GSTIN: <strong>{booking.agent_gst}</strong>
+                </span>
+              )}
             </div>
             {booking.agent_phone && (
               <div>📞 Agent: <strong>{booking.agent_phone}</strong></div>

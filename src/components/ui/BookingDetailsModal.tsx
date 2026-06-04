@@ -8,8 +8,16 @@ import {
   CheckCircle2, AlertCircle, IndianRupee, TrendingUp
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { downloadFileViaFetch } from '@/lib/downloadUtils';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
+import {
+  describeTransport,
+  getBaseFareExcludingAddons,
+  getRefreshmentAmount,
+  getTransportSelections,
+  hasRefreshment,
+} from '@/lib/bookingDisplay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,9 +63,14 @@ interface BookingDetails {
   room_checkin?: string | null;
   room_checkout?: string | null;
   room_checkout_date?: string | null;
+  package_type?: string | null;
+  has_refreshment_addon?: boolean;
   passengers: Passenger[];
   agent_id: number | null;
   agent_name: string | null;
+  booked_by_name?: string | null;
+  booked_by_email?: string | null;
+  booked_by_role?: string | null;
   agent_commission?: number | null;
   agent_payable?: number | null;
   boarding_point: {
@@ -72,6 +85,15 @@ interface BookingDetails {
   ticket_generation_status?: string;
   invoice_generation_status?: string;
   payment_ledger: PaymentLedgerEntry[];
+  pricing_snapshot?: any;
+  cancellation_details?: {
+    status: string;
+    reason: string;
+    cancellation_fee?: number | null;
+    refund_amount?: number | null;
+    requested_at?: string | null;
+    processed_at?: string | null;
+  };
 }
 
 interface BookingDetailsModalProps {
@@ -120,7 +142,7 @@ function formatDateTime(iso: string | null) {
 
 // ─── Payment Ledger Component ─────────────────────────────────────────────────
 
-function PaymentLedgerPanel({ ledger }: { ledger: PaymentLedgerEntry[] }) {
+function PaymentLedgerPanel({ ledger, targetTotalAmount }: { ledger: PaymentLedgerEntry[], targetTotalAmount: number }) {
   if (!ledger || ledger.length === 0) {
     return (
       <div className="flex items-center justify-center py-6 text-slate-400 text-xs font-semibold">
@@ -148,14 +170,20 @@ function PaymentLedgerPanel({ ledger }: { ledger: PaymentLedgerEntry[] }) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-black text-slate-800">
-                  {idx === 0 ? 'Advance Payment' : `Payment ${idx + 1}`}
+                  {idx === 0 
+                    ? (entry.amount >= targetTotalAmount ? 'Full Payment' : 'Advance Payment') 
+                    : `Payment ${idx + 1}`}
                 </p>
                 <p className="text-sm font-black text-slate-900">{formatCurrency(entry.amount)}</p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                 <span className="text-[9px] font-semibold text-slate-500">{methodLabel}</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-[9px] text-slate-500 font-semibold">{entry.collected_by_label}</span>
+                {entry.collected_by_label && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-[9px] text-slate-500 font-semibold">{entry.collected_by_label}</span>
+                  </>
+                )}
                 <span className="text-slate-300">•</span>
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${statusStyle.cls}`}>
                   {statusStyle.label}
@@ -183,6 +211,7 @@ function RecordCashPanel({
   onSuccess: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
   const [collectedByLabel, setCollectedByLabel] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -282,6 +311,7 @@ export default function BookingDetailsModal({
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [isDownloadingTicket, setIsDownloadingTicket] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isRefundConfirmOpen, setIsRefundConfirmOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
   const { user } = useAuthStore();
@@ -321,22 +351,11 @@ export default function BookingDetailsModal({
     if (type === 'invoice') setIsDownloadingInvoice(true);
     else setIsDownloadingTicket(true);
     try {
-      // 1. Get fresh signed URL for viewing (no Content-Disposition)
-      const res = await apiClient.post('/api/v1/documents/signed-url', { object_key: objectKey });
-      const viewUrl = res.data.url;
-
-      // 2. Open in new tab for viewing
-      window.open(viewUrl, '_blank');
-
-      // 3. Immediately trigger download via backend (bakes Content-Disposition: attachment into presigned URL)
       const filename = objectKey.split('/').pop() || `${type}.pdf`;
+      // Use backend /download endpoint which bakes Content-Disposition: attachment
+      // Then fetch as Blob for cross-origin safe download on mobile
       const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(objectKey)}&filename=${encodeURIComponent(filename)}`;
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await downloadFileViaFetch(downloadUrl, filename);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to generate secure document link');
     } finally {
@@ -345,6 +364,23 @@ export default function BookingDetailsModal({
     }
   };
 
+  const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
+
+  const handleMarkRefunded = async () => {
+    if (!booking) return;
+    setIsSubmittingRefund(true);
+    try {
+      await apiClient.post(`/api/v1/admin/bookings/${booking.id}/mark-refunded`);
+      toast.success("Booking successfully marked as refunded.");
+      setIsRefundConfirmOpen(false);
+      await fetchDetails();
+      onPaymentRecorded?.(); // refresh parent dashboard view
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to mark booking as refunded.");
+    } finally {
+      setIsSubmittingRefund(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -364,6 +400,11 @@ export default function BookingDetailsModal({
   const progressPct = booking && targetTotalAmount > 0
     ? Math.min(100, (booking.paid_amount / targetTotalAmount) * 100)
     : 0;
+  const transportSelections = booking ? getTransportSelections(booking.pricing_snapshot) : [];
+  const refreshmentIncluded = booking ? hasRefreshment(booking) : false;
+  const refreshmentAmount = booking ? getRefreshmentAmount(booking.pricing_snapshot) : 0;
+  const baseFare = booking ? getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot) : 0;
+  const passengerCount = booking ? booking.adult_count + booking.child_count : 0;
 
   return (
     <>
@@ -424,6 +465,11 @@ export default function BookingDetailsModal({
                         {statusCfg.label}
                       </span>
                     )}
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
+                      booking.target_type === 'ROOM' ? 'bg-indigo-100 text-indigo-700 ring-1 ring-inset ring-indigo-200' : 'bg-pink-100 text-pink-700 ring-1 ring-inset ring-pink-200'
+                    }`}>
+                      {booking.target_type === 'ROOM' ? 'ROOM' : (booking.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING')}
+                    </span>
                     <span className="font-mono text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1 rounded-lg">
                       {booking.public_id}
                     </span>
@@ -489,6 +535,15 @@ export default function BookingDetailsModal({
                               {p.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
+                              <div className="mb-2">
+                                {booking.target_type === 'ROOM' ? (
+                                  <span className="inline-block px-2 py-1 rounded bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider">ROOM</span>
+                                ) : (
+                                  <span className="inline-block px-2 py-1 rounded bg-pink-100 text-pink-700 text-[10px] font-black uppercase tracking-wider">
+                                    {booking.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING'}
+                                  </span>
+                                )}
+                              </div>
                               <p className="font-bold text-slate-800 text-xs truncate">{p.full_name}</p>
                               <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">
                                 {p.gender || '—'} • Age {p.age} {p.is_child ? '(Child)' : ''}
@@ -507,6 +562,35 @@ export default function BookingDetailsModal({
                     </div>
                   </div>
 
+                  {/* Transport Selections and Addons */}
+                  {(transportSelections.length > 0 || refreshmentIncluded) && (
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                        Transport & Addons
+                      </h4>
+                      <div className="grid gap-3 sm:grid-cols-2 mb-6">
+                        {transportSelections.map((ts, idx) => (
+                          <div key={idx} className="flex flex-col justify-center p-3.5 rounded-2xl bg-slate-50/50 border border-slate-100 shadow-sm">
+                            <span className="text-xs font-bold text-slate-800">{ts.title}</span>
+                            <span className="text-[10px] text-slate-500 font-semibold mt-1">
+                              {describeTransport(ts, passengerCount)} • {formatCurrency(Number(ts.item_total || 0))}
+                            </span>
+                          </div>
+                        ))}
+                        {refreshmentIncluded && (
+                          <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 shadow-sm">
+                            <span className="text-xs font-bold text-emerald-800">Refreshments</span>
+                            <span className="text-[10px] text-emerald-600 font-semibold mt-1">
+                              Included for {passengerCount} pax
+                              {refreshmentAmount > 0 ? ` • ${formatCurrency(refreshmentAmount)}` : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Billing Summary — backend-authoritative values */}
                   <div>
                     <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
@@ -514,8 +598,22 @@ export default function BookingDetailsModal({
                     </h4>
                     <div className="bg-slate-50/40 border border-slate-100 rounded-2xl p-5 space-y-4">
                       <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-500">
-                        <div>Base Subtotal</div>
-                        <div className="text-right font-bold text-slate-700">{formatCurrency(booking.subtotal_amount)}</div>
+                        <div>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</div>
+                        <div className="text-right font-bold text-slate-700">{formatCurrency(baseFare)}</div>
+                        {transportSelections.map((ts, idx) => (
+                          <React.Fragment key={`billing-transport-${idx}`}>
+                            <div>{ts.title || 'Transport'}</div>
+                            <div className="text-right font-bold text-slate-700">{formatCurrency(Number(ts.item_total || 0))}</div>
+                          </React.Fragment>
+                        ))}
+                        {refreshmentIncluded && (
+                          <>
+                            <div>Refreshments</div>
+                            <div className="text-right font-bold text-slate-700">
+                              {refreshmentAmount > 0 ? formatCurrency(refreshmentAmount) : 'Included'}
+                            </div>
+                          </>
+                        )}
                         {booking.coupon_discount > 0 && (
                           <>
                             <div className="text-rose-600">Promo Discount ({booking.coupon_applied})</div>
@@ -546,41 +644,72 @@ export default function BookingDetailsModal({
                       )}
 
                       {/* Payment progress */}
-                      <div>
-                        <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                          <span>Payment Progress</span>
-                          <span>{parseFloat(progressPct.toFixed(1))}%</span>
-                        </div>
-                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{
-                              width: `${progressPct}%`,
-                              background: booking.status === 'FULLY_PAID'
-                                ? 'linear-gradient(90deg, #10b981, #059669)'
-                                : 'linear-gradient(90deg, #3b82f6, #6366f1)',
-                            }}
-                          />
-                        </div>
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
-                          <div className="bg-emerald-50 rounded-lg p-2 text-center">
-                            <p className="text-emerald-600 font-bold uppercase tracking-wide">Paid</p>
-                            <p className="font-black text-emerald-800">{formatCurrency(booking.paid_amount)}</p>
+                      {booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span>Amount Paid</span>
+                            <span>{formatCurrency(booking.paid_amount)}</span>
                           </div>
-                          <div className={`rounded-lg p-2 text-center ${remainingBalance > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
-                            <p className={`font-bold uppercase tracking-wide ${remainingBalance > 0 ? 'text-amber-600' : 'text-slate-400'}`}>Remaining</p>
-                            <p className={`font-black ${remainingBalance > 0 ? 'text-amber-800' : 'text-slate-500'}`}>
-                              {remainingBalance > 0 ? formatCurrency(remainingBalance) : 'None'}
-                            </p>
-                          </div>
+                          {booking.cancellation_details && (
+                            <>
+                              <div className="flex justify-between items-center text-xs font-bold text-red-600">
+                                <span>Cancellation Fee Deducted</span>
+                                <span>{formatCurrency(booking.cancellation_details.cancellation_fee || 0)}</span>
+                              </div>
+                              <div className="h-px bg-slate-200 my-2" />
+                              <div className="flex justify-between items-center text-sm font-black text-emerald-700">
+                                <span>{booking.status === 'REFUNDED' ? 'Amount Refunded' : 'Refund Due'}</span>
+                                <div className="flex items-center gap-2">
+                                  {formatCurrency(booking.cancellation_details.refund_amount || 0)}
+                                  {booking.status === 'REFUNDED' && (
+                                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">
+                                      <CheckCircle2 className="mr-1 w-3 h-3" /> REFUNDED
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div>
+                            <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                              <span>Payment Progress</span>
+                              <span>{parseFloat(progressPct.toFixed(1))}%</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{
+                                  width: `${progressPct}%`,
+                                  background: booking.status === 'FULLY_PAID'
+                                    ? 'linear-gradient(90deg, #10b981, #059669)'
+                                    : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                                }}
+                              />
+                            </div>
+                            <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+                              <div className="bg-emerald-50 rounded-lg p-2 text-center">
+                                <p className="text-emerald-600 font-bold uppercase tracking-wide">Paid</p>
+                                <p className="font-black text-emerald-800">{formatCurrency(booking.paid_amount)}</p>
+                              </div>
+                              <div className={`rounded-lg p-2 text-center ${remainingBalance > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
+                                <p className={`font-bold uppercase tracking-wide ${remainingBalance > 0 ? 'text-amber-600' : 'text-slate-400'}`}>Remaining</p>
+                                <p className={`font-black ${remainingBalance > 0 ? 'text-amber-800' : 'text-slate-500'}`}>
+                                  {remainingBalance > 0 ? formatCurrency(remainingBalance) : 'None'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
 
-                      {remainingBalance > 0 && (
-                        <div className="bg-amber-50 border border-amber-100 text-amber-800 rounded-xl p-3 flex justify-between items-center text-xs font-bold">
-                          <span>Balance Due</span>
-                          <span className="text-sm font-black">{formatCurrency(remainingBalance)}</span>
-                        </div>
+                          {remainingBalance > 0 && (
+                            <div className="bg-amber-50 border border-amber-100 text-amber-800 rounded-xl p-3 flex justify-between items-center text-xs font-bold">
+                              <span>Balance Due</span>
+                              <span className="text-sm font-black">{formatCurrency(remainingBalance)}</span>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -590,7 +719,7 @@ export default function BookingDetailsModal({
                     <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
                       <History className="h-4 w-4 text-slate-400" /> Payment History
                     </h4>
-                    <PaymentLedgerPanel ledger={booking.payment_ledger || []} />
+                    <PaymentLedgerPanel ledger={booking.payment_ledger || []} targetTotalAmount={targetTotalAmount} />
 
                     {/* Admin: Record cash payment panel */}
                     {isAdmin && isPartialPaid && remainingBalance > 0 && (
@@ -600,13 +729,23 @@ export default function BookingDetailsModal({
                     )}
                   </div>
 
-                  {/* Agent partner reference */}
-                  {booking.agent_id && (
-                    <div className="border-t border-slate-100 pt-4 flex flex-wrap gap-x-8 gap-y-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      <div>Agent Partner ID: AGT-{booking.agent_id}</div>
-                      <div>Agent Partner Name: {booking.agent_name || '—'}</div>
-                    </div>
-                  )}
+                  {/* Booking Origin / Agent partner reference */}
+                  <div className="border-t border-slate-100 pt-4 flex flex-wrap gap-x-8 gap-y-2 text-[10px] font-black uppercase tracking-widest">
+                    {booking.booked_by_name && (
+                      <div className="text-slate-500">
+                        Booked By:{' '}
+                        <span className="text-slate-700 ml-1">
+                          {booking.booked_by_role === 'ADMIN' ? 'Admin' : booking.booked_by_role === 'AGENT' ? 'Agent' : 'Customer'} ({booking.booked_by_name})
+                        </span>
+                      </div>
+                    )}
+                    {booking.agent_id && (
+                      <>
+                        <div className="text-slate-400">Agent Partner ID: AGENT_{String(booking.agent_id).padStart(3, '0')}</div>
+                        <div className="text-slate-400">Agent Partner Name: {booking.agent_name || '—'}</div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -625,6 +764,16 @@ export default function BookingDetailsModal({
                         className="px-6 py-3 rounded-2xl text-xs font-black tracking-wide border-2 border-red-100 text-red-600 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all shadow-sm w-full sm:w-auto active:scale-95"
                       >
                         Cancel Booking
+                      </button>
+                    )}
+                    {booking.status === 'CANCELLED' && (
+                      <button
+                        onClick={() => setIsRefundConfirmOpen(true)}
+                        disabled={isSubmittingRefund}
+                        className="px-6 py-3 rounded-2xl text-xs font-black tracking-wide border-2 border-emerald-100 text-emerald-600 bg-white hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all shadow-sm w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5"
+                      >
+                        {isSubmittingRefund ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <IndianRupee className="h-3.5 w-3.5" />}
+                        {isSubmittingRefund ? 'Processing...' : 'Mark as Refunded'}
                       </button>
                     )}
                   </div>
@@ -653,24 +802,26 @@ export default function BookingDetailsModal({
                       )
                     )}
 
-                    {booking.ticket_pdf_url ? (
-                      <button
-                        onClick={() => handleDownloadPdf(booking.ticket_pdf_url!, 'ticket')}
-                        disabled={isDownloadingTicket}
-                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 disabled:opacity-50 w-full sm:w-auto border border-[#0f3d56]"
-                      >
-                        {isDownloadingTicket ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
-                        Ticket PDF
-                      </button>
-                    ) : (
-                      <a
-                        href={`/print/ticket/${booking.public_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56]"
-                      >
-                        <Ticket className="h-4 w-4" /> View Ticket
-                      </a>
+                    {booking.status !== 'REFUNDED' && (
+                      booking.ticket_pdf_url ? (
+                        <button
+                          onClick={() => handleDownloadPdf(booking.ticket_pdf_url!, 'ticket')}
+                          disabled={isDownloadingTicket}
+                          className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 disabled:opacity-50 w-full sm:w-auto border border-[#0f3d56]"
+                        >
+                          {isDownloadingTicket ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
+                          Ticket PDF
+                        </button>
+                      ) : (
+                        <a
+                          href={`/print/ticket/${booking.public_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56]"
+                        >
+                          <Ticket className="h-4 w-4" /> View Ticket
+                        </a>
+                      )
                     )}
 
                     {booking.target_type === 'PACKAGE' && (
@@ -716,7 +867,7 @@ export default function BookingDetailsModal({
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">Cancel Booking?</h3>
                 <p className="text-sm text-slate-500 mb-6">
-                  Are you sure you want to cancel this booking? A <span className="font-bold text-red-600">35% cancellation fee</span> will be applied to the refund amount.
+                  Are you sure you want to cancel this booking? A <span className="font-bold text-red-600">{booking?.target_type === 'ROOM' ? '100%' : '35%'} cancellation fee</span> will be applied to the refund amount.
                 </p>
                 <div className="flex w-full gap-3">
                   <button
@@ -749,6 +900,70 @@ export default function BookingDetailsModal({
                     className="flex-1 px-4 py-2.5 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 transition-colors flex justify-center items-center disabled:opacity-50"
                   >
                     {isCancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Yes, Cancel'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Refund Confirmation Modal */}
+      <AnimatePresence>
+        {isRefundConfirmOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => !isSubmittingRefund && setIsRefundConfirmOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden p-6"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                  <Banknote className="text-emerald-600 h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">Mark as Refunded?</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Confirm refund details before processing.
+                  <br/>
+                  <span className="font-semibold text-slate-800">For {booking?.target_type === 'ROOM' ? 'Rooms' : 'Packages'}:</span> {booking?.target_type === 'ROOM' ? 'No cancellations permitted.' : '35% cancellation fee applied.'}
+                </p>
+                <div className="w-full bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-left space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-slate-600">
+                    <span>Amount Paid:</span>
+                    <span>{formatCurrency(booking?.paid_amount || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-red-600">
+                    <span>Cancellation Fee:</span>
+                    <span>{formatCurrency(booking?.cancellation_details?.cancellation_fee || 0)}</span>
+                  </div>
+                  <div className="h-px w-full bg-slate-200 my-1"></div>
+                  <div className="flex justify-between text-sm font-black text-emerald-700">
+                    <span>Refund Amount:</span>
+                    <span>{formatCurrency(booking?.cancellation_details?.refund_amount || 0)}</span>
+                  </div>
+                </div>
+                <div className="flex w-full gap-3">
+                  <button
+                    onClick={() => setIsRefundConfirmOpen(false)}
+                    disabled={isSubmittingRefund}
+                    className="flex-1 px-4 py-2.5 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleMarkRefunded}
+                    disabled={isSubmittingRefund}
+                    className="flex-1 px-4 py-2.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex justify-center items-center disabled:opacity-50 gap-2"
+                  >
+                    {isSubmittingRefund ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Refund'}
                   </button>
                 </div>
               </div>

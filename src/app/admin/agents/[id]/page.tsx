@@ -229,8 +229,16 @@ export default function AgentDetailPage() {
               <p className="text-sm text-slate-500 mt-1">{agent.company_name || 'Independent Agent'}</p>
             </div>
             <div className="text-left sm:text-right pt-4 sm:pt-2">
-              <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">Commission Rate</p>
-              <p className="text-3xl font-black text-[#0f3d56]">{parseFloat(agent.commission_percentage || 0).toFixed(1)}%</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">
+                {agent.commission_type === 'FIXED_AMOUNT' ? 'Commission Amount' : 'Commission Rate'}
+              </p>
+              <p className="text-3xl font-black text-[#0f3d56]">
+                {agent.commission_type === 'FIXED_AMOUNT' ? (
+                  <>₹{parseFloat(agent.commission_fixed_amount || 0).toLocaleString('en-IN')}</>
+                ) : (
+                  <>{parseFloat(agent.commission_percentage || 0).toFixed(1)}%</>
+                )}
+              </p>
             </div>
           </div>
 

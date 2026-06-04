@@ -20,7 +20,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
   const isAdminOrAgentPage = pathname?.startsWith('/admin') && !pathname?.endsWith('/login');
   const isPrintPage = pathname?.startsWith('/print');
 
-  const isBookingPage = !!pathname?.match(/^\/(packages|stays|rooms)\/[^/]+(\/checkout)?$/);
+  const isBookingPage = !!pathname?.match(/^\/(packages|stays|rooms)\/[^/]+(\/checkout)?\/?$/);
   const isDashboardPage = !!pathname?.match(/^\/(dashboard|admin\/dashboard|agent\/dashboard)/);
   const showStickyBar = isBookingPage || isDashboardPage;
   const showMobileNav = !isBookingPage;
@@ -49,7 +49,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       <Suspense fallback={<div className="h-16 border-b border-border bg-white" />}>
         <PublicNavbar />
       </Suspense>
-      <main className={`w-full relative md:pb-0 ${showStickyBar ? 'pb-[72px]' : showMobileNav ? 'pb-[68px]' : ''}`}>
+      <main suppressHydrationWarning className={`w-full relative md:pb-0 ${showStickyBar ? 'pb-[72px]' : showMobileNav ? 'pb-[68px]' : ''}`}>
         {children}
       </main>
       <PublicFooter />

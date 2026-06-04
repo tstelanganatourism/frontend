@@ -23,6 +23,10 @@ export interface AuthUser {
   commission_percentage?: number | null;
   commission_type?: 'PERCENTAGE' | 'FIXED_AMOUNT' | null;
   commission_fixed_amount?: number | null;
+  company_name?: string | null;
+  gst_number?: string | null;
+  address?: string | null;
+  admin_notes?: string | null;
 }
 
 interface AuthState {

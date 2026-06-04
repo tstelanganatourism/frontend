@@ -6,6 +6,7 @@ const backendOrigin = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'lodash'],
+    middlewareClientMaxBodySize: '100mb',
   },
   turbopack: {
     root: path.resolve(__dirname),

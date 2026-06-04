@@ -66,7 +66,7 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 let isRefreshing = false;
 let pendingQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
 
-function processQueue(error: unknown, token: string | null = null) {
+export function processQueue(error: unknown, token: string | null = null) {
   pendingQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)));
   pendingQueue = [];
 }
@@ -94,13 +94,20 @@ apiClient.interceptors.response.use(
     }
 
     // CRITICAL: If auth has not hydrated yet, AuthProvider is already handling the
-    // refresh. Do NOT attempt a second concurrent refresh here — token rotation means
-    // the backend will reject the duplicate call with 401, which would then call
-    // clearAuth() and wipe the session the AuthProvider just established.
+    // refresh. Queue this request so it gets retried once hydration completes
+    // instead of dropping it (which would surface as a false logout).
     if (typeof window !== 'undefined') {
       const { useAuthStore } = require('@/stores/authStore');
       if (!useAuthStore.getState().isHydrated) {
-        return Promise.reject(error);
+        return new Promise((resolve, reject) => {
+          pendingQueue.push({
+            resolve: (token) => {
+              originalRequest.headers!['Authorization'] = `Bearer ${token}`;
+              resolve(apiClient(originalRequest));
+            },
+            reject,
+          });
+        });
       }
     }
 

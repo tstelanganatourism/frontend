@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   ChevronRight,
   Globe,
-  AlertTriangle
+  AlertTriangle,
+  Truck
 } from 'lucide-react';
 import { logout } from '@/services/authService';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -32,6 +33,7 @@ const navItems = [
   { name: 'Hotels & Rooms', href: '/admin/rooms', icon: Bed },
   { name: 'Inventory', href: '/admin/inventory', icon: CalendarDays },
   { name: 'Bookings', href: '/admin/bookings', icon: Ticket },
+  { name: 'Transport Planning', href: '/admin/transport', icon: Truck },
   { name: 'Cancellations', href: '/admin/cancellations', icon: AlertTriangle },
   { name: 'Coupons', href: '/admin/coupons', icon: Tag },
   { name: 'Agents', href: '/admin/agents', icon: Users },

@@ -12,13 +12,29 @@ import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal
 
 import { toast } from 'sonner';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
+import { downloadFileViaFetch } from '@/lib/downloadUtils';
 
 interface PackageVariant {
   id: number;
   title: string;
   adult_price: number | string;
   child_price: number | string;
+  weekend_adult_price?: number | string | null;
+  weekend_child_price?: number | string | null;
   transport_info?: string | null;
+}
+
+export interface PackageTransportOption {
+  id: number;
+  type: 'SHARED' | 'SEPARATE_VEHICLE';
+  title: string;
+  capacity?: number;
+  adult_price?: number | string | null;
+  child_price?: number | string | null;
+  weekend_adult_price?: number | string | null;
+  weekend_child_price?: number | string | null;
+  fixed_price?: number | string | null;
+  weekend_fixed_price?: number | string | null;
 }
 
 interface BookingSidebarV2Props {
@@ -27,6 +43,11 @@ interface BookingSidebarV2Props {
   packageId: number;
   packageSlug: string;
   brochurePdfUrl?: string | null;
+  hasTransport?: boolean;
+  transportOptions?: PackageTransportOption[];
+  hasRefreshments?: boolean;
+  refreshmentAdultPrice?: number | string | null;
+  refreshmentChildPrice?: number | string | null;
 }
 
 function todayIST(): Date {
@@ -61,7 +82,18 @@ function positiveNumber(value: number | string | null | undefined) {
   return numeric > 0 ? numeric : 0;
 }
 
-export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSlug, brochurePdfUrl }: BookingSidebarV2Props) => {
+export const BookingSidebarV2 = ({ 
+  startingPrice, 
+  variants, 
+  packageId, 
+  packageSlug, 
+  brochurePdfUrl,
+  hasTransport,
+  transportOptions = [],
+  hasRefreshments,
+  refreshmentAdultPrice,
+  refreshmentChildPrice
+}: BookingSidebarV2Props) => {
   const { isAuthenticated, user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
@@ -86,25 +118,15 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     if (!brochurePdfUrl) return;
 
     const rawKey = extractObjectKey(brochurePdfUrl);
+    const filename = `${packageSlug}-brochure.pdf`;
 
     if (rawKey) {
-      // Immediately trigger the backend download (Content-Disposition: attachment baked in)
-      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `${packageSlug}-brochure.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Use backend download endpoint (adds Content-Disposition: attachment)
+      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+      await downloadFileViaFetch(downloadUrl, filename);
     } else {
-      // No key — download via external URL
-      const link = document.createElement('a');
-      link.href = brochurePdfUrl;
-      link.download = `${packageSlug}-brochure.pdf`;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // No private key — fetch directly from the external URL
+      await downloadFileViaFetch(brochurePdfUrl, filename);
     }
   };
 
@@ -120,6 +142,33 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  // Transport state: 'NONE' | 'SHARED' | 'SEPARATE'
+  const [selectedTransportMode, setSelectedTransportMode] = useState<'NONE' | 'SHARED' | 'SEPARATE'>('NONE');
+
+  // Auto-select first transport option if available and 'NONE' is not allowed
+  useEffect(() => {
+    if (hasTransport && transportOptions.length > 0) {
+      if (selectedTransportMode === 'NONE') {
+        const sharedOpts = transportOptions.filter(o => o.type === 'SHARED');
+        const separateOpts = transportOptions.filter(o => o.type === 'SEPARATE_VEHICLE');
+        if (sharedOpts.length > 0) {
+          setSelectedTransportMode('SHARED');
+          setSelectedSharedOptionId(sharedOpts[0].id);
+        } else if (separateOpts.length > 0) {
+          setSelectedTransportMode('SEPARATE');
+        }
+      }
+    } else if (selectedTransportMode !== 'NONE') {
+      setSelectedTransportMode('NONE');
+      setSelectedSharedOptionId(null);
+      setSeparateVehicleQtys({});
+    }
+  }, [hasTransport, transportOptions, selectedTransportMode]);
+  // For SHARED: which option id is selected
+  const [selectedSharedOptionId, setSelectedSharedOptionId] = useState<number | null>(null);
+  // For SEPARATE: map of optionId -> quantity
+  const [separateVehicleQtys, setSeparateVehicleQtys] = useState<Record<number, number>>({});
+  const [includeRefreshments, setIncludeRefreshments] = useState<boolean>(false);
   const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(today));
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
@@ -140,10 +189,17 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   const [variantMenuOpen, setVariantMenuOpen] = useState(false);
   const [dateMenuOpen, setDateMenuOpen] = useState(false);
 
+  // Calendar/dropdown references
+  const variantMenuRef = useRef<HTMLDivElement>(null);
+  const dateMenuRef = useRef<HTMLDivElement>(null);
+
   // Calendar state
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-11
-  const dateMenuRef = useRef<HTMLDivElement>(null);
+
+  // Derived: split transport options by type
+  const sharedOptions = useMemo(() => transportOptions.filter(o => o.type === 'SHARED'), [transportOptions]);
+  const separateOptions = useMemo(() => transportOptions.filter(o => o.type === 'SEPARATE_VEHICLE'), [transportOptions]);
 
   // Auto-select first valid variant when loaded
   useEffect(() => {
@@ -153,6 +209,15 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
       }
     }
   }, [validVariants, selectedVariantId]);
+
+  // When transport options first arrive, init mode to NONE
+  useEffect(() => {
+    if (!hasTransport) {
+      setSelectedTransportMode('NONE');
+      setSelectedSharedOptionId(null);
+      setSeparateVehicleQtys({});
+    }
+  }, [hasTransport]);
 
   useEffect(() => {
     if (packageSlug && currentMonthStr) {
@@ -225,6 +290,9 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     const handleClickOutside = (event: MouseEvent) => {
       if (dateMenuRef.current && !dateMenuRef.current.contains(event.target as Node)) {
         setDateMenuOpen(false);
+      }
+      if (variantMenuRef.current && !variantMenuRef.current.contains(event.target as Node)) {
+        setVariantMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -340,19 +408,77 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
 
   const prices = useMemo(() => {
-    const baseAdult = selectedSlot
-      ? (selectedSlot.effective_adult_price !== undefined && selectedSlot.effective_adult_price !== null
+    let isWeekend = false;
+    if (selectedDate) {
+      const d = new Date(selectedDate);
+      const day = d.getDay();
+      isWeekend = day === 0 || day === 6;
+    }
+
+    // BASE PRICING
+    let baseAdult = 0;
+    let baseChild = 0;
+
+    if (selectedSlot) {
+      baseAdult = (selectedSlot.effective_adult_price !== undefined && selectedSlot.effective_adult_price !== null)
         ? Number(selectedSlot.effective_adult_price)
-        : Number(selectedSlot.adult_price))
-      : (positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice));
-
-    const baseChild = selectedSlot
-      ? (selectedSlot.effective_child_price !== undefined && selectedSlot.effective_child_price !== null
+        : Number(selectedSlot.adult_price);
+        
+      baseChild = (selectedSlot.effective_child_price !== undefined && selectedSlot.effective_child_price !== null)
         ? Number(selectedSlot.effective_child_price)
-        : Number(selectedSlot.child_price))
-      : positiveNumber(selectedVariant?.child_price);
+        : Number(selectedSlot.child_price);
+    } else {
+      baseAdult = isWeekend && selectedVariant?.weekend_adult_price 
+        ? positiveNumber(selectedVariant.weekend_adult_price) 
+        : (positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice));
+        
+      baseChild = isWeekend && selectedVariant?.weekend_child_price 
+        ? positiveNumber(selectedVariant.weekend_child_price) 
+        : positiveNumber(selectedVariant?.child_price);
+    }
 
-    const rawSubtotal = (adults * baseAdult) + (children * baseChild);
+    const baseSubtotal = (adults * baseAdult) + (children * baseChild);
+    
+    // TRANSPORT PRICING
+    let transportSubtotal = 0;
+    const transportBreakdown: Array<{title: string; type: string; quantity: number; unitPrice: number; subtotal: number}> = [];
+    
+    if (hasTransport) {
+      if (selectedTransportMode === 'SHARED' && selectedSharedOptionId) {
+        const tOpt = transportOptions.find(o => o.id === selectedSharedOptionId);
+        if (tOpt) {
+          const tAdult = positiveNumber(isWeekend && tOpt.weekend_adult_price ? tOpt.weekend_adult_price : tOpt.adult_price);
+          const tChild = positiveNumber(isWeekend && tOpt.weekend_child_price ? tOpt.weekend_child_price : tOpt.child_price);
+          const cost = (adults * tAdult) + (children * tChild);
+          transportSubtotal = cost;
+          transportBreakdown.push({ title: tOpt.title, type: 'SHARED', quantity: 1, unitPrice: tAdult, subtotal: cost });
+        }
+      } else if (selectedTransportMode === 'SEPARATE') {
+        for (const [optIdStr, qty] of Object.entries(separateVehicleQtys)) {
+          if (!qty || qty <= 0) continue;
+          const optId = Number(optIdStr);
+          const tOpt = transportOptions.find(o => o.id === optId);
+          if (tOpt) {
+            const tFixed = positiveNumber(isWeekend && tOpt.weekend_fixed_price ? tOpt.weekend_fixed_price : tOpt.fixed_price);
+            const cost = qty * tFixed;
+            transportSubtotal += cost;
+            transportBreakdown.push({ title: tOpt.title, type: 'SEPARATE_VEHICLE', quantity: qty, unitPrice: tFixed, subtotal: cost });
+          }
+        }
+      }
+    }
+    
+    // REFRESHMENT PRICING
+    let refreshmentSubtotal = 0;
+    let refAdult = 0;
+    let refChild = 0;
+    if (hasRefreshments && includeRefreshments) {
+      refAdult = positiveNumber(refreshmentAdultPrice);
+      refChild = positiveNumber(refreshmentChildPrice);
+      refreshmentSubtotal = (adults * refAdult) + (children * refChild);
+    }
+
+    const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal;
 
     let subtotal = rawSubtotal;
     let discount = 0;
@@ -373,16 +499,23 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
 
     let agentDiscount = 0;
     if (isAgent) {
+      const commissionableBase = baseSubtotal;
       if (commissionType === 'FIXED_AMOUNT') {
-        agentDiscount = Math.min(commissionFixedAmount, grandTotal);
+        agentDiscount = Math.min(commissionFixedAmount, commissionableBase, grandTotal);
       } else {
-        agentDiscount = Math.min(grandTotal, Math.round((subtotal * commissionPercentage) / 100));
+        agentDiscount = Math.min(grandTotal, Math.round((commissionableBase * commissionPercentage) / 100));
       }
     }
     const agentPayable = Math.max(0, grandTotal - agentDiscount);
 
-    return { baseAdult, baseChild, rawSubtotal, discount, subtotal, gst, gatewayFee, grandTotal, agentDiscount, agentPayable };
-  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent]);
+    return { 
+      baseAdult, baseChild, baseSubtotal,
+      transportSubtotal, transportBreakdown,
+      refreshmentSubtotal, 
+      rawSubtotal, discount, subtotal, gst, gatewayFee, 
+      grandTotal, agentDiscount, agentPayable 
+    };
+  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice]);
 
   const { effectivePayNow, isPartial } = useMemo(() => {
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
@@ -560,12 +693,53 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
     setCouponSuccess(null);
   };
 
+  // Build the transport_selections array for the checkout payload
+  const buildTransportSelections = () => {
+    if (!hasTransport) return [];
+    if (selectedTransportMode === 'SHARED' && selectedSharedOptionId) {
+      return [{ option_id: selectedSharedOptionId, quantity: 1 }];
+    }
+    if (selectedTransportMode === 'SEPARATE') {
+      return Object.entries(separateVehicleQtys)
+        .filter(([, qty]) => qty > 0)
+        .map(([optIdStr, qty]) => ({ option_id: Number(optIdStr), quantity: qty }));
+    }
+    return [];
+  };
+
+  // Validate that selected separate vehicles have enough capacity
+  const separateCapacityOk = useMemo(() => {
+    if (selectedTransportMode !== 'SEPARATE') return true;
+    const totalPax = adults + children;
+    const totalCapacity = separateOptions.reduce((sum, opt) => {
+      const qty = separateVehicleQtys[opt.id] || 0;
+      return sum + qty * (positiveNumber(opt.capacity) || 1);
+    }, 0);
+    const hasAnyVehicle = Object.values(separateVehicleQtys).some(q => q > 0);
+    if (!hasAnyVehicle) return true; // No vehicle selected yet — don't block
+    return totalCapacity >= totalPax;
+  }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children]);
+
   const isBookingDisabled =
     !isAuthenticated ||
     (!isAdmin && isPackageInactive) ||
     validVariants.length === 0 ||
     !selectedDate ||
+    !separateCapacityOk ||
     (!isAdmin && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out'));
+
+  const ctaText = useMemo(() => {
+    if (isProcessingCheckout) return 'Processing...';
+    if (isPackageInactive && !isAdmin) return 'Bookings Closed / Inactive';
+    if (validVariants.length === 0) return 'Fare updating';
+    if (!isAuthenticated) return 'Login to Book';
+    if (!selectedDate) return 'Select a date';
+    if (!separateCapacityOk) return '⚠ Add more vehicles';
+    if (isAdmin) return 'Book Now (Admin)';
+    if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Unavailable';
+    if (availabilityState.kind === 'open') return 'Book Now';
+    return 'Call to confirm availability';
+  }, [isProcessingCheckout, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, availabilityState.kind]);
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal
   useEffect(() => {
@@ -606,6 +780,8 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           adult_count: adults,
           child_count: children,
           variant_id: selectedVariantId,
+          transport_selections: buildTransportSelections(),
+          include_refreshments: hasRefreshments ? includeRefreshments : false,
           passengers: passengers.map(p => ({
             ...p,
             aadhaar: p.aadhaar || undefined,
@@ -624,6 +800,8 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
         travel_date: selectedDate,
         quantity: adults + children,
         variant_id: selectedVariantId,
+        transport_selections: buildTransportSelections(),
+        include_refreshments: hasRefreshments ? includeRefreshments : false,
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
         adult_count: adults,
         child_count: children,
@@ -842,7 +1020,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
   };
 
   return (
-    <div id="booking" className="w-full my-2 lg:sticky lg:top-[140px]">
+    <div id="booking" className="w-full my-2 lg:sticky lg:top-[140px] pb-24 lg:pb-0">
       <div className="lg:overflow-hidden lg:rounded-2xl lg:border lg:border-slate-200 bg-transparent lg:bg-white lg:shadow-[0_45px_120px_rgba(15,61,86,0.13)] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
 
         {/* Header */}
@@ -887,24 +1065,27 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           {/* Side-by-Side Inputs (Highly spacious under 420px Column Grid) */}
           <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
             {/* Variant Select */}
-            <div className="relative">
+            <div className="relative" ref={variantMenuRef}>
               <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Variant</label>
               <button
                 type="button"
                 disabled={isPackageInactive || validVariants.length === 0}
                 onClick={() => { setVariantMenuOpen(!variantMenuOpen); setDateMenuOpen(false); }}
-                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-left text-xs font-bold shadow-sm transition ${isPackageInactive || validVariants.length === 0
+                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-bold shadow-sm transition-all outline-none cursor-pointer ${
+                  isPackageInactive || validVariants.length === 0
                     ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
-                    : 'bg-white text-slate-900 hover:border-[#1a6b7a] focus:border-[#1a6b7a] focus:outline-none'
-                  }`}
+                    : variantMenuOpen
+                    ? 'border-[#1a6b7a] bg-white ring-2 ring-[#1a6b7a]/15 shadow-md shadow-[#1a6b7a]/5 text-slate-900 font-extrabold'
+                    : 'border-slate-200 bg-white hover:border-[#1a6b7a]/50 text-slate-800'
+                }`}
               >
                 <span className="min-w-0 truncate">{selectedVariant?.title || 'Select variant'}</span>
-                <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${variantMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${variantMenuOpen ? 'rotate-180 text-[#1a6b7a]' : ''}`} />
               </button>
 
               {variantMenuOpen && (
-                <div className="absolute left-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg w-[calc(100vw-32px)] min-[420px]:w-[330px] origin-top-left">
-                  <div className="max-h-60 overflow-y-auto p-1.5 scrollbar-thin">
+                <div className="absolute left-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl w-full min-w-[280px] origin-top-left animate-in fade-in slide-in-from-top-2 duration-150 flex flex-col">
+                  <div className="max-h-60 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                     {validVariants.length ? validVariants.map((variant) => {
                       const selected = variant.id === selectedVariantId;
                       return (
@@ -915,8 +1096,11 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                             setSelectedVariantId(variant.id);
                             setVariantMenuOpen(false);
                           }}
-                          className={`flex w-full items-start justify-between gap-3 rounded-md px-3 py-2.5 text-left transition ${selected ? 'bg-[#eef8f6] text-[#0f3d56]' : 'text-slate-700 hover:bg-slate-50'
-                            }`}
+                          className={`flex w-full items-start justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150 cursor-pointer ${
+                            selected 
+                              ? 'bg-[#1a6b7a]/10 text-[#0f3d56]' 
+                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
                         >
                           <span className="min-w-0">
                             <span className="block text-xs font-bold">{variant.title}</span>
@@ -924,7 +1108,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                               Adult ₹{Number(variant.adult_price).toLocaleString('en-IN')} / Child ₹{Number(variant.child_price).toLocaleString('en-IN')}
                             </span>
                           </span>
-                          {selected ? <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#1a6b7a]" /> : null}
+                          {selected ? <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0f3d56]" /> : null}
                         </button>
                       );
                     }) : (
@@ -944,17 +1128,20 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                 type="button"
                 disabled={isPackageInactive || validVariants.length === 0}
                 onClick={() => { setDateMenuOpen(!dateMenuOpen); setVariantMenuOpen(false); }}
-                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-left text-xs font-bold shadow-sm transition ${isPackageInactive || validVariants.length === 0
+                className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-bold shadow-sm transition-all outline-none cursor-pointer ${
+                  isPackageInactive || validVariants.length === 0
                     ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
-                    : 'bg-white text-slate-900 hover:border-[#1a6b7a] focus:border-[#1a6b7a] focus:outline-none'
-                  }`}
+                    : dateMenuOpen
+                    ? 'border-[#1a6b7a] bg-white ring-2 ring-[#1a6b7a]/15 shadow-md shadow-[#1a6b7a]/5 text-slate-900 font-extrabold'
+                    : 'border-slate-200 bg-white hover:border-[#1a6b7a]/50 text-slate-800'
+                }`}
               >
                 <span className="truncate">{selectedDate ? new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Select date'}</span>
-                <CalendarDays className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <CalendarDays className="h-4 w-4 text-slate-500 shrink-0 transition-colors" />
               </button>
 
               {dateMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-lg border border-slate-200 bg-white shadow-lg origin-top-right w-[calc(100vw-32px)] min-[420px]:w-[330px]">
+                <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-xl border border-slate-100 bg-white shadow-xl w-[calc(100vw-32px)] sm:w-[330px] origin-top-right animate-in fade-in slide-in-from-top-2 duration-150">
                   {renderCalendar()}
                 </div>
               )}
@@ -997,6 +1184,174 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               </div>
             </div>
           </div>
+
+
+          {/* Transport Selection — Premium Grouped UI */}
+          {hasTransport && transportOptions.length > 0 && (
+            <div className="pt-2.5 border-t border-slate-100 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Transport</label>
+              </div>
+
+              {/* Mode Toggle Pills */}
+              <div className="flex gap-2">
+                {sharedOptions.length > 0 && (
+                  <button
+                    type="button"
+                    disabled={isPackageInactive}
+                    onClick={() => { setSelectedTransportMode('SHARED'); setSeparateVehicleQtys({}); if (!selectedSharedOptionId && sharedOptions.length > 0) setSelectedSharedOptionId(sharedOptions[0].id); }}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
+                      selectedTransportMode === 'SHARED' 
+                        ? 'bg-[#1a6b7a] border-[#1a6b7a] text-white shadow-sm shadow-[#1a6b7a]/20' 
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-[#1a6b7a]/60'
+                    }`}
+                  >
+                    🚌 Shared
+                  </button>
+                )}
+                {separateOptions.length > 0 && (
+                  <button
+                    type="button"
+                    disabled={isPackageInactive}
+                    onClick={() => { setSelectedTransportMode('SEPARATE'); setSelectedSharedOptionId(null); }}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
+                      selectedTransportMode === 'SEPARATE' 
+                        ? 'bg-[#1a6b7a] border-[#1a6b7a] text-white shadow-sm shadow-[#1a6b7a]/20' 
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-[#1a6b7a]/60'
+                    }`}
+                  >
+                    🚗 Private
+                  </button>
+                )}
+              </div>
+
+              {/* Shared Options */}
+              {selectedTransportMode === 'SHARED' && (
+                <div className="grid gap-2">
+                  {sharedOptions.map(opt => (
+                    <label
+                      key={opt.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedSharedOptionId === opt.id ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-[#1a6b7a]/40'}`}
+                    >
+                      <input
+                        type="radio"
+                        name="sharedTransport"
+                        checked={selectedSharedOptionId === opt.id}
+                        onChange={() => setSelectedSharedOptionId(opt.id)}
+                        disabled={isPackageInactive}
+                        className="text-[#1a6b7a] focus:ring-[#1a6b7a]"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-slate-800 truncate">{opt.title} {opt.capacity ? `(${opt.capacity} Seater)` : ''}</div>
+                        <div className="text-[10px] text-[#1a6b7a] font-semibold mt-0.5">
+                          ₹{formatINR(opt.adult_price || 0)}/adult · ₹{formatINR(opt.child_price || 0)}/child
+                        </div>
+                      </div>
+                      {selectedSharedOptionId === opt.id && (
+                        <div className="text-[10px] font-black text-[#1a6b7a] shrink-0">
+                          +₹{formatINR((adults * positiveNumber(opt.adult_price)) + (children * positiveNumber(opt.child_price)))}
+                        </div>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Separate Vehicle Options with Quantity Selectors */}
+              {selectedTransportMode === 'SEPARATE' && (
+                <div className="space-y-2">
+                  {separateOptions.map(opt => {
+                    const qty = separateVehicleQtys[opt.id] || 0;
+                    const fixedPrice = positiveNumber(opt.fixed_price);
+                    const lineTotal = qty * fixedPrice;
+                    return (
+                      <div
+                        key={opt.id}
+                        className={`p-3 rounded-xl border transition-all ${qty > 0 ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white'}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-slate-800 truncate">{opt.title}</div>
+                            <div className="text-[10px] font-semibold mt-0.5 text-slate-500">
+                              Max {opt.capacity} pax · <span className="text-[#1a6b7a]">₹{formatINR(fixedPrice)}/vehicle</span>
+                            </div>
+                          </div>
+                          {/* Qty Selector */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              disabled={isPackageInactive || qty <= 0}
+                              onClick={() => setSeparateVehicleQtys(prev => ({ ...prev, [opt.id]: Math.max(0, (prev[opt.id] || 0) - 1) }))}
+                              className={`h-8 w-8 rounded-lg border flex items-center justify-center font-black text-base transition-all ${qty <= 0 ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-[#1a6b7a] text-[#1a6b7a] hover:bg-[#1a6b7a] hover:text-white'}`}
+                            >−</button>
+                            <span className={`w-6 text-center text-sm font-black ${qty > 0 ? 'text-[#1a6b7a]' : 'text-slate-400'}`}>{qty}</span>
+                            <button
+                              type="button"
+                              disabled={isPackageInactive}
+                              onClick={() => setSeparateVehicleQtys(prev => ({ ...prev, [opt.id]: (prev[opt.id] || 0) + 1 }))}
+                              className="h-8 w-8 rounded-lg border border-[#1a6b7a] text-[#1a6b7a] flex items-center justify-center font-black text-base transition-all hover:bg-[#1a6b7a] hover:text-white"
+                            >+</button>
+                          </div>
+                        </div>
+                        {qty > 0 && (
+                          <div className="mt-2 flex justify-between items-center text-[10px] font-bold border-t border-[#1a6b7a]/20 pt-1.5">
+                            <span className="text-slate-500">{qty} × ₹{formatINR(fixedPrice)}</span>
+                            <span className="text-[#1a6b7a]">+₹{formatINR(lineTotal)}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Capacity Warning */}
+                  {!separateCapacityOk && (
+                    <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[10px] font-bold text-rose-600">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        Not enough capacity! {adults + children} passenger{adults + children > 1 ? 's' : ''} need{adults + children === 1 ? 's' : ''} more vehicles. Add vehicles until the total seat capacity covers all passengers.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Capacity OK confirmation */}
+                  {separateCapacityOk && Object.values(separateVehicleQtys).some(q => q > 0) && (
+                    <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-[10px] font-bold text-emerald-700">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      <span>Vehicles confirmed for {adults + children} passenger{adults + children > 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+
+          {/* Refreshments Toggle */}
+          {hasRefreshments && (
+            <div className="pt-2.5 border-t border-slate-100">
+              <label 
+                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  includeRefreshments 
+                    ? 'border-emerald-500 bg-emerald-50' 
+                    : 'border-slate-200 bg-white hover:border-emerald-500/50'
+                }`}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={includeRefreshments}
+                  onChange={(e) => setIncludeRefreshments(e.target.checked)}
+                  disabled={isPackageInactive}
+                  className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4"
+                />
+                <div className="flex-1">
+                  <div className="text-xs font-bold text-slate-800">Add Refreshments</div>
+                  <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                    ₹{formatINR(refreshmentAdultPrice || 0)}/Adult, ₹{formatINR(refreshmentChildPrice || 0)}/Child
+                  </div>
+                </div>
+              </label>
+            </div>
+          )}
 
           {/* Coupon */}
           <div className="pt-2.5 border-t border-slate-100">
@@ -1048,8 +1403,25 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
             <div className="space-y-2 text-xs text-slate-500">
               <div className="flex justify-between items-center">
                 <span>Base Fare <span className="text-[10px] text-slate-400">({adults}A, {children}C)</span></span>
-                <span className="font-bold text-slate-800">₹{formatINR(prices.rawSubtotal)}</span>
+                <span className="font-bold text-slate-800">₹{formatINR(prices.baseSubtotal)}</span>
               </div>
+              {/* Transport breakdown */}
+              {prices.transportBreakdown.map((item, i) => (
+                <div key={i} className="flex justify-between items-center text-[#1a6b7a]">
+                  <span className="font-semibold">
+                    {item.type === 'SEPARATE_VEHICLE' ? `${item.quantity}× ${item.title}` : item.title}
+                    <span className="text-[10px] ml-1 text-slate-400">(Transport)</span>
+                  </span>
+                  <span className="font-bold">+₹{formatINR(item.subtotal)}</span>
+                </div>
+              ))}
+              {/* Refreshments */}
+              {prices.refreshmentSubtotal > 0 && (
+                <div className="flex justify-between items-center text-emerald-600">
+                  <span className="font-semibold">Refreshments</span>
+                  <span className="font-bold">+₹{formatINR(prices.refreshmentSubtotal)}</span>
+                </div>
+              )}
               {appliedCoupon && (
                 <div className="flex justify-between items-center text-emerald-600 font-bold">
                   <span>Discount <span className="text-[10px]">({appliedCoupon.code})</span></span>
@@ -1063,6 +1435,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
               <div className="flex justify-between items-center">
                 <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
                 <span className="font-bold text-slate-800">₹{formatINR(prices.gatewayFee)}</span>
+
               </div>
               {isAgent ? (
                 <>
@@ -1071,7 +1444,7 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
                     <span>₹{formatINR(prices.grandTotal)}</span>
                   </div>
                   <div className="flex justify-between items-center text-rose-600 font-bold">
-                    <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
+                    <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`} on Base Fare)</span>
                     <span>-₹{formatINR(prices.agentDiscount)}</span>
                   </div>
                   <div className="flex justify-between items-center border-t border-slate-300 pt-2 mt-1.5 text-sm font-black text-slate-900">
@@ -1169,28 +1542,14 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
           <button
             disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
             onClick={handleBookingClick}
-            className={`mt-5 w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 flex items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
+            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
                 ? 'bg-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-[#1a6b7a] hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-md'
               }`}
           >
             {isProcessingCheckout ? (
               <Loader2 className="h-5 w-5 animate-spin" />
-            ) : isPackageInactive && !isAdmin
-              ? 'Bookings Closed / Inactive'
-              : validVariants.length === 0
-                ? 'Fare updating'
-                : !isAuthenticated
-                  ? 'Login to Book'
-                  : !selectedDate
-                    ? 'Select a date'
-                    : isAdmin
-                      ? 'Book Now (Admin)'
-                      : availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out'
-                        ? 'Unavailable'
-                        : availabilityState.kind === 'open'
-                          ? 'Book Now'
-                          : 'Call to confirm availability'}
+            ) : ctaText}
           </button>
 
           {brochurePdfUrl && (
@@ -1205,6 +1564,42 @@ export const BookingSidebarV2 = ({ startingPrice, variants, packageId, packageSl
             </a>
           )}
         </div>
+      </div>
+
+      {/* Mobile Sticky Bottom Bar */}
+      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200/80 px-4 py-3 flex items-center justify-between gap-4 z-40 lg:hidden shadow-[0_-10px_30px_rgba(15,61,86,0.08)]">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            {selectedDate ? (isPartial ? 'Advance Pay' : 'Total Price') : 'Starting from'}
+          </span>
+          <div className="flex items-baseline gap-1 mt-0.5">
+            <span className="text-xl font-black text-[#1a6b7a] tracking-tight">
+              ₹{formatINR(selectedDate ? effectivePayNow : (prices.grandTotal || startingPrice || 0))}
+            </span>
+            {isPartial && selectedDate && (
+              <span className="text-[9px] font-bold text-slate-400 uppercase">({paymentPercentage}%)</span>
+            )}
+          </div>
+          {isPartial && selectedDate && (
+            <span className="text-[9px] font-semibold text-slate-400 truncate">
+              Total: ₹{formatINR(isAgent ? prices.agentPayable : prices.grandTotal)}
+            </span>
+          )}
+        </div>
+
+        <button
+          disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
+          onClick={handleBookingClick}
+          className={`flex-1 rounded-xl h-11 px-4 font-black text-white text-xs uppercase tracking-wider transition-all flex items-center justify-center ${
+            isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
+              ? 'bg-slate-400 cursor-not-allowed shadow-none'
+              : 'bg-[#1a6b7a] active:scale-95 shadow-md shadow-[#1a6b7a]/10'
+          }`}
+        >
+          {isProcessingCheckout ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : ctaText}
+        </button>
       </div>
 
       <ConfirmModal

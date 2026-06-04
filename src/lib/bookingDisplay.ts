@@ -1,0 +1,82 @@
+export interface TransportSelection {
+  title?: string;
+  type?: 'SHARED' | 'SEPARATE_VEHICLE' | string;
+  quantity?: number | string | null;
+  capacity?: number | string | null;
+  item_total?: number | string | null;
+  fixed_price?: number | string | null;
+}
+
+export interface PaymentLedgerEntry {
+  id: number;
+  amount: number;
+  payment_method: string;
+  status: string;
+  collected_by_type?: string;
+  collected_by_label?: string;
+  payment_reference_id?: string;
+  created_at: string | null;
+}
+
+export function money(amount: number | string | null | undefined, digits = 0) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits,
+  }).format(Number(amount || 0));
+}
+
+export function getTransportSelections(pricingSnapshot?: { transport_selections?: TransportSelection[] } | null) {
+  return Array.isArray(pricingSnapshot?.transport_selections)
+    ? pricingSnapshot.transport_selections
+    : [];
+}
+
+export function hasRefreshment(booking: { has_refreshment_addon?: boolean; pricing_snapshot?: { has_refreshment_addon?: boolean, refreshment_subtotal?: number | string | null } | null }) {
+  if (booking.has_refreshment_addon) {
+    return true;
+  }
+  if (booking.pricing_snapshot?.has_refreshment_addon) {
+    return Number(booking.pricing_snapshot.refreshment_subtotal || 0) > 0;
+  }
+  return false;
+}
+
+export function getRefreshmentAmount(pricingSnapshot?: { refreshment_subtotal?: number | string | null } | null) {
+  return Number(pricingSnapshot?.refreshment_subtotal || 0);
+}
+
+export function getTransportAmount(selections: TransportSelection[]) {
+  return selections.reduce((sum, item) => sum + Number(item.item_total || 0), 0);
+}
+
+export function getBaseFareExcludingAddons(
+  subtotal: number,
+  pricingSnapshot: { transport_selections?: TransportSelection[]; refreshment_subtotal?: number | string | null } | null | undefined,
+) {
+  const selections = getTransportSelections(pricingSnapshot);
+  return Math.max(0, Number(subtotal || 0) - getTransportAmount(selections) - getRefreshmentAmount(pricingSnapshot));
+}
+
+export function describeTransport(item: TransportSelection, passengerCount?: number) {
+  const quantity = Number(item.quantity || 1);
+  const capacity = item.capacity ? ` (${item.capacity} Seater)` : '';
+  if (item.type === 'SHARED') {
+    return (passengerCount ? `Shared transport for ${passengerCount} pax` : 'Shared transport') + capacity;
+  }
+  return `${quantity} separate vehicle${quantity > 1 ? 's' : ''}${capacity}`;
+}
+
+export function getPaymentMethodLabel(method?: string | null) {
+  const key = (method || '').toUpperCase();
+  if (key === 'RAZORPAY') return 'Online (Razorpay)';
+  if (key === 'BANK_TRANSFER') return 'Bank Transfer';
+  if (key === 'CASH') return 'Cash';
+  if (key === 'ADMIN_MANUAL') return 'Manual (Admin)';
+  return method || 'Office';
+}
+
+export function getCapturedPayments(ledger?: PaymentLedgerEntry[] | null) {
+  return (ledger || []).filter(payment => payment.status === 'CAPTURED');
+}

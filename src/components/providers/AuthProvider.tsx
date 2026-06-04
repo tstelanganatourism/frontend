@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { refreshToken } from '@/services/authService';
+import { processQueue } from '@/lib/api';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const setHydrated = useAuthStore((s) => s.setHydrated);
@@ -25,6 +26,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       const hasSession = typeof window !== 'undefined' ? localStorage.getItem('has_session') : null;
       if (!hasSession) {
         setHydrated();
+        processQueue(null, null); // drain any queued requests (they'll fail gracefully without a token)
         return;
       }
 
@@ -32,15 +34,22 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         setTimeout(() => reject(new Error('Auth hydration timeout')), 30000)
       );
 
+      let refreshError: any = null;
       try {
-        // Run refresh token request with a strict 30-second safety timeout around refreshToken() only
-        await Promise.race([refreshToken(), timeoutPromise]);
+        // Run refresh token request with a strict 5-second safety timeout
+        const result = await Promise.race([refreshToken(), timeoutPromise]);
+        // Drain the queue with the fresh access token
+        const freshToken = useAuthStore.getState().accessToken;
+        processQueue(null, freshToken || '');
       } catch (error: any) {
+        refreshError = error;
         // Handle explicit 401/403 credentials rejection safely
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
           clearAuth();
         }
+        // Drain queued requests with the error so they don't hang forever
+        processQueue(error, null);
       } finally {
         // ALWAYS mark hydration complete via finally to guarantee the UI never locks
         setHydrated();

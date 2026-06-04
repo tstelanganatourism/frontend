@@ -4,6 +4,17 @@ import { apiFetch } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import AdminInvoiceGuard from '@/components/admin/AdminInvoiceGuard';
 import PrintAction from '@/components/ui/PrintAction';
+import {
+  describeTransport,
+  getBaseFareExcludingAddons,
+  getCapturedPayments,
+  getPaymentMethodLabel,
+  getRefreshmentAmount,
+  getTransportSelections,
+  hasRefreshment,
+  money,
+  type PaymentLedgerEntry,
+} from '@/lib/bookingDisplay';
 
 interface Passenger {
   full_name: string;
@@ -36,13 +47,27 @@ interface BookingDetails {
   target_type?: 'PACKAGE' | 'ROOM';
   boarding_point?: { title: string; departure_time: string };
   room_checkin?: string | null;
+  room_checkout?: string | null;
+  room_checkout_date?: string | null;
   room_address?: string | null;
   passengers: Passenger[];
   pricing_snapshot: any;
+  has_refreshment_addon?: boolean;
+  payment_ledger?: PaymentLedgerEntry[];
   user: {
     full_name: string;
     email: string;
     phone: string;
+  };
+  agent_gst?: string | null;
+  agent_company?: string | null;
+  cancellation_details?: {
+    status: string;
+    reason: string;
+    cancellation_fee?: number | null;
+    refund_amount?: number | null;
+    requested_at?: string | null;
+    processed_at?: string | null;
   };
 }
 
@@ -98,6 +123,12 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   const halfGst = (booking.gst_amount / 2).toFixed(2);
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
+  const passengerCount = booking.adult_count + booking.child_count;
+  const transportSelections = getTransportSelections(booking.pricing_snapshot);
+  const refreshmentIncluded = hasRefreshment(booking);
+  const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
+  const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
+  const capturedPayments = getCapturedPayments(booking.payment_ledger);
 
   const primaryPassenger = booking.passengers?.find(p => p.is_primary) || booking.passengers?.[0];
   const billedName = primaryPassenger?.full_name || booking.user?.full_name || 'Guest User';
@@ -213,6 +244,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           .summary-table th { background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1; text-align: left; }
           .summary-table td { padding: 8px; border: 1px solid #cbd5e1; text-align: right; }
           .summary-table td:first-child { text-align: left; }
+          .line-meta { display: block; margin-top: 2px; color: #64748b; font-size: 9px; font-weight: 600; line-height: 1.35; }
           
           .total-row { font-weight: 800; font-size: 12px; color: #1e3a8a; background: #f8fafc; }
           .paid-row { font-weight: 800; font-size: 12px; color: #16a34a; background: #f0fdf4; }
@@ -260,6 +292,15 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             Bhadrachalam, BHADRADRI KOTHAGUDEM Dist.,<br />
             Telangana State - 507 111<br />
             <strong>GSTIN: {gstNumber}</strong>
+            {booking.agent_gst && (
+              <>
+                <br />
+                <span style={{ display: 'inline-block', marginTop: '6px' }}>
+                  <strong>Agent Company: {booking.agent_company || 'N/A'}</strong><br />
+                  <strong>Agent GSTIN: {booking.agent_gst}</strong>
+                </span>
+              </>
+            )}
           </div>
           <div className="company-contact">
             <div className="contact-item"><strong>📞</strong> +91 95420 69573</div>
@@ -275,11 +316,29 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 <tr><td>Invoice No.</td><td>: INV-{booking.public_id}</td></tr>
                 <tr><td>Invoice Date</td><td>: {invoiceDateFormatted}</td></tr>
                 <tr><td>GSTIN</td><td>: {gstNumber}</td></tr>
+                {booking.agent_gst && (
+                  <tr><td>Agent GSTIN</td><td>: {booking.agent_gst}</td></tr>
+                )}
                 <tr><td>Booking ID</td><td>: {booking.public_id}</td></tr>
-                <tr><td>Travel Date</td><td>: {travelDateFormatted}</td></tr>
+                <tr><td>{booking.target_type === 'ROOM' ? 'Check-In Date' : 'Travel Date'}</td><td>: {travelDateFormatted}</td></tr>
+                {booking.target_type === 'ROOM' && (
+                  <tr><td>Check-Out Date</td><td>: {booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase() : 'TBA'}</td></tr>
+                )}
                 <tr><td>{booking.target_type === 'ROOM' ? 'Check-In Time' : 'Reporting Time'}</td><td>: {booking.target_type === 'ROOM' ? (booking.room_checkin || "") : (booking.boarding_point?.departure_time || "")}</td></tr>
+                {booking.target_type === 'ROOM' && (
+                  <tr><td>Check-Out Time</td><td>: {booking.room_checkout || 'TBA'}</td></tr>
+                )}
                 <tr><td>{booking.target_type === 'ROOM' ? 'Lodge / Hotel' : 'Reporting Point'}</td><td>: {booking.target_type === 'ROOM' ? (booking.room_address || booking.package_title) : (booking.boarding_point?.title || "")}</td></tr>
                 <tr><td>{booking.target_type === 'ROOM' ? 'Room Category' : 'Boat Type'}</td><td>: {booking.variant_title || ""}</td></tr>
+                {transportSelections.length > 0 && (
+                  <tr>
+                    <td style={{ verticalAlign: 'top' }}>Transport</td>
+                    <td>: {transportSelections.map((ts) => `${Number(ts.quantity || 1) > 1 ? `${ts.quantity}x ` : ''}${ts.title}`).join(', ')}</td>
+                  </tr>
+                )}
+                {refreshmentIncluded && (
+                  <tr><td>Refreshments</td><td>: Included for {passengerCount} pax</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -360,37 +419,83 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             <table className="summary-table">
               <tbody>
                 <tr>
-                  <td>Package Price ({booking.adult_count} Adults, {booking.child_count} Children)</td>
-                  <td>₹ {booking.subtotal_amount.toFixed(2)}</td>
+                  <td>
+                    {booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}
+                    <span className="line-meta">{booking.package_title} - {booking.variant_title} | {booking.adult_count} Adults, {booking.child_count} Children</span>
+                  </td>
+                  <td>{money(baseFare, 2)}</td>
                 </tr>
+                {booking.target_type === 'ROOM' && (
+                  <tr>
+                    <td>
+                      Stay Details
+                      <span className="line-meta">
+                        Check-in {booking.room_checkin || 'TBA'} | Check-out {booking.room_checkout || 'TBA'}{booking.room_checkout_date ? ` | Until ${new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
+                      </span>
+                    </td>
+                    <td>Included</td>
+                  </tr>
+                )}
+                {transportSelections.map((ts, idx) => (
+                  <tr key={`transport-${idx}`}>
+                    <td>
+                      {ts.title || 'Transport'}
+                      <span className="line-meta">{describeTransport(ts, passengerCount)}</span>
+                    </td>
+                    <td>{money(ts.item_total || 0, 2)}</td>
+                  </tr>
+                ))}
+                {refreshmentIncluded && (
+                  <tr>
+                    <td>
+                      Refreshments
+                      <span className="line-meta">Included for {passengerCount} pax</span>
+                    </td>
+                    <td>{refreshmentAmount > 0 ? money(refreshmentAmount, 2) : 'Included'}</td>
+                  </tr>
+                )}
                 {booking.coupon_discount > 0 && (
                   <tr>
                     <td>Discount ({booking.coupon_applied})</td>
-                    <td style={{ color: '#16a34a' }}>-₹ {booking.coupon_discount.toFixed(2)}</td>
+                    <td style={{ color: '#16a34a' }}>-{money(booking.coupon_discount, 2)}</td>
                   </tr>
                 )}
                 <tr>
                   <td>Taxes (GST @ 5%)</td>
-                  <td>₹ {booking.gst_amount.toFixed(2)}</td>
+                  <td>{money(booking.gst_amount, 2)}</td>
                 </tr>
                 <tr>
                   <td>Gateway Fee</td>
-                  <td>₹ {booking.gateway_fee.toFixed(2)}</td>
+                  <td>{money(booking.gateway_fee, 2)}</td>
                 </tr>
                 <tr className="total-row">
                   <td>TOTAL AMOUNT</td>
-                  <td>₹ {booking.total_amount.toFixed(2)}</td>
+                  <td>{money(booking.total_amount, 2)}</td>
                 </tr>
                 <tr className="paid-row">
                   <td>AMOUNT PAID</td>
-                  <td>₹ {totalPaid.toFixed(2)}</td>
+                  <td>{money(totalPaid, 2)}</td>
                 </tr>
                 <tr className="balance-row">
                   <td>REMAINING BALANCE</td>
-                  <td>₹ {booking.remaining_balance.toFixed(2)}</td>
+                  <td>{money(booking.remaining_balance, 2)}</td>
                 </tr>
               </tbody>
             </table>
+            {(booking.status === 'CANCELLED' || booking.status === 'REFUNDED') && booking.cancellation_details && (
+              <table className="summary-table" style={{ marginTop: '10px', borderTop: '2px dashed #cbd5e1' }}>
+                <tbody>
+                  <tr>
+                    <td>Cancellation Charges</td>
+                    <td style={{ color: '#ef4444' }}>{money(booking.cancellation_details.cancellation_fee || 0, 2)}</td>
+                  </tr>
+                  <tr className="paid-row" style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}>
+                    <td>AMOUNT REFUNDED</td>
+                    <td>{money(booking.cancellation_details.refund_amount || 0, 2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
             <div className="status-bar">PAYMENT STATUS: {booking.status.replace('_', ' ')}</div>
           </div>
 
@@ -407,15 +512,26 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>{invoiceDateFormatted}</td>
-                    <td>{paymentMode}</td>
-                    <td>{paymentId}</td>
-                    <td>{totalPaid.toFixed(2)}</td>
-                  </tr>
+                  {capturedPayments.length > 0 ? (
+                    capturedPayments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td>{payment.created_at ? new Date(payment.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : invoiceDateFormatted}</td>
+                        <td>{getPaymentMethodLabel(payment.payment_method)}</td>
+                        <td>{payment.payment_reference_id || payment.collected_by_label || 'N/A'}</td>
+                        <td>{Number(payment.amount || 0).toFixed(2)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td>{invoiceDateFormatted}</td>
+                      <td>{paymentMode}</td>
+                      <td>{paymentId}</td>
+                      <td>{totalPaid.toFixed(2)}</td>
+                    </tr>
+                  )}
                   <tr className="paid-row">
                     <td colSpan={3}>TOTAL PAID</td>
-                    <td>₹ {totalPaid.toFixed(2)}</td>
+                    <td>{money(totalPaid, 2)}</td>
                   </tr>
                 </tbody>
               </table>

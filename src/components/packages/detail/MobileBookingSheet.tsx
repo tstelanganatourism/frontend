@@ -8,6 +8,7 @@ import {
 import { BookingSidebarV2 } from './BookingSidebarV2';
 import { Sparkles } from 'lucide-react';
 import { useInventoryStore } from '@/stores/inventoryStore';
+import { downloadFileViaFetch } from '@/lib/downloadUtils';
 
 interface PackageVariant {
   id: number;
@@ -17,15 +18,44 @@ interface PackageVariant {
   transport_info?: string | null;
 }
 
+export interface PackageTransportOption {
+  id: number;
+  type: 'SHARED' | 'SEPARATE_VEHICLE';
+  title: string;
+  capacity?: number;
+  adult_price?: number | string | null;
+  child_price?: number | string | null;
+  weekend_adult_price?: number | string | null;
+  weekend_child_price?: number | string | null;
+  fixed_price?: number | string | null;
+  weekend_fixed_price?: number | string | null;
+}
+
 interface MobileBookingSheetProps {
   startingPrice?: number | string | null;
   variants: PackageVariant[];
   packageId: number;
   packageSlug: string;
   brochurePdfUrl?: string | null;
+  hasTransport?: boolean;
+  transportOptions?: PackageTransportOption[];
+  hasRefreshments?: boolean;
+  refreshmentAdultPrice?: number | string | null;
+  refreshmentChildPrice?: number | string | null;
 }
 
-export const MobileBookingSheet = ({ startingPrice, variants, packageId, packageSlug, brochurePdfUrl }: MobileBookingSheetProps) => {
+export const MobileBookingSheet = ({ 
+  startingPrice, 
+  variants, 
+  packageId, 
+  packageSlug, 
+  brochurePdfUrl,
+  hasTransport,
+  transportOptions,
+  hasRefreshments,
+  refreshmentAdultPrice,
+  refreshmentChildPrice
+}: MobileBookingSheetProps) => {
   const { publicAvailability, publicLoading } = useInventoryStore();
   const isPackageInactive = !publicLoading && !publicAvailability;
 
@@ -58,25 +88,13 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
                 e.preventDefault();
                 const match = brochurePdfUrl.match(/(private\/[^?#]+)/);
                 const rawKey = match ? decodeURIComponent(match[1]) : null;
+                const filename = `${packageSlug}-brochure.pdf`;
 
                 if (rawKey) {
-                  // Instantly trigger download via backend
-                  const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(packageSlug + '-brochure.pdf')}`;
-                  const link = document.createElement('a');
-                  link.href = downloadUrl;
-                  link.download = `${packageSlug}-brochure.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                  const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+                  await downloadFileViaFetch(downloadUrl, filename);
                 } else {
-                  // Fallback for external URLs
-                  const link = document.createElement('a');
-                  link.href = brochurePdfUrl;
-                  link.download = `${packageSlug}-brochure.pdf`;
-                  link.target = "_blank";
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                  await downloadFileViaFetch(brochurePdfUrl, filename);
                 }
               }}
               className="text-[10px] font-black text-[#1a6b7a] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
@@ -121,6 +139,11 @@ export const MobileBookingSheet = ({ startingPrice, variants, packageId, package
                   packageId={packageId}
                   packageSlug={packageSlug}
                   brochurePdfUrl={brochurePdfUrl}
+                  hasTransport={hasTransport}
+                  transportOptions={transportOptions}
+                  hasRefreshments={hasRefreshments}
+                  refreshmentAdultPrice={refreshmentAdultPrice}
+                  refreshmentChildPrice={refreshmentChildPrice}
                 />
               </div>
             </SheetContent>

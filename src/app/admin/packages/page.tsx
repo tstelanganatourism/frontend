@@ -391,26 +391,31 @@ export default function AdminPackagesPage() {
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-500 uppercase">{pkg.region || '—'}</td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleToggleActive(pkg)}
-                        disabled={togglingActiveId === pkg.id}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all border cursor-pointer disabled:opacity-70 disabled:cursor-wait ${
-                          togglingActiveId === pkg.id
-                            ? 'bg-slate-100 text-slate-500 border-slate-200'
-                            : pkg.is_active 
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
-                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                        }`}
-                      >
-                        {togglingActiveId === pkg.id ? (
-                          <><Loader2 className="h-3 w-3 animate-spin" /> Updating</>
-                        ) : (
-                          <>
-                            <span className={`h-2 w-2 rounded-full ${pkg.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                            {pkg.is_active ? 'Accepting Bookings' : 'Closed / Inactive'}
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-black text-indigo-700 ring-1 ring-inset ring-indigo-200" title="Total Active Bookings">
+                          {pkg.active_booking_count || 0}
+                        </span>
+                        <button
+                          onClick={() => handleToggleActive(pkg)}
+                          disabled={togglingActiveId === pkg.id}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all border cursor-pointer disabled:opacity-70 disabled:cursor-wait ${
+                            togglingActiveId === pkg.id
+                              ? 'bg-slate-100 text-slate-500 border-slate-200'
+                              : pkg.is_active 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
+                                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                          }`}
+                        >
+                          {togglingActiveId === pkg.id ? (
+                            <><Loader2 className="h-3 w-3 animate-spin" /> Updating</>
+                          ) : (
+                            <>
+                              <span className={`h-2 w-2 rounded-full ${pkg.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                              {pkg.is_active ? 'Accepting Bookings' : 'Closed / Inactive'}
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <button

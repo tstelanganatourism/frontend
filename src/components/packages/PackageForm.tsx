@@ -105,6 +105,10 @@ export default function PackageForm({
   const [description, setDescription] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [orderPriority, setOrderPriority] = useState(0);
+  const [hasTransport, setHasTransport] = useState(false);
+  const [hasRefreshments, setHasRefreshments] = useState(false);
+  const [refreshmentAdultPrice, setRefreshmentAdultPrice] = useState<number | ''>('');
+  const [refreshmentChildPrice, setRefreshmentChildPrice] = useState<number | ''>('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [status, setStatus] = useState('DRAFT');
@@ -137,6 +141,7 @@ export default function PackageForm({
   const [boardingPoints, setBoardingPoints] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
   const [policies, setPolicies] = useState<any[]>([]);
+  const [transportOptions, setTransportOptions] = useState<any[]>([]);
 
   useEffect(() => {
     if (initialData) {
@@ -149,6 +154,10 @@ export default function PackageForm({
       setDescription(initialData.description || '');
       setCoverImageUrl(initialData.cover_image_url || '');
       setOrderPriority(initialData.order_priority || 0);
+      setHasTransport(initialData.has_transport || false);
+      setHasRefreshments(initialData.has_refreshments || false);
+      setRefreshmentAdultPrice(initialData.refreshment_adult_price ?? '');
+      setRefreshmentChildPrice(initialData.refreshment_child_price ?? '');
       setIsFeatured(initialData.is_featured || false);
       setIsActive(initialData.is_active !== false);
       setStatus(initialData.status || 'DRAFT');
@@ -168,6 +177,7 @@ export default function PackageForm({
       setBoardingPoints(initialData.boarding_points || []);
       setFaqs(initialData.faqs || []);
       setPolicies(initialData.policies || []);
+      setTransportOptions(initialData.transport_options || []);
     }
   }, [initialData]);
 
@@ -362,7 +372,7 @@ export default function PackageForm({
   const addVariant = () => {
     setVariants(prev => [
       ...prev,
-      { title: '', adult_price: 1500, child_price: 1000, transport_info: '', is_active: true }
+      { title: '', adult_price: 1500, child_price: 1000, weekend_adult_price: 1700, weekend_child_price: 1200, is_active: true }
     ]);
   };
   const updateVariant = (index: number, key: string, value: any) => {
@@ -374,6 +384,34 @@ export default function PackageForm({
   };
   const removeVariant = (index: number) => {
     setVariants(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  // Transport Options management
+  const addTransportOption = (type: 'SHARED' | 'SEPARATE_VEHICLE') => {
+    setTransportOptions(prev => [
+      ...prev,
+      { 
+        title: '', 
+        type, 
+        capacity: type === 'SEPARATE_VEHICLE' ? 4 : 1, 
+        adult_price: type === 'SHARED' ? 500 : null,
+        child_price: type === 'SHARED' ? 300 : null,
+        weekend_adult_price: type === 'SHARED' ? 600 : null,
+        weekend_child_price: type === 'SHARED' ? 400 : null,
+        fixed_price: type === 'SEPARATE_VEHICLE' ? 2000 : null,
+        weekend_fixed_price: type === 'SEPARATE_VEHICLE' ? 2500 : null
+      }
+    ]);
+  };
+  const updateTransportOption = (index: number, key: string, value: any) => {
+    setTransportOptions(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [key]: value };
+      return updated;
+    });
+  };
+  const removeTransportOption = (index: number) => {
+    setTransportOptions(prev => prev.filter((_, idx) => idx !== index));
   };
 
   // Itinerary management
@@ -498,6 +536,10 @@ export default function PackageForm({
       cover_image_url: coverImageUrl || null,
       brochure_pdf_url: brochurePdfUrl || null,
       order_priority: Number(orderPriority),
+      has_transport: hasTransport,
+      has_refreshments: hasRefreshments,
+      refreshment_adult_price: hasRefreshments && refreshmentAdultPrice !== '' ? Number(refreshmentAdultPrice) : null,
+      refreshment_child_price: hasRefreshments && refreshmentChildPrice !== '' ? Number(refreshmentChildPrice) : null,
       is_featured: isFeatured,
       is_active: isActive,
       status,
@@ -505,7 +547,17 @@ export default function PackageForm({
       meta_description: metaDescription || null,
       og_image_url: ogImageUrl || null,
       canonical_url: canonicalUrl || null,
-      variants: variants.map((v, idx) => ({ ...v, adult_price: Number(v.adult_price), child_price: Number(v.child_price), sort_order: idx + 1 })),
+      variants: variants.map((v, idx) => ({ ...v, adult_price: Number(v.adult_price), child_price: Number(v.child_price), weekend_adult_price: v.weekend_adult_price ? Number(v.weekend_adult_price) : null, weekend_child_price: v.weekend_child_price ? Number(v.weekend_child_price) : null, sort_order: idx + 1 })),
+      transport_options: hasTransport ? transportOptions.map((t) => ({ 
+        ...t, 
+        capacity: Number(t.capacity),
+        adult_price: t.adult_price ? Number(t.adult_price) : null,
+        child_price: t.child_price ? Number(t.child_price) : null,
+        weekend_adult_price: t.weekend_adult_price ? Number(t.weekend_adult_price) : null,
+        weekend_child_price: t.weekend_child_price ? Number(t.weekend_child_price) : null,
+        fixed_price: t.fixed_price ? Number(t.fixed_price) : null,
+        weekend_fixed_price: t.weekend_fixed_price ? Number(t.weekend_fixed_price) : null
+      })) : [],
       gallery: gallery.map((g, idx) => ({ ...g, sort_order: idx + 1 })),
       itinerary: itinerary.map((i, idx) => ({ ...i, day_number: Number(i.day_number), sort_order: idx + 1 })),
       highlights: highlights.map((h, idx) => ({ ...h, sort_order: idx + 1 })),
@@ -546,7 +598,8 @@ export default function PackageForm({
 
   const tabs = [
     { id: 'basic', label: 'Basic Info', icon: Info },
-    { id: 'variants', label: 'Pricing (Variants)', icon: BedDouble },
+    { id: 'variants', label: 'Base / Boat Options', icon: BedDouble },
+    ...(hasTransport ? [{ id: 'transport_options', label: 'Transport Options', icon: Compass }] : []),
     { id: 'itinerary', label: 'Itinerary', icon: Compass },
     { id: 'highlights', label: 'Highlights', icon: Sparkles },
     { id: 'inclusions', label: 'Inclusions & Boarding', icon: ListPlus },
@@ -914,6 +967,60 @@ export default function PackageForm({
               </label>
             </div>
 
+            <div className="pt-4 border-t border-slate-100 grid gap-6 sm:grid-cols-2">
+              <label className="flex items-center gap-3 cursor-pointer group bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-xl border border-indigo-200/60 hover:border-indigo-400/50 transition-all">
+                <input
+                  type="checkbox"
+                  checked={hasTransport}
+                  onChange={(e) => setHasTransport(e.target.checked)}
+                  className="h-5 w-5 rounded border-slate-300 text-indigo-500 focus:ring-indigo-400"
+                />
+                <div>
+                  <span className="block text-sm font-bold text-slate-800">Has Transport Options</span>
+                  <span className="block text-xs font-medium text-slate-500 mt-0.5">Enable if this package provides transport choices (Shared/Separate)</span>
+                </div>
+              </label>
+
+              <div className="flex flex-col gap-3 group bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-200/60 hover:border-emerald-400/50 transition-all">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasRefreshments}
+                    onChange={(e) => setHasRefreshments(e.target.checked)}
+                    className="h-5 w-5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-400"
+                  />
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800">Has Refreshments</span>
+                    <span className="block text-xs font-medium text-slate-500 mt-0.5">Enable if optional refreshments are offered</span>
+                  </div>
+                </label>
+                {hasRefreshments && (
+                  <div className="grid grid-cols-2 gap-3 mt-2 pl-8">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Adult Price (₹)</label>
+                      <input
+                        type="number"
+                        value={refreshmentAdultPrice}
+                        onChange={(e) => setRefreshmentAdultPrice(e.target.value ? Number(e.target.value) : '')}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Child Price (₹)</label>
+                      <input
+                        type="number"
+                        value={refreshmentChildPrice}
+                        onChange={(e) => setRefreshmentChildPrice(e.target.value ? Number(e.target.value) : '')}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                        min={0}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="pt-4 border-t border-slate-100">
               <MultiImageUpload
                 label="Package Gallery & Cover Photos *"
@@ -938,8 +1045,8 @@ export default function PackageForm({
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Pricing Variants</h3>
-                <p className="text-[10px] text-slate-500 font-semibold mt-0.5 max-w-lg">Create pricing options based on transport type or accommodation level (e.g. AC vs Non-AC, Luxury vs Standard).</p>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Base / Boat Options</h3>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5 max-w-lg">Create base package pricing variants (e.g. AC Boat vs Non-AC Boat, Luxury vs Standard room).</p>
               </div>
               <button
                 type="button"
@@ -963,7 +1070,7 @@ export default function PackageForm({
                     <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                       <span className="text-xs font-black uppercase text-[#0f3d56] tracking-wider flex items-center gap-2">
                         <Layers className="h-4 w-4 text-[#5ac4d7]" />
-                        Variant #{index + 1}
+                        Base Option #{index + 1}
                       </span>
                       <button
                         type="button"
@@ -1008,17 +1115,27 @@ export default function PackageForm({
                           required
                         />
                       </div>
-                      <div className="lg:col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Transport Info</label>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Adult Price (₹) (Optional)</label>
                         <input
-                          type="text"
-                          value={variant.transport_info || ''}
-                          onChange={(e) => updateVariant(index, 'transport_info', e.target.value)}
-                          placeholder="e.g. Speedboat + Non-AC Bus"
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800 shadow-sm"
+                          type="number"
+                          value={variant.weekend_adult_price || ''}
+                          onChange={(e) => updateVariant(index, 'weekend_adult_price', e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
+                          min={0}
                         />
                       </div>
-                      <div className="lg:col-span-2 pt-6">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Child Price (₹) (Optional)</label>
+                        <input
+                          type="number"
+                          value={variant.weekend_child_price || ''}
+                          onChange={(e) => updateVariant(index, 'weekend_child_price', e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
+                          min={0}
+                        />
+                      </div>
+                      <div className="lg:col-span-2 pt-2">
                         <label className="flex items-center gap-3 cursor-pointer">
                           <input
                             type="checkbox"
@@ -1026,9 +1143,161 @@ export default function PackageForm({
                             onChange={(e) => updateVariant(index, 'is_active', e.target.checked)}
                             className="h-4 w-4 rounded border-slate-300 text-[#5ac4d7] focus:ring-[#5ac4d7]"
                           />
-                          <span className="text-sm font-bold text-slate-800">Variant is Active and Bookable</span>
+                          <span className="text-sm font-bold text-slate-800">Option is Active and Bookable</span>
                         </label>
                       </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab Transport Options */}
+        {activeTab === 'transport_options' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Transport Options</h3>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5 max-w-lg">Define the available transport choices and pricing for this package.</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => addTransportOption('SHARED')}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-all whitespace-nowrap"
+                >
+                  <Plus className="h-4 w-4" /> Add Shared Transport
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addTransportOption('SEPARATE_VEHICLE')}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1a4f6d] transition-all whitespace-nowrap"
+                >
+                  <Plus className="h-4 w-4" /> Add Separate Vehicle
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-6">
+              {transportOptions.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                  <Compass className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                  <p className="text-sm font-bold">No transport options configured.</p>
+                </div>
+              ) : (
+                transportOptions.map((opt, index) => (
+                  <div key={index} className="p-6 bg-slate-50 border border-slate-200 rounded-3xl space-y-5 relative group shadow-sm hover:border-indigo-400/40 transition-colors">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                      <span className={`text-xs font-black uppercase tracking-wider flex items-center gap-2 ${opt.type === 'SHARED' ? 'text-indigo-600' : 'text-[#0f3d56]'}`}>
+                        <Compass className={`h-4 w-4 ${opt.type === 'SHARED' ? 'text-indigo-400' : 'text-[#5ac4d7]'}`} />
+                        {opt.type === 'SHARED' ? 'Shared Transport' : 'Separate Vehicle'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeTransportOption(index)}
+                        className="p-2 border border-slate-200 hover:border-red-200 bg-white text-slate-400 hover:text-red-500 rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Remove
+                      </button>
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="lg:col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Title / Vehicle Type *</label>
+                        <input
+                          type="text"
+                          value={opt.title}
+                          onChange={(e) => updateTransportOption(index, 'title', e.target.value)}
+                          placeholder={opt.type === 'SHARED' ? 'e.g. Non-AC Bus' : 'e.g. Swift Dzire (4-seater)'}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-semibold text-slate-800 shadow-sm"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Max Capacity *</label>
+                        <input
+                          type="number"
+                          value={opt.capacity}
+                          onChange={(e) => updateTransportOption(index, 'capacity', e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-slate-800 shadow-sm"
+                          min={1}
+                          required
+                        />
+                      </div>
+
+                      {opt.type === 'SHARED' ? (
+                        <>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Adult Price (₹) *</label>
+                            <input
+                              type="number"
+                              value={opt.adult_price || ''}
+                              onChange={(e) => updateTransportOption(index, 'adult_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Child Price (₹) *</label>
+                            <input
+                              type="number"
+                              value={opt.child_price || ''}
+                              onChange={(e) => updateTransportOption(index, 'child_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Adult Price (₹)</label>
+                            <input
+                              type="number"
+                              value={opt.weekend_adult_price || ''}
+                              onChange={(e) => updateTransportOption(index, 'weekend_adult_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Child Price (₹)</label>
+                            <input
+                              type="number"
+                              value={opt.weekend_child_price || ''}
+                              onChange={(e) => updateTransportOption(index, 'weekend_child_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Fixed Price (₹) *</label>
+                            <input
+                              type="number"
+                              value={opt.fixed_price || ''}
+                              onChange={(e) => updateTransportOption(index, 'fixed_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Fixed Price (₹)</label>
+                            <input
+                              type="number"
+                              value={opt.weekend_fixed_price || ''}
+                              onChange={(e) => updateTransportOption(index, 'weekend_fixed_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))

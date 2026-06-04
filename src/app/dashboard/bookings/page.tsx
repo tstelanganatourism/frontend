@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { Ticket, Loader2 } from 'lucide-react';
+import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { getTransportSelections, hasRefreshment, money } from '@/lib/bookingDisplay';
 
 const getStatusDisplay = (status: string) => {
   switch (status?.toUpperCase()) {
@@ -59,6 +61,8 @@ export default function BookingsPage() {
         <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden divide-y divide-slate-100">
           {bookings.map((b) => {
             const statusDisplay = getStatusDisplay(b.status);
+            const transports = getTransportSelections(b.pricing_snapshot);
+            const refreshmentIncluded = hasRefreshment(b);
             return (
             <div key={b.id} className="p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50 transition-colors">
               <div>
@@ -69,12 +73,35 @@ export default function BookingsPage() {
                   </span>
                 </div>
                 <h3 className="font-extrabold text-base text-slate-700 mt-1 leading-tight">{b.package_title}</h3>
-                <p className="text-sm text-slate-500 font-semibold mt-0.5">Travel Date: {b.travel_date}</p>
+                <BookingDateDisplay 
+                  targetType={b.target_type} 
+                  travelDate={b.travel_date}
+                  roomCheckin={b.room_checkin}
+                  roomCheckout={b.room_checkout}
+                  roomCheckoutDate={b.room_checkout_date}
+                  packageDepartureTime={b.package_departure_time}
+                  compact={true}
+                  className="!text-sm mt-0.5"
+                />
+                {(transports.length > 0 || refreshmentIncluded) && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {transports.slice(0, 2).map((ts, idx) => (
+                      <span key={idx} className="rounded-full bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200">
+                        {Number(ts.quantity || 1) > 1 ? `${ts.quantity}x ` : ''}{ts.title}
+                      </span>
+                    ))}
+                    {refreshmentIncluded && (
+                      <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                        Refreshments
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-8 sm:gap-12 w-full sm:w-auto justify-between sm:justify-end shrink-0 border-t sm:border-t-0 pt-4 sm:pt-0">
                 <div className="text-left sm:text-right min-w-[100px]">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Amount</span>
-                  <p className="font-black text-base text-slate-800">₹{b.total_amount.toLocaleString('en-IN')}</p>
+                  <p className="font-black text-base text-slate-800">{money(b.total_amount)}</p>
                 </div>
                 <Link 
                   href={`/dashboard/bookings/${b.public_id}`}

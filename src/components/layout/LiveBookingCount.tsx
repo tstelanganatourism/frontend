@@ -7,14 +7,19 @@ export default function LiveBookingCount() {
   const [count, setCount] = useState<number>(10000);
 
   useEffect(() => {
+    const controller = new AbortController();
+    
     const fetchCount = async () => {
       try {
-        const res = await fetch('/api/v1/bookings/live-count');
+        const res = await fetch('/api/v1/bookings/live-count', {
+          signal: controller.signal
+        });
         if (res.ok) {
           const data = await res.json();
           setCount(data.count);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
         console.error('Failed to fetch live booking count', err);
       }
     };
@@ -22,7 +27,10 @@ export default function LiveBookingCount() {
     fetchCount();
     // Optional: Refresh every 60 seconds
     const interval = setInterval(fetchCount, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, []);
 
   return (

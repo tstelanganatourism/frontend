@@ -11,6 +11,7 @@ import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
 import AdminCreateBookingModal from '@/components/admin/AdminCreateBookingModal';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ interface BookingItem {
   created_at: string | null;
   package_title: string;
   variant_title: string;
+  package_type?: 'TOUR' | 'TRIP';
   customer: {
     id: number | null;
     full_name: string;
@@ -107,7 +109,7 @@ function formatDate(iso: string | null) {
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = ['', 'PENDING', 'PARTIAL_PAID', 'FULLY_PAID', 'CANCELLED', 'REFUNDED'];
 const SOURCE_OPTIONS = ['', 'USER', 'AGENT', 'ADMIN', 'ADMIN_DIRECT'];
-const TARGET_OPTIONS = ['', 'PACKAGE', 'ROOM'];
+const TARGET_OPTIONS = ['', 'BOAT RIDE', 'SIGHTSEEING', 'ROOM'];
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<BookingItem[]>([]);
@@ -422,7 +424,7 @@ export default function AdminBookingsPage() {
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
                           b.target_type === 'ROOM' ? 'bg-indigo-100 text-indigo-700' : 'bg-pink-100 text-pink-700'
                         }`}>
-                          {b.target_type}
+                          {b.target_type === 'ROOM' ? 'ROOM' : (b.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING')}
                         </span>
                         <p className="font-bold text-slate-800 text-xs truncate max-w-[140px]">{b.package_title}</p>
                       </div>
@@ -431,11 +433,27 @@ export default function AdminBookingsPage() {
                         {b.adult_count}A {b.child_count > 0 ? `+ ${b.child_count}C` : ''}
                         {b.passenger_count > 0 && ` · ${b.passenger_count} pax`}
                       </p>
+                      {(b as any).pricing_snapshot?.transport_selections?.length > 0 && (
+                        <p className="text-[10px] text-fuchsia-600 font-bold mt-1 truncate max-w-[160px]" title="Transport Selection">
+                          + {(b as any).pricing_snapshot.transport_selections.map((ts: any) => `${ts.quantity > 1 ? ts.quantity + 'x ' : ''}${ts.title}`).join(', ')}
+                        </p>
+                      )}
                     </td>
 
                     {/* Travel Date */}
                     <td className="px-5 py-4 text-center">
-                      <p className="text-xs font-bold text-slate-700">{formatDate(b.travel_date)}</p>
+                      <div className="flex justify-center text-left">
+                        <BookingDateDisplay 
+                          targetType={b.target_type} 
+                          travelDate={b.travel_date}
+                          roomCheckin={(b as any).room_checkin}
+                          roomCheckout={(b as any).room_checkout}
+                          roomCheckoutDate={(b as any).room_checkout_date}
+                          packageDepartureTime={(b as any).package_departure_time}
+                          compact={true}
+                          className="!text-xs"
+                        />
+                      </div>
                     </td>
 
                     {/* Amount */}

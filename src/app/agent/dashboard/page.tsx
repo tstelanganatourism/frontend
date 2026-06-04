@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
+import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
 import { 
   Ticket, 
   Map, 
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { getTransportSelections, hasRefreshment, money } from '@/lib/bookingDisplay';
 
 interface DashboardSummary {
   booking_count: number;
@@ -168,7 +170,10 @@ export default function AgentDashboardPage() {
         </div>
         {recentBookings.length > 0 ? (
           <div className="divide-y divide-slate-100">
-            {recentBookings.map((b) => (
+            {recentBookings.map((b) => {
+              const transports = getTransportSelections(b.pricing_snapshot);
+              const refreshmentIncluded = hasRefreshment(b);
+              return (
               <div key={b.id} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50 transition-colors">
                 <div>
                   <div className="flex items-center gap-2">
@@ -181,12 +186,40 @@ export default function AgentDashboardPage() {
                     </span>
                   </div>
                   <h3 className="font-extrabold text-sm text-slate-700 mt-1 leading-tight">{b.package_title}</h3>
-                  <p className="text-xs text-slate-500 font-semibold mt-0.5">Travel Date: {b.travel_date}</p>
+                  <BookingDateDisplay 
+                    targetType={b.target_type} 
+                    travelDate={b.travel_date}
+                    roomCheckin={b.room_checkin}
+                    roomCheckout={b.room_checkout}
+                    roomCheckoutDate={b.room_checkout_date}
+                    packageDepartureTime={b.package_departure_time}
+                    compact={true}
+                    className="!text-xs mt-0.5"
+                  />
+                  {(transports.length > 0 || refreshmentIncluded || b.target_type === 'ROOM') && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {b.target_type === 'ROOM' && (
+                        <span className="rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 ring-1 ring-indigo-200">
+                          Room stay
+                        </span>
+                      )}
+                      {transports.slice(0, 2).map((ts, idx) => (
+                        <span key={idx} className="rounded-full bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200">
+                          {Number(ts.quantity || 1) > 1 ? `${ts.quantity}x ` : ''}{ts.title}
+                        </span>
+                      ))}
+                      {refreshmentIncluded && (
+                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                          Refreshments
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-8 sm:gap-12 w-full sm:w-auto justify-between sm:justify-end shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0">
                   <div className="text-left sm:text-right min-w-[100px]">
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tourist Bill</span>
-                    <p className="font-black text-sm text-slate-800">₹{b.total_amount.toLocaleString('en-IN')}</p>
+                    <p className="font-black text-sm text-slate-800">{money(b.total_amount)}</p>
                   </div>
                   <Link 
                     href={`/dashboard/bookings/${b.public_id}`}
@@ -196,7 +229,8 @@ export default function AgentDashboardPage() {
                   </Link>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="p-12 flex flex-col items-center justify-center text-center">

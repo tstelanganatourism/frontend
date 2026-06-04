@@ -101,56 +101,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Bookings List (Injected) ──────────────────────────────────────────────────
-
-function BookingsList({ mode, variantId, dateStr }: { mode: 'package' | 'room', variantId: number, dateStr: string }) {
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    apiClient.get('/api/v1/admin/bookings', {
-      params: {
-        start_date: dateStr,
-        end_date: dateStr,
-        target_filter: mode.toUpperCase(),
-        ...(mode === 'package' ? { variant_id: variantId } : { room_variant_id: variantId }),
-        limit: 100
-      }
-    }).then(res => {
-      if (isMounted) {
-        const active = (res.data.items || []).filter((b: any) => b.status !== 'CANCELLED' && b.status !== 'REJECTED');
-        setBookings(active);
-        setLoading(false);
-      }
-    }).catch(err => {
-      if (isMounted) setLoading(false);
-    });
-    return () => { isMounted = false };
-  }, [mode, variantId, dateStr]);
-
-  if (loading) return <div className="py-2 flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-slate-400" /></div>;
-  if (bookings.length === 0) return null;
-
-  return (
-    <div className="mt-4 rounded-xl border border-[#5ac4d7]/20 bg-[#5ac4d7]/5 p-4">
-      <h4 className="text-[10px] font-black uppercase tracking-widest text-[#0f3d56] mb-3 flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Existing Bookings ({bookings.length})</h4>
-      <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-        {bookings.map(b => (
-          <div key={b.id} className="flex justify-between items-center rounded-lg bg-white p-2.5 shadow-sm border border-slate-100">
-            <div>
-              <p className="text-xs font-bold text-slate-800">{b.primary_passenger_name}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">{b.public_id} • {b.adult_count}A {b.child_count}C</p>
-            </div>
-            <div className="text-right">
-              <span className="inline-flex rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-600">Confirmed</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ─── Modals (Packages) ────────────────────────────────────────────────────────
 
@@ -283,7 +233,6 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
               </div>
             </div>
 
-            <BookingsList mode="package" variantId={row.variant_id} dateStr={row.date} />
         </div>
 
         {/* Footer Section */}
@@ -397,7 +346,6 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
             </div>
           </div>
 
-          <BookingsList mode="room" variantId={row.room_variant_id} dateStr={row.date} />
         </div>
         <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4">
           <button onClick={handleDelete} disabled={saving || row.booked_rooms > 0} className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">Delete</button>

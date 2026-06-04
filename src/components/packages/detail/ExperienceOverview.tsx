@@ -12,7 +12,7 @@ import {
   Ship,
   Sparkles,
 } from 'lucide-react';
-import { apiClient } from '@/lib/api';
+import { downloadFileViaFetch } from '@/lib/downloadUtils';
 
 interface Variant {
   id: number;
@@ -74,27 +74,15 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
     if (!brochureUrl) return;
 
     const rawKey = extractObjectKey(brochureUrl);
+    const filename = `${pkg.slug}-brochure.pdf`;
 
-    // If it's a plain public URL (not a private R2 key), just open it directly
-    if (!rawKey) {
-      window.open(brochureUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    // For private R2 objects, request a fresh signed URL from backend
-    try {
-      const response = await apiClient.post('/api/v1/documents/signed-url', {
-        object_key: rawKey
-      });
-      if (response.data?.url) {
-        window.open(response.data.url, '_blank', 'noopener,noreferrer');
-      } else {
-        alert('Brochure is not available yet. Please contact support or try again later.');
-      }
-    } catch (err: unknown) {
-      console.error('Failed to get signed URL for brochure:', err);
-      // Do NOT fall back to the raw private URL - it will show an ugly XML error page
-      alert('Brochure could not be loaded. The file may not have been generated yet. Please contact our team for assistance.');
+    if (rawKey) {
+      // Use backend download endpoint (bakes Content-Disposition: attachment)
+      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+      await downloadFileViaFetch(downloadUrl, filename);
+    } else {
+      // Plain public URL — download directly via Blob
+      await downloadFileViaFetch(brochureUrl, filename);
     }
   };
 
