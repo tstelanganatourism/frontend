@@ -134,8 +134,10 @@ export const BookingSidebarV2 = ({
   };
 
 
-  const today = new Date(todayIST());
-  const minDateStr = toYYYYMMDD(today);
+  const today = todayIST();
+  const todayDateStr = toYYYYMMDD(today);
+  const isAfterCutoff = today.getHours() >= 6;
+  const minDateStr = isAfterCutoff ? toYYYYMMDD(new Date(today.getTime() + 86400000)) : todayDateStr;
 
   const validVariants = useMemo(() => {
     return variants.filter(
@@ -987,7 +989,9 @@ export const BookingSidebarV2 = ({
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(calYear, calMonth, i);
       const dateStr = toYYYYMMDD(d);
-      const isPast = dateStr < minDateStr;
+      const isPastDate = dateStr < todayDateStr;
+      const isTodayAfterCutoff = dateStr === todayDateStr && isAfterCutoff;
+      const isPast = isPastDate || isTodayAfterCutoff;
       const isSelected = dateStr === selectedDate;
 
       // Check availability if we have it for this month
@@ -1005,6 +1009,9 @@ export const BookingSidebarV2 = ({
             isDisabled = true;
           } else {
             dayStatus = 'available';
+            if (isTodayAfterCutoff) {
+              isDisabled = false; // Admin manually opened / kept open today's package
+            }
           }
         } else {
           // If a date has no slot record generated/published, it cannot be booked

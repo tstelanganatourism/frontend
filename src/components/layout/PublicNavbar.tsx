@@ -51,12 +51,19 @@ export default function PublicNavbar() {
   }, []);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const isCurrentlyScrolled = window.scrollY > 15;
-      setIsScrolled(prev => {
-        if (prev !== isCurrentlyScrolled) return isCurrentlyScrolled;
-        return prev;
-      });
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const isCurrentlyScrolled = window.scrollY > 15;
+          setIsScrolled(prev => {
+            if (prev !== isCurrentlyScrolled) return isCurrentlyScrolled;
+            return prev;
+          });
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);

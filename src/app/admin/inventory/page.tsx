@@ -19,6 +19,13 @@ function todayIST(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
 }
 
+function formatDateIST(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function formatMonth(year: number, month: number) {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
@@ -379,12 +386,12 @@ function GenerateModal({
 }) {
   const { generateInventory, generateRoomInventory } = useInventoryStore();
   const today = todayIST();
-  const minISO = today.toISOString().slice(0, 10);
+  const minISO = formatDateIST(today);
   const [fromDate, setFromDate] = useState(minISO);
   const [toDate, setToDate] = useState(() => {
     const d = new Date(today);
     d.setMonth(d.getMonth() + 3);
-    return d.toISOString().slice(0, 10);
+    return formatDateIST(d);
   });
   const [capacity, setCapacity] = useState(defaultCapacity ?? (mode === 'package' ? 500 : 20));
   const [slotCapacities, setSlotCapacities] = useState<Record<string, number>>(() => {

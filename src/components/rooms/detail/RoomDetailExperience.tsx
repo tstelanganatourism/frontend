@@ -1919,19 +1919,26 @@ const RoomSectionNav = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 150;
-      for (const item of ROOM_NAV_ITEMS) {
-        const section = document.getElementById(item.id);
-        if (section) {
-          const { top } = section.getBoundingClientRect();
-          const sectionTop = top + window.scrollY;
-          const sectionBottom = sectionTop + section.offsetHeight;
-          if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-            setActiveSection(item.id);
-            break;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollPosition = window.scrollY + 150;
+          for (const item of ROOM_NAV_ITEMS) {
+            const section = document.getElementById(item.id);
+            if (section) {
+              const { top } = section.getBoundingClientRect();
+              const sectionTop = top + window.scrollY;
+              const sectionBottom = sectionTop + section.offsetHeight;
+              if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                setActiveSection(item.id);
+                break;
+              }
+            }
           }
-        }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });

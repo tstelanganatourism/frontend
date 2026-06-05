@@ -33,7 +33,7 @@ export const CustomDatePicker = ({
   const baseDate = useMemo(() => {
     if (value) return parseDateLocal(value);
     if (min) return parseDateLocal(min);
-    return new Date();
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   }, [value, min]);
 
   const [calYear, setCalYear] = useState(baseDate.getFullYear());
@@ -62,8 +62,12 @@ export const CustomDatePicker = ({
     const dd = String(day).padStart(2, '0');
     return `${year}-${mm}-${dd}`;
   };
+  const todayIST = () => {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  };
+
   const getLocalToday = () => {
-    const d = new Date();
+    const d = todayIST();
     return toYYYYMMDD(d.getFullYear(), d.getMonth(), d.getDate());
   };
 
@@ -81,7 +85,7 @@ export const CustomDatePicker = ({
   const prevMonth = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!allowPast) {
-      const minD = min ? parseDateLocal(min) : new Date();
+      const minD = min ? parseDateLocal(min) : todayIST();
       if (calYear < minD.getFullYear() || (calYear === minD.getFullYear() && calMonth <= minD.getMonth())) return;
     }
     if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }

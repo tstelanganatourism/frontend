@@ -23,21 +23,28 @@ export const SectionNav = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 150; // Offset for navbar + sticky nav
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollPosition = window.scrollY + 150; // Offset for navbar + sticky nav
 
-      for (const item of navItems) {
-        const section = document.getElementById(item.id);
-        if (section) {
-          const { top, bottom } = section.getBoundingClientRect();
-          const sectionTop = top + window.scrollY;
-          const sectionBottom = sectionTop + section.offsetHeight;
+          for (const item of navItems) {
+            const section = document.getElementById(item.id);
+            if (section) {
+              const { top } = section.getBoundingClientRect();
+              const sectionTop = top + window.scrollY;
+              const sectionBottom = sectionTop + section.offsetHeight;
 
-          if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-            setActiveSection(item.id);
-            break;
+              if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                setActiveSection(item.id);
+                break;
+              }
+            }
           }
-        }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
