@@ -337,7 +337,10 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   </tr>
                 )}
                 {refreshmentIncluded && (
-                  <tr><td>Refreshments</td><td>: Included for {passengerCount} pax</td></tr>
+                  <tr>
+                    <td style={{ verticalAlign: 'top' }}>Refreshments</td>
+                    <td>: {money(refreshmentAmount, 2)} (Add-on for {passengerCount} pax)</td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -358,8 +361,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-header green">PAYMENT STATUS</div>
+          <div className={`card ${booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? 'cancelled-card' : ''}`}>
+            <div className={`card-header ${booking.status === 'FULLY_PAID' || booking.status === 'REFUNDED' ? 'green' : ''}`}>PAYMENT STATUS</div>
             <div className="card-body status-display">
               {booking.status === 'FULLY_PAID' ? (
                 <>
@@ -370,6 +373,16 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 <>
                   <div className="status-icon partial">⚠️ PARTIAL PAYMENT</div>
                   <div className="status-text">Advance amount paid.<br />Balance due before boarding.</div>
+                </>
+              ) : booking.status === 'REFUNDED' ? (
+                <>
+                  <div className="status-icon" style={{ color: '#059669' }}>💸 REFUNDED</div>
+                  <div className="status-text">Booking was cancelled.<br />Amount has been refunded to customer.</div>
+                </>
+              ) : booking.status === 'CANCELLED' ? (
+                <>
+                  <div className="status-icon" style={{ color: '#ef4444' }}>🚫 CANCELLED</div>
+                  <div className="status-text">This booking has been cancelled.<br />No further payments required.</div>
                 </>
               ) : (
                 <>
@@ -449,9 +462,11 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <tr>
                     <td>
                       Refreshments
-                      <span className="line-meta">Included for {passengerCount} pax</span>
+                      <span className="line-meta">
+                        Add-on for {passengerCount} pax
+                      </span>
                     </td>
-                    <td>{refreshmentAmount > 0 ? money(refreshmentAmount, 2) : 'Included'}</td>
+                    <td>{money(refreshmentAmount, 2)}</td>
                   </tr>
                 )}
                 {booking.coupon_discount > 0 && (

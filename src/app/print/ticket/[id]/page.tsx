@@ -484,7 +484,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                       ))}
                       {refreshmentIncluded && (
                         <div>
-                          • Refreshments Included ({passengerCount} pax)
+                          • Refreshments: {money(refreshmentAmount, 2)} ({passengerCount} pax)
                         </div>
                       )}
                     </div>
@@ -620,7 +620,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               <div className="pay-row">
                 <span>
                   Refreshments
-                  <small>Included for {passengerCount} pax</small>
+                  <small>{refreshmentAmount > 0 ? `Add-on for ${passengerCount} pax` : `Included for ${passengerCount} pax`}</small>
                 </span>
                 <span>{refreshmentAmount > 0 ? money(refreshmentAmount, 2) : 'Included'}</span>
               </div>
@@ -645,7 +645,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             )}
             <div className="pay-status-row" style={{ color: booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? '#d32f2f' : isFullyPaid ? '#2e7d32' : booking.remaining_balance > 0 ? '#e65100' : '#d32f2f' }}>
               <span>PAYMENT STATUS</span>
-              <span>{booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? booking.status : isFullyPaid ? 'FULLY PAID' : booking.remaining_balance > 0 ? 'PARTIAL PAYMENT' : booking.status.replace(/_/g, ' ')}</span>
+              <span>{booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? booking.status : isFullyPaid ? 'FULLY PAID' : booking.status === 'PENDING' ? 'PENDING' : booking.remaining_balance > 0 ? 'PARTIAL PAYMENT' : booking.status.replace(/_/g, ' ')}</span>
             </div>
             {(booking.status === 'CANCELLED' || booking.status === 'REFUNDED') && booking.cancellation_details && (
               <>

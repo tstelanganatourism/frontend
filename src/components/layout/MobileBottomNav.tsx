@@ -23,7 +23,7 @@ export default function MobileBottomNav({ isStacked = false }: { isStacked?: boo
   const bottomClass = isStacked ? "bottom-16 sm:bottom-0" : "bottom-0";
 
   return (
-    <div className={`fixed ${bottomClass} left-0 right-0 z-50 border-t border-white/80 bg-white/96 px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-1.5 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-xl md:hidden`}>
+    <div className={`fixed ${bottomClass} left-0 right-0 z-50 border-t border-white/80 bg-white/96 px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-1.5 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-md md:hidden`}>
       <div className="mx-auto grid max-w-md grid-cols-5 items-center gap-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));

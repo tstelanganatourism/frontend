@@ -313,8 +313,8 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       {/* Tabbed Navigation */}
       <SectionNav />
 
-      {/* Main Content Grid with Majestic Width & Spacious 420px Sidebar Column */}
-      <div className="mx-auto grid max-w-[1600px] gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14">
+      {/* Main Content Grid with a wider booking column for long fare and transport rows */}
+      <div className="mx-auto grid max-w-[1600px] gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_520px] lg:px-10 lg:py-14 xl:gap-10 xl:px-12">
 
         {/* Left Content Column */}
         <div className="space-y-10">
@@ -354,7 +354,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
                   </p>
                 </div>
                 <a
-                  href={pkg.generated_brochure_url || pkg.brochure_pdf_url || '#'}
+                  href={pkg.brochure_pdf_url || pkg.generated_brochure_url || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a6b7a] hover:bg-[#13505c] text-white px-6 py-3.5 text-xs font-black uppercase tracking-wider shadow-md transition hover:-translate-y-0.5"
@@ -376,7 +376,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
             variants={pkg.variants}
             packageId={pkg.id}
             packageSlug={pkg.slug}
-            brochurePdfUrl={pkg.generated_brochure_url || pkg.brochure_pdf_url}
+            brochurePdfUrl={pkg.brochure_pdf_url || pkg.generated_brochure_url}
             hasTransport={pkg.has_transport}
             transportOptions={pkg.transport_options}
             hasRefreshments={pkg.has_refreshments}
@@ -393,7 +393,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         variants={pkg.variants}
         packageId={pkg.id}
         packageSlug={pkg.slug}
-        brochurePdfUrl={pkg.generated_brochure_url || pkg.brochure_pdf_url}
+        brochurePdfUrl={pkg.brochure_pdf_url || pkg.generated_brochure_url}
         hasTransport={pkg.has_transport}
         transportOptions={pkg.transport_options}
         hasRefreshments={pkg.has_refreshments}

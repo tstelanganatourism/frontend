@@ -74,7 +74,7 @@ export default function PreviewModal({ isOpen, onClose, pkg }: PreviewModalProps
 
           <SectionNav />
 
-          <div className={`mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:py-12 ${viewMode === 'desktop' ? 'lg:grid-cols-[1fr_380px]' : 'grid-cols-1'}`}>
+          <div className={`mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:py-12 ${viewMode === 'desktop' ? 'lg:grid-cols-[minmax(0,1fr)_500px]' : 'grid-cols-1'}`}>
             <div className="space-y-12">
               <ExperienceOverview pkg={pkg} durationLabel={durationLabel} />
               {pkg.highlights?.length > 0 && <VisitingPlaces highlights={pkg.highlights} />}

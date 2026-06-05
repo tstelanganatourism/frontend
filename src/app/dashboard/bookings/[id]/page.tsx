@@ -655,7 +655,7 @@ export default function BookingDetailPage() {
                     <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 shadow-sm">
                       <span className="text-xs font-bold text-emerald-800">Refreshments</span>
                       <span className="text-[10px] text-emerald-600 font-semibold mt-1">
-                        Included for {passengerCount} pax{refreshmentAmount > 0 ? ` • ${formatINR(refreshmentAmount)}` : ''}
+                        Add-on for {passengerCount} pax • {formatINR(refreshmentAmount)}
                       </span>
                     </div>
                   )}
@@ -744,7 +744,7 @@ export default function BookingDetailPage() {
               {refreshmentIncluded && (
                 <div className="flex justify-between text-slate-500 font-semibold">
                   <span>Refreshments</span>
-                  <span className="font-bold text-slate-700">{refreshmentAmount > 0 ? formatINR(refreshmentAmount) : 'Included'}</span>
+                  <span className="font-bold text-slate-700">{formatINR(refreshmentAmount)}</span>
                 </div>
               )}
               {booking.coupon_discount > 0 && (

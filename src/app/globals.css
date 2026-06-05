@@ -183,7 +183,7 @@
   .hero-cinema-slide {
     animation: hero-cinema 30s infinite ease-in-out;
     transform-origin: center;
-    will-change: opacity, transform, filter;
+    will-change: opacity, transform;
   }
 
   .hero-light-sweep {
@@ -240,7 +240,7 @@
     border-top-right-radius: clamp(1.5rem, 4.5vw, 4.5rem);
     box-shadow: 0 -28px 80px rgba(2, 14, 26, 0.32);
     transform-origin: top center;
-    will-change: transform, filter;
+    will-change: transform;
   }
 
   .home-page-opener::before {
@@ -275,11 +275,7 @@
   }
 
   @supports (animation-timeline: view()) {
-    .home-page-opener {
-      animation: page-opener both cubic-bezier(0.16, 1, 0.3, 1);
-      animation-timeline: view();
-      animation-range: entry 0% entry 44%;
-    }
+    /* Temporarily disabled scroll-timeline animation due to heavy glitching/lag reports */
   }
 
   @media (max-width: 768px) {

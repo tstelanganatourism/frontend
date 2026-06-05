@@ -114,20 +114,23 @@ export const BookingSidebarV2 = ({
   };
 
   const handleDownloadBrochure = async (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
     if (!brochurePdfUrl) return;
 
     const rawKey = extractObjectKey(brochurePdfUrl);
     const filename = `${packageSlug}-brochure.pdf`;
 
     if (rawKey) {
-      // Use backend download endpoint (adds Content-Disposition: attachment)
-      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-      await downloadFileViaFetch(downloadUrl, filename);
-    } else {
-      // No private key — fetch directly from the external URL
-      await downloadFileViaFetch(brochurePdfUrl, filename);
+      e.preventDefault();
+      try {
+        const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+        window.open(downloadUrl, '_blank');
+      } catch (err) {
+        console.error("Failed to download brochure:", err);
+      }
     }
+    // If no rawKey (it's a public external URL like Google Drive), 
+    // we do NOT call e.preventDefault(). The native <a> tag will handle opening/downloading it,
+    // bypassing the CORS fetch error.
   };
 
 
@@ -209,6 +212,12 @@ export const BookingSidebarV2 = ({
       }
     }
   }, [validVariants, selectedVariantId]);
+
+  // Reset custom payment when core booking parameters change so the user doesn't get stuck with an old advance amount
+  useEffect(() => {
+    setCustomPayAmount('');
+    setPaymentPercentage(100);
+  }, [selectedVariantId, selectedDate, adults, children, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, includeRefreshments]);
 
   // When transport options first arrive, init mode to NONE
   useEffect(() => {
@@ -407,15 +416,20 @@ export const BookingSidebarV2 = ({
   }, [publicLoading, isPackageInactive, selectedDate, selectedSlot, isAdmin]);
 
 
-  const prices = useMemo(() => {
-    let isWeekend = false;
-    if (selectedDate) {
-      const d = new Date(selectedDate);
-      const day = d.getDay();
-      isWeekend = day === 0 || day === 6;
-    }
+  const isWeekendSelected = useMemo(() => {
+    if (!selectedDate) return false;
+    const d = new Date(selectedDate);
+    const day = d.getDay();
+    return day === 0 || day === 6;
+  }, [selectedDate]);
 
-    // BASE PRICING
+  const prices = useMemo(() => {
+    const isWeekend = isWeekendSelected;
+
+    // BASE PRICING Breakdown
+    let pureBaseAdult = positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice);
+    let pureBaseChild = positiveNumber(selectedVariant?.child_price);
+
     let baseAdult = 0;
     let baseChild = 0;
 
@@ -430,11 +444,38 @@ export const BookingSidebarV2 = ({
     } else {
       baseAdult = isWeekend && selectedVariant?.weekend_adult_price 
         ? positiveNumber(selectedVariant.weekend_adult_price) 
-        : (positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice));
+        : pureBaseAdult;
         
       baseChild = isWeekend && selectedVariant?.weekend_child_price 
         ? positiveNumber(selectedVariant.weekend_child_price) 
-        : positiveNumber(selectedVariant?.child_price);
+        : pureBaseChild;
+    }
+
+    const pureBaseSubtotal = (adults * pureBaseAdult) + (children * pureBaseChild);
+    
+    let weekendSurchargeSubtotal = 0;
+    let expectedEffAdult = pureBaseAdult;
+    let expectedEffChild = pureBaseChild;
+    
+    if (isWeekend) {
+      expectedEffAdult = positiveNumber(selectedVariant?.weekend_adult_price) || pureBaseAdult;
+      expectedEffChild = positiveNumber(selectedVariant?.weekend_child_price) || pureBaseChild;
+      weekendSurchargeSubtotal = (adults * (expectedEffAdult - pureBaseAdult)) + (children * (expectedEffChild - pureBaseChild));
+    }
+
+    let surgeSubtotal = 0;
+    let discountSubtotal = 0;
+
+    if (baseAdult > expectedEffAdult) {
+      surgeSubtotal += (adults * (baseAdult - expectedEffAdult));
+    } else if (baseAdult < expectedEffAdult) {
+      discountSubtotal += (adults * (expectedEffAdult - baseAdult));
+    }
+
+    if (baseChild > expectedEffChild) {
+      surgeSubtotal += (children * (baseChild - expectedEffChild));
+    } else if (baseChild < expectedEffChild) {
+      discountSubtotal += (children * (expectedEffChild - baseChild));
     }
 
     const baseSubtotal = (adults * baseAdult) + (children * baseChild);
@@ -510,6 +551,7 @@ export const BookingSidebarV2 = ({
 
     return { 
       baseAdult, baseChild, baseSubtotal,
+      pureBaseSubtotal, weekendSurchargeSubtotal, surgeSubtotal, discountSubtotal,
       transportSubtotal, transportBreakdown,
       refreshmentSubtotal, 
       rawSubtotal, discount, subtotal, gst, gatewayFee, 
@@ -1033,22 +1075,50 @@ export const BookingSidebarV2 = ({
             {prices.baseAdult > 0 && <span className="text-xs font-semibold text-white/70">per adult</span>}
 
             {/* Price Override Badge */}
-            {selectedDate && selectedSlot && Number(selectedVariant?.adult_price) > 0 && prices.baseAdult !== Number(selectedVariant?.adult_price) && (
-              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 ${prices.baseAdult > Number(selectedVariant?.adult_price)
-                  ? 'bg-rose-500/20 text-rose-200 border border-rose-500/30'
-                  : 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30'
-                }`}>
-                {prices.baseAdult > Number(selectedVariant?.adult_price) ? (
-                  <>Surge +₹{formatINR(prices.baseAdult - Number(selectedVariant?.adult_price))}</>
-                ) : (
-                  <>Discount -₹{formatINR(Number(selectedVariant?.adult_price) - prices.baseAdult)}</>
-                )}
-              </span>
-            )}
+            {(() => {
+              if (!selectedDate || !selectedSlot || !selectedVariant || Number(selectedVariant.adult_price) === 0) return null;
+              
+              const pureAdult = Number(selectedVariant.adult_price);
+              const wAdult = Number(selectedVariant.weekend_adult_price) || pureAdult;
+              const effAdult = prices.baseAdult;
+              const isWeekend = isWeekendSelected;
+              const expectedAdult = isWeekend ? wAdult : pureAdult;
+              
+              if (effAdult === pureAdult && !isWeekend) return null;
+              if (effAdult === pureAdult && isWeekend && wAdult === pureAdult) return null;
+              
+              const badges = [];
+              
+              if (isWeekend && wAdult > pureAdult) {
+                badges.push(
+                  <span key="weekend" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                    Weekend Surge +₹{formatINR(wAdult - pureAdult)}
+                  </span>
+                );
+              }
+              
+              if (effAdult > expectedAdult) {
+                badges.push(
+                  <span key="demand" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-rose-500/20 text-rose-200 border border-rose-500/30">
+                    High Demand +₹{formatINR(effAdult - expectedAdult)}
+                  </span>
+                );
+              }
+              
+              if (effAdult < expectedAdult) {
+                badges.push(
+                  <span key="discount" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-emerald-500/20 text-emerald-200 border border-emerald-500/30">
+                    Discount -₹{formatINR(expectedAdult - effAdult)}
+                  </span>
+                );
+              }
+              
+              return <>{badges}</>;
+            })()}
           </div>
         </div>
 
-        <div className="relative space-y-3 p-0 lg:p-5 lg:pb-5">
+        <div className="relative space-y-3 p-0 lg:p-5 lg:pr-6 lg:pb-5">
 
           {/* Active Booking Inactive Warning Banner */}
           {isPackageInactive && (
@@ -1228,32 +1298,40 @@ export const BookingSidebarV2 = ({
               {/* Shared Options */}
               {selectedTransportMode === 'SHARED' && (
                 <div className="grid gap-2">
-                  {sharedOptions.map(opt => (
-                    <label
-                      key={opt.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedSharedOptionId === opt.id ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-[#1a6b7a]/40'}`}
-                    >
-                      <input
-                        type="radio"
-                        name="sharedTransport"
-                        checked={selectedSharedOptionId === opt.id}
-                        onChange={() => setSelectedSharedOptionId(opt.id)}
-                        disabled={isPackageInactive}
-                        className="text-[#1a6b7a] focus:ring-[#1a6b7a]"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-slate-800 truncate">{opt.title} {opt.capacity ? `(${opt.capacity} Seater)` : ''}</div>
-                        <div className="text-[10px] text-[#1a6b7a] font-semibold mt-0.5">
-                          ₹{formatINR(opt.adult_price || 0)}/adult · ₹{formatINR(opt.child_price || 0)}/child
+                  {sharedOptions.map(opt => {
+                    const tAdultUi = positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price);
+                    const tChildUi = positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price);
+                    const extraCost = (adults * tAdultUi) + (children * tChildUi);
+                    const isSelected = selectedSharedOptionId === opt.id;
+                    return (
+                      <label
+                        key={opt.id}
+                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-[#1a6b7a]/40'}`}
+                      >
+                        <input
+                          type="radio"
+                          name="sharedTransport"
+                          checked={isSelected}
+                          onChange={() => setSelectedSharedOptionId(opt.id)}
+                          disabled={isPackageInactive}
+                          className="mt-1 text-[#1a6b7a] focus:ring-[#1a6b7a] shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug">
+                            {opt.title}{opt.capacity ? ` · ${opt.capacity} Seater` : ''}
+                          </div>
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            <span className="text-[10px] text-slate-500 font-semibold">
+                              ₹{formatINR(positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price))}/adult · ₹{formatINR(positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price))}/child
+                            </span>
+                            {isSelected && extraCost > 0 && (
+                              <span className="text-[10px] font-black text-[#1a6b7a] shrink-0 whitespace-nowrap">+₹{formatINR(extraCost)}</span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      {selectedSharedOptionId === opt.id && (
-                        <div className="text-[10px] font-black text-[#1a6b7a] shrink-0">
-                          +₹{formatINR((adults * positiveNumber(opt.adult_price)) + (children * positiveNumber(opt.child_price)))}
-                        </div>
-                      )}
-                    </label>
-                  ))}
+                      </label>
+                    );
+                  })}
                 </div>
               )}
 
@@ -1273,7 +1351,7 @@ export const BookingSidebarV2 = ({
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-bold text-slate-800 truncate">{opt.title}</div>
                             <div className="text-[10px] font-semibold mt-0.5 text-slate-500">
-                              Max {opt.capacity} pax · <span className="text-[#1a6b7a]">₹{formatINR(fixedPrice)}/vehicle</span>
+                              Max {opt.capacity} pax · <span className="text-[#1a6b7a]">₹{formatINR(positiveNumber(isWeekendSelected && opt.weekend_fixed_price ? opt.weekend_fixed_price : opt.fixed_price))}/vehicle</span>
                             </div>
                           </div>
                           {/* Qty Selector */}
@@ -1403,16 +1481,34 @@ export const BookingSidebarV2 = ({
             <div className="space-y-2 text-xs text-slate-500">
               <div className="flex justify-between items-center">
                 <span>Base Fare <span className="text-[10px] text-slate-400">({adults}A, {children}C)</span></span>
-                <span className="font-bold text-slate-800">₹{formatINR(prices.baseSubtotal)}</span>
+                <span className="font-bold text-slate-800">₹{formatINR(prices.pureBaseSubtotal)}</span>
               </div>
+              {prices.weekendSurchargeSubtotal > 0 && (
+                <div className="flex justify-between items-center text-amber-600">
+                  <span>Weekend Surcharge</span>
+                  <span className="font-bold text-amber-600">+₹{formatINR(prices.weekendSurchargeSubtotal)}</span>
+                </div>
+              )}
+              {prices.surgeSubtotal > 0 && (
+                <div className="flex justify-between items-center text-rose-600">
+                  <span>Surge Fee <span className="text-[10px] text-slate-400">(High Demand)</span></span>
+                  <span className="font-bold text-rose-600">+₹{formatINR(prices.surgeSubtotal)}</span>
+                </div>
+              )}
+              {prices.discountSubtotal > 0 && (
+                <div className="flex justify-between items-center text-emerald-600">
+                  <span>Special Discount</span>
+                  <span className="font-bold text-emerald-600">-₹{formatINR(prices.discountSubtotal)}</span>
+                </div>
+              )}
               {/* Transport breakdown */}
               {prices.transportBreakdown.map((item, i) => (
-                <div key={i} className="flex justify-between items-center text-[#1a6b7a]">
-                  <span className="font-semibold">
+                <div key={i} className="flex justify-between items-center gap-2 text-[#1a6b7a]">
+                  <span className="font-semibold text-[11px] truncate">
                     {item.type === 'SEPARATE_VEHICLE' ? `${item.quantity}× ${item.title}` : item.title}
-                    <span className="text-[10px] ml-1 text-slate-400">(Transport)</span>
+                    <span className="text-[10px] ml-1 text-slate-400 font-normal">(Transport)</span>
                   </span>
-                  <span className="font-bold">+₹{formatINR(item.subtotal)}</span>
+                  <span className="font-bold shrink-0 whitespace-nowrap text-[11px]">+₹{formatINR(item.subtotal)}</span>
                 </div>
               ))}
               {/* Refreshments */}
@@ -1516,7 +1612,7 @@ export const BookingSidebarV2 = ({
                         <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
                       </div>
                     ) : (
-                      <div className="flex-1 text-right shrink-0">
+                      <div className="flex-1 text-right shrink-0 whitespace-nowrap">
                         <span className="text-xs font-black text-[#1a6b7a]">₹{formatINR(finalTotal)}</span>
                         <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
                       </div>

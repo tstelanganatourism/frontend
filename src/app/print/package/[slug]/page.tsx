@@ -11,7 +11,6 @@ const CO = {
   addr3: 'Bhadrachalam, BHADRADRI KOTHAGUDEM Dist.,',
   addr4: 'Telangana State - 507 111',
   phones: ['+91 95420 69573', '+91 984 984 89 82', '+91 984 984 89 83', '+91 984 984 89 38'],
-  email: 'tsboattourismservices@gmail.com',
   website: 'www.tsboattourism.org',
 };
 
@@ -23,6 +22,7 @@ type Policy = { type: string; title: string; description: string };
 type BoardingPt = { title: string; address?: string | null; landmark?: string | null; departure_time?: string | null; contact_number?: string | null; pickup_instructions?: string | null };
 type Gallery = { image_url: string; alt_text?: string | null };
 type Variant = { title: string; adult_price: number; child_price: number; transport_info?: string | null };
+type TransportOption = { id: number; type: string; title: string; capacity?: number | null; adult_price?: number | null; child_price?: number | null; weekend_adult_price?: number | null; weekend_child_price?: number | null; fixed_price?: number | null; weekend_fixed_price?: number | null; };
 
 interface Pkg {
   title: string;
@@ -37,6 +37,11 @@ interface Pkg {
   boarding_points: BoardingPt[];
   gallery: Gallery[];
   variants: Variant[];
+  has_transport?: boolean;
+  transport_options?: TransportOption[];
+  has_refreshments?: boolean;
+  refreshment_adult_price?: number | null;
+  refreshment_child_price?: number | null;
 }
 
 // ─── Data fetch ────────────────────────────────────────────────────────────
@@ -93,8 +98,8 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
       if (!transportOptions.includes('Shared Non-A/C')) transportOptions.push('Shared Non-A/C');
     } else if (titleLower.includes('a/c') || titleLower.includes(' ac ') || titleLower.includes('shared a/c') || titleLower.includes('shared ac')) {
       if (!transportOptions.includes('Shared A/C')) transportOptions.push('Shared A/C');
-    } else if (titleLower.includes('car') || titleLower.includes('cab') || titleLower.includes('private')) {
-      if (!transportOptions.includes('Private Car')) transportOptions.push('Private Car');
+    } else if (titleLower.includes('car') || titleLower.includes('cab') || titleLower.includes('private') || titleLower.includes('separate')) {
+      if (!transportOptions.includes('Separate Vehicle')) transportOptions.push('Separate Vehicle');
     }
   });
 
@@ -372,6 +377,53 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                 ))
               )}
             </div>
+
+            {pkg.has_refreshments && (
+              <>
+                <div className="sh" style={{ marginTop: '3mm' }}>Fresh-Up / Resting Stop</div>
+                <div className="mp">
+                  <div className="mr" style={{ borderBottom: 'none' }}>
+                    <span className="mi">🏨</span>
+                    <div style={{ width: '100%' }}>
+                      <div className="mn">Hotel Stop for Bath &amp; Rest</div>
+                      <div className="md" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1mm' }}>
+                        <span>Adult: ₹{pkg.refreshment_adult_price?.toLocaleString('en-IN') ?? 0}</span>
+                        <span>Child: ₹{pkg.refreshment_child_price?.toLocaleString('en-IN') ?? 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {pkg.has_transport && pkg.transport_options && pkg.transport_options.length > 0 && (
+              <>
+                <div className="sh" style={{ marginTop: '3mm' }}>Transport Options</div>
+                <div className="mp">
+                  {pkg.transport_options.map((opt, idx) => (
+                    <div className="mr" key={idx} style={{ borderBottom: idx === pkg.transport_options!.length - 1 ? 'none' : '1px solid #e4ecf2' }}>
+                      <span className="mi">{opt.type === 'SHARED' ? '🚐' : '🚗'}</span>
+                      <div style={{ width: '100%' }}>
+                        <div className="mn">{opt.title}</div>
+                        <div className="md" style={{ marginTop: '1mm', lineHeight: '1.4' }}>
+                          <span style={{ fontWeight: 600, color: '#1a6b7a' }}>{opt.type === 'SHARED' ? 'Shared Vehicle' : 'Separate Vehicle'}</span>
+                          {opt.type === 'SHARED' ? (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5mm' }}>
+                              <span>Adult: ₹{opt.adult_price?.toLocaleString('en-IN') ?? 0}</span>
+                              <span>Child: ₹{opt.child_price?.toLocaleString('en-IN') ?? 0}</span>
+                            </div>
+                          ) : (
+                            <div style={{ marginTop: '0.5mm' }}>
+                              Fixed Price: ₹{opt.fixed_price?.toLocaleString('en-IN') ?? 0} <span style={{ color: '#888' }}>(Capacity: {opt.capacity})</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -459,7 +511,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
           </div>
           <div className="fc">
             <div className="ft-t">✉ Email Us</div>
-            <div className="ft-v">{CO.email}</div>
+            <div className="ft-v">tsboattourismservices@gmail.com</div>
           </div>
           <div className="fc">
             <div className="ft-t">🌐 Visit Us</div>

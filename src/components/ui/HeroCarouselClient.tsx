@@ -427,7 +427,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               </div>
 
               {/* RENDER DEFAULT CTA BUTTONS */}
-              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center lg:justify-start transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+              <div className={`mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[56rem] justify-center lg:justify-start relative z-[40] transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                 {currentButtons.map((btn, index) => {
                   const Icon = btn.icon;
                   return (
@@ -508,7 +508,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                   </p>
 
                   {/* CTA Buttons in Column 1 */}
-                  <div className="mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[36rem]">
+                  <div className="mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[36rem] relative z-[40]">
                     {currentButtons.map((btn, index) => {
                       const Icon = btn.icon;
                       return (

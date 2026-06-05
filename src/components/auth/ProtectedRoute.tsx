@@ -22,6 +22,10 @@ export default function ProtectedRoute({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    console.log("ProtectedRoute DEBUG: ", { pathname, isAuthenticated, isHydrated, user, mounted });
+  }, [pathname, isAuthenticated, isHydrated, user, mounted]);
+
+  useEffect(() => {
     setMounted(true);
   }, []);
 
@@ -55,6 +59,9 @@ export default function ProtectedRoute({
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
           </svg>
           <span className="text-sm text-muted-foreground">Verifying access...</span>
+          <pre className="text-xs text-left max-w-lg mt-4 bg-gray-100 p-4 rounded text-black">
+            {JSON.stringify({ isChecking, mounted, isHydrated, isAuthenticated, hasUser: !!user }, null, 2)}
+          </pre>
         </div>
       </div>
     );

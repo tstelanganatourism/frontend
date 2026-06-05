@@ -52,13 +52,13 @@ export default function PublicNavbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 15) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      const isCurrentlyScrolled = window.scrollY > 15;
+      setIsScrolled(prev => {
+        if (prev !== isCurrentlyScrolled) return isCurrentlyScrolled;
+        return prev;
+      });
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -86,8 +86,8 @@ export default function PublicNavbar() {
     <>
       <nav
         className={`sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b ${isScrolled
-          ? 'py-1.5 bg-white/90 backdrop-blur-xl shadow-[0_12px_30px_-5px_rgba(15,61,86,0.08)] border-[#d9e6ea]/60'
-          : 'py-2 bg-white/95 backdrop-blur-lg shadow-[0_4px_20px_-10px_rgba(15,61,86,0.04)] border-[#d9e6ea]/30 sm:py-2.5'
+          ? 'py-1.5 bg-white/90 backdrop-blur-md shadow-[0_12px_30px_-5px_rgba(15,61,86,0.08)] border-[#d9e6ea]/60'
+          : 'py-2 bg-white/95 backdrop-blur-md shadow-[0_4px_20px_-10px_rgba(15,61,86,0.04)] border-[#d9e6ea]/30 sm:py-2.5'
           }`}
       >
         <div className="w-full px-2.5 min-[380px]:px-3 sm:px-5 min-[980px]:px-6 xl:px-8">

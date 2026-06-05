@@ -128,14 +128,14 @@ const getStayPriceDetails = (
   weekendPrice: number
 ) => {
   if (!arrivalStr || !departureStr) {
-    return { totalPrice: 0, nightsCount: 0, breakdown: [] };
+    return { totalPrice: 0, pureBaseTotal: 0, weekendSurchargeTotal: 0, nightsCount: 0, weekendNightsCount: 0, breakdown: [] };
   }
 
   const arrival = new Date(`${arrivalStr}T00:00:00`);
   let departure = new Date(`${departureStr}T00:00:00`);
 
   if (departure < arrival) {
-    return { totalPrice: 0, nightsCount: 0, breakdown: [] };
+    return { totalPrice: 0, pureBaseTotal: 0, weekendSurchargeTotal: 0, nightsCount: 0, weekendNightsCount: 0, breakdown: [] };
   }
 
   // If arrival and departure are the same date, treat it as 1 day/night
@@ -144,7 +144,10 @@ const getStayPriceDetails = (
   }
 
   let total = 0;
+  let pureBaseTotal = 0;
+  let weekendSurchargeTotal = 0;
   let nightsCount = 0;
+  let weekendNightsCount = 0;
   const breakdown = [];
 
   const current = new Date(arrival);
@@ -155,6 +158,12 @@ const getStayPriceDetails = (
     const nightPrice = isWeekend ? weekendPrice : weekdayPrice;
 
     total += nightPrice;
+    pureBaseTotal += weekdayPrice;
+    if (isWeekend) {
+      weekendSurchargeTotal += (weekendPrice - weekdayPrice);
+      weekendNightsCount++;
+    }
+    
     nightsCount++;
 
     breakdown.push({
@@ -166,7 +175,14 @@ const getStayPriceDetails = (
     current.setDate(current.getDate() + 1);
   }
 
-  return { totalPrice: total, nightsCount: Math.max(nightsCount, 1), breakdown };
+  return { 
+    totalPrice: total, 
+    pureBaseTotal,
+    weekendSurchargeTotal,
+    nightsCount: Math.max(nightsCount, 1), 
+    weekendNightsCount,
+    breakdown 
+  };
 };
 
 const formatPolicyType = (value: string) =>
@@ -258,6 +274,11 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         .catch(() => {});
     }
   }, [isAuthenticated, isAgent]);
+
+  // Reset custom payment when core booking parameters change so the user doesn't get stuck with an old advance amount
+  useEffect(() => {
+    setCustomPayAmount('');
+  }, [selectedVariantId, arrivalDate, departureDate, guests]);
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -1335,9 +1356,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   <div className="rounded-2xl border border-[#dfe8e2]/85 bg-slate-50/70 p-4 space-y-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
                 <div className="space-y-2 text-xs text-slate-500">
                   <div className="flex items-center justify-between">
-                    <span>Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
-                    <span className="font-bold text-slate-800">{prices.rawSubtotal ? money(prices.rawSubtotal) : money(price * roomsCount)}</span>
+                    <span>Base Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
+                    <span className="font-bold text-slate-800">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
                   </div>
+                  {stayDetails.weekendSurchargeTotal > 0 && (
+                    <div className="flex items-center justify-between text-amber-600">
+                      <span>Weekend Surcharge</span>
+                      <span className="font-bold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
+                    </div>
+                  )}
                   {appliedCoupon && (
                     <div className="flex items-center justify-between text-[#16a34a] font-bold">
                       <span>Coupon Discount</span>
@@ -1648,9 +1675,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     <div className="rounded-2xl border border-[#dfe8e2]/85 bg-slate-50/70 p-4 space-y-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
                       <div className="space-y-2 text-xs text-slate-500">
                         <div className="flex justify-between items-center">
-                          <span>Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
-                          <span className="font-bold text-slate-800">{prices.rawSubtotal ? money(prices.rawSubtotal) : money(price * roomsCount)}</span>
+                          <span>Base Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
+                          <span className="font-bold text-slate-800">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
                         </div>
+                        {stayDetails.weekendSurchargeTotal > 0 && (
+                          <div className="flex justify-between items-center text-amber-600">
+                            <span>Weekend Surcharge</span>
+                            <span className="font-bold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
+                          </div>
+                        )}
                         {appliedCoupon && (
                           <div className="flex items-center justify-between text-[#16a34a] font-bold">
                             <span>Coupon Discount</span>

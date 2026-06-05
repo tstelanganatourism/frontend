@@ -74,6 +74,22 @@ export default function FileUpload({ value, onChange, label, accept = "applicati
     }
   };
 
+  const handleFileClick = async () => {
+    if (!value) return;
+    try {
+      if (value.startsWith('private/')) {
+        const response = await apiClient.post('/api/v1/documents/signed-url', {
+          object_key: value
+        });
+        window.open(response.data.url, '_blank');
+      } else {
+        window.open(value, '_blank');
+      }
+    } catch (err) {
+      toast.error('Failed to open file');
+    }
+  };
+
   // Extract filename from URL/Key if possible
   const getDisplayFilename = (path: string) => {
     const parts = path.split('/');
@@ -91,17 +107,20 @@ export default function FileUpload({ value, onChange, label, accept = "applicati
       
       {value ? (
         <div className="relative overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-5 min-h-[96px] flex items-center justify-between gap-3 sm:gap-4 transition-all hover:border-emerald-200">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="p-3 bg-emerald-100/70 rounded-xl text-emerald-600 shrink-0">
+          <div 
+            className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer group"
+            onClick={handleFileClick}
+          >
+            <div className="p-3 bg-emerald-100/70 rounded-xl text-emerald-600 shrink-0 group-hover:bg-emerald-200/70 transition-colors">
               <FileText className="h-6 w-6" />
             </div>
             <div className="text-left min-w-0">
-              <p className="text-sm font-bold text-slate-800 truncate" title={getDisplayFilename(value)}>
+              <p className="text-sm font-bold text-slate-800 truncate group-hover:text-emerald-700 transition-colors" title={getDisplayFilename(value)}>
                 {getDisplayFilename(value)}
               </p>
               <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Uploaded successfully
+                Uploaded successfully • Click to view
               </p>
             </div>
           </div>

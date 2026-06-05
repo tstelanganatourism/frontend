@@ -19,6 +19,8 @@ interface Variant {
   title: string;
   adult_price: number | string;
   child_price: number | string;
+  weekend_adult_price?: number | string;
+  weekend_child_price?: number | string;
   transport_info?: string | null;
 }
 
@@ -68,8 +70,7 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
     return null;
   };
 
-  const handleDownloadBrochure = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleDownloadBrochure = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     const brochureUrl = activeBrochureUrl;
     if (!brochureUrl) return;
 
@@ -77,13 +78,13 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
     const filename = `${pkg.slug}-brochure.pdf`;
 
     if (rawKey) {
+      e.preventDefault();
       // Use backend download endpoint (bakes Content-Disposition: attachment)
       const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-      await downloadFileViaFetch(downloadUrl, filename);
-    } else {
-      // Plain public URL — download directly via Blob
-      await downloadFileViaFetch(brochureUrl, filename);
+      window.open(downloadUrl, '_blank');
     }
+    // If no rawKey (e.g. Google Drive link), do NOT call e.preventDefault().
+    // The native <a> tag behavior will open/download it, bypassing the CORS fetch error.
   };
 
   return (
@@ -144,7 +145,7 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
             <div className="rounded-lg border border-slate-200 bg-[#f7fbfb] p-5">
               <h3 className="mb-4 flex items-center gap-2 text-base font-black text-slate-950">
                 <Bus className="h-5 w-5 text-[#1a6b7a]" />
-                Fare and transport options
+                Fare and Base Price Options
               </h3>
                {pkg.variants.length ? (
                 <div className="space-y-3">
@@ -167,9 +168,25 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                           ) : null}
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-sm font-black text-[#0f3d56]">₹{currency(variant.adult_price)}</p>
-                          <p className="text-xs font-bold text-slate-500">Child ₹{currency(variant.child_price)}</p>
-                          <span className="inline-block mt-1.5 text-[9px] font-black uppercase tracking-wider text-[#1a6b7a] opacity-0 group-hover:opacity-100 transition-opacity">Select →</span>
+                          <div className="text-sm font-black text-[#0f3d56]">
+                            <span className="text-slate-500 font-semibold text-[10px] mr-1 uppercase tracking-wider">Wkday:</span>
+                            ₹{currency(variant.adult_price)}
+                          </div>
+                          {(Number(variant.weekend_adult_price) > 0 && Number(variant.weekend_adult_price) !== Number(variant.adult_price)) && (
+                            <div className="text-sm font-black text-amber-700 mt-0.5">
+                              <span className="text-amber-600/70 font-semibold text-[10px] mr-1 uppercase tracking-wider">Wkend:</span>
+                              ₹{currency(variant.weekend_adult_price as any)}
+                            </div>
+                          )}
+                          <p className="text-[10px] font-bold text-slate-500 mt-1">
+                            Child ₹{currency(variant.child_price)}
+                            {(Number(variant.weekend_child_price) > 0 && Number(variant.weekend_child_price) !== Number(variant.child_price)) && (
+                              <span className="text-amber-600/70 ml-1">
+                                (Wkend: ₹{currency(variant.weekend_child_price as any)})
+                              </span>
+                            )}
+                          </p>
+                          <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider text-[#1a6b7a] opacity-0 group-hover:opacity-100 transition-opacity">Select →</span>
                         </div>
                       </div>
                     </button>
@@ -252,13 +269,15 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                   <p className="text-sm font-semibold text-slate-600">Download complete itinerary and package details as PDF.</p>
                 </div>
               </div>
-              <button
-                type="button"
+              <a
+                href={activeBrochureUrl}
                 onClick={handleDownloadBrochure}
-                className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-[#1a6b7a] px-6 py-3 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c] md:mt-0 md:w-auto"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#1a6b7a] px-6 py-3 text-sm font-black text-white shadow-md shadow-[#1a6b7a]/20 transition-all hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-lg hover:shadow-[#1a6b7a]/30 uppercase tracking-wider md:mt-0"
               >
-                Download PDF
-              </button>
+                📥 Download PDF
+              </a>
             </div>
           )}
         </div>

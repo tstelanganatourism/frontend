@@ -8,7 +8,6 @@ import {
   CheckCircle2, AlertCircle, IndianRupee, TrendingUp
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { downloadFileViaFetch } from '@/lib/downloadUtils';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -308,8 +307,6 @@ export default function BookingDetailsModal({
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
-  const [isDownloadingTicket, setIsDownloadingTicket] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [isRefundConfirmOpen, setIsRefundConfirmOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -346,23 +343,6 @@ export default function BookingDetailsModal({
     onPaymentRecorded?.();
   }, [fetchDetails, onPaymentRecorded]);
 
-  const handleDownloadPdf = async (objectKey: string, type: 'invoice' | 'ticket') => {
-    if (!objectKey) return;
-    if (type === 'invoice') setIsDownloadingInvoice(true);
-    else setIsDownloadingTicket(true);
-    try {
-      const filename = objectKey.split('/').pop() || `${type}.pdf`;
-      // Use backend /download endpoint which bakes Content-Disposition: attachment
-      // Then fetch as Blob for cross-origin safe download on mobile
-      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(objectKey)}&filename=${encodeURIComponent(filename)}`;
-      await downloadFileViaFetch(downloadUrl, filename);
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to generate secure document link');
-    } finally {
-      if (type === 'invoice') setIsDownloadingInvoice(false);
-      else setIsDownloadingTicket(false);
-    }
-  };
 
   const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
 
@@ -582,8 +562,7 @@ export default function BookingDetailsModal({
                           <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 shadow-sm">
                             <span className="text-xs font-bold text-emerald-800">Refreshments</span>
                             <span className="text-[10px] text-emerald-600 font-semibold mt-1">
-                              Included for {passengerCount} pax
-                              {refreshmentAmount > 0 ? ` • ${formatCurrency(refreshmentAmount)}` : ''}
+                              Add-on for {passengerCount} pax • {formatCurrency(refreshmentAmount)}
                             </span>
                           </div>
                         )}
@@ -602,7 +581,10 @@ export default function BookingDetailsModal({
                         <div className="text-right font-bold text-slate-700">{formatCurrency(baseFare)}</div>
                         {transportSelections.map((ts, idx) => (
                           <React.Fragment key={`billing-transport-${idx}`}>
-                            <div>{ts.title || 'Transport'}</div>
+                            <div className="flex flex-col">
+                              <span>{ts.title || 'Transport'}</span>
+                              <span className="text-[10px] text-slate-400 font-medium">{describeTransport(ts, passengerCount)}</span>
+                            </div>
                             <div className="text-right font-bold text-slate-700">{formatCurrency(Number(ts.item_total || 0))}</div>
                           </React.Fragment>
                         ))}
@@ -610,7 +592,7 @@ export default function BookingDetailsModal({
                           <>
                             <div>Refreshments</div>
                             <div className="text-right font-bold text-slate-700">
-                              {refreshmentAmount > 0 ? formatCurrency(refreshmentAmount) : 'Included'}
+                              {formatCurrency(refreshmentAmount)}
                             </div>
                           </>
                         )}
@@ -781,60 +763,36 @@ export default function BookingDetailsModal({
                   {/* Right: Documents */}
                   <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
                     {(isFullyPaid || isAdmin) && (
-                      booking.invoice_pdf_url ? (
-                        <button
-                          onClick={() => handleDownloadPdf(booking.invoice_pdf_url!, 'invoice')}
-                          disabled={isDownloadingInvoice}
-                          className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 disabled:opacity-50 w-full sm:w-auto border border-slate-700"
-                        >
-                          {isDownloadingInvoice ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                          Invoice
-                        </button>
-                      ) : (
-                        <a
-                          href={`/print/invoice/${booking.public_id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 w-full sm:w-auto border border-slate-700"
-                        >
-                          <ExternalLink className="h-4 w-4" /> View Invoice
-                        </a>
-                      )
+                      <a
+                        href={`/print/invoice/${booking.public_id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 w-full sm:w-auto border border-slate-700"
+                      >
+                        <ExternalLink className="h-4 w-4" /> View Invoice
+                      </a>
                     )}
 
                     {booking.status !== 'REFUNDED' && (
-                      booking.ticket_pdf_url ? (
-                        <button
-                          onClick={() => handleDownloadPdf(booking.ticket_pdf_url!, 'ticket')}
-                          disabled={isDownloadingTicket}
-                          className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 disabled:opacity-50 w-full sm:w-auto border border-[#0f3d56]"
-                        >
-                          {isDownloadingTicket ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
-                          Ticket PDF
-                        </button>
-                      ) : (
-                        <a
-                          href={`/print/ticket/${booking.public_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56]"
-                        >
-                          <Ticket className="h-4 w-4" /> View Ticket
-                        </a>
-                      )
+                      <a
+                        href={`/print/ticket/${booking.public_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56]"
+                      >
+                        <Ticket className="h-4 w-4" /> View Ticket
+                      </a>
                     )}
 
                     {booking.target_type === 'PACKAGE' && (
-                      <button
-                        onClick={() => {
-                          const printUrl = `/print/form/${booking.public_id}`;
-                          // Open for viewing
-                          window.open(printUrl, '_blank');
-                        }}
+                      <a
+                        href={`/print/form/${booking.public_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex justify-center items-center gap-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm transition-all active:scale-95 w-full sm:w-auto border-2 border-indigo-100 hover:border-indigo-600"
                       >
                         <FileText className="h-4 w-4" /> Print Form
-                      </button>
+                      </a>
                     )}
                   </div>
                 </div>

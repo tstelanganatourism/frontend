@@ -123,7 +123,7 @@ export default function PackageForm({
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const lastRevalidatedBrochureRef = useRef<string | null>(null);
   const prevStatusRef = useRef<string | null>(null);
-  const activeBrochureUrl = brochureValidation?.active_brochure_url || initialData?.generated_brochure_url || brochurePdfUrl || initialData?.brochure_pdf_url || '';
+  const activeBrochureUrl = brochurePdfUrl || brochureValidation?.active_brochure_url || initialData?.generated_brochure_url || '';
 
   // SEO Fields
   const [metaTitle, setMetaTitle] = useState('');
@@ -598,7 +598,7 @@ export default function PackageForm({
 
   const tabs = [
     { id: 'basic', label: 'Basic Info', icon: Info },
-    { id: 'variants', label: 'Base / Boat Options', icon: BedDouble },
+    { id: 'variants', label: 'Package Categories', icon: BedDouble },
     ...(hasTransport ? [{ id: 'transport_options', label: 'Transport Options', icon: Compass }] : []),
     { id: 'itinerary', label: 'Itinerary', icon: Compass },
     { id: 'highlights', label: 'Highlights', icon: Sparkles },
@@ -1043,17 +1043,17 @@ export default function PackageForm({
         {/* Tab 2: Variants */}
         {activeTab === 'variants' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Base / Boat Options</h3>
-                <p className="text-[10px] text-slate-500 font-semibold mt-0.5 max-w-lg">Create base package pricing variants (e.g. AC Boat vs Non-AC Boat, Luxury vs Standard room).</p>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Package Categories</h3>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5 max-w-lg">Create base package pricing categories (e.g. AC Boat vs Non-AC Boat, Luxury vs Standard room).</p>
               </div>
               <button
                 type="button"
                 onClick={addVariant}
                 className="flex items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1a4f6d] transition-all whitespace-nowrap"
               >
-                <Plus className="h-4 w-4" /> Add Variant
+                <Plus className="h-4 w-4" /> Add Category
               </button>
             </div>
 
@@ -1061,7 +1061,7 @@ export default function PackageForm({
               {variants.length === 0 ? (
                 <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
                   <BedDouble className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm font-bold">No variants configured.</p>
+                  <p className="text-sm font-bold">No categories configured.</p>
                   <p className="text-xs font-medium mt-1">At least one variant is required to generate the PDF and allow bookings.</p>
                 </div>
               ) : (
@@ -1083,7 +1083,7 @@ export default function PackageForm({
 
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="lg:col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Variant Title *</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Category Name *</label>
                         <input
                           type="text"
                           value={variant.title}

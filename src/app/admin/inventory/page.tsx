@@ -958,7 +958,7 @@ export default function AdminInventoryPage() {
             </div>
             <div>
               <PremiumSelect
-                label="Variant"
+                label="Package Category"
                 value={selectedVariantId}
                 onChange={(val) => setSelectedVariantId(val ? Number(val) : null)}
                 options={variants.map((v: any) => ({ value: v.id, label: v.title?.trim() || `Unnamed Variant (ID: ${v.id})` }))}
@@ -980,7 +980,7 @@ export default function AdminInventoryPage() {
             </div>
             <div>
               <PremiumSelect
-                label="Room Category / Variant"
+                label="Room Category"
                 value={selectedRoomVariantId}
                 onChange={(val) => setSelectedRoomVariantId(val ? Number(val) : null)}
                 options={roomVariants.map((v: any) => ({ value: v.id, label: v.variant_name?.trim() || `Unnamed Variant (ID: ${v.id})` }))}

@@ -161,9 +161,9 @@ export default function HomePage() {
       <div className="home-page-opener relative z-20 bg-[#f7f4ed]">
         {/* Featured Packages */}
         <section className="relative py-14 md:py-24">
-          <div className="absolute left-0 top-20 h-72 w-72 rounded-full bg-[#bdebf1]/35 blur-3xl" />
-          <div className="absolute bottom-10 right-0 h-80 w-80 rounded-full bg-[#f1d58a]/28 blur-3xl" />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="pointer-events-none absolute left-0 top-20 h-72 w-72 rounded-full bg-[#bdebf1]/35 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-10 right-0 h-80 w-80 rounded-full bg-[#f1d58a]/28 blur-3xl" />
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-end mb-10">
               <div>
                 <span className="text-[var(--color-brand-teal)] font-bold tracking-wider uppercase text-sm mb-2 block">Top Rated</span>

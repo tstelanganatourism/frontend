@@ -34,13 +34,10 @@ export function getTransportSelections(pricingSnapshot?: { transport_selections?
 }
 
 export function hasRefreshment(booking: { has_refreshment_addon?: boolean; pricing_snapshot?: { has_refreshment_addon?: boolean, refreshment_subtotal?: number | string | null } | null }) {
-  if (booking.has_refreshment_addon) {
-    return true;
-  }
-  if (booking.pricing_snapshot?.has_refreshment_addon) {
-    return Number(booking.pricing_snapshot.refreshment_subtotal || 0) > 0;
-  }
-  return false;
+  // Only true if the user explicitly opted for the refreshment addon AND it has a cost > 0.
+  // The user explicitly requested not to show "0rs" refreshments on the invoice/dashboard.
+  const amount = Number(booking.pricing_snapshot?.refreshment_subtotal || 0);
+  return !!booking.has_refreshment_addon && amount > 0;
 }
 
 export function getRefreshmentAmount(pricingSnapshot?: { refreshment_subtotal?: number | string | null } | null) {
