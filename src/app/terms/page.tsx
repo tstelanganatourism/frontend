@@ -36,11 +36,10 @@ const SECTIONS = [
     icon: RefreshCcw,
     tone: 'bg-sky-50 text-sky-700',
     points: [
-      'No refund will be paid if cancellation occurs within a week before departure or when a journey is postponed by the passenger.',
-      'For all other cancellations, a minimum 35% cancellation fee applies. Cancellation is only possible after clicking the "Cancel" button on the website and chatting with the admin to provide a valid reason.',
-      'Cancellations made more than a week in advance also require an admin chat and incur a 35% cancellation fee.',
-      'Online tickets can only be cancelled through the phone number used for booking. Send all details to WhatsApp (+91 95420 69573 / +91 984 984 89 82 / +91 984 984 89 83 / +91 984 984 89 38) or tsboattourismservices@gmail.com.',
-      'Approved refunds are transferred to the customer account within 5 working days.',
+      'For cancellations made at least 7 days before the travel date, bookings are eligible for a full/partial refund, or a travel voucher credit for future travel.',
+      'Cancellations made within 7 days of the scheduled departure are subject to rescheduling options, a travel credit voucher, or a partial refund, subject to administrative charges up to 35%.',
+      'In the event of unforeseen cancellations due to weather, floods, safety concerns, or government guidelines, a 100% full refund is processed or customers can choose to reschedule without any additional fees.',
+      'Approved refunds are transferred to the customer account within 5 to 7 working days.',
     ],
   },
   {
@@ -72,6 +71,7 @@ const SECTIONS = [
       'We are not liable for loss or damage arising from website use, including indirect or consequential loss.',
       'External links are provided for convenience. We do not control the nature, content, or availability of external sites.',
       'TSTG Boat Tourism is not liable if the website is temporarily unavailable due to technical issues beyond our control.',
+      'Telangana Boat Tourism is a trade name of NALLA SRILATHA.',
     ],
   },
 ];
@@ -146,7 +146,7 @@ export default function TermsPage() {
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <a href="mailto:tsboattourismservices@gmail.com" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-brand-sand)] px-5 py-3 text-sm font-bold text-[var(--color-brand-river)] transition-all duration-200 hover:-translate-y-1 hover:bg-white">
+                <a href="mailto:bookings@tsboattourism.org" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-brand-sand)] px-5 py-3 text-sm font-bold text-[var(--color-brand-river)] transition-all duration-200 hover:-translate-y-1 hover:bg-white">
                   <Mail className="h-4 w-4" />
                   Email Support
                 </a>

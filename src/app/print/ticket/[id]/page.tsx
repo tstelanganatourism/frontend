@@ -150,7 +150,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
     booking.pricing_snapshot?.razorpay_order_id ||
     booking.payment_ledger?.some((p) => p.payment_method === 'RAZORPAY')
   );
-  const gstNumber = isRazorpay ? '29AANCR6717K1ZN' : '36AALFT7063K1ZL';
+  const gstNumber = '36AYSPN0044M1ZZ';
 
   // Parse itinerary events
   type TlEvent = { time: string; desc: string };
@@ -799,7 +799,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         {/* ═══════ FOOTER ═══════ */}
         <div className="footer">
           <div className="footer-item">📞 <strong>+91 95420 69573</strong></div>
-          <div className="footer-item">✉️ <strong>tsboattourismservices@gmail.com</strong></div>
+          <div className="footer-item">✉️ <strong>bookings@tsboattourism.org</strong></div>
           <div className="footer-item">🌐 <strong>www.tsboattourism.org</strong></div>
         </div>
         <div className="footer-tagline">Thank you for travelling with us!</div>

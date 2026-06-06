@@ -511,7 +511,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
           </div>
           <div className="fc">
             <div className="ft-t">✉ Email Us</div>
-            <div className="ft-v">tsboattourismservices@gmail.com</div>
+            <div className="ft-v">bookings@tsboattourism.org</div>
           </div>
           <div className="fc">
             <div className="ft-t">🌐 Visit Us</div>

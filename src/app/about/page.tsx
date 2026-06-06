@@ -208,7 +208,7 @@ export default function AboutPage() {
             <div className="group relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 hover:shadow-[0_30px_80px_rgba(15,61,86,0.18)] transition-all duration-700">
               <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-brand-river)]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
               <img
-                src="/ts_boat_certificate.jpg"
+                src="/ts_boat_certificate.webp"
                 alt="Government of Telangana - Labour Department Certificate of Registration for Telangana Boat Tourism - Reg No. SEA/KMM/ALO/BC/09998/2016"
                 className="w-full h-auto object-contain bg-white"
               />
@@ -349,7 +349,7 @@ export default function AboutPage() {
                     <dt className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Email support
                     </dt>
-                    <dd className="text-sm font-semibold text-slate-600">tsboattourismservices@gmail.com</dd>
+                    <dd className="text-sm font-semibold text-slate-600">bookings@tsboattourism.org</dd>
                   </div>
                 </dl>
 

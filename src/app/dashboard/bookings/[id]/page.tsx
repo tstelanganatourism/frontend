@@ -247,6 +247,8 @@ export default function BookingDetailPage() {
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPreparingTicket, setIsPreparingTicket] = useState(false);
+  const [isPreparingForm, setIsPreparingForm] = useState(false);
 
   // Guard: only one Razorpay popup can be active at a time
   const isPaymentActiveRef = useRef(false);
@@ -408,13 +410,21 @@ export default function BookingDetailPage() {
   };
 
   const handleDownloadTicket = () => {
-    if (!booking?.public_id) return;
-    window.open(`/print/ticket/${booking.public_id}`, '_blank');
+    if (!booking?.public_id || isPreparingTicket) return;
+    setIsPreparingTicket(true);
+    setTimeout(() => {
+      window.open(`/print/ticket/${booking.public_id}`, '_blank');
+      setIsPreparingTicket(false);
+    }, 1200);
   };
 
   const handleDownloadForm = () => {
-    if (!booking?.public_id) return;
-    window.open(`/print/form/${booking.public_id}`, '_blank');
+    if (!booking?.public_id || isPreparingForm) return;
+    setIsPreparingForm(true);
+    setTimeout(() => {
+      window.open(`/print/form/${booking.public_id}`, '_blank');
+      setIsPreparingForm(false);
+    }, 1200);
   };
 
   // ─── Derived values — always from backend ─────────────────────────────────
@@ -476,7 +486,7 @@ export default function BookingDetailPage() {
   const isRazorpay = !!(
     booking.payment_ledger?.some(p => p.payment_method === 'RAZORPAY')
   );
-  const gstNumber = isRazorpay ? '29AANCR6717K1ZN' : '36AALFT7063K1ZL';
+  const gstNumber = '36AYSPN0044M1ZZ';
 
 
   return (
@@ -531,16 +541,40 @@ export default function BookingDetailPage() {
 
           <button
             onClick={handleDownloadTicket}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors"
+            disabled={isPreparingTicket}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors ${
+              isPreparingTicket ? 'opacity-80 cursor-not-allowed' : ''
+            }`}
           >
-            <Printer className="h-3.5 w-3.5" /> Ticket
+            {isPreparingTicket ? (
+              <>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-700 border-t-transparent" />
+                Preparing Ticket...
+              </>
+            ) : (
+              <>
+                <Printer className="h-3.5 w-3.5" /> Ticket
+              </>
+            )}
           </button>
           {booking.target_type === 'PACKAGE' && (
             <button
               onClick={handleDownloadForm}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors"
+              disabled={isPreparingForm}
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors ${
+                isPreparingForm ? 'opacity-80 cursor-not-allowed' : ''
+              }`}
             >
-              <FileText className="h-3.5 w-3.5" /> Form
+              {isPreparingForm ? (
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-700 border-t-transparent" />
+                  Preparing Form...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-3.5 w-3.5" /> Form
+                </>
+              )}
             </button>
           )}
         </div>

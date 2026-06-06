@@ -42,6 +42,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
   const totalPassengers = adults + children;
   const [passengers, setPassengers] = useState<PassengerInput[]>([]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToAadhaarConsent, setAgreedToAadhaarConsent] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -55,6 +56,8 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
         is_primary: i === 0,
       }));
       setPassengers(initial);
+      setAgreedToTerms(false);
+      setAgreedToAadhaarConsent(false);
     }
   }, [isOpen, totalPassengers]);
 
@@ -70,6 +73,10 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
     e.preventDefault();
     if (!agreedToTerms) {
       toast.error("Please agree to the Terms & Conditions before proceeding.");
+      return;
+    }
+    if (!agreedToAadhaarConsent) {
+      toast.error("Please provide your consent for Aadhaar verification.");
       return;
     }
     await onSubmit(passengers);
@@ -250,6 +257,20 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               I acknowledge and agree to the <a href="/terms" target="_blank" className="text-[#1a6b7a] underline hover:text-[#13505c]">Terms & Conditions</a>, <a href="/faq" target="_blank" className="text-[#1a6b7a] underline hover:text-[#13505c]">Cancellation Policy</a>, and confirm that all passenger details provided are accurate and match their government-issued ID proofs.
             </label>
           </div>
+
+          <div className="mt-4 flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="aadhaar-consent-checkbox"
+              checked={agreedToAadhaarConsent}
+              onChange={(e) => setAgreedToAadhaarConsent(e.target.checked)}
+              disabled={isProcessing}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-[#1a6b7a] focus:ring-[#1a6b7a] disabled:opacity-50"
+            />
+            <label htmlFor="aadhaar-consent-checkbox" className="text-xs font-semibold text-slate-600 leading-relaxed cursor-pointer">
+              I hereby give my consent to Telangana Boat Tourism to collect, verify, and store my Aadhaar details for government-mandated boarding security checks.
+            </label>
+          </div>
         </div>
 
         {/* Footer */}
@@ -269,6 +290,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
             disabled={
               isProcessing ||
               !agreedToTerms ||
+              !agreedToAadhaarConsent ||
               !passengers.every((p, i) => {
                 const isChild = i >= adults;
                 const isChildAge = typeof p.age === 'number' && p.age <= 10;

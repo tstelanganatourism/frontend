@@ -22,6 +22,22 @@ export const metadata: Metadata = {
     'best tours in TS Bhadrachalam',
     'Godavari river cruise',
     'Telangana Boat Tourism',
+    'AP tourism boat booking bhadrachalam',
+    'AP tourism papikondalu tour packages',
+    'Telangana tourism boat booking',
+    'papikondalu tourism boat tickets',
+    'bhadrachalam to papikondalu boat ride',
+    'papikondalu packages from hyderabad',
+    'papikondalu boating online booking',
+    'kolluru bamboo huts booking',
+    'bhadrachalam temple rooms booking',
+    'bhadrachalam godavari boating list',
+    'rajahmundry to papikondalu boat price',
+    'papikondalu packages from vizag',
+    'papikondalu packages from vijayawada',
+    'ap tourism boat ride cost',
+    'boat rides near me',
+    'tourism boats in telangana andhra'
   ],
 };
 
@@ -30,7 +46,7 @@ const DESTINATION_HIGHLIGHTS = [
   {
     title: 'Godavari River Cruise',
     copy: 'Slow water, green folds of Papikondalu and a route designed for families, pilgrims and first-time travellers.',
-    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/v1779431926/papikondalu-3_jg6thw.png',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431926/papikondalu-3_jg6thw.png',
     icon: Waves,
   },
   {
@@ -42,7 +58,7 @@ const DESTINATION_HIGHLIGHTS = [
   {
     title: 'Papikondalu Nature Escape',
     copy: 'Hill views, bamboo stay extensions and camera-ready river stretches curated into simple package choices.',
-    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/v1779431872/maredumilli-13_mdqgmv.jpg',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg',
     icon: Mountain,
   },
 ];
@@ -249,7 +265,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="absolute -inset-3 rounded-[2.2rem] border border-white/70 bg-white/45 shadow-[0_28px_90px_rgba(15,61,86,0.12)]" />
               <div className="relative min-h-[22rem] overflow-hidden rounded-[1.75rem] border border-white/80 shadow-[0_34px_90px_rgba(15,61,86,0.2)] md:min-h-[30rem]">
-                <Image src="/images/sightseeing-banner-2026.png" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill loading="lazy" sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover transition-transform duration-700 hover:scale-105" />
+                <Image src="/images/sightseeing-banner-2026.webp" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill loading="lazy" sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover transition-transform duration-700 hover:scale-105" />
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,28,0.78)_0%,rgba(5,18,28,0.22)_48%,rgba(5,18,28,0.04)_100%)]" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.62))]" />
                 <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-md">

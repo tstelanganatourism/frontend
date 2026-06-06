@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { downloadFileViaFetch } from '@/lib/downloadUtils';
 import {
   ArrowUpRight,
   Clock,
@@ -97,6 +98,7 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
   const brochureUrl = getActiveBrochureUrl(pkg);
   const price = getLowestPrice(pkg);
   const category = pkg.type === 'TRIP' ? 'Sightseeing Package' : 'Boat Ride Package';
+  const [isDownloading, setIsDownloading] = React.useState(false);
 
   return (
     <article className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,61,86,0.05)] transition duration-300 hover:-translate-y-1 hover:border-[#1a6b7a]/40 hover:shadow-[0_18px_44px_rgba(15,61,86,0.12)]">
@@ -160,33 +162,43 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
 
         <button
           type="button"
+          disabled={isDownloading}
           onClick={async (e) => {
             e.preventDefault();
+            if (isDownloading) return;
+            setIsDownloading(true);
             const match = brochureUrl.match(/(private\/[^?#]+)/);
             const rawKey = match ? decodeURIComponent(match[1]) : null;
+            const filename = `${pkg.slug}-brochure.pdf`;
 
-            if (rawKey) {
-              const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(pkg.slug + '-brochure.pdf')}`;
-              const link = document.createElement('a');
-              link.href = downloadUrl;
-              link.download = `${pkg.slug}-brochure.pdf`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            } else {
-              const link = document.createElement('a');
-              link.href = brochureUrl;
-              link.download = `${pkg.slug}-brochure.pdf`;
-              link.target = "_blank";
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
+            try {
+              if (rawKey) {
+                const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+                await downloadFileViaFetch(downloadUrl, filename);
+              } else {
+                await downloadFileViaFetch(brochureUrl, filename);
+              }
+            } catch (err) {
+              console.error("Failed to download brochure:", err);
+            } finally {
+              setIsDownloading(false);
             }
           }}
-          className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1a6b7a] px-4 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c]"
+          className={`mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1a6b7a] px-4 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c] ${
+            isDownloading ? 'opacity-80 cursor-not-allowed' : ''
+          }`}
         >
-          <FileDown className="h-4 w-4" />
-          Download Brochure
+          {isDownloading ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Downloading Brochure...
+            </>
+          ) : (
+            <>
+              <FileDown className="h-4 w-4" />
+              Download Brochure
+            </>
+          )}
         </button>
       </div>
     </article>

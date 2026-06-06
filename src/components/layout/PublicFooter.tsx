@@ -1,9 +1,6 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
 
 const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15206.499265526056!2d80.88424!3d17.66792!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9d062f4c079%3A0x59e5318d95327bde!2sAP%20TOURISM%20PAPIKONDALU!5e0!3m2!1sen!2sin!4v1780377741415!5m2!1sen!2sin';
@@ -15,12 +12,13 @@ const socialLinks = [
   { label: 'WhatsApp', href: 'https://wa.me/919542069573', icon: <WhatsAppIcon /> },
 ];
 
-export default function PublicFooter() {
-  const pathname = usePathname();
-  const hasStackedMobileBars = !!pathname?.startsWith('/dashboard');
+interface PublicFooterProps {
+  isDashboard?: boolean;
+}
 
+export default function PublicFooter({ isDashboard = false }: PublicFooterProps) {
   return (
-    <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${hasStackedMobileBars ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]' : 'pb-[calc(7rem+env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
+    <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${isDashboard ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]' : 'pb-[calc(7rem+env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
       <div className="w-full px-4 sm:px-6 min-[980px]:px-8 min-[1280px]:px-10">
         <div className="grid min-w-0 grid-cols-1 gap-6 min-[760px]:grid-cols-[1fr_0.9fr] min-[1120px]:grid-cols-[0.9fr_0.72fr_1.1fr_1.15fr] min-[1120px]:items-start min-[1120px]:gap-7 min-[1500px]:grid-cols-[0.9fr_0.7fr_1.08fr_1.22fr] min-[1500px]:gap-8">
@@ -34,7 +32,7 @@ export default function PublicFooter() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">Andhra Pradesh</div>
-                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white transition-colors group-hover:text-[var(--color-brand-sand)]">Official Boat Tourism</div>
+                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white transition-colors group-hover:text-[var(--color-brand-sand)]">Official Tour & Travel Agency</div>
                 </div>
               </Link>
               
@@ -76,14 +74,19 @@ export default function PublicFooter() {
                 <li><Link href="/boat-rides" className="text-[12px] text-white/65 transition-colors hover:text-white">Boat Rides</Link></li>
                 <li><Link href="/sightseeing" className="text-[12px] text-white/65 transition-colors hover:text-white">Sightseeing</Link></li>
                 <li><Link href="/stays" className="text-[12px] text-white/65 transition-colors hover:text-white">Accommodations</Link></li>
+                <li><Link href="/contact" className="text-[12px] text-white/65 transition-colors hover:text-white font-semibold">Contact Us</Link></li>
               </ul>
             </div>
 
             <div className="min-w-0">
-              <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Support</h3>
+              <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Support & Policies</h3>
               <ul className="space-y-2.5">
                 <li><Link href="/faq" className="text-[12px] text-white/65 transition-colors hover:text-white">FAQs</Link></li>
-                <li><Link href="/terms" className="text-[12px] text-white/65 transition-colors hover:text-white">Terms & Conditions</Link></li>
+                <li><Link href="/terms" className="text-[12px] text-white/65 transition-colors hover:text-white">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="text-[12px] text-white/65 transition-colors hover:text-white">Privacy Policy</Link></li>
+                <li><Link href="/refund" className="text-[12px] text-white/65 transition-colors hover:text-white">Refund Policy</Link></li>
+                <li><Link href="/cancellation" className="text-[12px] text-white/65 transition-colors hover:text-white">Cancellation Policy</Link></li>
+                <li><Link href="/shipping-delivery" className="text-[12px] text-white/65 transition-colors hover:text-white">Fulfillment Policy</Link></li>
               </ul>
             </div>
           </div>
@@ -110,7 +113,7 @@ export default function PublicFooter() {
               </li>
               <li className="flex items-start gap-2.5 sm:col-span-2">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Mail className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 break-words text-[12px] leading-relaxed text-white/72">tsboattourismservices@gmail.com</span>
+                <span className="min-w-0 break-words text-[12px] leading-relaxed text-white/72">bookings@tsboattourism.org</span>
               </li>
             </ul>
           </div>
@@ -147,6 +150,7 @@ export default function PublicFooter() {
         <div className="mt-3 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-4 text-center sm:flex-row sm:pr-20 sm:text-left md:pr-24">
           <p className="text-center text-[10px] text-white/62 sm:text-left">
             © {new Date().getFullYear()} Telangana Boat Tourism. All rights reserved.
+            <span className="block mt-1 text-white/45">Telangana Boat Tourism is a trade name of NALLA SRILATHA.</span>
           </p>
           <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
             Made with <Heart className="mx-0.5 h-3 w-3 fill-red-500 text-red-500" /> by <a href="https://wa.me/918886154275" target="_blank" rel="noreferrer" className="font-bold text-white transition-colors hover:text-[var(--color-brand-teal)]">Satvik</a>

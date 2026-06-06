@@ -143,7 +143,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   const paymentMode = booking.pricing_snapshot?.razorpay_payment_id ? 'Online (Razorpay)' : 'Office';
   const paymentId = booking.pricing_snapshot?.razorpay_payment_id || 'N/A';
   const isRazorpay = paymentMode === 'Online (Razorpay)';
-  const gstNumber = isRazorpay ? '29AANCR6717K1ZN' : '36AALFT7063K1ZL';
+  const gstNumber = '36AYSPN0044M1ZZ';
 
 
   return (
@@ -307,7 +307,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             <div className="contact-item"><strong>📞</strong> +91 984 984 89 82</div>
             <div className="contact-item"><strong>📞</strong> +91 984 984 89 83</div>
             <div className="contact-item"><strong>📞</strong> +91 984 984 89 38</div>
-            <div className="contact-item"><strong>✉️</strong> tsboattourismservices@gmail.com</div>
+            <div className="contact-item"><strong>✉️</strong> bookings@tsboattourism.org</div>
             <div className="contact-item"><strong>🌐</strong> www.tsboattourism.org</div>
           </div>
           <div className="invoice-details">

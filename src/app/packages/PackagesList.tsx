@@ -50,6 +50,7 @@ export default function PackagesList({
   const isSightseeing = pathname === '/sightseeing';
 
   const [liveData, setLiveData] = React.useState<PackageData | undefined>(undefined);
+  const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
   const isInitialMount = React.useRef(true);
   const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
@@ -76,13 +77,20 @@ export default function PackagesList({
         }
 
         const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-        const res = await fetch(`/api/v1/packages${query}`);
-        if (res.ok) {
-          const json = await res.json();
-          setLiveData(json);
+        
+        setIsFetching(true);
+        try {
+          const res = await fetch(`/api/v1/packages${query}`);
+          if (res.ok) {
+            const json = await res.json();
+            setLiveData(json);
+          }
+        } finally {
+          setIsFetching(false);
         }
       } catch (err) {
         console.error("Failed to fetch live sync storefront packages:", err);
+        setIsFetching(false);
       }
     };
 
@@ -137,9 +145,9 @@ export default function PackagesList({
   const resultLabel = isBoatRide ? 'boat ride experiences' : isSightseeing ? 'sightseeing trips' : 'experiences';
 
   const backgroundImage = isBoatRide
-    ? '/images/boat-rides-banner-2026.png'
+    ? '/images/boat-rides-banner-2026.webp'
     : isSightseeing
-      ? '/images/sightseeing-banner-2026.png'
+      ? '/images/sightseeing-banner-2026.webp'
       : 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg';
 
   const HeroIcon = isBoatRide ? Anchor : Camera;
@@ -223,7 +231,27 @@ export default function PackagesList({
                   <MobileFilterSheet />
                 </div>
 
-                {filteredItems.length > 0 ? (
+                {isFetching ? (
+                  <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex h-[400px] flex-col overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-sm">
+                        <div className="h-48 w-full animate-pulse bg-slate-100" />
+                        <div className="flex flex-1 flex-col p-5">
+                          <div className="mb-3 h-4 w-1/3 animate-pulse rounded bg-slate-100" />
+                          <div className="mb-4 h-8 w-3/4 animate-pulse rounded bg-slate-100" />
+                          <div className="mb-4 flex gap-2">
+                            <div className="h-4 w-4 animate-pulse rounded-full bg-slate-100" />
+                            <div className="h-4 w-1/4 animate-pulse rounded bg-slate-100" />
+                          </div>
+                          <div className="mt-auto grid grid-cols-2 gap-3">
+                            <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
+                            <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredItems.length > 0 ? (
                   <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
                     {filteredItems.map((pkg) => (
                       <PackageCard key={pkg.id} pkg={pkg} />

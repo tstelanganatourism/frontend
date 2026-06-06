@@ -82,6 +82,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
     return (
       <Link
         href={`/stays/${room.slug}`}
+        prefetch={false}
         className="group/list block overflow-hidden rounded-2xl border border-[#d6e4dd] bg-white shadow-[0_14px_34px_rgba(15,61,86,0.07)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[var(--color-brand-green)]/35 hover:shadow-[0_20px_50px_rgba(15,61,86,0.12)]"
       >
         <div className="flex flex-col md:flex-row">
@@ -218,6 +219,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
   return (
     <Link
       href={`/stays/${room.slug}`}
+      prefetch={false}
       className="group/card flex h-full flex-col overflow-hidden rounded-2xl border border-[#d6e4dd] bg-white shadow-[0_12px_34px_rgba(15,61,86,0.07)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-1 hover:border-[var(--color-brand-green)]/35 hover:shadow-[0_22px_52px_rgba(15,61,86,0.13)]"
     >
       <div className="relative aspect-[16/11] overflow-hidden bg-slate-100">

@@ -1483,11 +1483,11 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 })()}
               </div>
 
-                  {arrivalDate && departureDate && maxAvailableRooms === 0 ? (
+                  {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
                     <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
                       Not Available
                     </div>
-                  ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms ? (
+                  ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms && !isAdmin ? (
                     <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
                       Not Enough Rooms
                     </div>
@@ -1803,11 +1803,11 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     </div>
 
                     {/* Mobile CTA — same Razorpay flow as desktop */}
-                    {arrivalDate && departureDate && maxAvailableRooms === 0 ? (
+                    {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
                       <div className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 flex items-center justify-center cursor-not-allowed opacity-80">
                         Not Available on Selected Dates
                       </div>
-                    ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms ? (
+                    ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms && !isAdmin ? (
                       <div className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 flex items-center justify-center cursor-not-allowed opacity-80">
                         Not Enough Rooms — Reduce Guests
                       </div>

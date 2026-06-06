@@ -1247,17 +1247,17 @@ export const BookingSidebarV2 = ({
             <div>
               <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Adults (11+)</label>
               <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
-                <button type="button" disabled={isPackageInactive} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${isPackageInactive ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
+                <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                 <span className="text-sm font-semibold">{adults}</span>
-                <button type="button" disabled={isPackageInactive || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${isPackageInactive || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
               </div>
             </div>
             <div>
               <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Children (4-10)</label>
               <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
-                <button type="button" disabled={isPackageInactive} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${isPackageInactive ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
+                <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                 <span className="text-sm font-semibold">{children}</span>
-                <button type="button" disabled={isPackageInactive || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${isPackageInactive || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
               </div>
             </div>
           </div>
@@ -1275,7 +1275,7 @@ export const BookingSidebarV2 = ({
                 {sharedOptions.length > 0 && (
                   <button
                     type="button"
-                    disabled={isPackageInactive}
+                    disabled={(isPackageInactive && !isAdmin)}
                     onClick={() => { setSelectedTransportMode('SHARED'); setSeparateVehicleQtys({}); if (!selectedSharedOptionId && sharedOptions.length > 0) setSelectedSharedOptionId(sharedOptions[0].id); }}
                     className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                       selectedTransportMode === 'SHARED' 
@@ -1289,7 +1289,7 @@ export const BookingSidebarV2 = ({
                 {separateOptions.length > 0 && (
                   <button
                     type="button"
-                    disabled={isPackageInactive}
+                    disabled={(isPackageInactive && !isAdmin)}
                     onClick={() => { setSelectedTransportMode('SEPARATE'); setSelectedSharedOptionId(null); }}
                     className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                       selectedTransportMode === 'SEPARATE' 
@@ -1320,7 +1320,7 @@ export const BookingSidebarV2 = ({
                           name="sharedTransport"
                           checked={isSelected}
                           onChange={() => setSelectedSharedOptionId(opt.id)}
-                          disabled={isPackageInactive}
+                          disabled={(isPackageInactive && !isAdmin)}
                           className="mt-1 text-[#1a6b7a] focus:ring-[#1a6b7a] shrink-0"
                         />
                         <div className="flex-1 min-w-0">
@@ -1372,7 +1372,7 @@ export const BookingSidebarV2 = ({
                             <span className={`w-6 text-center text-sm font-black ${qty > 0 ? 'text-[#1a6b7a]' : 'text-slate-400'}`}>{qty}</span>
                             <button
                               type="button"
-                              disabled={isPackageInactive}
+                              disabled={(isPackageInactive && !isAdmin)}
                               onClick={() => setSeparateVehicleQtys(prev => ({ ...prev, [opt.id]: (prev[opt.id] || 0) + 1 }))}
                               className="h-8 w-8 rounded-lg border border-[#1a6b7a] text-[#1a6b7a] flex items-center justify-center font-black text-base transition-all hover:bg-[#1a6b7a] hover:text-white"
                             >+</button>
@@ -1425,7 +1425,7 @@ export const BookingSidebarV2 = ({
                   type="checkbox" 
                   checked={includeRefreshments}
                   onChange={(e) => setIncludeRefreshments(e.target.checked)}
-                  disabled={isPackageInactive}
+                  disabled={(isPackageInactive && !isAdmin)}
                   className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4"
                 />
                 <div className="flex-1">

@@ -52,7 +52,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       <main suppressHydrationWarning className={`w-full relative md:pb-0 ${showStickyBar ? 'pb-[72px]' : showMobileNav ? 'pb-[68px]' : ''}`}>
         {children}
       </main>
-      <PublicFooter />
+      <PublicFooter isDashboard={pathname?.startsWith('/dashboard')} />
       {showMobileNav && <MobileBottomNav isStacked={showStickyBar} />}
       <WhatsAppFAB hiddenOnMobile={showStickyBar} />
       {showStickyBar && <StickyConversionBar />}

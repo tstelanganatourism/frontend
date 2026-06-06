@@ -69,10 +69,17 @@ export default function PublicNavbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const isLinkActive = (link: (typeof navLinks)[number]) => {
-    if (link.path === '/') return pathname === '/';
-    return pathname === link.path || pathname.startsWith(`${link.path}/`);
-  };
+  const activeLinks = React.useMemo(() => {
+    const activeMap: Record<string, boolean> = {};
+    navLinks.forEach((link) => {
+      if (link.path === '/') {
+        activeMap[link.name] = pathname === '/';
+      } else {
+        activeMap[link.name] = pathname === link.path || pathname.startsWith(`${link.path}/`);
+      }
+    });
+    return activeMap;
+  }, [pathname]);
 
   const handleNavigate = () => {
     setIsOpen(false);
@@ -106,17 +113,15 @@ export default function PublicNavbar() {
                 href="/" 
                 className="group flex min-w-0 items-center gap-2 rounded-xl p-1 transition-all duration-500 hover:bg-gradient-to-r hover:from-slate-50/90 hover:to-teal-50/30 hover:shadow-[0_4px_20px_-8px_rgba(15,61,86,0.08)] active:scale-[0.98] sm:gap-3 sm:rounded-2xl sm:p-1.5 min-[980px]:hover:scale-[1.02]"
               >
-                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[var(--color-brand-teal)]/30 group-hover:shadow-[0_0_24px_rgba(26,107,122,0.18)] ${
-                  isScrolled ? 'h-10 w-10 sm:h-11 sm:w-11' : 'h-11 w-11 sm:h-[54px] sm:w-[54px]'
+                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[var(--color-brand-teal)]/30 group-hover:shadow-[0_0_24px_rgba(26,107,122,0.18)] h-11 w-11 sm:h-[54px] sm:w-[54px] ${
+                  isScrolled ? 'scale-90' : 'scale-100'
                 }`}>
                   <img
                     src="/telangana-tourism-logo.svg"
                     alt="Telangana Boat Tourism"
                     width={46}
                     height={46}
-                    className={`transition-all duration-500 object-contain group-hover:scale-105 ${
-                      isScrolled ? 'h-8 w-8 sm:h-9 sm:w-9' : 'h-9 w-9 sm:h-[46px] sm:w-[46px]'
-                    }`}
+                    className="transition-all duration-500 object-contain group-hover:scale-105 h-9 w-9 sm:h-[46px] sm:w-[46px]"
                   />
                   {/* Subtle pulsing background glow behind logo */}
                   <span className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-teal-400/10 to-emerald-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
@@ -139,7 +144,7 @@ export default function PublicNavbar() {
             <div className="hidden min-w-0 flex-1 justify-center min-[980px]:flex min-[980px]:px-1 xl:px-2 2xl:px-4">
               <div className="relative flex min-w-0 items-center gap-0 2xl:gap-0.5 py-1">
                 {navLinks.map((link, index) => {
-                  const isActive = isLinkActive(link);
+                  const isActive = activeLinks[link.name];
                   return (
                     <Link
                       key={link.name}
@@ -365,17 +370,15 @@ export default function PublicNavbar() {
                     آندھرا پردیش بوٹ ٹورزم
                   </span>
                 </span>
-                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[#E0A92C]/30 group-hover:shadow-[0_0_24px_rgba(224,169,44,0.18)] ${
-                  isScrolled ? 'h-11 w-11' : 'h-[54px] w-[54px]'
+                <span className={`relative grid shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(15,61,86,0.08)] ring-1 ring-slate-100/80 transition-all duration-500 group-hover:ring-[#E0A92C]/30 group-hover:shadow-[0_0_24px_rgba(224,169,44,0.18)] h-11 w-11 sm:h-[54px] sm:w-[54px] ${
+                  isScrolled ? 'scale-90' : 'scale-100'
                 }`}>
                   <img
                     src="/aptdc-logo.svg"
                     alt="Andhra Pradesh Boat Tourism"
                     width={46}
                     height={46}
-                    className={`transition-all duration-500 object-contain group-hover:scale-105 ${
-                      isScrolled ? 'h-9 w-9' : 'h-[46px] w-[46px]'
-                    }`}
+                    className="transition-all duration-500 object-contain group-hover:scale-105 h-9 w-9 sm:h-[46px] sm:w-[46px]"
                   />
                   {/* Subtle pulsing background glow behind logo */}
                   <span className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tl from-amber-400/10 to-orange-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
@@ -443,7 +446,7 @@ export default function PublicNavbar() {
                 {/* Mobile Links */}
                 <div className="grid grid-cols-2 gap-2 px-3 pb-4 pt-3.5">
                   {navLinks.map((link) => {
-                    const isActive = isLinkActive(link);
+                    const isActive = activeLinks[link.name];
                     return (
                       <Link
                         key={link.name}

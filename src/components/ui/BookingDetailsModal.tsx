@@ -310,6 +310,9 @@ export default function BookingDetailsModal({
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [isRefundConfirmOpen, setIsRefundConfirmOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isPreparingInvoice, setIsPreparingInvoice] = useState(false);
+  const [isPreparingTicket, setIsPreparingTicket] = useState(false);
+  const [isPreparingForm, setIsPreparingForm] = useState(false);
 
   const { user } = useAuthStore();
 
@@ -343,6 +346,33 @@ export default function BookingDetailsModal({
     onPaymentRecorded?.();
   }, [fetchDetails, onPaymentRecorded]);
 
+
+  const handleDownloadInvoice = () => {
+    if (!booking?.public_id || isPreparingInvoice) return;
+    setIsPreparingInvoice(true);
+    setTimeout(() => {
+      window.open(`/print/invoice/${booking.public_id}`, '_blank');
+      setIsPreparingInvoice(false);
+    }, 1200);
+  };
+
+  const handleDownloadTicket = () => {
+    if (!booking?.public_id || isPreparingTicket) return;
+    setIsPreparingTicket(true);
+    setTimeout(() => {
+      window.open(`/print/ticket/${booking.public_id}`, '_blank');
+      setIsPreparingTicket(false);
+    }, 1200);
+  };
+
+  const handleDownloadForm = () => {
+    if (!booking?.public_id || isPreparingForm) return;
+    setIsPreparingForm(true);
+    setTimeout(() => {
+      window.open(`/print/form/${booking.public_id}`, '_blank');
+      setIsPreparingForm(false);
+    }, 1200);
+  };
 
   const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
 
@@ -763,36 +793,60 @@ export default function BookingDetailsModal({
                   {/* Right: Documents */}
                   <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
                     {(isFullyPaid || isAdmin) && (
-                      <a
-                        href={`/print/invoice/${booking.public_id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 w-full sm:w-auto border border-slate-700"
+                      <button
+                        onClick={handleDownloadInvoice}
+                        disabled={isPreparingInvoice}
+                        className={`inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 w-full sm:w-auto border border-slate-700 disabled:opacity-80 disabled:cursor-not-allowed`}
                       >
-                        <ExternalLink className="h-4 w-4" /> View Invoice
-                      </a>
+                        {isPreparingInvoice ? (
+                          <>
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Preparing Invoice...
+                          </>
+                        ) : (
+                          <>
+                            <ExternalLink className="h-4 w-4" /> View Invoice
+                          </>
+                        )}
+                      </button>
                     )}
 
                     {booking.status !== 'REFUNDED' && (
-                      <a
-                        href={`/print/ticket/${booking.public_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56]"
+                      <button
+                        onClick={handleDownloadTicket}
+                        disabled={isPreparingTicket}
+                        className={`inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56] disabled:opacity-80 disabled:cursor-not-allowed`}
                       >
-                        <Ticket className="h-4 w-4" /> View Ticket
-                      </a>
+                        {isPreparingTicket ? (
+                          <>
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Preparing Ticket...
+                          </>
+                        ) : (
+                          <>
+                            <Ticket className="h-4 w-4" /> View Ticket
+                          </>
+                        )}
+                      </button>
                     )}
 
                     {booking.target_type === 'PACKAGE' && (
-                      <a
-                        href={`/print/form/${booking.public_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex justify-center items-center gap-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm transition-all active:scale-95 w-full sm:w-auto border-2 border-indigo-100 hover:border-indigo-600"
+                      <button
+                        onClick={handleDownloadForm}
+                        disabled={isPreparingForm}
+                        className={`inline-flex justify-center items-center gap-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm transition-all active:scale-95 w-full sm:w-auto border-2 border-indigo-100 hover:border-indigo-600 disabled:opacity-80 disabled:cursor-not-allowed`}
                       >
-                        <FileText className="h-4 w-4" /> Print Form
-                      </a>
+                        {isPreparingForm ? (
+                          <>
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-650 border-t-transparent" />
+                            Preparing Form...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4" /> Print Form
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
                 </div>

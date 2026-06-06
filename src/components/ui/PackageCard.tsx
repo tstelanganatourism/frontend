@@ -117,6 +117,7 @@ function PackageCard({ pkg }: PackageProps) {
   return (
     <Link
       href={`/packages/${pkg.slug}`}
+      prefetch={false}
       className="group/card relative flex flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_8px_24px_rgba(15,61,86,0.04)] outline outline-1 outline-slate-200/60 transition-all duration-400 hover:-translate-y-1.5 hover:shadow-[0_24px_54px_rgba(15,61,86,0.12)] hover:outline-[var(--color-brand-teal)]/30"
     >
       {/* Premium Image Container */}

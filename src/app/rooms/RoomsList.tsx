@@ -93,7 +93,7 @@ export default function RoomsList({
       {/* Premium Hero Banner */}
       <div className="relative min-h-[23rem] overflow-hidden bg-[#0c2b24] pb-12 pt-24 sm:min-h-[28rem] sm:pb-16 sm:pt-32">
         <Image
-          src="/images/stays-banner-2026.png"
+          src="/images/stays-banner-2026.webp"
           alt="Riverside stays and accommodation banner"
           fill
           sizes="100vw"

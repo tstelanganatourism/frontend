@@ -185,14 +185,14 @@ export default function FAQClient() {
           )}
 
           <div className="grid gap-4 md:grid-cols-2">
-            <a href="mailto:tsboattourismservices@gmail.com" className="group flex h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
+            <a href="mailto:bookings@tsboattourism.org" className="group flex h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
               <div className="flex items-start gap-4">
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-50 text-[var(--color-brand-teal)] transition-colors group-hover:bg-[var(--color-brand-teal)] group-hover:text-white">
                   <Mail className="h-6 w-6" />
                 </span>
                 <div>
                   <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Email us</div>
-                  <div className="mt-1 break-all text-lg font-bold text-[var(--color-brand-river)]">tsboattourismservices@gmail.com</div>
+                  <div className="mt-1 break-all text-lg font-bold text-[var(--color-brand-river)]">bookings@tsboattourism.org</div>
                 </div>
               </div>
             </a>
