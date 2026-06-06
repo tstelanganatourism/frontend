@@ -2,7 +2,7 @@
 
 import React, { useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Check, Filter } from 'lucide-react';
+import { Check, Filter, Loader2 } from 'lucide-react';
 import type { SortOption } from '@/stores/useFilterStore';
 import SortDropdown from '@/components/ui/SortDropdown';
 import { cn } from '@/lib/utils';
@@ -14,38 +14,23 @@ const FACILITIES = [
 export default function RoomFilters({ className, sticky = true }: { className?: string; sticky?: boolean }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
-  const isFeaturedParam = searchParams.get('is_featured') === 'true';
-  const activeFacilitiesParam = searchParams.getAll('facilities');
-  const activeSortParam = (searchParams.get('sort') as SortOption | null) || 'priority';
-
-  // Optimistic local state for instant toggle feedback
-  const [isFeatured, setIsFeatured] = React.useState(isFeaturedParam);
-  const [activeFacilities, setActiveFacilities] = React.useState(activeFacilitiesParam);
-  const [activeSort, setActiveSort] = React.useState(activeSortParam);
-
-  const activeFacilitiesString = activeFacilitiesParam.join(',');
-
-  React.useEffect(() => {
-    setIsFeatured(isFeaturedParam);
-    setActiveFacilities(activeFacilitiesParam);
-    setActiveSort(activeSortParam);
-  }, [isFeaturedParam, activeFacilitiesString, activeSortParam]);
+  const isFeatured = searchParams.get('is_featured') === 'true';
+  const activeFacilities = searchParams.getAll('facilities');
+  const activeSort = (searchParams.get('sort') as SortOption | null) || 'priority';
 
   const pushRoomParams = (params: URLSearchParams) => {
     params.delete('page');
     const query = params.toString();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     startTransition(() => {
-      router.replace(query ? `/stays?${query}` : '/stays', { scroll: false });
+      router.replace(query ? `/stays?${query}` : '/stays', { scroll: true });
     });
   };
 
   const setParam = (key: string, value: string | null, defaultValue?: string) => {
     const params = new URLSearchParams(searchParams.toString());
-
-    if (key === 'is_featured') setIsFeatured(value === 'true');
-    if (key === 'sort' && value) setActiveSort(value as SortOption);
 
     if (!value || value === defaultValue) {
       params.delete(key);
@@ -60,9 +45,6 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
     const nextFacilities = activeFacilities.includes(facility)
       ? activeFacilities.filter((item) => item !== facility)
       : [...activeFacilities, facility];
-    
-    // Instant optimistic feedback
-    setActiveFacilities(nextFacilities);
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete('facilities');
@@ -71,18 +53,22 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   };
 
   const clearAll = () => {
-    // Instant optimistic feedback
-    setIsFeatured(false);
-    setActiveFacilities([]);
-    setActiveSort('priority');
-    
     startTransition(() => {
-      router.replace('/stays', { scroll: false });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      router.replace('/stays', { scroll: true });
     });
   };
 
   return (
-    <div className={cn('space-y-8 rounded-[1.35rem] border border-white/70 bg-white/88 p-5 shadow-[0_18px_55px_rgba(44,94,67,0.1)] backdrop-blur-xl sm:p-6', sticky && 'sticky top-24', className)}>
+    <div className={cn('relative space-y-8 overflow-visible rounded-[1.35rem] border border-white/70 bg-white/88 p-5 shadow-[0_18px_55px_rgba(44,94,67,0.1)] backdrop-blur-xl sm:p-6', sticky && 'sticky top-24', className)}>
+      {isPending && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-[1.35rem] bg-white/72 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-green)]/15 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-[var(--color-brand-river)] shadow-lg">
+            <Loader2 className="h-4 w-4 animate-spin text-[var(--color-brand-green)]" />
+            Applying
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-[var(--color-brand-river)] flex items-center gap-2">
           <Filter className="h-5 w-5 text-[var(--color-brand-teal)]" />
@@ -91,6 +77,7 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
         <button 
           type="button"
           onClick={clearAll}
+          disabled={isPending}
           className="text-xs font-medium text-muted-foreground hover:text-[var(--color-brand-teal)] transition-colors"
         >
           Clear All
@@ -107,7 +94,8 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
           type="checkbox" 
           checked={isFeatured}
           onChange={(e) => setParam('is_featured', e.target.checked ? 'true' : null)}
-          className="h-5 w-5 text-[var(--color-brand-teal)] focus:ring-[var(--color-brand-teal)] border-slate-300 rounded"
+          disabled={isPending}
+          className="h-5 w-5 rounded border-slate-300 text-[var(--color-brand-teal)] focus:ring-[var(--color-brand-teal)] disabled:cursor-not-allowed disabled:opacity-60"
         />
       </div>
 
@@ -122,7 +110,8 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
                 key={f}
                 type="button"
                 onClick={() => toggleFacility(f)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
+                disabled={isPending}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                   isActive 
                     ? 'bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)] font-bold border border-[var(--color-brand-green)]/20' 
                     : 'text-slate-600 hover:bg-slate-50 border border-transparent'
@@ -145,7 +134,8 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
             { label: 'Highest Price First', value: 'price_high' }
           ]}
           value={activeSort}
-          onChange={(value: SortOption) => setParam('sort', value, 'priority')}
+          onChange={(value) => setParam('sort', value as SortOption, 'priority')}
+          disabled={isPending}
         />
       </div>
     </div>

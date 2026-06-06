@@ -49,11 +49,12 @@ export default function PackagesList({
   const isBoatRide = pathname === '/boat-rides';
   const isSightseeing = pathname === '/sightseeing';
 
-  const [liveData, setLiveData] = React.useState<PackageData | undefined>(undefined);
+  const [liveData, setLiveData] = React.useState<{ query: string; data: PackageData } | undefined>(undefined);
   const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
   const isInitialMount = React.useRef(true);
   const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
+  const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
 
   // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
   // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
@@ -63,6 +64,7 @@ export default function PackagesList({
       try {
         const currentSearch = window.location.search;
         const queryParams = new URLSearchParams(currentSearch);
+        queryParams.delete('tags');
 
         // If there are no query parameters, and we are not forcing a specific type,
         // we can just use the server-provided SSG data without an extra network call.
@@ -75,6 +77,7 @@ export default function PackagesList({
         } else if (isSightseeing) {
           queryParams.set('type', 'TRIP');
         }
+        queryParams.set('size', '6');
 
         const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
         
@@ -83,7 +86,7 @@ export default function PackagesList({
           const res = await fetch(`/api/v1/packages${query}`);
           if (res.ok) {
             const json = await res.json();
-            setLiveData(json);
+            setLiveData({ query: currentSearch, data: json });
           }
         } finally {
           setIsFetching(false);
@@ -106,7 +109,7 @@ export default function PackagesList({
     }
   }, [pathname, isBoatRide, isSightseeing, searchParams]);
 
-  const activeData = liveData !== undefined ? liveData : data;
+  const activeData = liveData?.query === currentBrowserSearch ? liveData.data : data;
 
   // Extract active items and filter locally
   const filteredItems = activeData ? activeData.items.filter((pkg) =>
@@ -226,7 +229,7 @@ export default function PackagesList({
               <div className="transition-opacity duration-200">
                 <div className="mb-6 flex items-center justify-between lg:mb-8">
                   <p className="max-w-[calc(100%-8rem)] text-sm font-medium leading-5 text-slate-500 sm:max-w-none">
-                    We found <span className="font-bold text-[var(--color-brand-river)]">{filteredItems.length || 0}</span> amazing {resultLabel}
+                    We found <span className="font-bold text-[var(--color-brand-river)]">{activeData.total || 0}</span> amazing {resultLabel}
                   </p>
                   <MobileFilterSheet />
                 </div>

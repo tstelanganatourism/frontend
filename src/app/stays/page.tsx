@@ -27,6 +27,8 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
     params.append('facilities', facilities);
   }
 
+  params.set('size', '6');
+
   try {
     const query = params.toString();
     const res = await apiFetch(`/api/v1/rooms${query ? `?${query}` : ''}`, { next: { revalidate: 30, tags: ['stays'] } });
@@ -39,6 +41,6 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
 
 export default async function StaysPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const searchParams = await props.searchParams;
-  const { query, data } = await fetchInitialRooms(searchParams);
-  return <RoomsList data={data} query={query} searchParams={searchParams} />;
+  const { data } = await fetchInitialRooms(searchParams);
+  return <RoomsList data={data} searchParams={searchParams} />;
 }

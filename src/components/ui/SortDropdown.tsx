@@ -11,11 +11,12 @@ interface SortOption {
 interface SortDropdownProps {
   options: SortOption[];
   value: string;
-  onChange: (value: any) => void;
+  onChange: (value: string) => void;
   label?: string;
+  disabled?: boolean;
 }
 
-export default function SortDropdown({ options, value, onChange, label = 'Sort By' }: SortDropdownProps) {
+export default function SortDropdown({ options, value, onChange, label = 'Sort By', disabled = false }: SortDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -35,8 +36,9 @@ export default function SortDropdown({ options, value, onChange, label = 'Sort B
     <div className="relative w-full" ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-[var(--color-brand-river)] shadow-sm transition-all hover:border-[var(--color-brand-teal)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)]/20"
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-[var(--color-brand-river)] shadow-sm transition-all hover:border-[var(--color-brand-teal)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)]/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="flex flex-col items-start">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-0.5">
@@ -54,12 +56,14 @@ export default function SortDropdown({ options, value, onChange, label = 'Sort B
           <div className="py-1">
             {options.map((option) => (
               <button
+                type="button"
                 key={option.value}
+                disabled={disabled}
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors ${
+                className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                   value === option.value
                     ? 'bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] font-bold'
                     : 'text-slate-600 hover:bg-slate-50'

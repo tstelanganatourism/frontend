@@ -30,17 +30,17 @@ type RoomItem = {
 
 export default function RoomsList({ 
   data, 
-  query, 
   searchParams,
 }: { 
   data?: RoomData; 
-  query?: string; 
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
-  const [liveData, setLiveData] = React.useState<RoomData | undefined>(undefined);
+  const [liveData, setLiveData] = React.useState<{ query: string; data: RoomData } | undefined>(undefined);
+  const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
   const isInitialMount = React.useRef(true);
   const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
+  const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
 
   // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
   // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
@@ -57,14 +57,21 @@ export default function RoomsList({
           return;
         }
 
+        queryParams.set('size', '6');
         const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
-        const res = await fetch(`/api/v1/rooms${queryStr}`);
-        if (res.ok) {
-          const json = await res.json();
-          setLiveData(json);
+        setIsFetching(true);
+        try {
+          const res = await fetch(`/api/v1/rooms${queryStr}`);
+          if (res.ok) {
+            const json = await res.json();
+            setLiveData({ query: currentSearch, data: json });
+          }
+        } finally {
+          setIsFetching(false);
         }
       } catch (err) {
         console.error("Failed to fetch live sync storefront stays:", err);
+        setIsFetching(false);
       }
     };
     
@@ -80,7 +87,7 @@ export default function RoomsList({
     }
   }, [searchParams]);
 
-  const activeData = liveData !== undefined ? liveData : data;
+  const activeData = liveData?.query === currentBrowserSearch ? liveData.data : data;
 
   // Extract active items and filter locally
   const filteredItems = activeData ? activeData.items.filter((room) => 
@@ -161,12 +168,30 @@ export default function RoomsList({
               <div className="transition-opacity duration-200">
                 <div className="mb-6 flex items-center justify-between lg:mb-8">
                   <p className="max-w-[calc(100%-8rem)] text-sm font-medium leading-5 text-slate-500 sm:max-w-none">
-                    We found <span className="font-bold text-[var(--color-brand-river)]">{filteredItems.length || 0}</span> beautiful stays
+                    We found <span className="font-bold text-[var(--color-brand-river)]">{activeData.total || 0}</span> beautiful stays
                   </p>
                   <MobileRoomFilterSheet />
                 </div>
 
-                {filteredItems.length > 0 ? (
+                {isFetching ? (
+                  <div className="flex flex-col gap-5">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex min-h-[240px] flex-col overflow-hidden rounded-2xl border border-[#d6e4dd] bg-white shadow-sm md:flex-row">
+                        <div className="h-56 w-full animate-pulse bg-slate-100 md:h-auto md:w-[31%]" />
+                        <div className="flex flex-1 flex-col p-5">
+                          <div className="mb-3 h-7 w-2/3 animate-pulse rounded bg-slate-100" />
+                          <div className="mb-4 h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+                          <div className="mb-5 flex gap-2">
+                            <div className="h-6 w-20 animate-pulse rounded-md bg-slate-100" />
+                            <div className="h-6 w-20 animate-pulse rounded-md bg-slate-100" />
+                            <div className="h-6 w-20 animate-pulse rounded-md bg-slate-100" />
+                          </div>
+                          <div className="mt-auto h-14 w-full animate-pulse rounded-xl bg-slate-100" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredItems.length > 0 ? (
                   <div className="flex flex-col gap-5">
                     {filteredItems.map((room) => (
                       <RoomCard key={room.id} room={room} />

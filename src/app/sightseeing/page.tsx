@@ -9,7 +9,7 @@ export const metadata = {
 
 async function fetchInitialPackages(searchParams: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
-  const allowedSingleParams = ['page', 'region', 'is_featured', 'sort', 'q'];
+  const allowedSingleParams = ['page', 'region', 'place', 'is_featured', 'sort', 'q'];
 
   for (const key of allowedSingleParams) {
     const value = searchParams[key];
@@ -20,13 +20,7 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
   }
 
   params.set('type', 'TRIP');
-
-  const tags = searchParams.tags;
-  if (Array.isArray(tags)) {
-    tags.forEach((tag) => params.append('tags', tag));
-  } else if (tags) {
-    params.append('tags', tags);
-  }
+  params.set('size', '6');
 
   try {
     const query = params.toString();
