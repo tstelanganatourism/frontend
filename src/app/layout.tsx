@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Outfit, Noto_Nastaliq_Urdu, Noto_Sans_Telugu } from "next/font/google";
 import "./globals.css";
 import TopLoader from '@/components/layout/TopLoader';
 import QueryProvider from '@/components/providers/QueryProvider';
@@ -9,7 +9,10 @@ import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { Toaster } from 'sonner';
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap' });
+const notoUrdu = Noto_Nastaliq_Urdu({ subsets: ["arabic"], variable: "--font-urdu", weight: ['400', '700'], display: 'swap' });
+const notoTelugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-telugu", weight: ['400', '500', '600', '700'], display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tsboattourism.org"),
@@ -88,13 +91,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Preload critical above-the-fold images for key pages */}
-        <link
-          rel="preload"
-          as="image"
-          href="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431956/papikondalu-tour-packages-ap-7_cfwphr.jpg"
-          fetchPriority="high"
-        />
+        {/* Font loading and preloads managed by Next.js */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -105,7 +102,7 @@ export default function RootLayout({
                 "name": "Telangana Boat Tourism",
                 "alternateName": "TS Boat Tourism",
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org",
-                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org"}/logo.png`,
+                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org"}/logo.png?v=3`,
                 "image": "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg",
                 "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 95420 69573",
@@ -184,7 +181,7 @@ export default function RootLayout({
           }}
         ></script>
       </head>
-      <body className={`${inter.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} ${outfit.variable} ${notoUrdu.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
         <TopLoader />
         <QueryProvider>
           <AuthProvider>

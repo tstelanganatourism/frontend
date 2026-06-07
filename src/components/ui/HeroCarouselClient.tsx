@@ -334,9 +334,9 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               fill
               priority={idx === 0}
               fetchPriority={idx === 0 ? 'high' : 'low'}
-              sizes="(max-width: 640px) 640px, (max-width: 1080px) 1080px, 100vw"
-              className={`object-cover transition-transform duration-[6000ms] ${idx === activeIndex ? 'scale-105' : 'scale-100'}`}
-              quality={75}
+              sizes="(max-width: 640px) 100vw, 100vw"
+              className="object-cover"
+              quality={60}
             />
           </div>
         );
@@ -714,7 +714,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
           </button>
 
           {/* Slide indicators and mini arrow controls inside a unified glass pill at bottom */}
-          <div className="absolute bottom-[5.5rem] left-1/2 z-30 -translate-x-1/2 md:bottom-[5rem]">
+          <div className="absolute bottom-[5.5rem] left-1/2 z-50 -translate-x-1/2 md:bottom-[5rem]">
             <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/45 px-3 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.3)] backdrop-blur-md">
               {/* Left Arrow Tap for Mobile */}
               <button
@@ -740,10 +740,10 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                     {idx === activeIndex && (
                       <span
                         key={`${progressKey}-${isPaused}`}
-                        className="absolute inset-y-0 left-0 rounded-full bg-amber-300"
+                        className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-amber-300"
                         style={{
                           animation: isPaused ? 'none' : `progress-fill 5s linear forwards`,
-                          width: isPaused ? '0%' : '100%',
+                          transform: isPaused ? 'scaleX(0)' : undefined,
                         }}
                       />
                     )}

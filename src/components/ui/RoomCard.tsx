@@ -227,7 +227,8 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
           src={room.cover_image_url || '/placeholder-room.jpg'}
           alt={room.lodge_name}
           fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          quality={65}
           className="object-cover transition-transform duration-500 group-hover/card:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,22,34,0.02)_0%,rgba(3,22,34,0.08)_48%,rgba(8,35,27,0.62)_100%)]" />

@@ -1,17 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Nastaliq+Urdu:wght@400;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap');
-
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 .font-outfit {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-outfit), sans-serif;
 }
 .font-urdu {
-  font-family: 'Noto Nastaliq Urdu', serif;
+  font-family: var(--font-urdu), serif;
 }
 .font-telugu {
-  font-family: 'Noto Sans Telugu', sans-serif;
+  font-family: var(--font-telugu), sans-serif;
 }
 
 
@@ -356,6 +354,11 @@
 
 @keyframes shimmer {
   100% { transform: translateX(100%); }
+}
+
+@keyframes progress-fill {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
 }
 
 @keyframes hero-cinema {

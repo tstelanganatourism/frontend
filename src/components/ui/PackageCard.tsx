@@ -126,7 +126,8 @@ function PackageCard({ pkg }: PackageProps) {
           src={pkg.cover_image_url || '/placeholder-tourism.jpg'}
           alt={pkg.title}
           fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          quality={65}
           className="object-cover transition-transform duration-700 ease-out group-hover/card:scale-105"
         />
         

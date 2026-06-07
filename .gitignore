@@ -58,3 +58,6 @@ playwright.config.ts
 playwright-report/
 test-results/
 package-lock.json
+
+# Lighthouse
+lighthouse-report.json

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import NextTopLoader from 'nextjs-toploader';
 import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function TopLoader() {
@@ -107,19 +108,24 @@ export default function TopLoader() {
       />
 
       {/* Premium Branded Navigation Loader Overlay */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 99998,
-          transition: 'opacity 0.35s ease-in-out, visibility 0.35s ease-in-out',
-          opacity: isLoading ? 1 : 0,
-          visibility: isLoading ? 'visible' : 'hidden',
-          pointerEvents: isLoading ? 'auto' : 'none',
-        }}
-      >
-        {isLoading && <PremiumLoader />}
-      </div>
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeInOut' }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99998,
+              pointerEvents: 'auto',
+            }}
+          >
+            <PremiumLoader />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

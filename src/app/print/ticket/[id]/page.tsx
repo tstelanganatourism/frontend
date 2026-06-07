@@ -188,8 +188,9 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
     <div className="wrap">
       <style dangerouslySetInnerHTML={{
         __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Nastaliq+Urdu:wght@600;700&family=Noto+Sans+Telugu:wght@600;700;800&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+        body {
+          font-family: var(--font-outfit), var(--font-sans), sans-serif;
+        }
         @page { size: A4 portrait; margin: 6mm 8mm; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {

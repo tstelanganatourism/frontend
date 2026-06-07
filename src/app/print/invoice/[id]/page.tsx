@@ -151,7 +151,9 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
       <div className="invoice-container">
         <style dangerouslySetInnerHTML={{
           __html: `
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body {
+          font-family: var(--font-outfit), var(--font-sans), sans-serif;
+        }
           
           @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
           
