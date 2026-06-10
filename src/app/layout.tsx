@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   description: "Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, Kolluru bamboo huts and premium stays with Telangana Boat Tourism.",
   icons: {
     icon: [
-      { url: "/icon-192x192.png?v=3", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512x512.png?v=3", sizes: "512x512", type: "image/png" },
+      { url: "/icon-192x192.png?v=4", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png?v=4", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/apple-touch-icon.png?v=4", sizes: "512x512", type: "image/png" },
     ],
   },
   keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "Telangana Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays", "bhadrachalam tourism", "telangana tourism", "andhra tourism", "boat rides", "AP tourism boat booking bhadrachalam", "AP tourism papikondalu tour packages", "Telangana tourism boat booking", "papikondalu tourism boat tickets", "bhadrachalam to papikondalu boat ride", "papikondalu packages from hyderabad", "papikondalu boating online booking", "kolluru bamboo huts booking", "bhadrachalam temple rooms booking", "bhadrachalam godavari boating list", "rajahmundry to papikondalu boat price", "papikondalu packages from vizag", "papikondalu packages from vijayawada", "ap tourism boat ride cost", "boat rides near me", "tourism boats in telangana andhra"],
