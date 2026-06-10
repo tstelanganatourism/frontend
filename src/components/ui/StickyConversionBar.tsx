@@ -23,7 +23,7 @@ export default function StickyConversionBar() {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 grid w-full max-w-[100dvw] grid-cols-3 overflow-hidden border-t border-slate-200 bg-white pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 shadow-[0_-10px_28px_rgba(15,61,86,0.12)] sm:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-50 grid w-full max-w-[100dvw] grid-cols-3 overflow-hidden border-t border-slate-200 bg-white pb-[calc(env(safe-area-inset-bottom)_+_0.25rem)] pt-1 shadow-[0_-10px_28px_rgba(15,61,86,0.12)] sm:hidden">
       <button
         onClick={handleCall}
         className="min-w-0 border-r border-slate-200 px-1 py-1.5 text-slate-600 active:text-[var(--color-brand-river)]"

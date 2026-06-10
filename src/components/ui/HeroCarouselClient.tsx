@@ -307,7 +307,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
 
   return (
     <section
-      className="relative isolate flex h-[calc(100svh-7.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100svh-8.45rem)]"
+      className="relative isolate flex h-[calc(100svh_-_7.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100svh_-_8.45rem)]"
       onMouseEnter={() => {
         if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
           setIsPaused(true);

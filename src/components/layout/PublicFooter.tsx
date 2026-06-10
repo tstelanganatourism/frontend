@@ -18,7 +18,7 @@ interface PublicFooterProps {
 
 export default function PublicFooter({ isDashboard = false }: PublicFooterProps) {
   return (
-    <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${isDashboard ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]' : 'pb-[calc(7rem+env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
+    <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${isDashboard ? 'pb-[calc(10rem_+_env(safe-area-inset-bottom))]' : 'pb-[calc(7rem_+_env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
       <div className="w-full px-4 sm:px-6 min-[980px]:px-8 min-[1280px]:px-10">
         <div className="grid min-w-0 grid-cols-1 gap-6 min-[760px]:grid-cols-[1fr_0.9fr] min-[1120px]:grid-cols-[0.9fr_0.72fr_1.1fr_1.15fr] min-[1120px]:items-start min-[1120px]:gap-7 min-[1500px]:grid-cols-[0.9fr_0.7fr_1.08fr_1.22fr] min-[1500px]:gap-8">

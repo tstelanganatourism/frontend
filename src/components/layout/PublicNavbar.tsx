@@ -533,7 +533,7 @@ export default function PublicNavbar() {
                 animate={{ opacity: 1, height: 'auto', y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -10 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="absolute left-2 right-2 top-[calc(100%+0.5rem)] z-[95] max-h-[calc(100dvh-7.5rem)] overflow-y-auto rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,61,86,0.24)] min-[980px]:hidden"
+                className="absolute left-2 right-2 top-[calc(100%_+_0.5rem)] z-[95] max-h-[calc(100dvh_-_7.5rem)] overflow-y-auto rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,61,86,0.24)] min-[980px]:hidden"
               >
                 {/* Joint States Logo Header */}
                 <div className="grid gap-2.5 border-b border-slate-100 bg-[linear-gradient(180deg,#f8fbfb,white)] px-3 py-3 min-[420px]:grid-cols-2 min-[420px]:px-4">
