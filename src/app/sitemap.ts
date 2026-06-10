@@ -1,6 +1,10 @@
 import { MetadataRoute } from 'next'
 import { apiFetch } from '@/lib/api'
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 type SitemapListItem = {
   slug: string;
 };

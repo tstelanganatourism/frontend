@@ -8,7 +8,6 @@ import {
   BadgeCheck,
   BedDouble,
   Camera,
-  CalendarCheck,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -27,12 +26,7 @@ import {
 
 // ─── Static data (unchanged) ────────────────────────────────────────────────
 
-const featurePills = [
-  { icon: Ship, label: 'Scenic\nGodavari Cruises' },
-  { icon: Home, label: 'Riverside\nStays' },
-  { icon: Camera, label: 'Stunning\nSightseeing' },
-  { icon: ShieldCheck, label: 'Safe & Verified\nBookings' },
-];
+
 
 const bottomTags = [
   { icon: Ship, label: 'Godavari Cruises' },
@@ -158,44 +152,55 @@ function formatPrice(price: number | null) {
 // ─── Main HeroBody Component ─────────────────────────────────────────────────
 
 export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: ApiSlide[] }) {
-  const [slides, setSlides] = useState<Slide[]>(() => {
-    return [DEFAULT_SLIDE, ...apiSlides];
-  });
+  const [slides] = useState<Slide[]>(() => [DEFAULT_SLIDE, ...apiSlides]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
   const isTransitioningRef = useRef(false);
-  // Slides are now provided as props from the Server Component.
+  const activeIndexRef = useRef(0);
+  const touchStartX = useRef<number | null>(null);
 
   const goTo = useCallback((index: number) => {
     if (isTransitioningRef.current) return;
     isTransitioningRef.current = true;
     setIsTransitioning(true);
     setTimeout(() => {
+      activeIndexRef.current = index;
       setActiveIndex(index);
       setProgressKey(k => k + 1);
       setIsTransitioning(false);
       isTransitioningRef.current = false;
-    }, 300);
+    }, 280);
   }, []);
 
   const goNext = useCallback(() => {
-    goTo((activeIndex + 1) % slides.length);
-  }, [activeIndex, slides.length, goTo]);
+    goTo((activeIndexRef.current + 1) % slides.length);
+  }, [slides.length, goTo]);
 
   const goPrev = useCallback(() => {
-    goTo((activeIndex - 1 + slides.length) % slides.length);
-  }, [activeIndex, slides.length, goTo]);
+    goTo((activeIndexRef.current - 1 + slides.length) % slides.length);
+  }, [slides.length, goTo]);
 
-  // Auto-advance timer (5s per slide)
+  // Auto-advance timer (5 s per slide) — uses ref to avoid stale closure
   useEffect(() => {
     if (isPaused || slides.length <= 1) return;
     const timer = setTimeout(() => {
-      goTo((activeIndex + 1) % slides.length);
+      goTo((activeIndexRef.current + 1) % slides.length);
     }, 5000);
     return () => clearTimeout(timer);
-  }, [activeIndex, isPaused, slides.length, goTo]);
+  // progressKey drives the timer restart on every slide change
+  }, [progressKey, isPaused, slides.length, goTo]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'ArrowLeft') goPrev();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [goNext, goPrev]);
 
   const activeSlide = slides[activeIndex];
   const isDefault = activeSlide.type === 'default';
@@ -213,7 +218,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
     (activeSlide as ApiSlide).title?.toLowerCase().includes('ride')
   );
 
-  const isSightseeingSlide = isPackage && !isBoatRideSlide;
+
 
   // Compute CTA paths, labels, and icons
   let bookLink = '/boat-rides';
@@ -302,8 +307,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
 
   const currentButtons = getSlideButtons();
 
-  // Background image URL
-  const bgImage = activeSlide.cover_image_url || '/home/godavari-hero-banner.jpg';
+
 
   return (
     <section
@@ -317,6 +321,19 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
         if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
           setIsPaused(false);
         }
+      }}
+      onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+      onTouchEnd={(e) => {
+        if (touchStartX.current === null) return;
+        const delta = e.changedTouches[0].clientX - touchStartX.current;
+        if (Math.abs(delta) > 50) {
+          if (delta < 0) {
+            goNext();
+          } else {
+            goPrev();
+          }
+        }
+        touchStartX.current = null;
       }}
     >
       {/* ─── Background Images (all preloaded, cross-fade on active) ─── */}
@@ -704,82 +721,99 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
       {/* ─── Carousel Controls ─────────────────────────────────────────── */}
       {slides.length > 1 && (
         <>
-          {/* Left / Right Arrows (Shown only on sm+ to prevent mobile overlapping) */}
+          {/* ── Desktop side arrows ── */}
           <button
             type="button"
             onClick={goPrev}
             aria-label="Previous slide"
-            className="absolute left-4 lg:left-6 xl:left-8 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:p-3 hidden sm:block"
+            className="absolute left-4 top-1/2 z-30 -translate-y-1/2 hidden sm:flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur-md transition-all duration-200 hover:border-white/60 hover:bg-black/60 hover:scale-110 active:scale-95 lg:left-6 xl:left-8"
           >
-            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             type="button"
             onClick={goNext}
             aria-label="Next slide"
-            className="absolute right-4 lg:right-6 xl:right-8 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-md transition hover:bg-black/55 sm:p-3 hidden sm:block"
+            className="absolute right-4 top-1/2 z-30 -translate-y-1/2 hidden sm:flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur-md transition-all duration-200 hover:border-white/60 hover:bg-black/60 hover:scale-110 active:scale-95 lg:right-6 xl:right-8"
           >
-            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+            <ChevronRight className="h-5 w-5" />
           </button>
 
-          {/* Slide indicators and mini arrow controls inside a unified glass pill at bottom */}
-          <div className="absolute bottom-[5.5rem] left-1/2 z-50 -translate-x-1/2 md:bottom-[5rem]">
-            <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/45 px-3 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.3)] backdrop-blur-md">
-              {/* Left Arrow Tap for Mobile */}
+          {/* ── Premium indicator bar ── */}
+          <div className="absolute bottom-28 left-1/2 z-50 -translate-x-1/2 md:bottom-24">
+            <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-black/50 px-3 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+
+              {/* Mobile prev arrow */}
               <button
                 type="button"
                 onClick={goPrev}
                 aria-label="Previous slide"
-                className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:hidden"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 active:scale-90 sm:hidden"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
 
-              {/* Progress dots */}
-              <div className="flex gap-2">
-                {slides.map((slide, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => goTo(idx)}
-                    aria-label={`Go to slide ${idx + 1}`}
-                    className="group relative flex h-12 items-center justify-center px-1.5 focus:outline-none"
-                    style={{ width: idx === activeIndex ? '2.5rem' : '1.25rem' }}
-                  >
-                    <span
-                      className={`h-1.5 w-full rounded-full transition-all duration-300 relative overflow-hidden ${idx === activeIndex ? 'bg-amber-300' : 'bg-white/30 group-hover:bg-white/50'}`}
+              {/* Dots */}
+              <div className="flex items-center gap-2">
+                {slides.map((_, idx) => {
+                  const isActive = idx === activeIndex;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => goTo(idx)}
+                      aria-label={`Go to slide ${idx + 1}`}
+                      aria-current={isActive ? 'true' : undefined}
+                      className="relative flex h-8 items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 rounded-full"
+                      style={{ width: isActive ? '2.75rem' : '1rem' }}
                     >
-                      {idx === activeIndex && (
-                        <span
-                          key={`${progressKey}-${isPaused}`}
-                          className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-amber-300"
-                          style={{
-                            animation: isPaused ? 'none' : `progress-fill 5s linear forwards`,
-                            transform: isPaused ? 'scaleX(0)' : undefined,
-                          }}
-                        />
-                      )}
-                    </span>
-                  </button>
-                ))}
+                      {/* Track bg */}
+                      <span
+                        className={`relative block h-[5px] w-full overflow-hidden rounded-full transition-all duration-500 ease-out ${
+                          isActive ? 'bg-white/20' : 'bg-white/25 hover:bg-white/45'
+                        }`}
+                      >
+                        {/* Fill bar — new key on every slide change so animation always restarts from 0 */}
+                        {isActive && (
+                          <span
+                            key={progressKey}
+                            className="absolute inset-y-0 left-0 rounded-full bg-amber-300"
+                            style={{
+                              width: '100%',
+                              transformOrigin: 'left center',
+                              animation: isPaused
+                                ? 'none'
+                                : 'carousel-progress 5s linear forwards',
+                            }}
+                          />
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Right Arrow Tap for Mobile */}
+              {/* Mobile next arrow */}
               <button
                 type="button"
                 onClick={goNext}
                 aria-label="Next slide"
-                className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:hidden"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 active:scale-90 sm:hidden"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
+
+              {/* Slide counter */}
+              <span className="ml-1 hidden min-w-[2.5rem] text-center text-[11px] font-bold tabular-nums text-white/70 sm:block">
+                {String(activeIndex + 1).padStart(2, '0')}&thinsp;/&thinsp;{String(slides.length).padStart(2, '0')}
+              </span>
             </div>
           </div>
 
           {/* Slide type label badge */}
           {!isDefault && (
-            <div className="absolute bottom-[5.5rem] right-4 z-30 md:right-8 md:bottom-[5rem] hidden sm:block">
-              <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-md">
+            <div className="absolute bottom-28 right-4 z-30 md:right-8 md:bottom-24 hidden sm:block">
+              <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-md">
                 {isPackage ? <Package className="h-3 w-3 text-amber-300" /> : <BedDouble className="h-3 w-3 text-sky-300" />}
                 {isPackage ? 'Tour Package' : 'Riverside Stay'}
               </div>
@@ -810,11 +844,11 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
         </div>
       </div>
 
-      {/* ─── CSS for progress bar animation ──────────────────────────── */}
+      {/* ─── CSS for carousel progress animation ────────────────────────── */}
       <style>{`
-        @keyframes progress-fill {
-          from { transform: scaleX(0); transform-origin: left; }
-          to { transform: scaleX(1); transform-origin: left; }
+        @keyframes carousel-progress {
+          from { transform: scaleX(0); transform-origin: left center; }
+          to   { transform: scaleX(1); transform-origin: left center; }
         }
       `}</style>
     </section>
