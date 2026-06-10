@@ -36,11 +36,11 @@ export default function MobileBottomNav({ isStacked = false }: { isStacked?: boo
               className={`flex min-h-[3.45rem] min-w-0 flex-col items-center justify-center rounded-[1.1rem] px-0.5 py-1 transition-all duration-200 ${
                 isActive 
                   ? 'bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] shadow-[inset_0_0_0_1px_rgba(26,107,122,0.08)]' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-slate-50'
+                  : 'text-slate-600 hover:text-foreground hover:bg-slate-50'
               }`}
             >
               <Icon className={`mb-1 h-5 w-5 min-[380px]:h-5.5 min-[380px]:w-5.5 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-              <span className={`w-full text-center text-[8px] font-bold leading-[0.7rem] min-[380px]:text-[8.75px] ${isActive ? 'opacity-100' : 'opacity-80'}`}>
+              <span className={`w-full text-center text-[8px] font-bold leading-[0.7rem] min-[380px]:text-[8.75px] ${isActive ? 'opacity-100' : 'opacity-90'}`}>
                 {item.name}
               </span>
             </Link>

@@ -169,7 +169,7 @@ export default function HomePage() {
     <div className="flex w-full flex-col overflow-x-clip bg-[#f7f4ed]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ─── Cinematic Hero Section ─────────────────────────────────────── */}
-      <section className="sticky top-0 w-full overflow-hidden bg-slate-950">
+      <section className="sticky top-0 w-full overflow-hidden bg-slate-950 h-[calc(100svh-7.3125rem)] lg:h-[calc(100svh-8.45rem)]">
         {/* HeroBody manages its own background images & carousel */}
         <HeroBody />
       </section>

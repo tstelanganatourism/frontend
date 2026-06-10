@@ -70,23 +70,23 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
             <div className="min-w-0">
               <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Quick Links</h3>
               <ul className="space-y-2.5">
-                <li><Link href="/about" className="text-[12px] text-white/65 transition-colors hover:text-white">About Us</Link></li>
-                <li><Link href="/boat-rides" className="text-[12px] text-white/65 transition-colors hover:text-white">Boat Rides</Link></li>
-                <li><Link href="/sightseeing" className="text-[12px] text-white/65 transition-colors hover:text-white">Sightseeing</Link></li>
-                <li><Link href="/stays" className="text-[12px] text-white/65 transition-colors hover:text-white">Accommodations</Link></li>
-                <li><Link href="/contact" className="text-[12px] text-white/65 transition-colors hover:text-white font-semibold">Contact Us</Link></li>
+                <li><Link href="/about" className="text-[12px] text-slate-200 transition-colors hover:text-white">About Us</Link></li>
+                <li><Link href="/boat-rides" className="text-[12px] text-slate-200 transition-colors hover:text-white">Boat Rides</Link></li>
+                <li><Link href="/sightseeing" className="text-[12px] text-slate-200 transition-colors hover:text-white">Sightseeing</Link></li>
+                <li><Link href="/stays" className="text-[12px] text-slate-200 transition-colors hover:text-white">Accommodations</Link></li>
+                <li><Link href="/contact" className="text-[12px] text-slate-200 transition-colors hover:text-white font-semibold">Contact Us</Link></li>
               </ul>
             </div>
 
             <div className="min-w-0">
               <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Support & Policies</h3>
               <ul className="space-y-2.5">
-                <li><Link href="/faq" className="text-[12px] text-white/65 transition-colors hover:text-white">FAQs</Link></li>
-                <li><Link href="/terms" className="text-[12px] text-white/65 transition-colors hover:text-white">Terms of Service</Link></li>
-                <li><Link href="/privacy" className="text-[12px] text-white/65 transition-colors hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/refund" className="text-[12px] text-white/65 transition-colors hover:text-white">Refund Policy</Link></li>
-                <li><Link href="/cancellation" className="text-[12px] text-white/65 transition-colors hover:text-white">Cancellation Policy</Link></li>
-                <li><Link href="/shipping-delivery" className="text-[12px] text-white/65 transition-colors hover:text-white">Fulfillment Policy</Link></li>
+                <li><Link href="/faq" className="text-[12px] text-slate-200 transition-colors hover:text-white">FAQs</Link></li>
+                <li><Link href="/terms" className="text-[12px] text-slate-200 transition-colors hover:text-white">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="text-[12px] text-slate-200 transition-colors hover:text-white">Privacy Policy</Link></li>
+                <li><Link href="/refund" className="text-[12px] text-slate-200 transition-colors hover:text-white">Refund Policy</Link></li>
+                <li><Link href="/cancellation" className="text-[12px] text-slate-200 transition-colors hover:text-white">Cancellation Policy</Link></li>
+                <li><Link href="/shipping-delivery" className="text-[12px] text-slate-200 transition-colors hover:text-white">Fulfillment Policy</Link></li>
               </ul>
             </div>
           </div>
@@ -97,23 +97,23 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
             <ul className="grid gap-2.5 sm:grid-cols-2 min-[1120px]:grid-cols-1">
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><MapPin className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 text-[12px] leading-relaxed text-white/72">Telangana Boat Tourism, near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm, Bhadrachalam, Telangana 507111.</span>
+                <span className="min-w-0 text-[12px] leading-relaxed text-slate-100">Telangana Boat Tourism, near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm, Bhadrachalam, Telangana 507111.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Phone className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 text-[12px] leading-relaxed text-white/72">+91 95420 69573, +91 984 984 89 82, +91 984 984 89 83, +91 984 984 89 38</span>
+                <span className="min-w-0 text-[12px] leading-relaxed text-slate-100">+91 95420 69573, +91 984 984 89 82, +91 984 984 89 83, +91 984 984 89 38</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Clock className="h-3.5 w-3.5" /></span>
-                <span className="text-[12px] leading-relaxed text-white/72">Reporting time: 7:00 AM to 7:30 AM</span>
+                <span className="text-[12px] leading-relaxed text-slate-100">Reporting time: 7:00 AM to 7:30 AM</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><ShieldCheck className="h-3.5 w-3.5" /></span>
-                <span className="text-[12px] leading-relaxed text-white/72">Carry Aadhaar Xerox for all passengers and submit it at the boat point.</span>
+                <span className="text-[12px] leading-relaxed text-slate-100">Carry Aadhaar Xerox for all passengers and submit it at the boat point.</span>
               </li>
               <li className="flex items-start gap-2.5 sm:col-span-2">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Mail className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 break-words text-[12px] leading-relaxed text-white/72">bookings@tsboattourism.org</span>
+                <span className="min-w-0 break-words text-[12px] leading-relaxed text-slate-100">bookings@tsboattourism.org</span>
               </li>
             </ul>
           </div>
@@ -126,7 +126,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                 href="https://www.google.com/maps/place/AP+TOURISM+PAPIKONDALU"
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 text-[11px] font-bold text-[var(--color-brand-teal)] transition-colors hover:text-white"
+                className="shrink-0 text-[11px] font-bold text-amber-400 transition-colors hover:text-white"
               >
                 Open Maps
               </a>
@@ -148,9 +148,9 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
 
         {/* Bottom Bar */}
         <div className="mt-3 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-4 text-center sm:flex-row sm:pr-20 sm:text-left md:pr-24">
-          <p className="text-center text-[10px] text-white/62 sm:text-left">
+          <p suppressHydrationWarning className="text-center text-[10px] text-slate-100 sm:text-left">
             © {new Date().getFullYear()} Telangana Boat Tourism. All rights reserved.
-            <span className="block mt-1 text-white/45">Telangana Boat Tourism is a trade name of NALLA SRILATHA.</span>
+            <span className="block mt-1 text-slate-300">Telangana Boat Tourism is a trade name of NALLA SRILATHA.</span>
           </p>
           <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
             Made with <Heart className="mx-0.5 h-3 w-3 fill-red-500 text-red-500" /> by <a href="https://wa.me/918886154275" target="_blank" rel="noreferrer" className="font-bold text-white transition-colors hover:text-[var(--color-brand-teal)]">Satvik</a>

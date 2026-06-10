@@ -61,7 +61,7 @@ const DEFAULT_SLIDE = {
   slug: '',
   title: 'Telangana & AP Boat Tourism',
   description: 'Journey into Nature, Peace & Culture',
-  cover_image_url: '/home/godavari-hero-banner.png',
+  cover_image_url: '/home/godavari-hero-banner.jpg',
   starting_price: null,
   region: null,
   duration: null,
@@ -303,7 +303,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
   const currentButtons = getSlideButtons();
 
   // Background image URL
-  const bgImage = activeSlide.cover_image_url || '/home/godavari-hero-banner.png';
+  const bgImage = activeSlide.cover_image_url || '/home/godavari-hero-banner.jpg';
 
   return (
     <section
@@ -321,7 +321,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
     >
       {/* ─── Background Images (all preloaded, cross-fade on active) ─── */}
       {slides.map((slide, idx) => {
-        const imgSrc = slide.cover_image_url || '/home/godavari-hero-banner.png';
+        const imgSrc = slide.cover_image_url || '/home/godavari-hero-banner.jpg';
         return (
           <div
             key={idx}
@@ -736,19 +736,23 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                     type="button"
                     onClick={() => goTo(idx)}
                     aria-label={`Go to slide ${idx + 1}`}
-                    className="relative h-1 overflow-hidden rounded-full bg-white/30 transition-all hover:bg-white/50"
-                    style={{ width: idx === activeIndex ? '2.5rem' : '0.625rem' }}
+                    className="group relative flex h-12 items-center justify-center px-1.5 focus:outline-none"
+                    style={{ width: idx === activeIndex ? '2.5rem' : '1.25rem' }}
                   >
-                    {idx === activeIndex && (
-                      <span
-                        key={`${progressKey}-${isPaused}`}
-                        className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-amber-300"
-                        style={{
-                          animation: isPaused ? 'none' : `progress-fill 5s linear forwards`,
-                          transform: isPaused ? 'scaleX(0)' : undefined,
-                        }}
-                      />
-                    )}
+                    <span
+                      className={`h-1.5 w-full rounded-full transition-all duration-300 relative overflow-hidden ${idx === activeIndex ? 'bg-amber-300' : 'bg-white/30 group-hover:bg-white/50'}`}
+                    >
+                      {idx === activeIndex && (
+                        <span
+                          key={`${progressKey}-${isPaused}`}
+                          className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-amber-300"
+                          style={{
+                            animation: isPaused ? 'none' : `progress-fill 5s linear forwards`,
+                            transform: isPaused ? 'scaleX(0)' : undefined,
+                          }}
+                        />
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>
