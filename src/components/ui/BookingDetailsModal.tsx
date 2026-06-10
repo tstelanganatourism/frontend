@@ -26,6 +26,7 @@ interface Passenger {
   gender: string | null;
   is_child: boolean;
   phone_number: string | null;
+  is_primary?: boolean;
 }
 
 interface PaymentLedgerEntry {
@@ -70,6 +71,7 @@ interface BookingDetails {
   booked_by_name?: string | null;
   booked_by_email?: string | null;
   booked_by_role?: string | null;
+  customer_email?: string | null;
   agent_commission?: number | null;
   agent_payable?: number | null;
   boarding_point: {
@@ -115,6 +117,7 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; text: string; ri
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   RAZORPAY: 'Online (Razorpay)',
+  PHONEPE: 'Online (PhonePe)',
   CASH: 'Cash',
   BANK_TRANSFER: 'Bank Transfer',
   ADMIN_MANUAL: 'Manual (Admin)',
@@ -155,7 +158,7 @@ function PaymentLedgerPanel({ ledger, targetTotalAmount }: { ledger: PaymentLedg
       {ledger.map((entry, idx) => {
         const statusStyle = PAYMENT_STATUS_STYLE[entry.status] ?? { label: entry.status, cls: 'bg-slate-50 text-slate-600 border-slate-200' };
         const methodLabel = PAYMENT_METHOD_LABEL[entry.payment_method] ?? entry.payment_method;
-        const isOnline = entry.collected_by_type === 'RAZORPAY';
+        const isOnline = entry.collected_by_type === 'RAZORPAY' || entry.collected_by_type === 'PHONEPE' || entry.payment_method === 'PHONEPE';
 
         return (
           <div key={entry.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-slate-100">
@@ -538,37 +541,91 @@ export default function BookingDetailsModal({
                       <Users className="h-4 w-4 text-slate-400" /> Passenger Roster
                     </h4>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {booking.passengers && booking.passengers.length > 0 ? (
-                        booking.passengers.map((p, idx) => (
-                          <div key={idx} className={`flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:border-slate-200 transition-colors ${booking.passengers.length === 1 ? 'sm:col-span-2' : ''}`}>
+                      {(() => {
+                        if (!booking.passengers || booking.passengers.length === 0) {
+                          return <p className="col-span-2 text-slate-400 text-xs italic py-2">No traveler records found.</p>;
+                        }
+
+                        const detailed: any[] = [];
+                        let quickAdults = 0;
+                        let quickChildren = 0;
+
+                        booking.passengers.forEach((p: any) => {
+                          const isQuickGuest = !p.is_primary && (
+                            booking.pricing_snapshot?.booking_mode === 'QUICK' ||
+                            p.full_name.toLowerCase().includes("quick ticket") ||
+                            p.full_name.toLowerCase().includes("guest adult") ||
+                            p.full_name.toLowerCase().includes("guest child")
+                          );
+                          if (isQuickGuest) {
+                            if (p.age >= 11) quickAdults++;
+                            else quickChildren++;
+                          } else {
+                            detailed.push(p);
+                          }
+                        });
+
+                        const typeLabel = booking.target_type === 'ROOM' ? (
+                          <span className="inline-block px-2 py-1 rounded bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider">ROOM</span>
+                        ) : (
+                          <span className="inline-block px-2 py-1 rounded bg-pink-100 text-pink-700 text-[10px] font-black uppercase tracking-wider">
+                            {booking.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING'}
+                          </span>
+                        );
+
+                        const elements = detailed.map((p, idx) => (
+                          <div key={`det-${idx}`} className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:border-slate-200 transition-colors">
                             <div className="h-9 w-9 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center font-bold text-xs shrink-0">
-                              {p.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                              {p.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="mb-2">
-                                {booking.target_type === 'ROOM' ? (
-                                  <span className="inline-block px-2 py-1 rounded bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider">ROOM</span>
-                                ) : (
-                                  <span className="inline-block px-2 py-1 rounded bg-pink-100 text-pink-700 text-[10px] font-black uppercase tracking-wider">
-                                    {booking.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING'}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="font-bold text-slate-800 text-xs truncate">{p.full_name}</p>
+                              <div className="mb-2">{typeLabel}</div>
+                              <p className="font-bold text-slate-800 text-xs truncate">
+                                {p.full_name}
+                              </p>
                               <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">
                                 {p.gender || '—'} • Age {p.age} {p.is_child ? '(Child)' : ''}
                               </p>
+                              <div className="mt-1">
+                              {(p.phone_number || booking.passengers?.[0]?.phone_number) && (
+                                <a href={`tel:${p.phone_number || booking.passengers?.[0]?.phone_number}`} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-[10px] font-black text-slate-600 hover:text-slate-800 transition-colors border border-slate-200">
+                                  <Phone className="h-3 w-3" />
+                                  <span>{p.phone_number || booking.passengers?.[0]?.phone_number}</span>
+                                </a>
+                              )}
                             </div>
-                            {p.phone_number && (
-                              <a href={`tel:${p.phone_number}`} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors" title={p.phone_number}>
-                                <Phone className="h-3.5 w-3.5" />
-                              </a>
-                            )}
+                            </div>
                           </div>
-                        ))
-                      ) : (
-                        <p className="col-span-2 text-slate-400 text-xs italic py-2">No traveler records found.</p>
-                      )}
+                        ));
+
+                        if (quickAdults > 0) {
+                          elements.push(
+                            <div key="quick-adults" className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm opacity-80">
+                              <div className="h-9 w-9 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs shrink-0">QT</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="mb-2">{typeLabel}</div>
+                                <p className="font-bold text-slate-600 text-xs italic">Not Provided (Adult) × {quickAdults}</p>
+                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Adult Count</p>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (quickChildren > 0) {
+                          elements.push(
+                            <div key="quick-children" className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm opacity-80">
+                              <div className="h-9 w-9 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs shrink-0">QT</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="mb-2">{typeLabel}</div>
+                                <p className="font-bold text-slate-600 text-xs italic">Not Provided (Child) × {quickChildren}</p>
+                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Child Count</p>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return elements;
+                      })()}
                     </div>
                   </div>
 
@@ -584,7 +641,7 @@ export default function BookingDetailsModal({
                           <div key={idx} className="flex flex-col justify-center p-3.5 rounded-2xl bg-slate-50/50 border border-slate-100 shadow-sm">
                             <span className="text-xs font-bold text-slate-800">{ts.title}</span>
                             <span className="text-[10px] text-slate-500 font-semibold mt-1">
-                              {describeTransport(ts, passengerCount)} • {formatCurrency(Number(ts.item_total || 0))}
+                              {describeTransport(ts, booking.adult_count, booking.child_count)} • {formatCurrency(Number(ts.item_total || 0))}
                             </span>
                           </div>
                         ))}
@@ -592,7 +649,7 @@ export default function BookingDetailsModal({
                           <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 shadow-sm">
                             <span className="text-xs font-bold text-emerald-800">Refreshments</span>
                             <span className="text-[10px] text-emerald-600 font-semibold mt-1">
-                              Add-on for {passengerCount} pax • {formatCurrency(refreshmentAmount)}
+                              Add-on for {booking.adult_count} Adults + {booking.child_count} Children • {formatCurrency(refreshmentAmount)}
                             </span>
                           </div>
                         )}
@@ -751,6 +808,14 @@ export default function BookingDetailsModal({
                         </span>
                       </div>
                     )}
+                    {booking.customer_email && (
+                      <div className="text-slate-500">
+                        Tourist Email:{' '}
+                        <span className="text-slate-700 ml-1 lowercase">
+                          {booking.customer_email}
+                        </span>
+                      </div>
+                    )}
                     {booking.agent_id && (
                       <>
                         <div className="text-slate-400">Agent Partner ID: AGENT_{String(booking.agent_id).padStart(3, '0')}</div>
@@ -811,24 +876,22 @@ export default function BookingDetailsModal({
                       </button>
                     )}
 
-                    {booking.status !== 'REFUNDED' && (
-                      <button
-                        onClick={handleDownloadTicket}
-                        disabled={isPreparingTicket}
-                        className={`inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56] disabled:opacity-80 disabled:cursor-not-allowed`}
-                      >
-                        {isPreparingTicket ? (
-                          <>
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                            Preparing Ticket...
-                          </>
-                        ) : (
-                          <>
-                            <Ticket className="h-4 w-4" /> View Ticket
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      onClick={handleDownloadTicket}
+                      disabled={isPreparingTicket}
+                      className={`inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56] disabled:opacity-80 disabled:cursor-not-allowed`}
+                    >
+                      {isPreparingTicket ? (
+                        <>
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Preparing Ticket...
+                        </>
+                      ) : (
+                        <>
+                          <Ticket className="h-4 w-4" /> View Ticket
+                        </>
+                      )}
+                    </button>
 
                     {booking.target_type === 'PACKAGE' && (
                       <button

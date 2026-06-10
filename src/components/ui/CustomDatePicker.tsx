@@ -12,6 +12,9 @@ export const CustomDatePicker = ({
   disabled = false,
   align = 'left',
   allowPast = false,
+  availableDates,
+  onMonthChange,
+  isAdmin = false,
 }: {
   label?: string;
   value: string;
@@ -21,6 +24,9 @@ export const CustomDatePicker = ({
   disabled?: boolean;
   align?: 'left' | 'right';
   allowPast?: boolean;
+  availableDates?: Set<string>;
+  onMonthChange?: (monthStr: string) => void;
+  isAdmin?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,8 +84,11 @@ export const CustomDatePicker = ({
 
   const nextMonth = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); }
-    else { setCalMonth(calMonth + 1); }
+    let y = calYear;
+    let m = calMonth + 1;
+    if (m === 12) { m = 0; y = y + 1; }
+    setCalMonth(m); setCalYear(y);
+    if (onMonthChange) onMonthChange(`${y}-${String(m + 1).padStart(2, '0')}`);
   };
 
   const prevMonth = (e: React.MouseEvent) => {
@@ -88,8 +97,11 @@ export const CustomDatePicker = ({
       const minD = min ? parseDateLocal(min) : todayIST();
       if (calYear < minD.getFullYear() || (calYear === minD.getFullYear() && calMonth <= minD.getMonth())) return;
     }
-    if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }
-    else { setCalMonth(calMonth - 1); }
+    let y = calYear;
+    let m = calMonth - 1;
+    if (m === -1) { m = 11; y = y - 1; }
+    setCalMonth(m); setCalYear(y);
+    if (onMonthChange) onMonthChange(`${y}-${String(m + 1).padStart(2, '0')}`);
   };
 
   const renderDays = () => {
@@ -101,14 +113,20 @@ export const CustomDatePicker = ({
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = toYYYYMMDD(calYear, calMonth, i);
       const isPast = !allowPast && dateStr < minDateStr;
+      
+      // Check availableDates (admins can bypass)
+      const isUnavailable = !isAdmin && availableDates !== undefined && !availableDates.has(dateStr);
+      
+      const isDisabled = isPast || isUnavailable;
       const isSelected = dateStr === value;
+      
       days.push(
         <button
           key={i}
           type="button"
-          disabled={isPast}
+          disabled={isDisabled}
           onClick={() => handleDaySelect(i)}
-          className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${isPast ? 'text-slate-200 cursor-not-allowed line-through' : isSelected ? 'bg-[#1a6b7a] text-white shadow-md' : 'text-slate-700 hover:bg-slate-100 cursor-pointer'}`}
+          className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${isPast ? 'text-slate-200 cursor-not-allowed line-through' : isUnavailable ? 'text-slate-300 bg-slate-50 cursor-not-allowed' : isSelected ? 'bg-[#1a6b7a] text-white shadow-md' : 'text-slate-700 hover:bg-slate-100 cursor-pointer'}`}
         >
           {i}
         </button>

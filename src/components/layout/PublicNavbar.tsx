@@ -33,15 +33,20 @@ export default function PublicNavbar() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const user = useAuthStore((s) => s.user);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setMoreOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -80,6 +85,10 @@ export default function PublicNavbar() {
     });
     return activeMap;
   }, [pathname]);
+
+  const primaryLinks = React.useMemo(() => navLinks.slice(0, 4), []);
+  const secondaryLinks = React.useMemo(() => navLinks.slice(4), []);
+  const isSecondaryActive = React.useMemo(() => secondaryLinks.some(link => activeLinks[link.name]), [activeLinks, secondaryLinks]);
 
   const handleNavigate = () => {
     setIsOpen(false);
@@ -143,7 +152,8 @@ export default function PublicNavbar() {
             {/* Desktop Navigation (Center) - Visible from lg (1024px) */}
             <div className="hidden min-w-0 flex-1 justify-center min-[980px]:flex min-[980px]:px-1 xl:px-2 2xl:px-4">
               <div className="relative flex min-w-0 items-center gap-0 2xl:gap-0.5 py-1">
-                {navLinks.map((link, index) => {
+                {/* Primary Links: Always visible in desktop layout */}
+                {primaryLinks.map((link, index) => {
                   const isActive = activeLinks[link.name];
                   return (
                     <Link
@@ -156,7 +166,6 @@ export default function PublicNavbar() {
                       className="relative inline-flex h-9 items-center justify-center rounded-full min-[980px]:px-1.5 min-[980px]:text-[10px] xl:px-2.5 xl:text-[11.5px] 2xl:px-3.5 2xl:text-[13px] font-extrabold transition-colors duration-200"
                       style={{ color: isActive ? '#ffffff' : 'var(--color-brand-river)' }}
                     >
-                      {/* Active Background Pill */}
                       {isActive && (
                         <motion.span
                           layoutId="activeNavBackground"
@@ -165,7 +174,6 @@ export default function PublicNavbar() {
                         />
                       )}
 
-                      {/* Hover Background Pill */}
                       <AnimatePresence>
                         {hoveredIndex === index && !isActive && (
                           <motion.span
@@ -184,6 +192,114 @@ export default function PublicNavbar() {
                     </Link>
                   );
                 })}
+
+                {/* Secondary Links: Render directly only on 2xl screens (1536px+) */}
+                {secondaryLinks.map((link, index) => {
+                  const actualIndex = primaryLinks.length + index;
+                  const isActive = activeLinks[link.name];
+                  return (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      onClick={handleNavigate}
+                      onMouseEnter={() => setHoveredIndex(actualIndex)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className="relative hidden h-9 items-center justify-center rounded-full min-[1600px]:inline-flex min-[1600px]:px-3.5 min-[1600px]:text-[13px] font-extrabold transition-colors duration-200"
+                      style={{ color: isActive ? '#ffffff' : 'var(--color-brand-river)' }}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="activeNavBackground"
+                          className="absolute inset-0 rounded-full bg-[var(--color-brand-river)] shadow-[0_6px_16px_rgba(15,61,86,0.18)]"
+                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                        />
+                      )}
+
+                      <AnimatePresence>
+                        {hoveredIndex === actualIndex && !isActive && (
+                          <motion.span
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="absolute inset-0 rounded-full bg-slate-100/90 z-[-1] border border-slate-200/50 shadow-sm"
+                            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                          />
+                        )}
+                      </AnimatePresence>
+
+                      <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
+                        {link.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+
+                {/* 'More' dropdown for secondary links: visible on screens below 1600px */}
+                <div className="relative inline-flex min-[1600px]:hidden" ref={moreRef}>
+                  <button
+                    onClick={() => setMoreOpen(!moreOpen)}
+                    onMouseEnter={() => setHoveredIndex(99)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    className="relative inline-flex h-9 items-center justify-center rounded-full min-[980px]:px-2.5 min-[980px]:text-[10px] xl:px-3.5 xl:text-[11.5px] font-extrabold transition-colors duration-200 cursor-pointer"
+                    style={{ color: isSecondaryActive ? '#ffffff' : 'var(--color-brand-river)' }}
+                  >
+                    {isSecondaryActive && (
+                      <motion.span
+                        layoutId="activeNavBackground"
+                        className="absolute inset-0 rounded-full bg-[var(--color-brand-river)] shadow-[0_6px_16px_rgba(15,61,86,0.18)]"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+
+                    <AnimatePresence>
+                      {hoveredIndex === 99 && !isSecondaryActive && (
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="absolute inset-0 rounded-full bg-slate-100/90 z-[-1] border border-slate-200/50 shadow-sm"
+                          transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                        />
+                      )}
+                    </AnimatePresence>
+
+                    <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap select-none">
+                      More <ChevronDown className="h-3 w-3 opacity-80" />
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {moreOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        className="absolute left-1/2 -translate-x-1/2 mt-10 w-44 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden py-1.5"
+                      >
+                        {secondaryLinks.map((link) => {
+                          const isLinkActive = activeLinks[link.name];
+                          return (
+                            <Link
+                              key={link.name}
+                              href={link.href}
+                              onClick={() => { setMoreOpen(false); handleNavigate(); }}
+                              className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-extrabold transition-colors ${
+                                isLinkActive 
+                                  ? 'bg-slate-50 text-[var(--color-brand-teal)]' 
+                                  : 'text-slate-700 hover:bg-slate-50 hover:text-[var(--color-brand-teal)]'
+                              }`}
+                            >
+                              <link.icon className={`h-4 w-4 shrink-0 ${isLinkActive ? 'text-[var(--color-brand-teal)]' : 'text-slate-400'}`} />
+                              {link.name}
+                            </Link>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
 

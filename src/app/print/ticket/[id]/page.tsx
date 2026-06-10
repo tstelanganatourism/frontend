@@ -61,6 +61,7 @@ interface BookingDetails {
   agent_phone?: string | null;
   agent_gst?: string | null;
   agent_company?: string | null;
+  customer_email?: string | null;
   room_checkin?: string | null;
   room_checkout?: string | null;
   room_checkout_date?: string | null;
@@ -128,7 +129,9 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
 
   const isRoom = booking.target_type === 'ROOM';
   const isBoatRide = booking.package_type === 'TOUR';
-  const ticketTitle = isRoom ? 'HOTEL/RESORT TICKET' : (isBoatRide ? 'BOAT RIDE TICKET' : 'SIGHTSEEING TICKET');
+  let ticketTitle = isRoom ? 'HOTEL/RESORT TICKET' : (isBoatRide ? 'BOAT RIDE TICKET' : 'SIGHTSEEING TICKET');
+  if (booking.status === 'CANCELLED') ticketTitle = 'CANCELLED TICKET';
+  if (booking.status === 'REFUNDED') ticketTitle = 'REFUNDED TICKET';
 
   const reportingTime = isRoom ? (booking.room_checkin || 'TBA') : (booking.boarding_point?.departure_time || 'TBA');
   const boardingTitle = isRoom
@@ -245,25 +248,35 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         }
 
         /* ── TICKET TITLE ── */
-        .ticket-title-wrap { text-align: center; padding: 14px 0 8px; background: #fff; }
+        .ticket-title-wrap {
+          text-align: center; padding: 10px 20px 0; background: #fff;
+          display: flex; align-items: center; gap: 12px;
+        }
+        .ticket-title-rule { flex: 1; height: 2px; background: linear-gradient(to right, transparent, #c8a45a); }
+        .ticket-title-rule.right { background: linear-gradient(to left, transparent, #c8a45a); }
+        .ticket-title-inner { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+        .ticket-type-badge {
+          font-size: 10px; font-weight: 900; color: #c8a45a;
+          text-transform: uppercase; letter-spacing: 3px;
+        }
         .ticket-title {
-          font-size: 28px; font-weight: 900; color: #0a2351;
-          letter-spacing: 2px; position: relative; display: inline-block;
+          font-size: 24px; font-weight: 900; color: #0a2351;
+          letter-spacing: 2px;
         }
-        .ticket-title::before, .ticket-title::after {
-          content: '◆ ◆ ◆'; font-size: 8px; color: #c8a45a; position: absolute;
-          top: 50%; transform: translateY(-50%); letter-spacing: 3px;
-        }
-        .ticket-title::before { right: calc(100% + 12px); }
-        .ticket-title::after { left: calc(100% + 12px); }
-        .ticket-stars { color: #c8a45a; font-size: 14px; letter-spacing: 5px; margin-top: 4px; margin-bottom: 6px; }
 
         /* ── PKG RIBBON ── */
         .pkg-ribbon {
-          background: #0a2351; color: #fff; text-align: center;
-          padding: 8px 20px; font-size: 13px; font-weight: 800;
-          letter-spacing: 2px; text-transform: uppercase;
+          background: linear-gradient(135deg, #0a2351 0%, #1a3a6b 50%, #0a2351 100%);
+          color: #fff; text-align: center;
+          padding: 10px 20px; font-size: 15px; font-weight: 900;
+          letter-spacing: 1.5px; text-transform: uppercase;
+          border-top: 3px solid #c8a45a;
           margin-bottom: 0;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .pkg-ribbon-sub {
+          font-size: 9px; font-weight: 700; color: #c8a45a;
+          letter-spacing: 2px; text-transform: uppercase; margin-top: 2px;
         }
 
         /* ── BANNER ── */
@@ -342,12 +355,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         /* Journey card */
         .journey-card { flex: 1; border: 1.5px solid #ddd; border-radius: 6px; overflow: hidden; }
         .jt-timeline { padding: 8px 10px; }
-        .jt-event { display: flex; gap: 10px; margin-bottom: 6px; align-items: flex-start; }
+        .jt-event { display: flex; gap: 10px; padding-bottom: 12px; align-items: stretch; }
         .jt-dot-col { display: flex; flex-direction: column; align-items: center; width: 12px; flex-shrink: 0; }
         .jt-dot { width: 8px; height: 8px; border-radius: 50%; background: #0a2351; border: 2px solid #9fa8da; flex-shrink: 0; }
         .jt-line { width: 2px; flex: 1; background: #c5cae9; min-height: 12px; }
-        .jt-time { font-size: 9.5px; font-weight: 800; color: #0a2351; width: 55px; flex-shrink: 0; }
-        .jt-desc { font-size: 9.5px; font-weight: 600; color: #444; line-height: 1.4; }
+        .jt-time { font-size: 9.5px; font-weight: 800; color: #0a2351; min-width: 65px; white-space: nowrap; flex-shrink: 0; }
+        .jt-desc { font-size: 9.5px; font-weight: 600; color: #444; line-height: 1.4; flex: 1; }
 
         /* ── RULES GRID ── */
         .rules-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
@@ -387,6 +400,30 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         @media print { .no-print { display: none !important; } }
       ` }}></style>
 
+      {(booking.status === 'CANCELLED' || booking.status === 'REFUNDED') && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 100, pointerEvents: 'none', overflow: 'hidden'
+        }}>
+          <div style={{
+            transform: 'rotate(-45deg)',
+            fontSize: '120px',
+            fontWeight: 900,
+            color: 'rgba(239, 68, 68, 0.15)', /* red-500 with low opacity */
+            textTransform: 'uppercase',
+            letterSpacing: '10px',
+            border: '8px solid rgba(239, 68, 68, 0.15)',
+            padding: '20px 40px',
+            borderRadius: '20px',
+            whiteSpace: 'nowrap'
+          }}>
+            {booking.status}
+          </div>
+        </div>
+      )}
+
       {/* ═══════ HEADER ═══════ */}
       <div className="header">
         <div className="state-brand ts">
@@ -398,7 +435,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
           </div>
         </div>
         <div className="header-center">
-          <img src="/icon-512x512.png" alt="Telangana and AP Boat Tourism" />
+          <img src="/apple-touch-icon.png" alt="Telangana and AP Boat Tourism" />
           <div className="platform-text">Official Booking Platform</div>
         </div>
         <div className="state-brand ap">
@@ -413,15 +450,22 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
 
       {/* ═══════ TICKET TITLE ═══════ */}
       <div className="ticket-title-wrap">
-        <div className="ticket-title">{ticketTitle}</div>
-        <div className="ticket-stars">★ ★ ★</div>
+        <div className="ticket-title-rule" />
+        <div className="ticket-title-inner">
+          <div className="ticket-type-badge">✦ {isRoom ? 'Room / Stay Booking' : isBoatRide ? 'Boat Tour Booking' : 'Sightseeing Booking'} ✦</div>
+          <div className="ticket-title">{ticketTitle}</div>
+        </div>
+        <div className="ticket-title-rule right" />
       </div>
 
       {/* ═══════ PKG RIBBON ═══════ */}
-      <div className="pkg-ribbon">{booking.package_title.toUpperCase()}</div>
+      <div className="pkg-ribbon">
+        {booking.package_title.toUpperCase()}
+        {booking.variant_title && <div className="pkg-ribbon-sub">{booking.variant_title}</div>}
+      </div>
 
       {/* ═══════ BANNER IMAGE ═══════ */}
-      <img src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779480316/27d6478a-0032-4cc3-a0e0-20eec56de773.png" className="banner-img" alt="Telangana Boat Tourism" />
+      <img src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1780902910/8f1dd045-5038-4ae4-9b7c-1f8ba27c897f_uftvpr.png" className="banner-img" alt="AP and Telangana Boat Tourism" />
 
       <div className="body">
         {/* ═══════ TOP GRID ═══════ */}
@@ -438,6 +482,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 <div className="bk-row">
                   <div className="bk-icon">📞</div>
                   <div><div className="bk-lbl">Customer Phone</div><div className="bk-val">{primaryPassenger.phone_number}</div></div>
+                </div>
+              )}
+              {booking.customer_email && (
+                <div className="bk-row">
+                  <div className="bk-icon">✉️</div>
+                  <div><div className="bk-lbl">Customer Email</div><div className="bk-val">{booking.customer_email}</div></div>
                 </div>
               )}
               <div className="bk-row">
@@ -535,14 +585,42 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                     )}
                   </>
                 )}
+                {/* Location link for room or boarding point */}
+                {isRoom && booking.room_address && (
+                  <div style={{ marginTop: '10px', padding: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                    <strong style={{ color: '#0f172a', fontSize: '9px', display: 'flex', alignItems: 'center', gap: '4px' }}>📍 {booking.package_title} Location</strong>
+                    <div style={{ fontSize: '8px', color: '#475569', marginTop: '2px', marginBottom: '6px' }}>{booking.room_address}</div>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(booking.room_address)}`}
+                      style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 800, textDecoration: 'none', border: '1px solid #bae6fd' }}
+                    >
+                      🗺️ Open in Google Maps
+                    </a>
+                  </div>
+                )}
+                {!isRoom && booking.boarding_point?.address && (
+                  <div style={{ marginTop: '10px', padding: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                    <strong style={{ color: '#0f172a', fontSize: '9px', display: 'flex', alignItems: 'center', gap: '4px' }}>📍 Boarding Point Address</strong>
+                    <div style={{ fontSize: '8px', color: '#475569', marginTop: '2px', marginBottom: '6px' }}>
+                      {booking.boarding_point.address}
+                      {booking.boarding_point.landmark && <>, {booking.boarding_point.landmark}</>}
+                    </div>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent((booking.boarding_point.address || '') + ' ' + (booking.boarding_point.landmark || ''))}`}
+                      style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 800, textDecoration: 'none', border: '1px solid #bae6fd' }}
+                    >
+                      🗺️ Open in Google Maps
+                    </a>
+                  </div>
+                )}
               </div>
               <div className="divider-v" />
               <div className="note-addr-col">
                 <strong>📞 Contact Numbers</strong>
-                +91 95420 69573(Office Number)<br />
                 +91 984 984 89 82<br />
                 +91 984 984 89 83<br />
-                +91 984 984 89 38
+                +91 984 984 89 38<br />
+                +91 95420 69573 (Bhadrachalam Office)
               </div>
             </div>
             <div className="note-report-bar">
@@ -565,24 +643,75 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             </tr>
           </thead>
           <tbody>
-            {booking.passengers.map((p, idx) => (
-              <tr key={idx}>
-                <td>{idx + 1}</td>
-                <td>
-                  {p.full_name}
-                  {p.is_primary && <span className="lead-badge">LEAD</span>}
-                  {p.phone_number && <div style={{ fontSize: '8.5px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number}</div>}
-                </td>
-                <td>{p.age}</td>
-                <td>{p.gender || '—'}</td>
-                <td>{p.id_proof_number ? `${p.id_proof_number}` : '(Not Provided)'}</td>
-                <td>
-                  <span className={`type-chip ${p.age >= 11 ? 'adult-chip' : 'child-chip'}`}>
-                    {p.age >= 11 ? 'Adult' : 'Child'}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {(() => {
+              let rowIndex = 1;
+              const detailed: any[] = [];
+              let quickAdults = 0;
+              let quickChildren = 0;
+
+              booking.passengers.forEach((p: any) => {
+                const isQuickGuest = !p.is_primary && (
+                  booking.pricing_snapshot?.booking_mode === 'QUICK' ||
+                  (p.full_name || '').toLowerCase().includes("quick ticket") ||
+                  (p.full_name || '').toLowerCase().includes("guest adult") ||
+                  (p.full_name || '').toLowerCase().includes("guest child") ||
+                  (p.full_name || '').toLowerCase().includes("quick ticket(not provided)")
+                );
+
+                if (isQuickGuest) {
+                  if (p.age >= 11) quickAdults++;
+                  else quickChildren++;
+                } else {
+                  detailed.push(p);
+                }
+              });
+
+              const rows = detailed.map((p, idx) => (
+                <tr key={`det-${idx}`}>
+                  <td>{rowIndex++}</td>
+                  <td>
+                    {p.full_name}
+                    {p.is_primary && <span className="lead-badge">LEAD</span>}
+                    {(p.phone_number || primaryPassenger?.phone_number) && <div style={{ fontSize: '8.5px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number || primaryPassenger?.phone_number}</div>}
+                  </td>
+                  <td>{p.age}</td>
+                  <td>{p.gender || '—'}</td>
+                  <td>{p.id_proof_number ? `${p.id_proof_number}` : '(Not Provided)'}</td>
+                  <td>
+                    <span className={`type-chip ${p.age >= 11 ? 'adult-chip' : 'child-chip'}`}>
+                      {p.age >= 11 ? 'Adult' : 'Child'}
+                    </span>
+                  </td>
+                </tr>
+              ));
+
+              if (quickAdults > 0) {
+                rows.push(
+                  <tr key="quick-adults">
+                    <td>{rowIndex++}</td>
+                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Adult) × {quickAdults}</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td><span className="type-chip adult-chip">Adult</span></td>
+                  </tr>
+                );
+              }
+              if (quickChildren > 0) {
+                rows.push(
+                  <tr key="quick-children">
+                    <td>{rowIndex++}</td>
+                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Child) × {quickChildren}</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td><span className="type-chip child-chip">Child</span></td>
+                  </tr>
+                );
+              }
+
+              return rows;
+            })()}
           </tbody>
         </table>
         <div className="note-text">Note: Aadhaar is mandatory for Adults (11+ years). Children (4-10 years) Aadhaar is optional.</div>
@@ -612,7 +741,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               <div className="pay-row" key={`transport-${idx}`}>
                 <span>
                   {ts.title || 'Transport'}
-                  <small>{describeTransport(ts, passengerCount)}</small>
+                  <small>{describeTransport(ts, booking.adult_count, booking.child_count)}</small>
                 </span>
                 <span>{money(ts.item_total || 0, 2)}</span>
               </div>
@@ -621,7 +750,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               <div className="pay-row">
                 <span>
                   Refreshments
-                  <small>{refreshmentAmount > 0 ? `Add-on for ${passengerCount} pax` : `Included for ${passengerCount} pax`}</small>
+                  <small>{refreshmentAmount > 0 ? `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children` : `Included for ${booking.adult_count} Adults + ${booking.child_count} Children`}</small>
                 </span>
                 <span>{refreshmentAmount > 0 ? money(refreshmentAmount, 2) : 'Included'}</span>
               </div>
@@ -636,11 +765,15 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             {booking.remaining_balance > 0 && (
               <div className="pay-bal"><span>REMAINING BALANCE</span><span>{money(booking.remaining_balance, 2)}</span></div>
             )}
-            {capturedPayments.length > 0 && (
+            {/* For agent bookings, hide the internal payment method (Razorpay/PhonePe) — the tourist doesn't need to see that */}
+            {!(booking.agent_id || booking.pricing_snapshot?.agent_metadata || booking.agent_name || booking.pricing_snapshot?.agent_discount || booking.pricing_snapshot?.agent_payable) && capturedPayments.length > 0 && (
               <div className="pay-note">
                 <span className="pay-note-icon">✓</span>
                 <span>
-                  Payments: {capturedPayments.map((payment) => `${money(payment.amount, 2)} ${payment.payment_method}`).join(', ')}
+                  Payments: {capturedPayments.map((payment) => {
+                    const methodNames: Record<string, string> = { RAZORPAY: 'PhonePe', PHONEPE: 'PhonePe', CASH: 'Cash', BANK_TRANSFER: 'Bank Transfer', ADMIN_MANUAL: 'Admin' };
+                    return `${money(payment.amount, 2)} ${methodNames[payment.payment_method] ?? payment.payment_method}`;
+                  }).join(', ')}
                 </span>
               </div>
             )}

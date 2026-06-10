@@ -56,17 +56,24 @@ export function getBaseFareExcludingAddons(
   return Math.max(0, Number(subtotal || 0) - getTransportAmount(selections) - getRefreshmentAmount(pricingSnapshot));
 }
 
-export function describeTransport(item: TransportSelection, passengerCount?: number) {
+export function describeTransport(item: TransportSelection, adultCount?: number, childCount?: number) {
   const quantity = Number(item.quantity || 1);
   const capacity = item.capacity ? ` (${item.capacity} Seater)` : '';
+  const paxLabel = (adultCount !== undefined && childCount !== undefined)
+    ? `${adultCount} Adult${adultCount !== 1 ? 's' : ''} + ${childCount} Child${childCount !== 1 ? 'ren' : ''}`
+    : adultCount !== undefined
+      ? `${adultCount} pax`
+      : '';
   if (item.type === 'SHARED') {
-    return (passengerCount ? `Shared transport for ${passengerCount} pax` : 'Shared transport') + capacity;
+    return (paxLabel ? `Shared transport for ${paxLabel}` : 'Shared transport') + capacity;
   }
   return `${quantity} separate vehicle${quantity > 1 ? 's' : ''}${capacity}`;
 }
 
+
 export function getPaymentMethodLabel(method?: string | null) {
   const key = (method || '').toUpperCase();
+  if (key === 'PHONEPE') return 'Online (PhonePe)';
   if (key === 'RAZORPAY') return 'Online (Razorpay)';
   if (key === 'BANK_TRANSFER') return 'Bank Transfer';
   if (key === 'CASH') return 'Cash';

@@ -21,14 +21,56 @@
  */
 export async function downloadFileViaFetch(url: string, filename: string): Promise<void> {
   try {
+    const urlObj = new URL(url, window.location.href);
+    const keyParam = urlObj.searchParams.get('key');
+
+    // 1. Open in new page for instant viewing
+    if (keyParam) {
+      // Open a blank tab synchronously to prevent browser popup blockers from blocking it
+      const newTab = window.open('', '_blank');
+      
+      // Request a signed preview URL (without attachment headers) from the backend
+      const apiBase = urlObj.origin === 'null' ? '' : urlObj.origin;
+      
+      fetch(`${apiBase}/api/v1/documents/signed-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ object_key: keyParam }),
+        credentials: 'include'
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to get signed url: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (newTab && data.url) {
+            newTab.location.href = data.url;
+          }
+        })
+        .catch((err) => {
+          console.error('[downloadFileViaFetch] Signed URL preview failed:', err);
+          if (newTab) newTab.close();
+        });
+    } else {
+      // Direct PDF URL (Google Drive/Cloudinary): open directly in a new tab
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    // 2. Perform the background download asynchronously via same-origin fetch.
+    // Since we stream the document from the same-origin backend proxy, there are no CORS blocks,
+    // and since it is an async fetch request, the parent window does not start a navigation sequence,
+    // completely preventing Next.js route transition loaders or page reloads from triggering.
+    const isSameOrigin = urlObj.origin === window.location.origin;
+
     const response = await fetch(url, {
       method: 'GET',
-      // Follow redirects (handles the 307 redirect from backend → R2)
-      redirect: 'follow',
+      credentials: isSameOrigin ? 'include' : 'omit',
     });
 
     if (!response.ok) {
-      throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch file stream: ${response.status} ${response.statusText}`);
     }
 
     const blob = await response.blob();
@@ -37,18 +79,21 @@ export async function downloadFileViaFetch(url: string, filename: string): Promi
     const link = document.createElement('a');
     link.href = objectUrl;
     link.download = filename;
-    link.style.display = 'none';
+    
+    // Stop propagation of click to guarantee Next.js router doesn't intercept the local blob click
+    link.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
     document.body.appendChild(link);
     link.click();
 
-    // Cleanup after a short delay to allow the download to initiate
+    // Clean up
     setTimeout(() => {
       URL.revokeObjectURL(objectUrl);
       document.body.removeChild(link);
     }, 150);
   } catch (error) {
     console.error('[downloadFileViaFetch] Failed to download:', error);
-    // Fallback: open in a new tab so the user can manually save
-    window.open(url, '_blank', 'noopener,noreferrer');
   }
 }

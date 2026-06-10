@@ -8,7 +8,6 @@ import {
   History, IndianRupee, TrendingUp, Banknote, Wifi
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { useRazorpay } from "react-razorpay";
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -28,6 +27,7 @@ interface Passenger {
   id_proof_type: string | null;
   id_proof_number: string | null;
   is_lead: boolean;
+  is_primary?: boolean;
 }
 
 interface BoardingPoint {
@@ -109,6 +109,7 @@ function formatDateTime(iso: string | null) {
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   RAZORPAY: 'Online (Razorpay)',
+  PHONEPE: 'Online (PhonePe)',
   CASH: 'Cash',
   BANK_TRANSFER: 'Bank Transfer',
   ADMIN_MANUAL: 'Manual (Admin)',
@@ -179,7 +180,7 @@ function PaymentTimeline({ ledger }: { ledger: PaymentLedgerEntry[] }) {
         {activeLedger.map((entry, idx) => {
           const statusStyle = PAYMENT_STATUS_STYLE[entry.status] ?? { label: entry.status, cls: 'bg-slate-50 text-slate-600 border-slate-200' };
           const methodLabel = PAYMENT_METHOD_LABEL[entry.payment_method] ?? entry.payment_method;
-          const isOnline = entry.collected_by_type === 'RAZORPAY';
+          const isOnline = entry.collected_by_type === 'RAZORPAY' || entry.collected_by_type === 'PHONEPE' || entry.payment_method === 'PHONEPE';
           return (
             <div
               key={entry.id}
@@ -242,7 +243,6 @@ export default function BookingDetailPage() {
   const router = useRouter();
   const bookingId = params.id as string;
 
-  const { Razorpay } = useRazorpay();
   const { user } = useAuthStore();
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -315,93 +315,17 @@ export default function BookingDetailPage() {
       const res = await apiClient.post(`/api/v1/bookings/${booking.public_id}/balance-checkout`);
       const { checkout_data } = res.data;
 
-      if (!checkout_data?.key_id) {
+      if (!checkout_data?.redirect_url) {
         toast.error("Failed to initialize payment gateway. Please try again.");
         isPaymentActiveRef.current = false;
         setIsProcessingBalance(false);
         return;
       }
 
-      if (!Razorpay) {
-        toast.error("Payment gateway is still loading. Please refresh the page.");
-        isPaymentActiveRef.current = false;
-        setIsProcessingBalance(false);
-        return;
-      }
-
-      const options = {
-        key: checkout_data.key_id,
-        amount: checkout_data.amount,
-        currency: checkout_data.currency,
-        name: "TS Tours",
-        description: `Balance Payment for Booking: ${booking.public_id}`,
-        order_id: checkout_data.razorpay_order_id,
-        handler: async (response: any) => {
-          try {
-            const verifyRes = await apiClient.post('/api/v1/payments/verify-payment', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-            if (verifyRes.data.status === 'success') {
-              toast.success("Payment successful! Your booking is now updated.");
-              // Real-time refresh — no browser reload
-              await fetchBooking();
-            }
-          } catch (err) {
-            console.error("Payment verification failed", err);
-            toast.error("Payment verification failed. Please contact support.");
-          } finally {
-            isPaymentActiveRef.current = false;
-            setIsProcessingBalance(false);
-          }
-        },
-        prefill: { name: booking.passengers?.[0]?.full_name || '' },
-        theme: { color: "#1a6b7a" },
-        modal: {
-          ondismiss: () => {
-            apiClient.post('/api/v1/payments/record-failure', {
-              razorpay_order_id: checkout_data.razorpay_order_id,
-              error_code: 'USER_DISMISSED',
-              error_description: 'Customer closed Razorpay checkout before payment completion.',
-            }).catch((err) => console.warn('Failed to record payment dismissal', err));
-            toast.error("Payment not completed.");
-            isPaymentActiveRef.current = false;
-            setIsProcessingBalance(false);
-          },
-        },
-      };
-
-      const rzp = new Razorpay(options);
-      rzp.on("payment.failed", (response: any) => {
-        const error = response?.error || {};
-        apiClient.post('/api/v1/payments/record-failure', {
-          razorpay_order_id: error.metadata?.order_id || checkout_data.razorpay_order_id,
-          razorpay_payment_id: error.metadata?.payment_id,
-          error_code: error.code,
-          error_description: error.description,
-          error_source: error.source,
-          error_step: error.step,
-          error_reason: error.reason,
-        }).catch((err) => console.warn('Failed to record payment failure', err));
-        toast.error(`Payment Failed: ${error.description || 'Please try again.'}`);
-        isPaymentActiveRef.current = false;
-        setIsProcessingBalance(false);
-      });
-      rzp.open();
-
-      // Enforce pointer-events: auto on body/html to override Radix UI Dialog scroll lock blocking on mobile
-      if (typeof document !== 'undefined') {
-        document.body.style.setProperty('pointer-events', 'auto', 'important');
-        document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
-        let count = 0;
-        const interval = setInterval(() => {
-          document.body.style.setProperty('pointer-events', 'auto', 'important');
-          document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
-          count++;
-          if (count > 30) clearInterval(interval);
-        }, 100);
-      }
+      toast.success("Redirecting to secure PhonePe checkout...");
+      setTimeout(() => {
+        window.location.href = checkout_data.redirect_url;
+      }, 1000);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Failed to initiate balance payment.");
       isPaymentActiveRef.current = false;
@@ -639,22 +563,35 @@ export default function BookingDetailPage() {
               )}
             </div>
 
-            {/* Boarding Point */}
             {booking.boarding_point && (
               <div className="mb-8 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400" /> Boarding Point Details
-                </p>
-                <p className="font-bold text-slate-800 text-xs">{booking.boarding_point.title}</p>
-                {booking.boarding_point.address && (
-                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{booking.boarding_point.address}</p>
-                )}
-                {booking.boarding_point.landmark && (
-                  <p className="text-[11px] text-slate-400 mt-1">Landmark: {booking.boarding_point.landmark}</p>
-                )}
-                {booking.boarding_point.contact_number && (
-                  <p className="text-[11px] text-slate-500 mt-2 font-semibold">Contact: {booking.boarding_point.contact_number}</p>
-                )}
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                      <MapPin className="h-3.5 w-3.5 text-slate-400" /> Boarding Point Details
+                    </p>
+                    <p className="font-bold text-slate-800 text-xs">{booking.boarding_point.title}</p>
+                    {booking.boarding_point.address && (
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{booking.boarding_point.address}</p>
+                    )}
+                    {booking.boarding_point.landmark && (
+                      <p className="text-[11px] text-slate-400 mt-1">Landmark: {booking.boarding_point.landmark}</p>
+                    )}
+                    {booking.boarding_point.contact_number && (
+                      <p className="text-[11px] text-slate-500 mt-2 font-semibold">Contact: {booking.boarding_point.contact_number}</p>
+                    )}
+                  </div>
+                  {booking.boarding_point.address && (
+                    <a 
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.boarding_point.address)}`} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold shrink-0 hover:bg-blue-100 transition-colors mt-1 border border-blue-100"
+                    >
+                      <MapPin className="h-3 w-3" /> View Map
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 
@@ -667,13 +604,23 @@ export default function BookingDetailPage() {
                 </h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {booking.target_type === 'ROOM' && (
-                    <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm">
-                      <span className="text-xs font-bold text-indigo-900">{booking.package_title}</span>
+                    <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm relative">
+                      <span className="text-xs font-bold text-indigo-900 pr-20">{booking.package_title}</span>
                       <span className="text-[10px] text-indigo-700 font-semibold mt-1">
                         {booking.variant_title} • Check-in {booking.room_checkin || 'TBA'} • Check-out {booking.room_checkout || 'TBA'}
                       </span>
                       {booking.room_address && (
-                        <span className="text-[10px] text-indigo-600 font-semibold mt-1">{booking.room_address}</span>
+                        <div className="flex items-center justify-between mt-1 pt-1 border-t border-indigo-100/50">
+                          <span className="text-[10px] text-indigo-600 font-semibold leading-relaxed mr-2">{booking.room_address}</span>
+                          <a 
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.room_address)}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="flex items-center gap-1 px-2 py-1 bg-white text-indigo-600 rounded text-[9px] font-bold shrink-0 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                          >
+                            <MapPin className="h-2.5 w-2.5" /> Map
+                          </a>
+                        </div>
                       )}
                     </div>
                   )}
@@ -681,7 +628,7 @@ export default function BookingDetailPage() {
                     <div key={idx} className="flex flex-col justify-center p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm">
                       <span className="text-xs font-bold text-slate-800">{ts.title}</span>
                       <span className="text-[10px] text-slate-500 font-semibold mt-1">
-                        {describeTransport(ts, passengerCount)} • {formatINR(Number(ts.item_total || 0))}
+                        {describeTransport(ts, booking.adult_count, booking.child_count)} • {formatINR(Number(ts.item_total || 0))}
                       </span>
                     </div>
                   ))}
@@ -689,7 +636,7 @@ export default function BookingDetailPage() {
                     <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 shadow-sm">
                       <span className="text-xs font-bold text-emerald-800">Refreshments</span>
                       <span className="text-[10px] text-emerald-600 font-semibold mt-1">
-                        Add-on for {passengerCount} pax • {formatINR(refreshmentAmount)}
+                        Add-on for {booking.adult_count} Adults + {booking.child_count} Children • {formatINR(refreshmentAmount)}
                       </span>
                     </div>
                   )}
@@ -701,16 +648,40 @@ export default function BookingDetailPage() {
             <div>
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Passenger Roster</h3>
               <div className="space-y-3">
-                {booking.passengers && booking.passengers.length > 0 ? (
-                  booking.passengers.map((p, idx) => (
-                    <div key={idx} className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                {(() => {
+                  if (!booking.passengers || booking.passengers.length === 0) {
+                    return <p className="text-slate-400 text-xs italic">No passengers registered on this booking.</p>;
+                  }
+
+                  const detailed: any[] = [];
+                  let quickAdults = 0;
+                  let quickChildren = 0;
+
+                  booking.passengers.forEach((p: any) => {
+                    const isQuickGuest = !p.is_primary && !p.is_lead && (
+                      booking.pricing_snapshot?.booking_mode === 'QUICK' ||
+                      p.full_name.toLowerCase().includes("quick ticket") ||
+                      p.full_name.toLowerCase().includes("guest adult") ||
+                      p.full_name.toLowerCase().includes("guest child")
+                    );
+
+                    if (isQuickGuest) {
+                      if (p.age >= 11) quickAdults++;
+                      else quickChildren++;
+                    } else {
+                      detailed.push(p);
+                    }
+                  });
+
+                  const elements = detailed.map((p, idx) => (
+                    <div key={`det-${idx}`} className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
                       <div className="h-10 w-10 rounded-xl bg-[var(--color-brand-river)] text-white flex items-center justify-center font-bold text-xs shrink-0">
                         {getInitials(p.full_name)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-slate-800 text-xs truncate">
                           {p.full_name}
-                          {p.is_lead && (
+                          {(p.is_primary || p.is_lead) && (
                             <span className="text-[9px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-extrabold uppercase ml-1">Lead</span>
                           )}
                         </p>
@@ -724,10 +695,34 @@ export default function BookingDetailPage() {
                         </div>
                       )}
                     </div>
-                  ))
-                ) : (
-                  <p className="text-slate-400 text-xs italic">No passengers registered on this booking.</p>
-                )}
+                  ));
+
+                  if (quickAdults > 0) {
+                    elements.push(
+                      <div key="quick-adults" className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 opacity-80">
+                        <div className="h-10 w-10 rounded-xl bg-slate-300 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">QT</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-600 text-xs italic">Not Provided (Adult) × {quickAdults}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Adult Count</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  if (quickChildren > 0) {
+                    elements.push(
+                      <div key="quick-children" className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 opacity-80">
+                        <div className="h-10 w-10 rounded-xl bg-slate-300 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">QT</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-600 text-xs italic">Not Provided (Child) × {quickChildren}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Child Count</p>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return elements;
+                })()}
               </div>
             </div>
 

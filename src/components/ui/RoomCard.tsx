@@ -34,6 +34,7 @@ interface RoomProps {
     facilities: string[];
   };
   variant?: 'grid' | 'list';
+  priority?: boolean;
 }
 
 const FACILITY_ICON_MAP: Record<string, React.ElementType> = {
@@ -59,7 +60,7 @@ function getFacilityIcon(name: string): React.ElementType {
 
 
 
-function RoomCard({ room, variant = 'list' }: RoomProps) {
+function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
   const startPriceNum = room.starting_price ? Number(room.starting_price) : null;
   const startWeekendNum = room.starting_weekend_price ? Number(room.starting_weekend_price) : null;
   const prices = getPriceDetails(startPriceNum);
@@ -91,6 +92,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
               src={room.cover_image_url || '/placeholder-room.jpg'}
               alt={room.lodge_name}
               fill
+              priority={priority}
               sizes="(max-width: 768px) 100vw, 320px"
               className="object-cover transition-transform duration-500 group-hover/list:scale-[1.03]"
             />
@@ -227,6 +229,7 @@ function RoomCard({ room, variant = 'list' }: RoomProps) {
           src={room.cover_image_url || '/placeholder-room.jpg'}
           alt={room.lodge_name}
           fill
+          priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           quality={65}
           className="object-cover transition-transform duration-500 group-hover/card:scale-[1.04]"

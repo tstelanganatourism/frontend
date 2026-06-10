@@ -11,7 +11,6 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { apiClient } from '@/lib/api';
-import { useRazorpay } from "react-razorpay";
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 
@@ -87,9 +86,7 @@ interface RoomDetailExperienceProps {
   room: RoomDetailViewModel;
 }
 
-const fallbackImage =
-  'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg';
-
+const fallbackImage = 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg';
 const getLocalToday = () => {
   const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -258,7 +255,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const { isAuthenticated, user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
-  const { Razorpay } = useRazorpay();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
@@ -399,7 +395,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           setRoomAvailability(prev => {
             const next = { ...prev };
             const s = next[monthStr] ? new Set(next[monthStr]) : new Set<string>();
-            s.add(travel_date);
+            
+            // Re-evaluate 6 AM cutoff locally before adding to open dates
+            const isToday = travel_date === getLocalToday();
+            const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+            const isAfter6am = d.getHours() >= 6;
+            
+            if (!(isToday && isAfter6am)) {
+              s.add(travel_date);
+            }
+            
             next[monthStr] = s;
             return next;
           });
@@ -628,7 +633,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     setShowPassengerModal(true);
   };
 
-  const handleCheckoutSubmit = async (passengers: any[]) => {
+  const handleCheckoutSubmit = async (passengers: any[], quickBooking: boolean = false, customerEmail?: string) => {
     setIsProcessingCheckout(true);
     try {
       if (isAdmin) {
@@ -647,7 +652,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             aadhaar: p.aadhaar || undefined,
             phone: p.phone || undefined,
           })),
-          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined
+          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined,
+          quick_booking: quickBooking,
+          customer_email: customerEmail,
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
         toast.success(`Booking ${res.data.public_id} created successfully!`);
@@ -682,94 +689,25 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           phone: p.phone || undefined,
         })),
         payment_percentage: paymentPercentage,
-        expected_amount: finalTotal
+        expected_amount: finalTotal,
+        quick_booking: quickBooking,
+        customer_email: customerEmail,
       };
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
 
       const { checkout_data } = res.data;
 
-      if (!checkout_data || !checkout_data.key_id) {
+      if (!checkout_data || !checkout_data.redirect_url) {
         toast.error("Failed to initialize payment gateway. Please try again.");
         setIsProcessingCheckout(false);
         return;
       }
 
-      if (!Razorpay) {
-        toast.error("Payment gateway is still loading or blocked by your browser. Please disable adblockers and try again.");
-        setIsProcessingCheckout(false);
-        return;
-      }
-
-      const options = {
-        key: checkout_data.key_id,
-        amount: checkout_data.amount,
-        currency: checkout_data.currency,
-        name: "TS Tours",
-        description: `Booking Draft: ${checkout_data.draft_id}`,
-        order_id: checkout_data.razorpay_order_id,
-        handler: async (response: any) => {
-          try {
-            const verifyRes = await apiClient.post('/api/v1/payments/verify-payment', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            });
-            if (verifyRes.data.status === 'success') {
-              router.push(`/dashboard/bookings/${verifyRes.data.booking_id}`);
-            }
-          } catch (err) {
-            console.error("Payment verification failed", err);
-            toast.error("Payment verification failed. If money was deducted, it will be refunded automatically or confirmed soon.");
-            setIsProcessingCheckout(false);
-          }
-        },
-        prefill: {
-          name: passengers[0]?.full_name || '',
-          contact: passengers[0]?.phone || ''
-        },
-        theme: { color: "#0f8d7d" },
-        modal: {
-          ondismiss: () => {
-            apiClient.post('/api/v1/payments/record-failure', {
-              razorpay_order_id: checkout_data.razorpay_order_id,
-              error_code: 'USER_DISMISSED',
-              error_description: 'Customer closed Razorpay checkout before payment completion.',
-            }).catch((err) => console.warn('Failed to record payment dismissal', err));
-            setIsProcessingCheckout(false);
-          }
-        }
-      };
-
-      const rzp = new Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        const error = response?.error || {};
-        apiClient.post('/api/v1/payments/record-failure', {
-          razorpay_order_id: error.metadata?.order_id || checkout_data.razorpay_order_id,
-          razorpay_payment_id: error.metadata?.payment_id,
-          error_code: error.code,
-          error_description: error.description,
-          error_source: error.source,
-          error_step: error.step,
-          error_reason: error.reason,
-        }).catch((err) => console.warn('Failed to record payment failure', err));
-        toast.error(`Payment Failed: ${error.description || 'Please try again.'}`);
-        setIsProcessingCheckout(false);
-      });
-      rzp.open();
-
-      // Enforce pointer-events: auto on body/html to override Radix UI Dialog scroll lock blocking on mobile
-      if (typeof document !== 'undefined') {
-        document.body.style.setProperty('pointer-events', 'auto', 'important');
-        document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
-        let count = 0;
-        const interval = setInterval(() => {
-          document.body.style.setProperty('pointer-events', 'auto', 'important');
-          document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
-          count++;
-          if (count > 30) clearInterval(interval);
-        }, 100);
-      }
+      toast.success("Redirecting to secure PhonePe checkout...");
+      setTimeout(() => {
+        window.location.href = checkout_data.redirect_url;
+      }, 1000);
     } catch (err: any) {
       console.error(err);
       let errMsg = "Checkout failed. Please try again.";
@@ -780,11 +718,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           errMsg = err.response.data.detail;
         }
       } else if (err.message) {
-        if (err.message.includes("Razorpay is not a constructor")) {
-          errMsg = "Payment gateway blocked. Please disable adblockers.";
-        } else {
-          errMsg = err.message;
-        }
+        errMsg = err.message;
       }
       toast.error(errMsg);
       setIsProcessingCheckout(false);
@@ -972,7 +906,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 ) : null}
               </div>
 
-              <h1 className="text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl">
+              <h1 className="text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl break-words">
                 {room.lodge_name}
               </h1>
               <p className="mt-4 text-sm font-medium leading-7 text-white/85 sm:text-base line-clamp-4">
@@ -1220,6 +1154,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     disabled={isLodgeInactive}
                     availableDates={allAvailableDates}
                     onMonthChange={fetchRoomAvailability}
+                    isAdmin={isAdmin}
                     onChange={(val) => {
                       setArrivalDate(val);
                       const sStart = selectedSlot?.slot_start || "";
@@ -1856,7 +1791,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </button>
             ) : null}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={getHdImageUrl(activeImage.image_url)} alt={activeImage.alt_text || room.lodge_name} fill sizes="100vw" className="object-contain" unoptimized quality={100} />
+              <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill sizes="100vw" className="object-contain" unoptimized quality={100} />
             </div>
             {slides.length > 1 ? (
               <button onClick={() => moveSlide('right')} className="absolute right-2 z-10 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 md:right-8" aria-label="Next photo">
@@ -1956,7 +1891,7 @@ const RoomSectionNav = () => {
   };
 
   return (
-    <div className="sticky top-16 z-30 border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
+    <div className="sticky top-[65px] sm:top-[79px] z-30 border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12">
         <div className="flex flex-nowrap gap-2 overflow-x-auto py-3 scrollbar-none">
           {ROOM_NAV_ITEMS.map((item) => {
@@ -2006,6 +1941,7 @@ const CustomDatePicker = ({
   align = 'left',
   availableDates,
   onMonthChange,
+  isAdmin,
 }: {
   label: string;
   value: string;
@@ -2016,6 +1952,7 @@ const CustomDatePicker = ({
   align?: 'left' | 'right';
   availableDates?: Set<string>;
   onMonthChange?: (month: string) => void;
+  isAdmin?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2121,9 +2058,9 @@ const CustomDatePicker = ({
       const isPast = dateStr < minDateStr;
       const isSelected = dateStr === value;
 
-      // If availableDates is provided, only enable dates that are in the set
+      // If availableDates is provided, only enable dates that are in the set (Admins bypass this)
       const hasInventory = availableDates ? availableDates.has(dateStr) : true;
-      const isDisabled = isPast || !hasInventory;
+      const isDisabled = isPast || (!hasInventory && !isAdmin);
 
       days.push(
         <button

@@ -33,6 +33,7 @@ interface PackageProps {
       is_active: boolean;
     }>;
   };
+  priority?: boolean;
 }
 
 function getDurationLabel(title: string, slug: string) {
@@ -77,7 +78,7 @@ function getDisplayPrice(pkg: PackageProps['pkg']) {
   return null;
 }
 
-function PackageCard({ pkg }: PackageProps) {
+function PackageCard({ pkg, priority = false }: PackageProps) {
   const isTrip = pkg.type?.toUpperCase() === 'TRIP';
 
   // Clean tags
@@ -126,6 +127,7 @@ function PackageCard({ pkg }: PackageProps) {
           src={pkg.cover_image_url || '/placeholder-tourism.jpg'}
           alt={pkg.title}
           fill
+          priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           quality={65}
           className="object-cover transition-transform duration-700 ease-out group-hover/card:scale-105"

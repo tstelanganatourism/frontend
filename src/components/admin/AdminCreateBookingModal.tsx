@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Loader2, Plus, Users, Calendar, Package, Home, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { X, Loader2, Plus, Users, Calendar, Package, Home, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 import PremiumSelect from '@/components/ui/PremiumSelect';
@@ -46,6 +46,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const [adultCount, setAdultCount] = useState(1);
   const [childCount, setChildCount] = useState(0);
   const [amountPaid, setAmountPaid] = useState<string>('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passengers, setPassengers] = useState<PassengerForm[]>([]);
   const [packagesList, setPackagesList] = useState<any[]>([]);
@@ -62,10 +63,34 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const [packageRefAdultPrice, setPackageRefAdultPrice] = useState(0);
   const [packageRefChildPrice, setPackageRefChildPrice] = useState(0);
   const [includeRefreshments, setIncludeRefreshments] = useState(false);
+  const [minPassengers, setMinPassengers] = useState(1);
+
+  // Quick booking mode
+  const [passengerMode, setPassengerMode] = useState<'full' | 'quick'>('full');
+  const [quickPassenger, setQuickPassenger] = useState<PassengerForm>({
+    full_name: '',
+    age: 25,
+    gender: '',
+    phone: '',
+    aadhaar: '',
+    relationship: 'self',
+    is_primary: true,
+  });
 
   useEffect(() => {
     if (isOpen) {
       fetchDropdownData();
+      setPassengerMode('full');
+      setQuickPassenger({
+        full_name: '',
+        age: 25,
+        gender: '',
+        phone: '',
+        aadhaar: '',
+        relationship: 'self',
+        is_primary: true,
+      });
+      setCustomerEmail('');
     }
   }, [isOpen]);
 
@@ -93,6 +118,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       setTransportMode('NONE');
       setSelectedSharedOptId(null);
       setSeparateVehicleQtys({});
+      setMinPassengers(1);
       return;
     }
     const selectedVariantNum = parseInt(variantId);
@@ -103,6 +129,11 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       setPackageHasRefreshments(!!pkg.has_refreshments);
       setPackageRefAdultPrice(Number(pkg.refreshment_adult_price) || 0);
       setPackageRefChildPrice(Number(pkg.refreshment_child_price) || 0);
+      const newMin = Number(pkg.min_passengers) || 1;
+      setMinPassengers(newMin);
+      if (adultCount + childCount < newMin) {
+        setAdultCount(Math.max(1, newMin - childCount));
+      }
       // Reset transport when package changes
       setTransportMode('NONE');
       setSelectedSharedOptId(null);
@@ -159,8 +190,19 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     if (!travelDate) return false;
     if (targetType === 'package' && !variantId) return false;
     if (targetType === 'room' && !roomVariantId) return false;
-    if (passengers.length === 0) return false;
     if (!separateCapacityOk) return false;
+    if (targetType === 'package' && (adultCount + childCount) < minPassengers) return false;
+
+    if (passengerMode === 'quick') {
+      const nameOk = quickPassenger.full_name.trim() !== '';
+      const ageOk = quickPassenger.age !== '' && Number(quickPassenger.age) >= 18;
+      const genderOk = quickPassenger.gender !== '';
+      const phoneOk = /^\d{10}$/.test(quickPassenger.phone.trim());
+      const aadhaarOk = quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar);
+      return nameOk && ageOk && genderOk && phoneOk && aadhaarOk;
+    }
+
+    if (passengers.length === 0) return false;
     return passengers.every((p, i) => {
       const nameOk = p.full_name.trim() !== '';
       const ageOk = p.age !== '';
@@ -191,18 +233,62 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         }
       }
 
+      // Build passengers array based on mode
+      let passengersPayload: any[];
+      if (passengerMode === 'quick') {
+        passengersPayload = [
+          {
+            full_name: quickPassenger.full_name,
+            age: Number(quickPassenger.age),
+            gender: quickPassenger.gender,
+            phone: quickPassenger.phone,
+            aadhaar: quickPassenger.aadhaar || undefined,
+            relationship: 'self',
+            is_primary: true,
+          }
+        ];
+        // Auto-fill remaining adults
+        for (let i = 1; i < adultCount; i++) {
+          passengersPayload.push({
+            full_name: 'quick ticket(not provided)',
+            age: 25,
+            gender: 'MALE',
+            phone: '',
+            aadhaar: undefined,
+            relationship: '',
+            is_primary: false,
+          });
+        }
+        // Auto-fill children
+        for (let i = 0; i < childCount; i++) {
+          passengersPayload.push({
+            full_name: 'quick ticket(not provided)',
+            age: 7,
+            gender: 'MALE',
+            phone: '',
+            aadhaar: undefined,
+            relationship: '',
+            is_primary: false,
+          });
+        }
+      } else {
+        passengersPayload = passengers.map(p => ({
+          ...p,
+          aadhaar: p.aadhaar || undefined,
+        }));
+      }
+
       const payload: any = {
         target_type: targetType,
         travel_date: travelDate,
         quantity: adultCount + childCount,
         adult_count: adultCount,
         child_count: childCount,
-        passengers: passengers.map(p => ({
-          ...p,
-          aadhaar: p.aadhaar || undefined,
-        })),
+        passengers: passengersPayload,
         transport_selections: transport_selections.length > 0 ? transport_selections : undefined,
         include_refreshments: includeRefreshments,
+        quick_booking: passengerMode === 'quick',
+        customer_email: customerEmail.trim() || undefined,
       };
       if (amountPaid) {
         payload.amount_paid = parseFloat(amountPaid);
@@ -522,13 +608,174 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
             )}
           </div>
 
-          {/* Passengers */}
+          {/* Tourist Email */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-slate-800">Tourist Email (Optional)</span>
+            </div>
+            <p className="text-[11px] font-semibold text-slate-500">
+              Booking confirmation and tickets will be sent directly to the tourist.
+            </p>
+            <input
+              type="email"
+              placeholder="e.g. tourist@example.com"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              className="w-full sm:w-2/3 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+            />
+            {/* Min Passengers Warning */}
+            {targetType === 'package' && minPassengers > 1 && (adultCount + childCount) < minPassengers && (
+              <div className="flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 p-3">
+                <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                <p className="text-xs font-bold text-rose-700 leading-relaxed">
+                  This package requires a minimum of <span className="font-black">{minPassengers} passengers</span> per booking. Add more passengers to proceed.
+                </p>
+              </div>
+            )}
+          </div>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[#1a6b7a]" />
-              <h3 className="text-sm font-black text-slate-800">Passenger Details ({passengers.length})</h3>
+              <h3 className="text-sm font-black text-slate-800">Passenger Details ({adultCount + childCount})</h3>
             </div>
-            {passengers.map((p, i) => {
+
+            {/* Mode Toggle */}
+            <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setPassengerMode('full')}
+                className={`flex flex-col items-center justify-center gap-1 py-3 rounded-lg text-xs font-black transition-all ${
+                  passengerMode === 'full'
+                    ? 'bg-white text-[#1a6b7a] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                <span>Full Details</span>
+                <span className="text-[9px] font-semibold opacity-60">All passenger info</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPassengerMode('quick')}
+                className={`flex flex-col items-center justify-center gap-1 py-3 rounded-lg text-xs font-black transition-all ${
+                  passengerMode === 'quick'
+                    ? 'bg-white text-violet-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Zap className="h-4 w-4" />
+                <span>Quick Booking</span>
+                <span className="text-[9px] font-semibold opacity-60">Lead contact only</span>
+              </button>
+            </div>
+
+            {/* ─── QUICK BOOKING MODE ─── */}
+            {passengerMode === 'quick' && (
+              <>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex gap-2 items-start">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs font-semibold text-amber-700">
+                    Quick mode: Only the <strong>lead adult's</strong> details are required. The remaining {adultCount + childCount - 1} passenger(s) will be auto-filled as "Guest". You can update their names later from the booking detail screen.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border-2 border-violet-200 bg-violet-50/30 p-4 space-y-3">
+                  <p className="text-xs font-black text-violet-700 uppercase tracking-wider flex items-center gap-2">
+                    Lead Adult Contact
+                    <span className="rounded bg-violet-600 px-1.5 py-0.5 text-[10px] text-white font-black">Primary</span>
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <input
+                        type="text"
+                        placeholder="Full Name *"
+                        value={quickPassenger.full_name}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, full_name: e.target.value }))}
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min={18}
+                        max={120}
+                        placeholder="Age (min 18) *"
+                        value={quickPassenger.age}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: parseInt(e.target.value) || '' }))}
+                        className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
+                          quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
+                        }`}
+                      />
+                      {quickPassenger.age !== '' && Number(quickPassenger.age) < 18 && (
+                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Must be adult (18+)</p>
+                      )}
+                    </div>
+                    <div>
+                      <select
+                        value={quickPassenger.gender}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, gender: e.target.value }))}
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none bg-white"
+                      >
+                        <option value="">Gender *</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <input
+                        type="text"
+                        placeholder="Aadhaar Number (12 digits) *"
+                        value={quickPassenger.aadhaar}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
+                        className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
+                          quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar) ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
+                        }`}
+                      />
+                      {quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar) && (
+                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar (checksum failed)</p>
+                      )}
+                    </div>
+                    <div className="sm:col-span-3">
+                      <input
+                        type="tel"
+                        placeholder="Phone Number (10 digits) *"
+                        value={quickPassenger.phone}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                        className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
+                          quickPassenger.phone.length > 0 && quickPassenger.phone.length !== 10 ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
+                        }`}
+                      />
+                      {quickPassenger.phone.length > 0 && quickPassenger.phone.length !== 10 && (
+                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Phone number must be exactly 10 digits</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Auto-generated guests preview */}
+                  {(adultCount + childCount > 1) && (
+                    <div className="border-t border-violet-100 pt-3 mt-1 space-y-1.5">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-generated Guests</p>
+                      {Array.from({ length: adultCount - 1 }, (_, i) => (
+                        <div key={`qa-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                          <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                          Guest Adult {i + 2}
+                        </div>
+                      ))}
+                      {Array.from({ length: childCount }, (_, i) => (
+                        <div key={`qc-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                          <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
+                          Guest Child {i + 1}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ─── FULL DETAILS MODE ─── */}
+            {passengerMode === 'full' && passengers.map((p, i) => {
               const isChild = i >= adultCount;
               return (
                 <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">

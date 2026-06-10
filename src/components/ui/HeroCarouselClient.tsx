@@ -456,16 +456,17 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
             >
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.28fr_0.72fr] lg:gap-10 lg:items-center px-0">
                 {/* Column 1: Core Info */}
-                <div className="border-l-4 border-amber-400 pl-4 sm:pl-6 md:pl-8">
+                <div className="border-l-4 border-amber-400 pl-4 sm:pl-6 md:pl-8 min-w-0">
                   {/* Category Pill for details page */}
                   <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-md bg-amber-400/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-300">
                     {isRoom ? 'Accommodation' : isBoatRideSlide ? 'Boat Cruise' : 'Sightseeing Tour'}
                   </div>
 
-                  <h1 className="font-serif text-[clamp(1.75rem,3.8vw,3.2rem)] font-black leading-[1.08] tracking-tight text-white">
-                    <span className="block text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
-                      {activeSlide.title}
-                    </span>
+                  <h1 className="font-serif text-[clamp(1.75rem,3.8vw,3.2rem)] font-black leading-[1.08] tracking-tight text-white break-words">
+                    <span 
+                      className="block text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+                      dangerouslySetInnerHTML={{ __html: activeSlide.title.replace(/\(/g, ' (') }}
+                    />
                   </h1>
                   
                   <div className="mt-2 max-w-[20rem]">
@@ -503,9 +504,10 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                     )}
                   </div>
 
-                  <p className="mt-4 max-w-[44rem] text-xs font-medium leading-relaxed text-white/92 sm:text-base sm:leading-7 drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
-                    {activeSlide.description || 'Experience the beauty of Godavari with our government-approved premier package tours.'}
-                  </p>
+                  <div 
+                    className="mt-4 max-w-[44rem] text-xs font-medium leading-relaxed text-white/92 sm:text-base sm:leading-7 drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
+                    dangerouslySetInnerHTML={{ __html: activeSlide.description || 'Experience the beauty of Godavari with our government-approved premier package tours.' }}
+                  />
 
                   {/* CTA Buttons in Column 1 */}
                   <div className="mt-6 flex flex-col gap-3 min-[480px]:flex-row sm:gap-4 lg:mt-8 w-full max-w-[36rem] relative z-[40]">
@@ -532,7 +534,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                 </div>
 
                 {/* Column 2: Premium Pricing Breakdown Card */}
-                <div className="hidden lg:block">
+                <div className="hidden lg:block min-w-[16rem] shrink-0">
                   <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-slate-950/50 p-6 backdrop-blur-md shadow-[0_24px_55px_rgba(0,0,0,0.4)]">
                     {/* Glowing highlight */}
                     <div className="absolute -top-10 -right-10 h-32 w-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />

@@ -74,7 +74,7 @@ function LoginContent() {
     <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#061d2b] flex items-center justify-center px-4 py-8">
       {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_50%,rgba(26,107,122,0.28),transparent_60%),radial-gradient(ellipse_at_80%_20%,rgba(15,61,86,0.45),transparent_55%)]" />
-      <div className="absolute inset-0 bg-[url('https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg')] bg-cover bg-center opacity-[0.07]" />
+      <div className="absolute inset-0 bg-[url('https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg')] bg-cover bg-center opacity-[0.07]" />
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -86,7 +86,7 @@ function LoginContent() {
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
             <img 
-              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
+              src="/apple-touch-icon.png" 
               alt="Telangana Boat Tourism Logo" 
               className="h-full w-full object-contain rounded-xl"
             />

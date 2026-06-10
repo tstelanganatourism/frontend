@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Users, AlertTriangle } from 'lucide-react';
+import { X, Loader2, Users, AlertTriangle, Zap, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { useAuthStore } from '@/stores/authStore';
 
 // ─── Verhoeff Checksum (client-side Aadhaar validation) ──────────────────────
 const _d = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 0, 6, 7, 8, 9, 5], [2, 3, 4, 0, 1, 7, 8, 9, 5, 6], [3, 4, 0, 1, 2, 8, 9, 5, 6, 7], [4, 0, 1, 2, 3, 9, 5, 6, 7, 8], [5, 9, 8, 7, 6, 0, 4, 3, 2, 1], [6, 5, 9, 8, 7, 1, 0, 4, 3, 2], [7, 6, 5, 9, 8, 2, 1, 0, 4, 3], [8, 7, 6, 5, 9, 3, 2, 1, 0, 4], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]];
@@ -31,7 +32,7 @@ interface PassengerInput {
 interface CheckoutPassengerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (passengers: PassengerInput[]) => Promise<void>;
+  onSubmit: (passengers: PassengerInput[], quickBooking?: boolean, customerEmail?: string) => Promise<void>;
   adults: number;
   children: number;
   isProcessing: boolean;
@@ -40,9 +41,23 @@ interface CheckoutPassengerModalProps {
 
 export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adults, children, isProcessing, targetType = 'package' }: CheckoutPassengerModalProps) {
   const totalPassengers = adults + children;
+  const { user } = useAuthStore();
+  const isAgentOrAdmin = user?.role === 'ADMIN' || user?.role === 'AGENT';
+
   const [passengers, setPassengers] = useState<PassengerInput[]>([]);
+  const [passengerMode, setPassengerMode] = useState<'full' | 'quick'>('full');
+  const [quickPassenger, setQuickPassenger] = useState<PassengerInput>({
+    full_name: '',
+    age: '',
+    gender: '',
+    phone: '',
+    aadhaar: '',
+    relationship: 'self',
+    is_primary: true,
+  });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToAadhaarConsent, setAgreedToAadhaarConsent] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -56,8 +71,19 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
         is_primary: i === 0,
       }));
       setPassengers(initial);
+      setPassengerMode('full');
+      setQuickPassenger({
+        full_name: '',
+        age: '',
+        gender: '',
+        phone: '',
+        aadhaar: '',
+        relationship: 'self',
+        is_primary: true,
+      });
       setAgreedToTerms(false);
       setAgreedToAadhaarConsent(false);
+      setCustomerEmail('');
     }
   }, [isOpen, totalPassengers]);
 
@@ -79,7 +105,41 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
       toast.error("Please provide your consent for Aadhaar verification.");
       return;
     }
-    await onSubmit(passengers);
+
+    if (passengerMode === 'quick') {
+      const passengersPayload: PassengerInput[] = [
+        {
+          ...quickPassenger,
+          aadhaar: quickPassenger.aadhaar || '',
+          phone: quickPassenger.phone || '',
+        }
+      ];
+      for (let i = 1; i < adults; i++) {
+        passengersPayload.push({
+          full_name: 'TBA (Guest)',
+          age: 25,
+          gender: 'MALE',
+          phone: '',
+          aadhaar: '',
+          relationship: '',
+          is_primary: false,
+        });
+      }
+      for (let i = 0; i < children; i++) {
+        passengersPayload.push({
+          full_name: 'TBA (Guest)',
+          age: 7,
+          gender: 'MALE',
+          phone: '',
+          aadhaar: '',
+          relationship: '',
+          is_primary: false,
+        });
+      }
+      await onSubmit(passengersPayload, true, customerEmail.trim() || undefined);
+    } else {
+      await onSubmit(passengers, false, customerEmail.trim() || undefined);
+    }
   };
 
   if (typeof document === 'undefined') return null;
@@ -120,51 +180,94 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
 
         {/* Form Body */}
         <div className="overflow-y-auto p-6 scrollbar-thin flex-1">
-          <form id="passenger-form" onSubmit={handleFormSubmit} className="space-y-8">
-            {passengers.map((p, i) => {
-              const isChild = i >= adults;
-              return (
-                <div key={i} className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#1a6b7a]/30 hover:shadow-md">
-                  <p className="mb-4 text-xs font-black uppercase tracking-wider text-[#1a6b7a]">
-                    {targetType === 'room' ? `Guest Card ${i + 1}` : (isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`)}
-                    {i === 0 && <span className="ml-2 rounded-full bg-[#1a6b7a]/10 px-2 py-0.5 text-[10px] text-[#1a6b7a]">Primary Contact</span>}
-                  </p>
+          {/* Mode Toggle for Admin & Agent */}
+          {isAgentOrAdmin && (
+            <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl mb-6">
+              <button
+                type="button"
+                onClick={() => setPassengerMode('full')}
+                className={`flex flex-col items-center justify-center gap-1 py-3 rounded-lg text-xs font-black transition-all ${
+                  passengerMode === 'full'
+                    ? 'bg-white text-[#1a6b7a] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                <span>Full Details</span>
+                <span className="text-[9px] font-semibold opacity-60">All passenger info</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPassengerMode('quick')}
+                className={`flex flex-col items-center justify-center gap-1 py-3 rounded-lg text-xs font-black transition-all ${
+                  passengerMode === 'quick'
+                    ? 'bg-white text-violet-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Zap className="h-4 w-4" />
+                <span>Quick Booking</span>
+                <span className="text-[9px] font-semibold opacity-60">Lead contact only</span>
+              </button>
+            </div>
+          )}
 
+          <form id="passenger-form" onSubmit={handleFormSubmit} className="space-y-8">
+            {passengerMode === 'quick' ? (
+              <>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex gap-2 items-start">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs font-semibold text-amber-700">
+                    Quick mode: Only the <strong>lead adult's</strong> details are required. The remaining {totalPassengers - 1} passenger(s) will be auto-filled as "Guest". You can update their names later from the booking detail screen.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-5 space-y-4">
+                  <p className="text-xs font-black text-[#1a6b7a] uppercase tracking-wider flex items-center gap-2">
+                    Lead Adult Contact
+                    <span className="rounded bg-[#1a6b7a] px-1.5 py-0.5 text-[10px] text-white font-black">Primary</span>
+                  </p>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs font-bold text-slate-600">Full Name</label>
+                      <label className="text-xs font-bold text-slate-600">Full Name *</label>
                       <input
                         type="text"
                         required
                         disabled={isProcessing}
-                        value={p.full_name}
-                        onChange={(e) => handleChange(i, 'full_name', e.target.value)}
+                        value={quickPassenger.full_name}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, full_name: e.target.value }))}
                         className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
-                        placeholder="Enter full name as per ID"
+                        placeholder="Enter primary passenger full name"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">Age</label>
+                      <label className="text-xs font-bold text-slate-600">Age (min 18) *</label>
                       <input
                         type="number"
                         required
-                        min={targetType === 'package' ? (isChild ? 4 : 11) : 0}
-                        max={targetType === 'package' && isChild ? 10 : 150}
+                        min={18}
+                        max={150}
                         disabled={isProcessing}
-                        value={p.age}
-                        onChange={(e) => handleChange(i, 'age', e.target.value === '' ? '' : parseInt(e.target.value))}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
-                        placeholder={targetType === 'package' ? (isChild ? "4-10" : "11+") : "Age"}
+                        value={quickPassenger.age}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: e.target.value === '' ? '' : parseInt(e.target.value) }))}
+                        className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
+                          quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50' : 'border-slate-300'
+                        }`}
+                        placeholder="Age"
                       />
+                      {quickPassenger.age !== '' && Number(quickPassenger.age) < 18 && (
+                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Must be adult (18+)</p>
+                      )}
                     </div>
 
                     <div className="space-y-1">
                       <PremiumSelect
-                        label="Gender"
-                        value={p.gender}
+                        label="Gender *"
+                        value={quickPassenger.gender}
                         disabled={isProcessing}
-                        onChange={(val) => handleChange(i, 'gender', val)}
+                        onChange={(val) => setQuickPassenger(prev => ({ ...prev, gender: val as any }))}
                         options={[
                           { value: 'MALE', label: 'Male' },
                           { value: 'FEMALE', label: 'Female' },
@@ -175,65 +278,204 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">
-                        Aadhaar Number
-                        {(typeof p.age === 'number' && p.age <= 10) && (
-                          <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional for children &le; 10)</span>
-                        )}
-                      </label>
+                      <label className="text-xs font-bold text-slate-600">Aadhaar Number *</label>
                       <input
                         type="text"
-                        required={!(typeof p.age === 'number' && p.age <= 10)}
+                        required
                         pattern="[0-9]{12}"
                         title="12 digit Aadhaar number"
                         disabled={isProcessing}
-                        value={p.aadhaar}
-                        onChange={(e) => handleChange(i, 'aadhaar', e.target.value.replace(/\D/g, '').slice(0, 12))}
+                        value={quickPassenger.aadhaar}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
                         className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
-                          p.aadhaar && p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar)
+                          quickPassenger.aadhaar && quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar)
                             ? 'border-rose-400 bg-rose-50'
                             : 'border-slate-300'
                         }`}
                         placeholder="12 digit number"
                       />
-                      {p.aadhaar && p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar) && (
+                      {quickPassenger.aadhaar && quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar) && (
                         <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar number (checksum failed)</p>
                       )}
                     </div>
 
-                    {!isChild && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-600">Contact Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        disabled={isProcessing}
+                        value={quickPassenger.phone}
+                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                        maxLength={10}
+                        pattern="[0-9]{10}"
+                        className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
+                          quickPassenger.phone && quickPassenger.phone.length > 0 && quickPassenger.phone.length < 10
+                            ? 'border-rose-400 bg-rose-50'
+                            : 'border-slate-300'
+                        }`}
+                        placeholder="10 digit mobile number"
+                      />
+                      {quickPassenger.phone && quickPassenger.phone.length > 0 && quickPassenger.phone.length < 10 && (
+                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Contact number must be exactly 10 digits</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Auto-generated guests preview */}
+                  {(totalPassengers > 1) && (
+                    <div className="border-t border-[#1a6b7a]/15 pt-3 mt-1 space-y-1.5">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-generated Guests</p>
+                      {Array.from({ length: adults - 1 }, (_, idx) => (
+                        <div key={`qa-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                          <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                          Guest Adult {idx + 2}
+                        </div>
+                      ))}
+                      {Array.from({ length: children }, (_, idx) => (
+                        <div key={`qc-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                          <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
+                          Guest Child {idx + 1}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              passengers.map((p, i) => {
+                const isChild = i >= adults;
+                return (
+                  <div key={i} className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#1a6b7a]/30 hover:shadow-md">
+                    <p className="mb-4 text-xs font-black uppercase tracking-wider text-[#1a6b7a]">
+                      {targetType === 'room' ? `Guest Card ${i + 1}` : (isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`)}
+                      {i === 0 && <span className="ml-2 rounded-full bg-[#1a6b7a]/10 px-2 py-0.5 text-[10px] text-[#1a6b7a]">Primary Contact</span>}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="text-xs font-bold text-slate-600">Full Name</label>
+                        <input
+                          type="text"
+                          required
+                          disabled={isProcessing}
+                          value={p.full_name}
+                          onChange={(e) => handleChange(i, 'full_name', e.target.value)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                          placeholder="Enter full name as per ID"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-600">Age</label>
+                        <input
+                          type="number"
+                          required
+                          min={targetType === 'package' ? (isChild ? 4 : 11) : 0}
+                          max={targetType === 'package' && isChild ? 10 : 150}
+                          disabled={isProcessing}
+                          value={p.age}
+                          onChange={(e) => handleChange(i, 'age', e.target.value === '' ? '' : parseInt(e.target.value))}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                          placeholder={targetType === 'package' ? (isChild ? "4-10" : "11+") : "Age"}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <PremiumSelect
+                          label="Gender"
+                          value={p.gender}
+                          disabled={isProcessing}
+                          onChange={(val) => handleChange(i, 'gender', val)}
+                          options={[
+                            { value: 'MALE', label: 'Male' },
+                            { value: 'FEMALE', label: 'Female' },
+                            { value: 'OTHER', label: 'Other' }
+                          ]}
+                          placeholder="Select gender"
+                        />
+                      </div>
+
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-600">
-                          Contact Number
-                          {(i !== 0 || (typeof p.age === 'number' && p.age <= 10)) && (
-                            <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional)</span>
+                          Aadhaar Number
+                          {(typeof p.age === 'number' && p.age <= 10) && (
+                            <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional for children &le; 10)</span>
                           )}
                         </label>
                         <input
-                          type="tel"
-                          required={i === 0 && !(typeof p.age === 'number' && p.age <= 10)}
+                          type="text"
+                          required={!(typeof p.age === 'number' && p.age <= 10)}
+                          pattern="[0-9]{12}"
+                          title="12 digit Aadhaar number"
                           disabled={isProcessing}
-                          value={p.phone}
-                          onChange={(e) => handleChange(i, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          maxLength={10}
-                          pattern="[0-9]{10}"
+                          value={p.aadhaar}
+                          onChange={(e) => handleChange(i, 'aadhaar', e.target.value.replace(/\D/g, '').slice(0, 12))}
                           className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
-                            p.phone && p.phone.length > 0 && p.phone.length < 10
+                            p.aadhaar && p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar)
                               ? 'border-rose-400 bg-rose-50'
                               : 'border-slate-300'
                           }`}
-                          placeholder="10 digit mobile number"
+                          placeholder="12 digit number"
                         />
-                        {p.phone && p.phone.length > 0 && p.phone.length < 10 && (
-                          <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Contact number must be exactly 10 digits</p>
+                        {p.aadhaar && p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar) && (
+                          <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar number (checksum failed)</p>
                         )}
                       </div>
-                    )}
+
+                      {!isChild && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-600">
+                            Contact Number
+                            {(i !== 0 || (typeof p.age === 'number' && p.age <= 10)) && (
+                              <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional)</span>
+                            )}
+                          </label>
+                          <input
+                            type="tel"
+                            required={i === 0 && !(typeof p.age === 'number' && p.age <= 10)}
+                            disabled={isProcessing}
+                            value={p.phone}
+                            onChange={(e) => handleChange(i, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            maxLength={10}
+                            pattern="[0-9]{10}"
+                            className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
+                              p.phone && p.phone.length > 0 && p.phone.length < 10
+                                ? 'border-rose-400 bg-rose-50'
+                                : 'border-slate-300'
+                            }`}
+                            placeholder="10 digit mobile number"
+                          />
+                          {p.phone && p.phone.length > 0 && p.phone.length < 10 && (
+                            <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Contact number must be exactly 10 digits</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </form>
+
+          {isAgentOrAdmin && (
+            <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-slate-800">Tourist Email (Optional)</span>
+              </div>
+              <p className="text-[11px] font-semibold text-slate-500">
+                Booking confirmation and tickets will be sent directly to the tourist in addition to your agent account.
+              </p>
+              <input
+                type="email"
+                placeholder="e.g. tourist@example.com"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                disabled={isProcessing}
+                className="w-full sm:w-2/3 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+              />
+            </div>
+          )}
 
           <div className="mt-6 flex items-start gap-3 rounded-lg bg-blue-50 p-4 text-blue-800">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-blue-600" />
@@ -291,22 +533,30 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               isProcessing ||
               !agreedToTerms ||
               !agreedToAadhaarConsent ||
-              !passengers.every((p, i) => {
-                const isChild = i >= adults;
-                const isChildAge = typeof p.age === 'number' && p.age <= 10;
-                const nameOk = p.full_name.trim() !== '';
-                const isPackage = targetType === 'package';
-                const ageOk = typeof p.age === 'number' && (isPackage ? (isChild ? (p.age >= 4 && p.age <= 10) : p.age >= 11) : (p.age >= 0));
-                const genderOk = p.gender !== '';
-                const aadhaarOk = isChildAge
-                  ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
-                  : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
-                // Phone is optional if it's a child package, OR if they are <= 10 years old (even if it's a room), OR if they are not the primary contact.
-                const phoneOk = isChild || isChildAge || (i !== 0 && (!p.phone || p.phone.trim().length === 0)) || (p.phone && p.phone.trim().length === 10);
-                
-                // For the primary contact (Guest 1), if they are a child, we should still ensure someone in the group has a phone, but we'll let it pass here.
-                return nameOk && ageOk && genderOk && aadhaarOk && phoneOk;
-              })
+              (passengerMode === 'quick'
+                ? !(
+                    quickPassenger.full_name.trim() !== '' &&
+                    typeof quickPassenger.age === 'number' &&
+                    quickPassenger.age >= 18 &&
+                    quickPassenger.gender !== '' &&
+                    /^\d{10}$/.test(quickPassenger.phone.trim()) &&
+                    quickPassenger.aadhaar.length === 12 &&
+                    isValidAadhaar(quickPassenger.aadhaar)
+                  )
+                : !passengers.every((p, i) => {
+                    const isChild = i >= adults;
+                    const isChildAge = typeof p.age === 'number' && p.age <= 10;
+                    const nameOk = p.full_name.trim() !== '';
+                    const isPackage = targetType === 'package';
+                    const ageOk = typeof p.age === 'number' && (isPackage ? (isChild ? (p.age >= 4 && p.age <= 10) : p.age >= 11) : (p.age >= 0));
+                    const genderOk = p.gender !== '';
+                    const aadhaarOk = isChildAge
+                      ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
+                      : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
+                    const phoneOk = isChild || isChildAge || (i !== 0 && (!p.phone || p.phone.trim().length === 0)) || (p.phone && p.phone.trim().length === 10);
+                    return nameOk && ageOk && genderOk && aadhaarOk && phoneOk;
+                  })
+              )
             }
             className="rounded-lg bg-[#1a6b7a] px-8 py-2.5 text-sm font-black text-white shadow-md hover:bg-[#13505c] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >

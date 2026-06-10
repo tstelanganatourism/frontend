@@ -8,6 +8,7 @@ import {
 import { BookingSidebarV2 } from './BookingSidebarV2';
 import { Sparkles } from 'lucide-react';
 import { useInventoryStore } from '@/stores/inventoryStore';
+import { API_BASE } from '@/lib/api';
 import { downloadFileViaFetch } from '@/lib/downloadUtils';
 
 interface PackageVariant {
@@ -42,6 +43,7 @@ interface MobileBookingSheetProps {
   hasRefreshments?: boolean;
   refreshmentAdultPrice?: number | string | null;
   refreshmentChildPrice?: number | string | null;
+  minPassengers?: number;
 }
 
 export const MobileBookingSheet = ({ 
@@ -54,7 +56,8 @@ export const MobileBookingSheet = ({
   transportOptions,
   hasRefreshments,
   refreshmentAdultPrice,
-  refreshmentChildPrice
+  refreshmentChildPrice,
+  minPassengers
 }: MobileBookingSheetProps) => {
   const { publicAvailability, publicLoading } = useInventoryStore();
   const isPackageInactive = !publicLoading && !publicAvailability;
@@ -91,7 +94,7 @@ export const MobileBookingSheet = ({
                 const filename = `${packageSlug}-brochure.pdf`;
 
                 if (rawKey) {
-                  const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+                  const downloadUrl = `${API_BASE}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
                   await downloadFileViaFetch(downloadUrl, filename);
                 } else {
                   await downloadFileViaFetch(brochurePdfUrl, filename);
@@ -144,6 +147,7 @@ export const MobileBookingSheet = ({
                   hasRefreshments={hasRefreshments}
                   refreshmentAdultPrice={refreshmentAdultPrice}
                   refreshmentChildPrice={refreshmentChildPrice}
+                  minPassengers={minPassengers}
                 />
               </div>
             </SheetContent>

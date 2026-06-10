@@ -52,16 +52,49 @@ export default function ProtectedRoute({
 
   if (!mounted || !isHydrated || isChecking) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="h-8 w-8 animate-spin text-[var(--color-brand-teal)]" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
-          </svg>
-          <span className="text-sm text-muted-foreground">Verifying access...</span>
-          <pre className="text-xs text-left max-w-lg mt-4 bg-gray-100 p-4 rounded text-black">
-            {JSON.stringify({ isChecking, mounted, isHydrated, isAuthenticated, hasUser: !!user }, null, 2)}
-          </pre>
+      <div className="min-h-[50vh] flex flex-col items-center justify-center bg-slate-50/50 px-4 py-12">
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes progressSweep {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          .custom-sweep {
+            animation: progressSweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          }
+        `}} />
+        <div className="bg-white p-8 sm:p-12 rounded-3xl border border-slate-100 shadow-xl max-w-md w-full text-center space-y-6">
+          <div className="relative h-24 w-24 mx-auto flex items-center justify-center">
+            {/* Outer rotating dashed border */}
+            <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#1a6b7a] animate-[spin_10s_linear_infinite] opacity-60" />
+            
+            {/* Inner pulsing background */}
+            <div className="absolute inset-2 rounded-full bg-gradient-to-tr from-[#1a6b7a] to-[#259b9a] animate-pulse opacity-10" />
+            
+            {/* Logo image container */}
+            <div className="relative h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-lg border border-slate-100 ring-4 ring-[#1a6b7a]/5">
+              <img
+                src="/apple-touch-icon.png"
+                alt="Telangana Boat Tourism"
+                className="h-12 w-12 object-contain rounded-xl"
+              />
+            </div>
+            
+            {/* Orbiting loading dot */}
+            <div className="absolute inset-[-4px] rounded-full animate-[spin_3s_linear_infinite]">
+              <div className="h-2.5 w-2.5 rounded-full bg-[#259b9a] shadow-[0_0_8px_#259b9a]" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-black text-slate-800">Verifying Access</h2>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed px-2">
+              Please wait while we authenticate your session.
+            </p>
+          </div>
+          
+          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1a6b7a] to-[#259b9a] rounded-full custom-sweep" style={{ width: '50%' }} />
+          </div>
         </div>
       </div>
     );

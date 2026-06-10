@@ -59,6 +59,8 @@ interface BookingDetails {
     email: string;
     phone: string;
   };
+  agent_id?: number | null;
+  agent_name?: string | null;
   agent_gst?: string | null;
   agent_company?: string | null;
   cancellation_details?: {
@@ -410,19 +412,70 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             </tr>
           </thead>
           <tbody>
-            {booking.passengers.map((p, idx) => (
-              <tr key={idx}>
-                <td>{idx + 1}</td>
-                <td>
-                  {p.full_name} {p.is_primary ? '(Primary)' : ''}
-                  {p.phone_number && <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number}</div>}
-                </td>
-                <td>{p.age}</td>
-                <td>{p.gender || '-'}</td>
-                <td>{p.id_proof_number ? `${p.id_proof_type}: ${p.id_proof_number.slice(-4) || p.id_proof_number}` : '(Not Provided)'}</td>
-                <td>{p.age >= 11 ? 'Adult' : 'Child'}</td>
-              </tr>
-            ))}
+            {(() => {
+              let rowIndex = 1;
+              const detailed: any[] = [];
+              let quickAdults = 0;
+              let quickChildren = 0;
+
+              booking.passengers.forEach((p: any) => {
+                const isQuickGuest = !p.is_primary && (
+                  booking.pricing_snapshot?.booking_mode === 'QUICK' ||
+                  (p.full_name || '').toLowerCase().includes("quick ticket") ||
+                  (p.full_name || '').toLowerCase().includes("guest adult") ||
+                  (p.full_name || '').toLowerCase().includes("guest child") ||
+                  (p.full_name || '').toLowerCase().includes("quick ticket(not provided)")
+                );
+
+                if (isQuickGuest) {
+                  if (p.age >= 11) quickAdults++;
+                  else quickChildren++;
+                } else {
+                  detailed.push(p);
+                }
+              });
+
+              const rows = detailed.map((p, idx) => (
+                <tr key={`det-${idx}`}>
+                  <td>{rowIndex++}</td>
+                  <td>
+                    {p.full_name} {p.is_primary ? '(Primary)' : ''}
+                    {(p.phone_number || primaryPassenger?.phone_number) && <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number || primaryPassenger?.phone_number}</div>}
+                  </td>
+                  <td>{p.age}</td>
+                  <td>{p.gender || '-'}</td>
+                  <td>{p.id_proof_number ? `${p.id_proof_type}: ${p.id_proof_number.slice(-4) || p.id_proof_number}` : '(Not Provided)'}</td>
+                  <td>{p.age >= 11 ? 'Adult' : 'Child'}</td>
+                </tr>
+              ));
+
+              if (quickAdults > 0) {
+                rows.push(
+                  <tr key="quick-adults">
+                    <td>{rowIndex++}</td>
+                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Adult) × {quickAdults}</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>Adult</td>
+                  </tr>
+                );
+              }
+              if (quickChildren > 0) {
+                rows.push(
+                  <tr key="quick-children">
+                    <td>{rowIndex++}</td>
+                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Child) × {quickChildren}</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>Child</td>
+                  </tr>
+                );
+              }
+
+              return rows;
+            })()}
           </tbody>
         </table>
         <div className="note">Note: ID Proof is mandatory for Adults (11+ years). Children (4-10 years) ID Proof is optional.</div>
@@ -455,7 +508,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <tr key={`transport-${idx}`}>
                     <td>
                       {ts.title || 'Transport'}
-                      <span className="line-meta">{describeTransport(ts, passengerCount)}</span>
+                      <span className="line-meta">{describeTransport(ts, booking.adult_count, booking.child_count)}</span>
                     </td>
                     <td>{money(ts.item_total || 0, 2)}</td>
                   </tr>
@@ -465,7 +518,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                     <td>
                       Refreshments
                       <span className="line-meta">
-                        Add-on for {passengerCount} pax
+                        Add-on for {booking.adult_count} Adults + {booking.child_count} Children
                       </span>
                     </td>
                     <td>{money(refreshmentAmount, 2)}</td>
@@ -517,6 +570,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           </div>
 
           <div className="summary-right">
+            {/* Hide raw payment transaction details for agent bookings */}
+            {!(booking.agent_id || booking.pricing_snapshot?.agent_metadata || booking.agent_name || booking.pricing_snapshot?.agent_discount || booking.pricing_snapshot?.agent_payable) && (
             <div>
               <div className="table-title">PAYMENT BREAKDOWN</div>
               <table className="summary-table">
@@ -553,6 +608,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 </tbody>
               </table>
             </div>
+            )}
 
             <div>
               <div className="table-title">TAX BREAKUP</div>

@@ -12,6 +12,7 @@ import {
   Ship,
   Sparkles,
 } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 import { downloadFileViaFetch } from '@/lib/downloadUtils';
 
 interface Variant {
@@ -79,9 +80,8 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
 
     if (rawKey) {
       e.preventDefault();
-      // Use backend download endpoint (bakes Content-Disposition: attachment)
-      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-      window.open(downloadUrl, '_blank');
+      const downloadUrl = `/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+      await downloadFileViaFetch(downloadUrl, filename);
     }
     // If no rawKey (e.g. Google Drive link), do NOT call e.preventDefault().
     // The native <a> tag behavior will open/download it, bypassing the CORS fetch error.

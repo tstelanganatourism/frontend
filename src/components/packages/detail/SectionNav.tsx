@@ -73,7 +73,7 @@ export const SectionNav = () => {
   };
 
   return (
-    <div className="sticky top-16 z-30 border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
+    <div className="sticky top-[65px] sm:top-[79px] z-30 border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12">
         <div className="flex flex-nowrap gap-2 overflow-x-auto py-3 scrollbar-none">
           {navItems.map((item) => {

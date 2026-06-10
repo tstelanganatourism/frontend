@@ -173,7 +173,7 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
 
             try {
               if (rawKey) {
-                const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+                const downloadUrl = `/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
                 await downloadFileViaFetch(downloadUrl, filename);
               } else {
                 await downloadFileViaFetch(brochureUrl, filename);

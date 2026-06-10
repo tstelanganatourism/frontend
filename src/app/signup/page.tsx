@@ -71,7 +71,7 @@ export default function SignupPage() {
         <div className="mb-4 flex flex-col items-center text-center">
           <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
             <img 
-              src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779020636/ts_tours/objxadvcxuub5q9h1ltn.jpg" 
+              src="/apple-touch-icon.png" 
               alt="Telangana Boat Tourism Logo" 
               className="h-full w-full object-contain rounded-xl"
             />

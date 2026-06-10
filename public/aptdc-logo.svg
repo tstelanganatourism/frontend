@@ -22,5 +22,5 @@
   <path fill="url(#blue)" d="M72 153l26-30 72 65-26 30z"/>
   <path fill="#5b16ea" d="M172 83l36-11 30 83-34 13z"/>
   <path fill="url(#purple)" d="M249 70l39 8-23 91-37-10z"/>
-  <text x="142" y="315" fill="url(#blue)" font-family="Arial, Helvetica, sans-serif" font-size="146" font-weight="900" letter-spacing="-10">aptdc</text>
+  <text x="135" y="300" fill="url(#blue)" font-family="Arial, Helvetica, sans-serif" font-size="110" font-weight="900" letter-spacing="-5">aptdc</text>
 </svg>

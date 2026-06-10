@@ -336,8 +336,8 @@ async function FeaturedPackages() {
   const packages = await fetchFeaturedPackages();
   return packages ? (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-      {packages.map((pkg) => (
-        <PackageCard key={pkg.id} pkg={pkg} />
+      {packages.map((pkg, index) => (
+        <PackageCard key={pkg.id} pkg={pkg} priority={index < 4} />
       ))}
     </div>
   ) : (
@@ -349,8 +349,8 @@ async function FeaturedRooms() {
   const rooms = await fetchFeaturedRooms();
   return rooms ? (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-      {rooms.map((room) => (
-        <RoomCard key={room.id} room={room} variant="grid" />
+      {rooms.map((room, index) => (
+        <RoomCard key={room.id} room={room} variant="grid" priority={index < 4} />
       ))}
     </div>
   ) : (
@@ -364,8 +364,8 @@ async function FeaturedSightseeing() {
   if (packages && packages.length > 0) {
     return (
       <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
-        {packages.map((pkg) => (
-          <PackageCard key={pkg.id} pkg={pkg} />
+        {packages.map((pkg, index) => (
+          <PackageCard key={pkg.id} pkg={pkg} priority={index < 4} />
         ))}
       </div>
     );

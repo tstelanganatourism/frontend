@@ -112,6 +112,7 @@ export default function PackageForm({
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [status, setStatus] = useState('DRAFT');
+  const [minPassengers, setMinPassengers] = useState<number>(1);
 
   // Brochure (R2 integration & backend PDF generation)
   const [brochurePdfUrl, setBrochurePdfUrl] = useState('');
@@ -161,6 +162,7 @@ export default function PackageForm({
       setIsFeatured(initialData.is_featured || false);
       setIsActive(initialData.is_active !== false);
       setStatus(initialData.status || 'DRAFT');
+      setMinPassengers(initialData.min_passengers ?? 1);
 
       setMetaTitle(initialData.meta_title || '');
       setMetaDescription(initialData.meta_description || '');
@@ -543,6 +545,7 @@ export default function PackageForm({
       is_featured: isFeatured,
       is_active: isActive,
       status,
+      min_passengers: Number(minPassengers) || 1,
       meta_title: metaTitle || null,
       meta_description: metaDescription || null,
       og_image_url: ogImageUrl || null,
@@ -1016,6 +1019,51 @@ export default function PackageForm({
                         min={0}
                       />
                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <div className="bg-gradient-to-br from-rose-50 to-pink-50 p-4 sm:p-5 rounded-xl border border-rose-200/60 hover:border-rose-400/50 transition-all">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-black text-slate-800">Minimum Passengers per Booking</label>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">
+                      Set the minimum total passengers (adults + children) required. Bookings below this count will be blocked for tourists. Admins and agents can still book freely.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setMinPassengers(prev => Math.max(1, prev - 1))}
+                      className="h-9 w-9 rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-100 transition-all font-black text-lg flex items-center justify-center shadow-sm"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      value={minPassengers}
+                      onChange={(e) => setMinPassengers(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-16 text-center rounded-xl border border-rose-200 bg-white px-2 py-2 text-base font-black text-rose-700 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-400/20 shadow-sm"
+                      min={1}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMinPassengers(prev => prev + 1)}
+                      className="h-9 w-9 rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-100 transition-all font-black text-lg flex items-center justify-center shadow-sm"
+                    >
+                      +
+                    </button>
+                    <span className="text-xs font-bold text-slate-500 ml-1">passengers</span>
+                  </div>
+                </div>
+                {minPassengers > 1 && (
+                  <div className="mt-3 flex items-center gap-2 bg-rose-100/60 rounded-lg px-3 py-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                    <span className="text-xs font-bold text-rose-700">
+                      Bookings with fewer than {minPassengers} passengers will be blocked on the public booking page.
+                    </span>
                   </div>
                 )}
               </div>

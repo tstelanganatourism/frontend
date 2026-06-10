@@ -515,11 +515,49 @@ export default function AgentBookingsLedgerPage() {
                     </span>
                     {b.passenger_names && b.passenger_names.length > 0 ? (
                       <div className="space-y-1">
-                        {b.passenger_names.map((name, i) => (
-                          <p key={i} className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-                            <UserCheck className="h-3 w-3 text-emerald-500 shrink-0" /> {name}
-                          </p>
-                        ))}
+                        {(() => {
+                          const detailed: string[] = [];
+                          
+                          b.passenger_names.forEach((name: string) => {
+                            if (
+                              name.toLowerCase().includes("quick ticket") ||
+                              name.toLowerCase().includes("guest adult") ||
+                              name.toLowerCase().includes("guest child") ||
+                              name.toLowerCase().includes("not provided")
+                            ) {
+                              // Skip counting them directly from strings
+                            } else {
+                              detailed.push(name);
+                            }
+                          });
+
+                          // Determine un-named adults/children from the actual counts
+                          const namedAdults = Math.min(b.adult_count, detailed.length);
+                          const namedChildren = Math.max(0, detailed.length - b.adult_count);
+                          
+                          const quickAdults = Math.max(0, b.adult_count - namedAdults);
+                          const quickChildren = Math.max(0, b.child_count - namedChildren);
+
+                          return (
+                            <>
+                              {detailed.map((name, i) => (
+                                <p key={`det-${i}`} className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                                  <UserCheck className="h-3 w-3 text-[var(--color-brand-river)] shrink-0" /> {name}
+                                </p>
+                              ))}
+                              {quickAdults > 0 && (
+                                <p className="text-xs font-bold text-slate-400 italic flex items-center gap-1.5">
+                                  <UserCheck className="h-3 w-3 text-slate-400 shrink-0" /> Not Provided (Adult) × {quickAdults}
+                                </p>
+                              )}
+                              {quickChildren > 0 && (
+                                <p className="text-xs font-bold text-slate-400 italic flex items-center gap-1.5">
+                                  <UserCheck className="h-3 w-3 text-slate-400 shrink-0" /> Not Provided (Child) × {quickChildren}
+                                </p>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     ) : (
                       <p className="text-xs text-slate-400 italic">No passenger lists synced.</p>

@@ -2,12 +2,12 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Loader2, Info, ChevronDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useInventoryStore, PublicDateAvailability } from '@/stores/inventoryStore';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { apiClient } from '@/lib/api';
-import { useRazorpay } from "react-razorpay";
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
 
 import { toast } from 'sonner';
@@ -48,6 +48,7 @@ interface BookingSidebarV2Props {
   hasRefreshments?: boolean;
   refreshmentAdultPrice?: number | string | null;
   refreshmentChildPrice?: number | string | null;
+  minPassengers?: number;
 }
 
 function todayIST(): Date {
@@ -92,7 +93,8 @@ export const BookingSidebarV2 = ({
   transportOptions = [],
   hasRefreshments,
   refreshmentAdultPrice,
-  refreshmentChildPrice
+  refreshmentChildPrice,
+  minPassengers = 1
 }: BookingSidebarV2Props) => {
   const { isAuthenticated, user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
@@ -100,7 +102,6 @@ export const BookingSidebarV2 = ({
   const router = useRouter();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { publicAvailability, publicLoading, fetchPublicAvailability } = useInventoryStore();
-  const { Razorpay } = useRazorpay();
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
 
@@ -122,8 +123,8 @@ export const BookingSidebarV2 = ({
     if (rawKey) {
       e.preventDefault();
       try {
-        const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-        window.open(downloadUrl, '_blank');
+        const downloadUrl = `/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
+        await downloadFileViaFetch(downloadUrl, filename);
       } catch (err) {
         console.error("Failed to download brochure:", err);
       }
@@ -175,8 +176,8 @@ export const BookingSidebarV2 = ({
   const [separateVehicleQtys, setSeparateVehicleQtys] = useState<Record<number, number>>({});
   const [includeRefreshments, setIncludeRefreshments] = useState<boolean>(false);
   const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(today));
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
+  const [adults, setAdults] = useState<number>(Math.max(1, minPassengers));
+  const [children, setChildren] = useState<number>(0);
   const [paymentPercentage, setPaymentPercentage] = useState(100);
   // Custom pay-now amount in rupees (null = full payment)
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
@@ -221,7 +222,6 @@ export const BookingSidebarV2 = ({
     setPaymentPercentage(100);
   }, [selectedVariantId, selectedDate, adults, children, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, includeRefreshments]);
 
-  // When transport options first arrive, init mode to NONE
   useEffect(() => {
     if (!hasTransport) {
       setSelectedTransportMode('NONE');
@@ -229,6 +229,8 @@ export const BookingSidebarV2 = ({
       setSeparateVehicleQtys({});
     }
   }, [hasTransport]);
+
+
 
   useEffect(() => {
     if (packageSlug && currentMonthStr) {
@@ -341,7 +343,7 @@ export const BookingSidebarV2 = ({
       );
       if (slot && slot.status === 'OPEN') {
         const available = Number(slot.available_seats || 0);
-        if (adults + children > available && available > 0) {
+        if (!isAdmin && adults + children > available && available > 0) {
           setChildren(0);
           setAdults(Math.max(1, available));
         }
@@ -404,8 +406,11 @@ export const BookingSidebarV2 = ({
     if (isPackageInactive && !isAdmin) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
     if (!selectedDate) return { kind: 'idle' as const, message: 'Select date to check availability' };
     if (isAdmin) {
-      const seats = selectedSlot ? selectedSlot.available_seats : 999;
-      return { kind: 'open' as const, message: `${seats} seats (Admin Bypass)` };
+      if (selectedSlot) {
+        return { kind: 'open' as const, message: `Public: ${selectedSlot.available_seats} seats (Admin: Unlimited)` };
+      } else {
+        return { kind: 'open' as const, message: 'Unlimited Seats (Admin Bypass)' };
+      }
     }
     if (!selectedSlot) return { kind: 'unpublished' as const, message: 'Schedule not opened yet. Call to confirm.' };
     if (selectedSlot.status === 'CLOSED') return { kind: 'closed' as const, message: 'Date closed for booking' };
@@ -813,7 +818,7 @@ export const BookingSidebarV2 = ({
     setShowPassengerModal(true);
   };
 
-  const handleCheckoutSubmit = async (passengers: any[]) => {
+  const handleCheckoutSubmit = async (passengers: any[], quickBooking: boolean = false, customerEmail?: string) => {
     setIsProcessingCheckout(true);
     try {
       if (isAdmin) {
@@ -831,7 +836,9 @@ export const BookingSidebarV2 = ({
             aadhaar: p.aadhaar || undefined,
             phone: p.phone || undefined,
           })),
-          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined
+          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined,
+          quick_booking: quickBooking,
+          customer_email: customerEmail,
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
         toast.success(`Booking ${res.data.public_id} created successfully!`);
@@ -863,95 +870,25 @@ export const BookingSidebarV2 = ({
           const clamped = Math.max(minPay, parsed);
           return parseFloat(((clamped / finalTotal) * 100).toFixed(4));
         })(),
-        expected_amount: isAgent ? prices.agentPayable : prices.grandTotal
+        expected_amount: isAgent ? prices.agentPayable : prices.grandTotal,
+        quick_booking: quickBooking,
+        customer_email: customerEmail,
       };
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
 
       const { checkout_data } = res.data;
 
-      if (!checkout_data || !checkout_data.key_id) {
+      if (!checkout_data || !checkout_data.redirect_url) {
         toast.error("Failed to initialize payment gateway. Please try again.");
         setIsProcessingCheckout(false);
         return;
       }
 
-      if (!Razorpay) {
-        toast.error("Payment gateway is still loading or blocked by your browser. Please disable adblockers and try again.");
-        setIsProcessingCheckout(false);
-        return;
-      }
-
-      const options = {
-        key: checkout_data.key_id,
-        amount: checkout_data.amount,
-        currency: checkout_data.currency,
-        name: "TS Tours",
-        description: `Booking Draft: ${checkout_data.draft_id}`,
-        order_id: checkout_data.razorpay_order_id,
-        handler: async (response: any) => {
-          try {
-            const verifyRes = await apiClient.post('/api/v1/payments/verify-payment', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            });
-            if (verifyRes.data.status === 'success') {
-              router.push(`/dashboard/bookings/${verifyRes.data.booking_id}`);
-            }
-          } catch (err) {
-            console.error("Payment verification failed", err);
-            toast.error("Payment verification failed. If money was deducted, it will be refunded automatically or confirmed soon.");
-            setIsProcessingCheckout(false);
-          }
-        },
-        prefill: {
-          name: passengers[0]?.full_name || '',
-          contact: passengers[0]?.phone || ''
-        },
-        theme: { color: "#1a6b7a" },
-        modal: {
-          ondismiss: () => {
-            apiClient.post('/api/v1/payments/record-failure', {
-              razorpay_order_id: checkout_data.razorpay_order_id,
-              error_code: 'USER_DISMISSED',
-              error_description: 'Customer closed Razorpay checkout before payment completion.',
-            }).catch((err) => console.warn('Failed to record payment dismissal', err));
-            toast.error("Payment not done, please try again");
-            setIsProcessingCheckout(false);
-          }
-        }
-      };
-
-      const rzp = new Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        const error = response?.error || {};
-        apiClient.post('/api/v1/payments/record-failure', {
-          razorpay_order_id: error.metadata?.order_id || checkout_data.razorpay_order_id,
-          razorpay_payment_id: error.metadata?.payment_id,
-          error_code: error.code,
-          error_description: error.description,
-          error_source: error.source,
-          error_step: error.step,
-          error_reason: error.reason,
-        }).catch((err) => console.warn('Failed to record payment failure', err));
-        toast.error(`Payment Failed: ${error.description || 'Please try again.'}`);
-        setIsProcessingCheckout(false);
-      });
-      rzp.open();
-
-      // Enforce pointer-events: auto on body/html to override Radix UI Dialog scroll lock blocking on mobile
-      if (typeof document !== 'undefined') {
-        document.body.style.setProperty('pointer-events', 'auto', 'important');
-        document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
-        let count = 0;
-        const interval = setInterval(() => {
-          document.body.style.setProperty('pointer-events', 'auto', 'important');
-          document.documentElement.style.setProperty('pointer-events', 'auto', 'important');
-          count++;
-          if (count > 30) clearInterval(interval);
-        }, 100);
-      }
+      toast.success("Redirecting to secure PhonePe checkout...");
+      setTimeout(() => {
+        window.location.href = checkout_data.redirect_url;
+      }, 1000);
     } catch (err: any) {
       console.warn("Checkout failed:", err?.message || err);
       let errMsg = "Checkout failed. Please try again.";
@@ -962,11 +899,7 @@ export const BookingSidebarV2 = ({
           errMsg = err.response.data.detail;
         }
       } else if (err.message) {
-        if (err.message.includes("Razorpay is not a constructor")) {
-          errMsg = "Payment gateway blocked. Please disable adblockers.";
-        } else {
-          errMsg = err.message;
-        }
+        errMsg = err.message;
       }
       toast.error(errMsg);
       setIsProcessingCheckout(false);
@@ -1146,10 +1079,10 @@ export const BookingSidebarV2 = ({
               <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Package Type</label>
               <button
                 type="button"
-                disabled={isPackageInactive || validVariants.length === 0}
+                disabled={(isPackageInactive && !isAdmin) || validVariants.length === 0}
                 onClick={() => { setVariantMenuOpen(!variantMenuOpen); setDateMenuOpen(false); }}
                 className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-bold shadow-sm transition-all outline-none cursor-pointer ${
-                  isPackageInactive || validVariants.length === 0
+                  (isPackageInactive && !isAdmin) || validVariants.length === 0
                     ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                     : variantMenuOpen
                     ? 'border-[#1a6b7a] bg-white ring-2 ring-[#1a6b7a]/15 shadow-md shadow-[#1a6b7a]/5 text-slate-900 font-extrabold'
@@ -1203,10 +1136,10 @@ export const BookingSidebarV2 = ({
               <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Travel date</label>
               <button
                 type="button"
-                disabled={isPackageInactive || validVariants.length === 0}
+                disabled={(isPackageInactive && !isAdmin) || validVariants.length === 0}
                 onClick={() => { setDateMenuOpen(!dateMenuOpen); setVariantMenuOpen(false); }}
                 className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-bold shadow-sm transition-all outline-none cursor-pointer ${
-                  isPackageInactive || validVariants.length === 0
+                  (isPackageInactive && !isAdmin) || validVariants.length === 0
                     ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                     : dateMenuOpen
                     ? 'border-[#1a6b7a] bg-white ring-2 ring-[#1a6b7a]/15 shadow-md shadow-[#1a6b7a]/5 text-slate-900 font-extrabold'
@@ -1641,11 +1574,21 @@ export const BookingSidebarV2 = ({
             })()}
           </div>
 
+          {/* Min Passengers Warning */}
+          {minPassengers > 1 && (adults + children) < minPassengers && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2.5">
+              <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+              <p className="text-xs font-bold text-rose-700 leading-relaxed">
+                This package requires a minimum of <span className="font-black">{minPassengers} passengers</span> per booking. Add more passengers to proceed.
+              </p>
+            </div>
+          )}
+
           {/* CTA */}
           <button
-            disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
+            disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)}
             onClick={handleBookingClick}
-            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
+            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)
                 ? 'bg-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-[#1a6b7a] hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-md'
               }`}
@@ -1691,17 +1634,17 @@ export const BookingSidebarV2 = ({
         </div>
 
         <button
-          disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)}
+          disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)}
           onClick={handleBookingClick}
           className={`flex-1 rounded-xl h-11 px-4 font-black text-white text-xs uppercase tracking-wider transition-all flex items-center justify-center ${
-            isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated)
+            isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)
               ? 'bg-slate-400 cursor-not-allowed shadow-none'
               : 'bg-[#1a6b7a] active:scale-95 shadow-md shadow-[#1a6b7a]/10'
           }`}
         >
           {isProcessingCheckout ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : ctaText}
+          ) : (minPassengers > 1 && (adults + children) < minPassengers) ? `Min ${minPassengers} pax` : ctaText}
         </button>
       </div>
 

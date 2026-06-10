@@ -40,8 +40,7 @@ interface PackageHeroV2Props {
   gallery: GalleryImage[];
 }
 
-const fallbackImage =
-  'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912237/slider7_fainya.jpg';
+const fallbackImage = 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg';
 
 const formatPrice = (value?: number | string | null) => {
   const numeric = Number(value || 0);
@@ -138,7 +137,7 @@ export const PackageHeroV2 = ({
               ))}
             </div>
 
-            <h1 className="max-w-3xl text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl">
+            <h1 className="max-w-3xl text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl break-words">
               {title}
             </h1>
 

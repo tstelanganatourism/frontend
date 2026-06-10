@@ -58,6 +58,7 @@ type PackageDetail = {
   has_refreshments?: boolean;
   refreshment_adult_price?: number | string | null;
   refreshment_child_price?: number | string | null;
+  min_passengers?: number;
   variants: Variant[];
   gallery: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
   itinerary: Array<{ id: number; day_number: number; title: string; description?: string | null; icon?: string | null; sort_order: number }>;
@@ -382,6 +383,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
             hasRefreshments={pkg.has_refreshments}
             refreshmentAdultPrice={pkg.refreshment_adult_price}
             refreshmentChildPrice={pkg.refreshment_child_price}
+            minPassengers={pkg.min_passengers}
           />
         </aside>
 
@@ -399,6 +401,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         hasRefreshments={pkg.has_refreshments}
         refreshmentAdultPrice={pkg.refreshment_adult_price}
         refreshmentChildPrice={pkg.refreshment_child_price}
+        minPassengers={pkg.min_passengers}
       />
 
       <CouponPopup targetType="PACKAGE" targetId={pkg.id} />
