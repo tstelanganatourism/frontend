@@ -16,13 +16,13 @@ const notoTelugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-tel
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tsboattourism.org"),
-  applicationName: "Telangana Boat Tourism",
+  applicationName: "Telangana & AP Boat Tourism",
   manifest: "/manifest.webmanifest",
   title: {
-    default: "Telangana Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
-    template: "%s | Telangana Boat Tourism"
+    default: "Telangana & AP Boat Tourism | Best Papikondalu Tours, Bhadrachalam & Rajahmundry Travels",
+    template: "%s | Telangana & AP Boat Tourism"
   },
-  description: "Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, Kolluru bamboo huts and premium stays with Telangana Boat Tourism.",
+  description: "Book trusted Papikondalu boat tours, AP & Telangana boat tourism packages, Rajahmundry river cruises, Bhadrachalam stays, and Kolluru bamboo huts online.",
   icons: {
     icon: [
       { url: "/icon-192x192.png?v=4", sizes: "192x192", type: "image/png" },
@@ -92,6 +92,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Font loading and preloads managed by Next.js */}
+        <link rel="preload" href="/home/godavari-hero-banner.jpg" as="image" type="image/jpeg" fetchPriority="high" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

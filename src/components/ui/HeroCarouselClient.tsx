@@ -321,6 +321,12 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
     >
       {/* ─── Background Images (all preloaded, cross-fade on active) ─── */}
       {slides.map((slide, idx) => {
+        // Virtualize DOM slides: only render active, next, and previous slides to prevent memory/rendering lag
+        const isRendered = idx === activeIndex || 
+                           idx === (activeIndex + 1) % slides.length || 
+                           idx === (activeIndex - 1 + slides.length) % slides.length;
+        if (!isRendered) return null;
+
         const imgSrc = slide.cover_image_url || '/home/godavari-hero-banner.jpg';
         return (
           <div
@@ -333,6 +339,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               alt={slide.title}
               fill
               priority={idx === 0}
+              unoptimized={idx === 0} // Bypass server-side optimization latency for LCP
               fetchPriority={idx === 0 ? 'high' : 'low'}
               sizes="(max-width: 640px) 100vw, 100vw"
               className="object-cover"

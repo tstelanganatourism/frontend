@@ -10,9 +10,9 @@ import { ShimmerGrid } from '@/components/ui/SkeletonLoader';
 import { apiFetch } from '@/lib/api';
 
 export const metadata: Metadata = {
-  title: 'Best Papikondalu Tours & Bhadrachalam Travel Packages',
+  title: 'AP & Telangana Boat Tourism | Best Papikondalu Tours, Bhadrachalam & Rajahmundry Travels',
   description:
-    'Book trusted Papikondalu boat tours, Godavari river cruises, Kolluru bamboo huts and Bhadrachalam travel packages with Telangana Boat Tourism.',
+    'Book trusted Papikondalu boat tours, AP & Telangana boat tourism packages, Rajahmundry river cruises, Bhadrachalam stays, and Kolluru bamboo huts online.',
   alternates: { canonical: '/' },
   keywords: [
     'best Papikondalu tours',
