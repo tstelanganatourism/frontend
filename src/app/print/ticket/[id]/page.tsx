@@ -147,11 +147,11 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
   const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
   const capturedPayments = getCapturedPayments(booking.payment_ledger);
 
-  // Dynamic GSTIN selection based on payment type
-  const isRazorpay = !!(
-    booking.pricing_snapshot?.razorpay_payment_id ||
-    booking.pricing_snapshot?.razorpay_order_id ||
-    booking.payment_ledger?.some((p) => p.payment_method === 'RAZORPAY')
+  // Determine if payment was made online (PhonePe or Cashfree)
+  const isOnlinePayment = !!(
+    booking.pricing_snapshot?.pg_payment_id ||
+    booking.pricing_snapshot?.pg_order_id ||
+    booking.payment_ledger?.some((p) => p.payment_method === 'PHONEPE' || p.payment_method === 'CASHFREE' || p.payment_method === 'RAZORPAY')
   );
   const gstNumber = '36AYSPN0044M1ZZ';
 
@@ -765,13 +765,13 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             {booking.remaining_balance > 0 && (
               <div className="pay-bal"><span>REMAINING BALANCE</span><span>{money(booking.remaining_balance, 2)}</span></div>
             )}
-            {/* For agent bookings, hide the internal payment method (Razorpay/PhonePe) — the tourist doesn't need to see that */}
+            {/* For agent bookings, hide the internal payment method (PhonePe/Cashfree) — the tourist doesn't need to see that */}
             {!(booking.agent_id || booking.pricing_snapshot?.agent_metadata || booking.agent_name || booking.pricing_snapshot?.agent_discount || booking.pricing_snapshot?.agent_payable) && capturedPayments.length > 0 && (
               <div className="pay-note">
                 <span className="pay-note-icon">✓</span>
                 <span>
                   Payments: {capturedPayments.map((payment) => {
-                    const methodNames: Record<string, string> = { RAZORPAY: 'PhonePe', PHONEPE: 'PhonePe', CASH: 'Cash', BANK_TRANSFER: 'Bank Transfer', ADMIN_MANUAL: 'Admin' };
+                    const methodNames: Record<string, string> = { RAZORPAY: 'PhonePe', PHONEPE: 'PhonePe', CASHFREE: 'Cashfree', CASH: 'Cash', BANK_TRANSFER: 'Bank Transfer', ADMIN_MANUAL: 'Admin' };
                     return `${money(payment.amount, 2)} ${methodNames[payment.payment_method] ?? payment.payment_method}`;
                   }).join(', ')}
                 </span>

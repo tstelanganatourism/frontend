@@ -19,6 +19,7 @@ export default function PaymentStatusPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const merchantTransactionId = searchParams.get('merchantTransactionId');
+  const gateway = (searchParams.get('gateway') || 'PHONEPE').toUpperCase();
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<VerificationResult | null>(null);
@@ -36,8 +37,13 @@ export default function PaymentStatusPage() {
     }
 
     try {
-      const res = await apiClient.get(`/api/v1/payments/verify-status`, {
-        params: { transaction_id: merchantTransactionId }
+      const endpoint = gateway === 'CASHFREE'
+        ? `/api/v1/payments/verify-cashfree-status`
+        : `/api/v1/payments/verify-status`;
+      const paramKey = gateway === 'CASHFREE' ? 'order_id' : 'transaction_id';
+
+      const res = await apiClient.get(endpoint, {
+        params: { [paramKey]: merchantTransactionId }
       });
       
       const statusData = res.data;
@@ -51,7 +57,7 @@ export default function PaymentStatusPage() {
       } else if (statusData.status === 'pending') {
         setResult({
           status: 'pending',
-          message: statusData.message || 'Payment is being processed by your bank. Please do not refresh.'
+          message: statusData.message || 'Payment is being processed. Please do not refresh.'
         });
         setLoading(false);
       } else {
@@ -143,7 +149,7 @@ export default function PaymentStatusPage() {
           <div className="space-y-2">
             <h2 className="text-xl font-black text-slate-800">Verifying Payment</h2>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed px-2">
-              We are connecting with PhonePe to securely confirm your transaction status. This will take just a moment.
+              We are securely confirming your transaction status with your payment gateway. This will take just a moment.
             </p>
           </div>
           

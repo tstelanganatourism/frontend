@@ -259,6 +259,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [customPayAmount, setCustomPayAmount] = useState<string>(''); // '' = full, else rupee amount
+  const [selectedGateway, setSelectedGateway] = useState<'PHONEPE' | 'CASHFREE'>('PHONEPE');
 
   // Proactively fetch latest agent profile/commission to prevent stale session calculations
   useEffect(() => {
@@ -692,22 +693,55 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         expected_amount: finalTotal,
         quick_booking: quickBooking,
         customer_email: customerEmail,
+        gateway: selectedGateway,
       };
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
 
       const { checkout_data } = res.data;
 
-      if (!checkout_data || !checkout_data.redirect_url) {
+      if (!checkout_data) {
         toast.error("Failed to initialize payment gateway. Please try again.");
         setIsProcessingCheckout(false);
         return;
       }
 
-      toast.success("Redirecting to secure PhonePe checkout...");
-      setTimeout(() => {
-        window.location.href = checkout_data.redirect_url;
-      }, 1000);
+      if (checkout_data.gateway === 'CASHFREE') {
+        // Cashfree Popup Flow
+        if (!checkout_data.payment_session_id) {
+          toast.error("Cashfree session creation failed. Please try again.");
+          setIsProcessingCheckout(false);
+          return;
+        }
+        toast.success("Opening Cashfree secure checkout...");
+        // Dynamically load Cashfree JS SDK
+        const loadCashfreeSDK = () => new Promise<void>((resolve, reject) => {
+          if ((window as any).Cashfree) { resolve(); return; }
+          const script = document.createElement('script');
+          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+          document.head.appendChild(script);
+        });
+        await loadCashfreeSDK();
+        const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const cfMode = isLocal ? 'sandbox' : 'production';
+        const cashfree = (window as any).Cashfree({ mode: cfMode });
+        cashfree.checkout({
+          paymentSessionId: checkout_data.payment_session_id,
+        });
+      } else {
+        // PhonePe Redirect Flow
+        if (!checkout_data.redirect_url) {
+          toast.error("Failed to initialize PhonePe gateway. Please try again.");
+          setIsProcessingCheckout(false);
+          return;
+        }
+        toast.success("Redirecting to secure PhonePe checkout...");
+        setTimeout(() => {
+          window.location.href = checkout_data.redirect_url;
+        }, 1000);
+      }
     } catch (err: any) {
       console.error(err);
       let errMsg = "Checkout failed. Please try again.";
@@ -1418,6 +1452,58 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 })()}
               </div>
 
+                  {/* Payment Gateway Selector */}
+                  {!isAdmin && isAuthenticated && (
+                    <div className="mt-4 mb-3 space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Pay Via</label>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                          id="gateway-phonepe"
+                          type="button"
+                          onClick={() => setSelectedGateway('PHONEPE')}
+                          className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                            selectedGateway === 'PHONEPE'
+                              ? 'border-[#5f259f] bg-[#5f259f]/5 shadow-md shadow-[#5f259f]/10 scale-[1.02]'
+                              : 'border-slate-200 bg-white hover:border-[#5f259f]/40'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <div className="bg-[#5f259f] p-0.5 rounded-full flex items-center justify-center shrink-0">
+                              <svg fill="#ffffff" role="img" viewBox="0 0 24 24" className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10.206 9.941h2.949v4.692c-.402.201-.938.268-1.34.268-1.072 0-1.609-.536-1.609-1.743V9.941zm13.47 4.816c-1.523 6.449-7.985 10.442-14.433 8.919C2.794 22.154-1.199 15.691.324 9.243 1.847 2.794 8.309-1.199 14.757.324c6.449 1.523 10.442 7.985 8.919 14.433zm-6.231-5.888a.887.887 0 0 0-.871-.871h-1.609l-3.686-4.222c-.335-.402-.871-.536-1.407-.402l-1.274.401c-.201.067-.268.335-.134.469l4.021 3.82H6.386c-.201 0-.335.134-.335.335v.67c0 .469.402.871.871.871h.938v3.217c0 2.413 1.273 3.82 3.418 3.82.67 0 1.206-.067 1.877-.335v2.145c0 .603.469 1.072 1.072 1.072h.938a.432.432 0 0 0 .402-.402V9.874h1.542c.201 0 .335-.134.335-.335v-.67z"/>
+                              </svg>
+                            </div>
+                            <span className="font-sans font-black text-xs text-[#5f259f] tracking-tight">PhonePe</span>
+                          </div>
+                          <span className="text-[8px] font-bold text-slate-400">UPI · Cards · NetBanking</span>
+                        </button>
+                        <button
+                          id="gateway-cashfree"
+                          type="button"
+                          onClick={() => setSelectedGateway('CASHFREE')}
+                          className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                            selectedGateway === 'CASHFREE'
+                              ? 'border-[#180e4b] bg-[#180e4b]/5 shadow-md shadow-[#180e4b]/10 scale-[1.02]'
+                              : 'border-slate-200 bg-white hover:border-[#180e4b]/40'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <svg viewBox="0 0 16 16" className="h-5 w-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
+                              <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
+                              <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
+                              <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
+                            </svg>
+                            <span className="font-sans font-black text-xs text-[#180e4b] tracking-tight">
+                              Cashfree <span className="font-normal text-[#180e4b]/80">Payments</span>
+                            </span>
+                          </div>
+                          <span className="text-[8px] font-bold text-slate-400">UPI · Cards · All Methods</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
                     <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
                       Not Available
@@ -1737,7 +1823,59 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       })()}
                     </div>
 
-                    {/* Mobile CTA — same Razorpay flow as desktop */}
+                    {/* Payment Gateway Selector */}
+                    {!isAdmin && isAuthenticated && (
+                      <div className="mt-4 mb-3 space-y-2">
+                        <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Pay Via</label>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button
+                            id="gateway-mobile-phonepe"
+                            type="button"
+                            onClick={() => setSelectedGateway('PHONEPE')}
+                            className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                              selectedGateway === 'PHONEPE'
+                                ? 'border-[#5f259f] bg-[#5f259f]/5 shadow-md shadow-[#5f259f]/10 scale-[1.02]'
+                                : 'border-slate-200 bg-white hover:border-[#5f259f]/40'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <div className="bg-[#5f259f] p-0.5 rounded-full flex items-center justify-center shrink-0">
+                                <svg fill="#ffffff" role="img" viewBox="0 0 24 24" className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M10.206 9.941h2.949v4.692c-.402.201-.938.268-1.34.268-1.072 0-1.609-.536-1.609-1.743V9.941zm13.47 4.816c-1.523 6.449-7.985 10.442-14.433 8.919C2.794 22.154-1.199 15.691.324 9.243 1.847 2.794 8.309-1.199 14.757.324c6.449 1.523 10.442 7.985 8.919 14.433zm-6.231-5.888a.887.887 0 0 0-.871-.871h-1.609l-3.686-4.222c-.335-.402-.871-.536-1.407-.402l-1.274.401c-.201.067-.268.335-.134.469l4.021 3.82H6.386c-.201 0-.335.134-.335.335v.67c0 .469.402.871.871.871h.938v3.217c0 2.413 1.273 3.82 3.418 3.82.67 0 1.206-.067 1.877-.335v2.145c0 .603.469 1.072 1.072 1.072h.938a.432.432 0 0 0 .402-.402V9.874h1.542c.201 0 .335-.134.335-.335v-.67z"/>
+                                </svg>
+                              </div>
+                              <span className="font-sans font-black text-xs text-[#5f259f] tracking-tight">PhonePe</span>
+                            </div>
+                            <span className="text-[8px] font-bold text-slate-400">UPI · Cards</span>
+                          </button>
+                          <button
+                            id="gateway-mobile-cashfree"
+                            type="button"
+                            onClick={() => setSelectedGateway('CASHFREE')}
+                            className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                              selectedGateway === 'CASHFREE'
+                                ? 'border-[#180e4b] bg-[#180e4b]/5 shadow-md shadow-[#180e4b]/10 scale-[1.02]'
+                                : 'border-slate-200 bg-white hover:border-[#180e4b]/40'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <svg viewBox="0 0 16 16" className="h-5 w-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
+                                <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
+                                <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
+                                <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
+                              </svg>
+                              <span className="font-sans font-black text-xs text-[#180e4b] tracking-tight">
+                                Cashfree <span className="font-normal text-[#180e4b]/80">Payments</span>
+                              </span>
+                            </div>
+                            <span className="text-[8px] font-bold text-slate-400">UPI · Cards · All Methods</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mobile CTA — same checkout flow as desktop */}
                     {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
                       <div className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 flex items-center justify-center cursor-not-allowed opacity-80">
                         Not Available on Selected Dates

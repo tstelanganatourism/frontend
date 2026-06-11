@@ -142,9 +142,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
     (booking as any)?.agent_phone ||
     'N/A';
 
-  const paymentMode = booking.pricing_snapshot?.razorpay_payment_id ? 'Online (Razorpay)' : 'Office';
-  const paymentId = booking.pricing_snapshot?.razorpay_payment_id || 'N/A';
-  const isRazorpay = paymentMode === 'Online (Razorpay)';
+  const paymentMode = (booking.pricing_snapshot?.pg_payment_id || booking.payment_ledger?.some((p: any) => p.payment_method === 'PHONEPE' || p.payment_method === 'CASHFREE')) ? 'Online' : 'Office';
+  const paymentId = booking.pricing_snapshot?.pg_payment_id || 'N/A';
   const gstNumber = '36AYSPN0044M1ZZ';
 
 

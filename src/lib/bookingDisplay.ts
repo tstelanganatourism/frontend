@@ -74,7 +74,8 @@ export function describeTransport(item: TransportSelection, adultCount?: number,
 export function getPaymentMethodLabel(method?: string | null) {
   const key = (method || '').toUpperCase();
   if (key === 'PHONEPE') return 'Online (PhonePe)';
-  if (key === 'RAZORPAY') return 'Online (Razorpay)';
+  if (key === 'CASHFREE') return 'Online (Cashfree)';
+  if (key === 'RAZORPAY') return 'Online (PhonePe)';  // Legacy data — was always PhonePe
   if (key === 'BANK_TRANSFER') return 'Bank Transfer';
   if (key === 'CASH') return 'Cash';
   if (key === 'ADMIN_MANUAL') return 'Manual (Admin)';

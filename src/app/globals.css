@@ -434,12 +434,6 @@
   }
 }
 
-/* Razorpay Clickable Fix inside Modal/Sheet Backdrop context */
-.razorpay-container {
-  pointer-events: auto !important;
-  z-index: 2147483647 !important;
-}
-
 /* Global autofill override to force dark backgrounds and white text */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

@@ -38,7 +38,7 @@ interface SystemSettings {
   address: string;
   gst_number: string;
   global_tax_percentage: number;
-  razorpay_key_id: string;
+  cashfree_app_id: string;
   booking_rules: string;
   cancellation_policies: string;
   social_links: Record<string, any>;

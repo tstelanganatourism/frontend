@@ -40,7 +40,7 @@ const trustItems = [
   { icon: ShieldCheck, label: 'Official Tourism Partner', sub: 'Telangana & Andhra Pradesh' },
   { icon: BadgeCheck, label: 'Government Approved', sub: 'Safe & Trusted' },
   { icon: Headphones, label: '24/7 Booking Support', sub: 'Quick & Reliable' },
-  { icon: Globe2, label: 'Secure Payments', sub: 'Razorpay Protected' },
+  { icon: Globe2, label: 'Secure Payments', sub: 'Secure & Encrypted' },
 ];
 
 const heroStats = [

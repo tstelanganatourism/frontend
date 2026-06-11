@@ -350,11 +350,11 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Razorpay Key ID</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cashfree App ID</label>
                     <input 
-                      type="password" 
-                      name="razorpay_key_id"
-                      value={formData.razorpay_key_id || ''} 
+                      type="text" 
+                      name="cashfree_app_id"
+                      value={formData.cashfree_app_id || ''} 
                       onChange={handleInputChange}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                     />

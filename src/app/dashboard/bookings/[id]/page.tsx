@@ -108,7 +108,8 @@ function formatDateTime(iso: string | null) {
 }
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  RAZORPAY: 'Online (Razorpay)',
+  CASHFREE: 'Online (Cashfree)',
+  RAZORPAY: 'Online (PhonePe)',  // Legacy
   PHONEPE: 'Online (PhonePe)',
   CASH: 'Cash',
   BANK_TRANSFER: 'Bank Transfer',
@@ -180,7 +181,7 @@ function PaymentTimeline({ ledger }: { ledger: PaymentLedgerEntry[] }) {
         {activeLedger.map((entry, idx) => {
           const statusStyle = PAYMENT_STATUS_STYLE[entry.status] ?? { label: entry.status, cls: 'bg-slate-50 text-slate-600 border-slate-200' };
           const methodLabel = PAYMENT_METHOD_LABEL[entry.payment_method] ?? entry.payment_method;
-          const isOnline = entry.collected_by_type === 'RAZORPAY' || entry.collected_by_type === 'PHONEPE' || entry.payment_method === 'PHONEPE';
+          const isOnline = entry.collected_by_type === 'RAZORPAY' || entry.collected_by_type === 'PHONEPE' || entry.collected_by_type === 'CASHFREE' || entry.payment_method === 'PHONEPE' || entry.payment_method === 'CASHFREE';
           return (
             <div
               key={entry.id}
@@ -250,7 +251,7 @@ export default function BookingDetailPage() {
   const [isPreparingTicket, setIsPreparingTicket] = useState(false);
   const [isPreparingForm, setIsPreparingForm] = useState(false);
 
-  // Guard: only one Razorpay popup can be active at a time
+  // Guard: only one payment flow can be active at a time
   const isPaymentActiveRef = useRef(false);
   const [isProcessingBalance, setIsProcessingBalance] = useState(false);
 
@@ -299,10 +300,9 @@ export default function BookingDetailPage() {
     }
   };
 
-  // ─── Balance Payment (duplicate-safe) ──────────────────────────────────────
-  const handlePayBalance = async () => {
+  // ─── Balance Payment (gateway-aware) ─────────────────────────────────────
+  const handlePayBalance = async (gateway: 'PHONEPE' | 'CASHFREE' = 'PHONEPE') => {
     if (!booking) return;
-    // Prevent duplicate: if payment popup already active, do nothing
     if (isPaymentActiveRef.current || isProcessingBalance) {
       toast.error("A payment is already in progress. Please complete or dismiss it.");
       return;
@@ -312,20 +312,44 @@ export default function BookingDetailPage() {
     setIsProcessingBalance(true);
 
     try {
-      const res = await apiClient.post(`/api/v1/bookings/${booking.public_id}/balance-checkout`);
+      const res = await apiClient.post(`/api/v1/bookings/${booking.public_id}/balance-checkout?gateway=${gateway}`);
       const { checkout_data } = res.data;
 
-      if (!checkout_data?.redirect_url) {
-        toast.error("Failed to initialize payment gateway. Please try again.");
-        isPaymentActiveRef.current = false;
-        setIsProcessingBalance(false);
-        return;
+      if (checkout_data?.gateway === 'CASHFREE') {
+        if (!checkout_data.payment_session_id) {
+          toast.error("Cashfree session creation failed. Please try again.");
+          isPaymentActiveRef.current = false;
+          setIsProcessingBalance(false);
+          return;
+        }
+        toast.success("Opening Cashfree secure checkout...");
+        const loadCashfreeSDK = () => new Promise<void>((resolve, reject) => {
+          if ((window as any).Cashfree) { resolve(); return; }
+          const script = document.createElement('script');
+          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+          document.head.appendChild(script);
+        });
+        await loadCashfreeSDK();
+        const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const cfMode = isLocal ? 'sandbox' : 'production';
+        const cashfree = (window as any).Cashfree({ mode: cfMode });
+        cashfree.checkout({
+          paymentSessionId: checkout_data.payment_session_id,
+        });
+      } else {
+        if (!checkout_data?.redirect_url) {
+          toast.error("Failed to initialize payment gateway. Please try again.");
+          isPaymentActiveRef.current = false;
+          setIsProcessingBalance(false);
+          return;
+        }
+        toast.success("Redirecting to secure PhonePe checkout...");
+        setTimeout(() => {
+          window.location.href = checkout_data.redirect_url;
+        }, 1000);
       }
-
-      toast.success("Redirecting to secure PhonePe checkout...");
-      setTimeout(() => {
-        window.location.href = checkout_data.redirect_url;
-      }, 1000);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Failed to initiate balance payment.");
       isPaymentActiveRef.current = false;
@@ -407,8 +431,8 @@ export default function BookingDetailPage() {
   ) && !booking.has_pending_cancellation;
 
   const isFullyPaid = booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED';
-  const isRazorpay = !!(
-    booking.payment_ledger?.some(p => p.payment_method === 'RAZORPAY')
+  const isOnlinePayment = !!(
+    booking.payment_ledger?.some(p => p.payment_method === 'PHONEPE' || p.payment_method === 'CASHFREE' || p.payment_method === 'RAZORPAY')
   );
   const gstNumber = '36AYSPN0044M1ZZ';
 
@@ -450,17 +474,43 @@ export default function BookingDetailPage() {
               <CheckCircle2 className="h-3.5 w-3.5" /> Booking Fully Paid
             </span>
           ) : remainingAmount > 0 ? (
-            <button
-              onClick={handlePayBalance}
-              disabled={isProcessingBalance}
-              id="pay-remaining-btn"
-              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#1a6b7a] text-white rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider hover:bg-[#13505c] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isProcessingBalance
-                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing...</>
-                : <><CreditCard className="h-3.5 w-3.5" /> Pay {formatINR(displayRemaining)}</>
-              }
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handlePayBalance('PHONEPE')}
+                disabled={isProcessingBalance}
+                id="pay-remaining-phonepe-btn"
+                className="flex items-center justify-center gap-2 px-4 py-2 sm:px-4.5 sm:py-2.5 bg-[#5f259f] text-white rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider hover:bg-[#4a1d7d] active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#5f259f]/10"
+              >
+                {isProcessingBalance ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <div className="bg-white p-0.5 rounded-full flex items-center justify-center shrink-0">
+                    <svg fill="#5f259f" role="img" viewBox="0 0 24 24" className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10.206 9.941h2.949v4.692c-.402.201-.938.268-1.34.268-1.072 0-1.609-.536-1.609-1.743V9.941zm13.47 4.816c-1.523 6.449-7.985 10.442-14.433 8.919C2.794 22.154-1.199 15.691.324 9.243 1.847 2.794 8.309-1.199 14.757.324c6.449 1.523 10.442 7.985 8.919 14.433zm-6.231-5.888a.887.887 0 0 0-.871-.871h-1.609l-3.686-4.222c-.335-.402-.871-.536-1.407-.402l-1.274.401c-.201.067-.268.335-.134.469l4.021 3.82H6.386c-.201 0-.335.134-.335.335v.67c0 .469.402.871.871.871h.938v3.217c0 2.413 1.273 3.82 3.418 3.82.67 0 1.206-.067 1.877-.335v2.145c0 .603.469 1.072 1.072 1.072h.938a.432.432 0 0 0 .402-.402V9.874h1.542c.201 0 .335-.134.335-.335v-.67z"/>
+                    </svg>
+                  </div>
+                )}
+                <span>PhonePe ({formatINR(remainingAmount)})</span>
+              </button>
+              <button
+                onClick={() => handlePayBalance('CASHFREE')}
+                disabled={isProcessingBalance}
+                id="pay-remaining-cashfree-btn"
+                className="flex items-center justify-center gap-2 px-4 py-2 sm:px-4.5 sm:py-2.5 bg-[#180e4b] text-white rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider hover:bg-[#0f0736] active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#180e4b]/10"
+              >
+                {isProcessingBalance ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
+                    <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
+                    <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
+                  </svg>
+                )}
+                <span>Cashfree ({formatINR(remainingAmount)})</span>
+              </button>
+            </div>
           ) : null}
 
           <button
@@ -510,7 +560,14 @@ export default function BookingDetailPage() {
           <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-border">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 pb-6 border-b border-slate-100">
               <div>
-                <div className="mb-2">{getStatusBadge(booking.status)}</div>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  {getStatusBadge(booking.status)}
+                  {!isFullyPaid && remainingAmount > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                      Pending: {formatINR(remainingAmount)}
+                    </span>
+                  )}
+                </div>
                 <h1 className="text-xl font-black text-slate-800 leading-tight">{booking.package_title}</h1>
                 <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">{booking.variant_title}</p>
               </div>
@@ -842,11 +899,54 @@ export default function BookingDetailPage() {
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-slate-100">
-              <div className="flex items-center justify-center gap-1.5 text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl text-xs font-bold border border-emerald-200">
-                <Shield className="h-4 w-4 shrink-0" /> Verified Ticket
+            {isFullyPaid ? (
+              <div className="mt-6 pt-6 border-t border-slate-100">
+                <div className="flex items-center justify-center gap-1.5 text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl text-xs font-bold border border-emerald-200">
+                  <Shield className="h-4 w-4 shrink-0" /> Verified Ticket
+                </div>
               </div>
-            </div>
+            ) : remainingAmount > 0 ? (
+              <div className="mt-6 pt-6 border-t border-slate-100 space-y-2.5">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Complete Balance Payment</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => handlePayBalance('PHONEPE')}
+                    disabled={isProcessingBalance}
+                    id="pay-remaining-invoice-phonepe-btn"
+                    className="flex items-center justify-center gap-2 py-3 bg-[#5f259f] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#4a1d7d] active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#5f259f]/10"
+                  >
+                    {isProcessingBalance ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <div className="bg-white p-0.5 rounded-full flex items-center justify-center shrink-0">
+                        <svg fill="#5f259f" role="img" viewBox="0 0 24 24" className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M10.206 9.941h2.949v4.692c-.402.201-.938.268-1.34.268-1.072 0-1.609-.536-1.609-1.743V9.941zm13.47 4.816c-1.523 6.449-7.985 10.442-14.433 8.919C2.794 22.154-1.199 15.691.324 9.243 1.847 2.794 8.309-1.199 14.757.324c6.449 1.523 10.442 7.985 8.919 14.433zm-6.231-5.888a.887.887 0 0 0-.871-.871h-1.609l-3.686-4.222c-.335-.402-.871-.536-1.407-.402l-1.274.401c-.201.067-.268.335-.134.469l4.021 3.82H6.386c-.201 0-.335.134-.335.335v.67c0 .469.402.871.871.871h.938v3.217c0 2.413 1.273 3.82 3.418 3.82.67 0 1.206-.067 1.877-.335v2.145c0 .603.469 1.072 1.072 1.072h.938a.432.432 0 0 0 .402-.402V9.874h1.542c.201 0 .335-.134.335-.335v-.67z"/>
+                        </svg>
+                      </div>
+                    )}
+                    <span>PhonePe ({formatINR(remainingAmount)})</span>
+                  </button>
+                  <button
+                    onClick={() => handlePayBalance('CASHFREE')}
+                    disabled={isProcessingBalance}
+                    id="pay-remaining-invoice-cashfree-btn"
+                    className="flex items-center justify-center gap-2 py-3 bg-[#180e4b] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#0f0736] active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#180e4b]/10"
+                  >
+                    {isProcessingBalance ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <svg viewBox="0 0 16 16" className="h-4.5 w-4.5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
+                        <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
+                        <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
+                        <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
+                      </svg>
+                    )}
+                    <span>Cashfree ({formatINR(remainingAmount)})</span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* Travel info / contact */}

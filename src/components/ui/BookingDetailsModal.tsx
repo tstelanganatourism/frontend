@@ -116,7 +116,8 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; text: string; ri
 };
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  RAZORPAY: 'Online (Razorpay)',
+  CASHFREE: 'Online (Cashfree)',
+  RAZORPAY: 'Online (PhonePe)',  // Legacy — was always PhonePe
   PHONEPE: 'Online (PhonePe)',
   CASH: 'Cash',
   BANK_TRANSFER: 'Bank Transfer',
@@ -158,7 +159,7 @@ function PaymentLedgerPanel({ ledger, targetTotalAmount }: { ledger: PaymentLedg
       {ledger.map((entry, idx) => {
         const statusStyle = PAYMENT_STATUS_STYLE[entry.status] ?? { label: entry.status, cls: 'bg-slate-50 text-slate-600 border-slate-200' };
         const methodLabel = PAYMENT_METHOD_LABEL[entry.payment_method] ?? entry.payment_method;
-        const isOnline = entry.collected_by_type === 'RAZORPAY' || entry.collected_by_type === 'PHONEPE' || entry.payment_method === 'PHONEPE';
+        const isOnline = entry.collected_by_type === 'RAZORPAY' || entry.collected_by_type === 'PHONEPE' || entry.collected_by_type === 'CASHFREE' || entry.payment_method === 'PHONEPE' || entry.payment_method === 'CASHFREE';
 
         return (
           <div key={entry.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-slate-100">
