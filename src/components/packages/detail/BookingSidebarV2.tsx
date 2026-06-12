@@ -196,6 +196,15 @@ export const BookingSidebarV2 = ({
     }
   }, [isStudentPackage]);
 
+  useEffect(() => {
+    const handlePageShow = () => {
+      setIsProcessingCheckout(false);
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
+
   const [couponCode, setCouponCode] = useState('');
   const [pendingCouponCode, setPendingCouponCode] = useState<string | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);

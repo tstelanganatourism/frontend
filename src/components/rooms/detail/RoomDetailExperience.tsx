@@ -277,6 +277,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     setCustomPayAmount('');
   }, [selectedVariantId, arrivalDate, departureDate, guests]);
 
+  useEffect(() => {
+    const handlePageShow = () => {
+      setIsProcessingCheckout(false);
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
+
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
   const [validatingCoupon, setValidatingCoupon] = useState(false);
