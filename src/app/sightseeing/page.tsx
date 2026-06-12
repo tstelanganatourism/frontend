@@ -39,5 +39,10 @@ export default async function SightseeingPage({
 }) {
   const params = await searchParams;
   const { data } = await fetchInitialPackages(params);
-  return <PackagesList data={data} pathname="/sightseeing" searchParams={params} />;
+  return (
+    <>
+      <link rel="preload" href="/images/sightseeing-banner-2026.webp" as="image" type="image/webp" fetchPriority="high" />
+      <PackagesList data={data} pathname="/sightseeing" searchParams={params} />
+    </>
+  );
 }

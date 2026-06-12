@@ -134,6 +134,9 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {heroImage && (
+        <link rel="preload" href={heroImage} as="image" type="image/jpeg" fetchPriority="high" />
+      )}
       <RoomDetailExperience room={room} />
       <CouponPopup targetType="ROOM" targetId={room.id} />
     </>

@@ -307,6 +307,9 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
   return (
     <main className="bg-[#f6fbfa] pb-20 text-slate-800 antialiased lg:pb-0">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {pkg.cover_image_url && (
+        <link rel="preload" href={pkg.cover_image_url} as="image" type="image/jpeg" fetchPriority="high" />
+      )}
 
       {/* Clean Header Grid */}
       <PackageHeroV2

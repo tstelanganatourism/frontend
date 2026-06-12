@@ -35,5 +35,10 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
 export default async function BoatRidesPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const searchParams = await props.searchParams;
   const { data } = await fetchInitialPackages(searchParams);
-  return <PackagesList data={data} pathname="/boat-rides" searchParams={searchParams} />;
+  return (
+    <>
+      <link rel="preload" href="/images/boat-rides-banner-2026.webp" as="image" type="image/webp" fetchPriority="high" />
+      <PackagesList data={data} pathname="/boat-rides" searchParams={searchParams} />
+    </>
+  );
 }
