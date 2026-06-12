@@ -61,5 +61,6 @@ package-lock.json
 
 # Lighthouse
 lighthouse-report.json
+lighthouse-*.json
 
 certificates
