@@ -98,6 +98,9 @@ export default function AdminPackagesPage() {
   } = useAdminStore();
   const [searchVal, setSearchVal] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState('default');
+  const [featuredFilter, setFeaturedFilter] = useState('all');
+  const [regionFilter, setRegionFilter] = useState('all');
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -311,7 +314,7 @@ export default function AdminPackagesPage() {
             className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
           />
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           <CustomFilterSelect
             value={statusFilter}
             options={[
@@ -323,6 +326,34 @@ export default function AdminPackagesPage() {
             onChange={setStatusFilter}
             placeholder="All Statuses"
           />
+          <select
+            value={regionFilter}
+            onChange={(e) => setRegionFilter(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
+          >
+            <option value="all">All Regions</option>
+            <option value="AP">Andhra Pradesh (AP)</option>
+            <option value="TS">Telangana (TS)</option>
+          </select>
+          <select
+            value={featuredFilter}
+            onChange={(e) => setFeaturedFilter(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
+          >
+            <option value="all">All Features</option>
+            <option value="featured">Featured Only</option>
+            <option value="non-featured">Non-Featured Only</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
+          >
+            <option value="default">Sort: Default</option>
+            <option value="bookings-desc">Sort: Highest Bookings</option>
+            <option value="price-asc">Sort: Price (Low to High)</option>
+            <option value="price-desc">Sort: Price (High to Low)</option>
+          </select>
         </div>
       </div>
 
@@ -349,13 +380,34 @@ export default function AdminPackagesPage() {
                   </td>
                 </tr>
               ) : (() => {
-                const filteredPackages = Array.isArray(packages) 
+                let filteredPackages = Array.isArray(packages) 
                   ? packages.filter(pkg => 
                       searchVal === '' || 
                       (pkg.title && pkg.title.toLowerCase().includes(searchVal.toLowerCase())) || 
                       (pkg.slug && pkg.slug.toLowerCase().includes(searchVal.toLowerCase()))
                     )
                   : [];
+
+                // Region Filter
+                if (regionFilter !== 'all') {
+                  filteredPackages = filteredPackages.filter(pkg => pkg.region === regionFilter);
+                }
+
+                // Featured Filter
+                if (featuredFilter === 'featured') {
+                  filteredPackages = filteredPackages.filter(pkg => pkg.is_featured === true);
+                } else if (featuredFilter === 'non-featured') {
+                  filteredPackages = filteredPackages.filter(pkg => pkg.is_featured !== true);
+                }
+
+                // Sort By
+                if (sortBy === 'bookings-desc') {
+                  filteredPackages.sort((a, b) => (b.active_booking_count || 0) - (a.active_booking_count || 0));
+                } else if (sortBy === 'price-asc') {
+                  filteredPackages.sort((a, b) => Number(a.starting_price || 0) - Number(b.starting_price || 0));
+                } else if (sortBy === 'price-desc') {
+                  filteredPackages.sort((a, b) => Number(b.starting_price || 0) - Number(a.starting_price || 0));
+                }
                   
                 if (filteredPackages.length === 0) {
                   return (

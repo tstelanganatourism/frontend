@@ -97,6 +97,9 @@ export default function AdminRoomsPage() {
   } = useAdminStore();
   const [searchVal, setSearchVal] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState('default');
+  const [featuredFilter, setFeaturedFilter] = useState('all');
+  const [regionFilter, setRegionFilter] = useState('all');
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -307,7 +310,7 @@ export default function AdminRoomsPage() {
             className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
           />
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           <CustomFilterSelect
             value={statusFilter}
             options={[
@@ -319,6 +322,34 @@ export default function AdminRoomsPage() {
             onChange={setStatusFilter}
             placeholder="All Statuses"
           />
+          <select
+            value={regionFilter}
+            onChange={(e) => setRegionFilter(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
+          >
+            <option value="all">All Regions</option>
+            <option value="AP">Andhra Pradesh (AP / Kolluru)</option>
+            <option value="TS">Telangana (TS / Bhadrachalam)</option>
+          </select>
+          <select
+            value={featuredFilter}
+            onChange={(e) => setFeaturedFilter(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
+          >
+            <option value="all">All Features</option>
+            <option value="featured">Featured Only</option>
+            <option value="non-featured">Non-Featured Only</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
+          >
+            <option value="default">Sort: Default</option>
+            <option value="bookings-desc">Sort: Highest Bookings</option>
+            <option value="price-asc">Sort: Price (Low to High)</option>
+            <option value="price-desc">Sort: Price (High to Low)</option>
+          </select>
         </div>
       </div>
 
@@ -345,13 +376,48 @@ export default function AdminRoomsPage() {
                   </td>
                 </tr>
               ) : (() => {
-                const filteredRooms = Array.isArray(rooms)
+                let filteredRooms = Array.isArray(rooms)
                   ? rooms.filter(room => 
                       searchVal === '' || 
                       (room.lodge_name && room.lodge_name.toLowerCase().includes(searchVal.toLowerCase())) || 
                       (room.slug && room.slug.toLowerCase().includes(searchVal.toLowerCase()))
                     )
                   : [];
+
+                // Region Filter (AP vs TS based on address)
+                if (regionFilter === 'AP') {
+                  filteredRooms = filteredRooms.filter(room => 
+                    room.address && (
+                      room.address.toLowerCase().includes('kolluru') || 
+                      room.address.toLowerCase().includes('ap') || 
+                      room.address.toLowerCase().includes('andhra')
+                    )
+                  );
+                } else if (regionFilter === 'TS') {
+                  filteredRooms = filteredRooms.filter(room => 
+                    room.address && (
+                      room.address.toLowerCase().includes('bhadrachalam') || 
+                      room.address.toLowerCase().includes('ts') || 
+                      room.address.toLowerCase().includes('telangana')
+                    )
+                  );
+                }
+
+                // Featured Filter
+                if (featuredFilter === 'featured') {
+                  filteredRooms = filteredRooms.filter(room => room.is_featured === true);
+                } else if (featuredFilter === 'non-featured') {
+                  filteredRooms = filteredRooms.filter(room => room.is_featured !== true);
+                }
+
+                // Sort By
+                if (sortBy === 'bookings-desc') {
+                  filteredRooms.sort((a, b) => (b.active_booking_count || 0) - (a.active_booking_count || 0));
+                } else if (sortBy === 'price-asc') {
+                  filteredRooms.sort((a, b) => Number(a.starting_price || 0) - Number(b.starting_price || 0));
+                } else if (sortBy === 'price-desc') {
+                  filteredRooms.sort((a, b) => Number(b.starting_price || 0) - Number(a.starting_price || 0));
+                }
                   
                 if (filteredRooms.length === 0) {
                   return (
