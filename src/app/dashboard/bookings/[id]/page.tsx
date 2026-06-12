@@ -314,6 +314,9 @@ export default function BookingDetailPage() {
     setIsProcessingBalance(true);
 
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('last_checkout_source', window.location.pathname + window.location.search);
+      }
       const res = await apiClient.post(`/api/v1/bookings/${booking.public_id}/balance-checkout?gateway=${gateway}`);
       const { checkout_data } = res.data;
 

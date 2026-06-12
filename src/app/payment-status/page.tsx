@@ -114,7 +114,11 @@ export default function PaymentStatusPage() {
       }
     }
     // Fallback if no last source is recorded
-    router.push('/');
+    if (merchantTransactionId && merchantTransactionId.startsWith('TXN_BAL_')) {
+      router.push('/dashboard');
+    } else {
+      router.push('/');
+    }
   };
 
   const handleManualCheck = () => {
