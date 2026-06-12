@@ -24,6 +24,7 @@ export default function PaymentStatusPage() {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const retryCountRef = useRef(0);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const verifyPayment = async (showToast = false) => {
@@ -75,14 +76,14 @@ export default function PaymentStatusPage() {
       }
       
       // If we've exhausted retries or this was a manual check, show the error state
-      if (showToast || retryCount >= 6) {
+      if (showToast || retryCountRef.current >= 6) {
         setResult({
           status: 'failed',
-          message: 'Failed to verify transaction status with the server. Please try again.'
+          message: err.response?.data?.detail || 'Failed to verify transaction status with the server. Please try again.'
         });
         setLoading(false);
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       }
-      // If we are still auto-polling, we can leave loading=true and let the next interval try
     }
   };
 
@@ -91,14 +92,12 @@ export default function PaymentStatusPage() {
 
     // Set up auto-polling for pending states every 5 seconds for a maximum of 6 times (30 seconds)
     pollingIntervalRef.current = setInterval(() => {
-      setRetryCount(prev => {
-        if (prev >= 6) {
-          if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-          return prev;
-        }
-        verifyPayment();
-        return prev + 1;
-      });
+      retryCountRef.current += 1;
+      setRetryCount(retryCountRef.current);
+      if (retryCountRef.current >= 6) {
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+      }
+      verifyPayment();
     }, 5000);
 
     return () => {
@@ -256,8 +255,14 @@ export default function PaymentStatusPage() {
 
             <div className="pt-2 flex flex-col gap-2">
               <button
+                onClick={() => router.back()}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#1a6b7a] text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-[#13505c] transition-colors shadow-md"
+              >
+                Go Back & Retry Payment
+              </button>
+              <button
                 onClick={() => router.push('/')}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#1a6b7a] text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-[#13505c] transition-colors"
+                className="w-full py-3.5 bg-white border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-50 transition-colors"
               >
                 Return to Packages
               </button>
