@@ -79,6 +79,14 @@ export const MobileBookingSheet = ({
       );
   const hasFare = Number.isFinite(positiveStartingPrice) && positiveStartingPrice > 0;
 
+  const [sheetOpen, setSheetOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('restore_checkout=true')) {
+      setSheetOpen(true);
+    }
+  }, []);
+
   return (
     <div className="fixed inset-x-0 bottom-16 z-50 border-t border-[#dfe8e2]/60 bg-white/95 p-3 shadow-[0_-18px_50px_rgba(15,61,86,0.14)] backdrop-blur lg:hidden">
       <div className="flex items-center justify-between gap-3">
@@ -128,7 +136,7 @@ export const MobileBookingSheet = ({
             Closed
           </button>
         ) : (
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <button
                 type="button"

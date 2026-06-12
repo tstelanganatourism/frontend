@@ -64,31 +64,62 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
 
   useEffect(() => {
     if (isOpen) {
-      const initial: PassengerInput[] = Array.from({ length: totalPassengers }).map((_, i) => ({
-        full_name: '',
-        age: isStudentPackage ? 0 : '',
-        gender: '',
-        phone: '',
-        aadhaar: '',
-        relationship: i === 0 ? 'self' : '',
-        is_primary: i === 0,
-        student_class: '',
-      }));
-      setPassengers(initial);
-      setPassengerMode('full');
-      setQuickPassenger({
-        full_name: '',
-        age: isStudentPackage ? 0 : '',
-        gender: '',
-        phone: '',
-        aadhaar: '',
-        relationship: 'self',
-        is_primary: true,
-        student_class: '',
-      });
-      setAgreedToTerms(false);
-      setAgreedToAadhaarConsent(false);
-      setCustomerEmail('');
+      let restoredPassengers: PassengerInput[] = [];
+      let isRestored = false;
+      
+      if (typeof window !== 'undefined') {
+        const raw = sessionStorage.getItem('last_checkout_passengers');
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length === totalPassengers) {
+              restoredPassengers = parsed;
+              isRestored = true;
+            }
+          } catch (e) {
+            console.error("Failed to parse restored passengers", e);
+          }
+        }
+      }
+
+      if (isRestored && restoredPassengers.length > 0) {
+        setPassengers(restoredPassengers);
+        const savedQuick = sessionStorage.getItem('last_checkout_quick_booking') === 'true';
+        setPassengerMode(savedQuick ? 'quick' : 'full');
+        if (savedQuick) {
+          setQuickPassenger(restoredPassengers[0]);
+        }
+        const savedEmail = sessionStorage.getItem('last_checkout_email') || '';
+        setCustomerEmail(savedEmail);
+        setAgreedToTerms(true);
+        setAgreedToAadhaarConsent(true);
+      } else {
+        const initial: PassengerInput[] = Array.from({ length: totalPassengers }).map((_, i) => ({
+          full_name: '',
+          age: isStudentPackage ? 0 : '',
+          gender: '',
+          phone: '',
+          aadhaar: '',
+          relationship: i === 0 ? 'self' : '',
+          is_primary: i === 0,
+          student_class: '',
+        }));
+        setPassengers(initial);
+        setPassengerMode('full');
+        setQuickPassenger({
+          full_name: '',
+          age: isStudentPackage ? 0 : '',
+          gender: '',
+          phone: '',
+          aadhaar: '',
+          relationship: 'self',
+          is_primary: true,
+          student_class: '',
+        });
+        setAgreedToTerms(false);
+        setAgreedToAadhaarConsent(false);
+        setCustomerEmail('');
+      }
     }
   }, [isOpen, totalPassengers, isStudentPackage]);
 

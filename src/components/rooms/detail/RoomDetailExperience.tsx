@@ -285,6 +285,30 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     return () => window.removeEventListener('pageshow', handlePageShow);
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('restore_checkout=true')) {
+      const savedCustomPay = sessionStorage.getItem('last_checkout_custom_pay');
+      const savedGateway = sessionStorage.getItem('last_checkout_gateway');
+      
+      if (savedCustomPay !== null) setCustomPayAmount(savedCustomPay);
+      if (savedGateway === 'PHONEPE' || savedGateway === 'CASHFREE') {
+        setSelectedGateway(savedGateway as 'PHONEPE' | 'CASHFREE');
+      }
+      
+      // Auto-open passenger details modal
+      setShowPassengerModal(true);
+      
+      // Clean up search parameters so refresh doesn't pop it open again
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('restore_checkout');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      } catch (e) {
+        console.error("Failed to clean restore_checkout search parameter", e);
+      }
+    }
+  }, []);
+
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -704,6 +728,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         customer_email: customerEmail,
         gateway: selectedGateway,
       };
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('last_checkout_source', window.location.pathname + window.location.search);
+        sessionStorage.setItem('last_checkout_passengers', JSON.stringify(passengers));
+        sessionStorage.setItem('last_checkout_email', customerEmail || '');
+        sessionStorage.setItem('last_checkout_custom_pay', customPayAmount || '');
+        sessionStorage.setItem('last_checkout_gateway', selectedGateway);
+        sessionStorage.setItem('last_checkout_quick_booking', String(quickBooking));
+      }
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
 

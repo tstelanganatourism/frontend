@@ -103,6 +103,20 @@ export default function PaymentStatusPage() {
     };
   }, [merchantTransactionId]);
 
+  const handleGoBackAndRetry = () => {
+    if (typeof window !== 'undefined') {
+      const lastSource = sessionStorage.getItem('last_checkout_source');
+      if (lastSource) {
+        const separator = lastSource.includes('?') ? '&' : '?';
+        const restoreUrl = `${lastSource}${separator}restore_checkout=true`;
+        router.push(restoreUrl);
+        return;
+      }
+    }
+    // Fallback if no last source is recorded
+    router.push('/');
+  };
+
   const handleManualCheck = () => {
     toast.info('Refreshing status...');
     verifyPayment(true);
@@ -229,7 +243,7 @@ export default function PaymentStatusPage() {
                 <RefreshCw className="h-4 w-4 animate-spin-slow" /> Refresh Status
               </button>
               <button
-                onClick={() => router.back()}
+                onClick={handleGoBackAndRetry}
                 className="w-full py-3.5 bg-white border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-50 transition-colors"
               >
                 Go Back & Retry / Edit Details
@@ -259,11 +273,12 @@ export default function PaymentStatusPage() {
 
             <div className="pt-2 flex flex-col gap-2">
               <button
-                onClick={() => router.back()}
+                onClick={handleGoBackAndRetry}
                 className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#1a6b7a] text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-[#13505c] transition-colors shadow-md"
               >
                 Go Back & Retry Payment
               </button>
+
               <button
                 onClick={() => router.push('/')}
                 className="w-full py-3.5 bg-white border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-50 transition-colors"
