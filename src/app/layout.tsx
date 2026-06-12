@@ -92,7 +92,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Font loading and preloads managed by Next.js */}
-        <link rel="preload" href="/home/godavari-hero-banner.jpg" as="image" type="image/jpeg" fetchPriority="high" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

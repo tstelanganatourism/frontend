@@ -87,7 +87,7 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
         className="group/list block overflow-hidden rounded-2xl border border-[#d6e4dd] bg-white shadow-[0_14px_34px_rgba(15,61,86,0.07)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[var(--color-brand-green)]/35 hover:shadow-[0_20px_50px_rgba(15,61,86,0.12)]"
       >
         <div className="flex flex-col md:flex-row">
-          <div className="relative h-56 w-full shrink-0 overflow-hidden bg-slate-100 md:h-auto md:min-h-[232px] md:w-[31%] md:max-w-[320px]">
+          <div className="relative h-56 w-full shrink-0 overflow-hidden bg-slate-100 md:h-[240px] md:w-[320px]">
             <Image
               src={room.cover_image_url || '/placeholder-room.jpg'}
               alt={room.lodge_name}

@@ -182,6 +182,7 @@ export default function HomePage() {
 
   return (
     <div className="flex w-full flex-col overflow-x-clip bg-[#f7f4ed]">
+      <link rel="preload" href="/home/godavari-hero-banner.jpg" as="image" type="image/jpeg" fetchPriority="high" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ─── Cinematic Hero Section ─────────────────────────────────────── */}
       <section className="sticky top-0 w-full overflow-hidden bg-slate-950 h-[calc(100svh_-_7.3125rem)] lg:h-[calc(100svh_-_8.45rem)]">

@@ -42,5 +42,10 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
 export default async function StaysPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const searchParams = await props.searchParams;
   const { data } = await fetchInitialRooms(searchParams);
-  return <RoomsList data={data} searchParams={searchParams} />;
+  return (
+    <>
+      <link rel="preload" href="/images/stays-banner-2026.webp" as="image" type="image/webp" fetchPriority="high" />
+      <RoomsList data={data} searchParams={searchParams} />
+    </>
+  );
 }

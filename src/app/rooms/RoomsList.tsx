@@ -218,7 +218,7 @@ export default function RoomsList({
                   <div className="flex flex-col gap-5">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="flex min-h-[240px] flex-col overflow-hidden rounded-2xl border border-[#d6e4dd] bg-white shadow-sm md:flex-row">
-                        <div className="h-56 w-full animate-pulse bg-slate-100 md:h-auto md:w-[31%]" />
+                        <div className="h-56 w-full animate-pulse bg-slate-100 md:h-[240px] md:w-[320px] shrink-0" />
                         <div className="flex flex-1 flex-col p-5">
                           <div className="mb-3 h-7 w-2/3 animate-pulse rounded bg-slate-100" />
                           <div className="mb-4 h-4 w-1/2 animate-pulse rounded bg-slate-100" />
