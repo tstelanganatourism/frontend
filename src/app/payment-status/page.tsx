@@ -229,6 +229,12 @@ export default function PaymentStatusPage() {
                 <RefreshCw className="h-4 w-4 animate-spin-slow" /> Refresh Status
               </button>
               <button
+                onClick={() => router.back()}
+                className="w-full py-3.5 bg-white border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-50 transition-colors"
+              >
+                Go Back & Retry / Edit Details
+              </button>
+              <button
                 onClick={() => router.push('/dashboard')}
                 className="w-full py-3.5 bg-white border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-50 transition-colors"
               >
