@@ -16,6 +16,8 @@ interface PackageVariant {
   title: string;
   adult_price: number | string;
   child_price: number | string;
+  student_price?: number | string;
+  weekend_student_price?: number | string;
   transport_info?: string | null;
 }
 
@@ -28,6 +30,8 @@ export interface PackageTransportOption {
   child_price?: number | string | null;
   weekend_adult_price?: number | string | null;
   weekend_child_price?: number | string | null;
+  student_price?: number | string | null;
+  weekend_student_price?: number | string | null;
   fixed_price?: number | string | null;
   weekend_fixed_price?: number | string | null;
 }
@@ -43,7 +47,9 @@ interface MobileBookingSheetProps {
   hasRefreshments?: boolean;
   refreshmentAdultPrice?: number | string | null;
   refreshmentChildPrice?: number | string | null;
+  refreshmentStudentPrice?: number | string | null;
   minPassengers?: number;
+  isStudentPackage?: boolean;
 }
 
 export const MobileBookingSheet = ({ 
@@ -57,7 +63,9 @@ export const MobileBookingSheet = ({
   hasRefreshments,
   refreshmentAdultPrice,
   refreshmentChildPrice,
-  minPassengers
+  refreshmentStudentPrice,
+  minPassengers,
+  isStudentPackage = false,
 }: MobileBookingSheetProps) => {
   const { publicAvailability, publicLoading } = useInventoryStore();
   const isPackageInactive = !publicLoading && !publicAvailability;
@@ -66,7 +74,7 @@ export const MobileBookingSheet = ({
     ? Number(startingPrice)
     : Math.min(
         ...(variants || [])
-          .map((variant) => Number(variant.adult_price || 0))
+          .map((variant) => Number((isStudentPackage ? variant.student_price : variant.adult_price) || 0))
           .filter((price) => price > 0)
       );
   const hasFare = Number.isFinite(positiveStartingPrice) && positiveStartingPrice > 0;
@@ -82,7 +90,11 @@ export const MobileBookingSheet = ({
             <span className="text-2xl font-black text-[#1a6b7a]">
               {hasFare ? `₹${positiveStartingPrice.toLocaleString('en-IN')}` : 'Fare updating'}
             </span>
-            {hasFare && <span className="text-[10px] font-bold text-slate-400">/ adult</span>}
+            {hasFare && (
+              <span className="text-[10px] font-bold text-slate-400">
+                {isStudentPackage ? '/ student' : '/ adult'}
+              </span>
+            )}
           </div>
           {brochurePdfUrl && (
             <button
@@ -147,7 +159,9 @@ export const MobileBookingSheet = ({
                   hasRefreshments={hasRefreshments}
                   refreshmentAdultPrice={refreshmentAdultPrice}
                   refreshmentChildPrice={refreshmentChildPrice}
+                  refreshmentStudentPrice={refreshmentStudentPrice}
                   minPassengers={minPassengers}
+                  isStudentPackage={isStudentPackage}
                 />
               </div>
             </SheetContent>

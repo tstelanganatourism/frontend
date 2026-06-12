@@ -23,6 +23,7 @@ interface BookingDetails {
   package_title?: string;
   variant_title?: string;
   passengers: Passenger[];
+  student_count?: number;
 }
 
 export const dynamic = 'force-dynamic';
@@ -138,9 +139,18 @@ export default async function PrintFormPage({
 
           <div className="meta-row">
             <div className="meta-left">
-              <div className="meta-item"><span className="meta-label">ADULT:</span> <span className="meta-val"></span></div>
-              <div className="meta-item"><span className="meta-label">CHILD:</span> <span className="meta-val"></span></div>
-              <div className="meta-item"><span className="meta-label">TOTAL:</span> <span className="meta-val"></span></div>
+              {booking.student_count && booking.student_count > 0 ? (
+                <>
+                  <div className="meta-item"><span className="meta-label">STUDENT:</span> <span className="meta-val"></span></div>
+                  <div className="meta-item"><span className="meta-label">TOTAL:</span> <span className="meta-val"></span></div>
+                </>
+              ) : (
+                <>
+                  <div className="meta-item"><span className="meta-label">ADULT:</span> <span className="meta-val"></span></div>
+                  <div className="meta-item"><span className="meta-label">CHILD:</span> <span className="meta-val"></span></div>
+                  <div className="meta-item"><span className="meta-label">TOTAL:</span> <span className="meta-val"></span></div>
+                </>
+              )}
             </div>
             <div className="meta-right">
               <div className="meta-item"><span className="meta-label">DATE:</span> <span className="meta-val">{formattedDate}</span></div>
@@ -155,7 +165,7 @@ export default async function PrintFormPage({
                 <th style={{width: '5%'}}>Sr</th>
                 <th style={{width: '35%'}}>PASSENGER NAME</th>
                 <th style={{width: '5%'}}>M/F</th>
-                <th style={{width: '10%'}}>AGE</th>
+                <th style={{width: '10%'}}>{booking.student_count && booking.student_count > 0 ? 'CLASS' : 'AGE'}</th>
                 <th style={{width: '20%'}}>AADHAR NUMBER</th>
                 <th style={{width: '25%'}} className="address-col-header">ADDRESS</th>
               </tr>

@@ -24,6 +24,7 @@ interface Passenger {
   id_proof_number: string | null;
   is_primary: boolean;
   phone_number?: string | null;
+  student_class?: string | null;
 }
 
 interface BoardingPoint {
@@ -40,6 +41,7 @@ interface BookingDetails {
   travel_date: string;
   adult_count: number;
   child_count: number;
+  student_count: number;
   subtotal_amount: number;
   coupon_discount: number;
   coupon_applied: string | null;
@@ -140,7 +142,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
 
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
   const isFullyPaid = booking.status === 'FULLY_PAID';
-  const passengerCount = booking.adult_count + booking.child_count;
+  const passengerCount = booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count;
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
@@ -182,8 +184,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
       : [];
 
   const parts: string[] = [];
-  if (booking.adult_count > 0) parts.push(`${booking.adult_count} Adult${booking.adult_count > 1 ? 's' : ''}`);
-  if (booking.child_count > 0) parts.push(`${booking.child_count} Child${booking.child_count > 1 ? 'ren' : ''}`);
+  if (booking.student_count > 0) {
+    parts.push(`${booking.student_count} Student${booking.student_count > 1 ? 's' : ''}`);
+  } else {
+    if (booking.adult_count > 0) parts.push(`${booking.adult_count} Adult${booking.adult_count > 1 ? 's' : ''}`);
+    if (booking.child_count > 0) parts.push(`${booking.child_count} Child${booking.child_count > 1 ? 'ren' : ''}`);
+  }
   const guestSummary = parts.join(', ') || `${booking.passengers.length} Passenger${booking.passengers.length > 1 ? 's' : ''}`;
   const primaryPassenger = booking.passengers.find(p => p.is_primary) || booking.passengers[0];
 
@@ -636,7 +642,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             <tr>
               <th>#</th>
               <th>Name</th>
-              <th>Age</th>
+              <th>{booking.student_count > 0 ? 'Class' : 'Age'}</th>
               <th>Gender</th>
               <th>Aadhaar (Last 4)</th>
               <th>Type</th>
@@ -648,6 +654,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               const detailed: any[] = [];
               let quickAdults = 0;
               let quickChildren = 0;
+              let quickStudents = 0;
 
               booking.passengers.forEach((p: any) => {
                 const isQuickGuest = !p.is_primary && (
@@ -655,11 +662,13 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                   (p.full_name || '').toLowerCase().includes("quick ticket") ||
                   (p.full_name || '').toLowerCase().includes("guest adult") ||
                   (p.full_name || '').toLowerCase().includes("guest child") ||
-                  (p.full_name || '').toLowerCase().includes("quick ticket(not provided)")
+                  (p.full_name || '').toLowerCase().includes("quick ticket(not provided)") ||
+                  (p.full_name || '').toLowerCase().includes("student")
                 );
 
                 if (isQuickGuest) {
-                  if (p.age >= 11) quickAdults++;
+                  if (booking.student_count > 0) quickStudents++;
+                  else if (p.age >= 11) quickAdults++;
                   else quickChildren++;
                 } else {
                   detailed.push(p);
@@ -674,12 +683,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                     {p.is_primary && <span className="lead-badge">LEAD</span>}
                     {(p.phone_number || primaryPassenger?.phone_number) && <div style={{ fontSize: '8.5px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number || primaryPassenger?.phone_number}</div>}
                   </td>
-                  <td>{p.age}</td>
+                  <td>{booking.student_count > 0 ? (p.student_class || 'General') : p.age}</td>
                   <td>{p.gender || '—'}</td>
                   <td>{p.id_proof_number ? `${p.id_proof_number}` : '(Not Provided)'}</td>
                   <td>
-                    <span className={`type-chip ${p.age >= 11 ? 'adult-chip' : 'child-chip'}`}>
-                      {p.age >= 11 ? 'Adult' : 'Child'}
+                    <span className={`type-chip ${booking.student_count > 0 ? 'adult-chip' : (p.age >= 11 ? 'adult-chip' : 'child-chip')}`}>
+                      {booking.student_count > 0 ? 'Student' : (p.age >= 11 ? 'Adult' : 'Child')}
                     </span>
                   </td>
                 </tr>
@@ -709,12 +718,29 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                   </tr>
                 );
               }
+              if (quickStudents > 0) {
+                rows.push(
+                  <tr key="quick-students">
+                    <td>{rowIndex++}</td>
+                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Student) × {quickStudents}</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td><span className="type-chip adult-chip">Student</span></td>
+                  </tr>
+                );
+              }
 
               return rows;
             })()}
           </tbody>
         </table>
-        <div className="note-text">Note: Aadhaar is mandatory for Adults (11+ years). Children (4-10 years) Aadhaar is optional.</div>
+        <div className="note-text">
+          {booking.student_count > 0
+            ? "Note: For student packages, student class information is collected. Aadhaar and contact numbers are optional."
+            : "Note: Aadhaar is mandatory for Adults (11+ years). Children (4-10 years) Aadhaar is optional."
+          }
+        </div>
 
         {/* ═══════ PAYMENT + JOURNEY ═══════ */}
         <div className="btm-grid">
@@ -741,7 +767,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               <div className="pay-row" key={`transport-${idx}`}>
                 <span>
                   {ts.title || 'Transport'}
-                  <small>{describeTransport(ts, booking.adult_count, booking.child_count)}</small>
+                  <small>{describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)}</small>
                 </span>
                 <span>{money(ts.item_total || 0, 2)}</span>
               </div>
@@ -750,7 +776,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               <div className="pay-row">
                 <span>
                   Refreshments
-                  <small>{refreshmentAmount > 0 ? `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children` : `Included for ${booking.adult_count} Adults + ${booking.child_count} Children`}</small>
+                  <small>
+                    {booking.student_count > 0
+                      ? (refreshmentAmount > 0 ? `Add-on for ${booking.student_count} Students` : `Included for ${booking.student_count} Students`)
+                      : (refreshmentAmount > 0 ? `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children` : `Included for ${booking.adult_count} Adults + ${booking.child_count} Children`)
+                    }
+                  </small>
                 </span>
                 <span>{refreshmentAmount > 0 ? money(refreshmentAmount, 2) : 'Included'}</span>
               </div>

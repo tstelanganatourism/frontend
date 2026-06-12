@@ -56,14 +56,19 @@ export function getBaseFareExcludingAddons(
   return Math.max(0, Number(subtotal || 0) - getTransportAmount(selections) - getRefreshmentAmount(pricingSnapshot));
 }
 
-export function describeTransport(item: TransportSelection, adultCount?: number, childCount?: number) {
+export function describeTransport(item: TransportSelection, adultCount?: number, childCount?: number, studentCount?: number) {
   const quantity = Number(item.quantity || 1);
   const capacity = item.capacity ? ` (${item.capacity} Seater)` : '';
-  const paxLabel = (adultCount !== undefined && childCount !== undefined)
-    ? `${adultCount} Adult${adultCount !== 1 ? 's' : ''} + ${childCount} Child${childCount !== 1 ? 'ren' : ''}`
-    : adultCount !== undefined
-      ? `${adultCount} pax`
-      : '';
+  
+  let paxLabel = '';
+  if (studentCount !== undefined && studentCount > 0) {
+    paxLabel = `${studentCount} Student${studentCount !== 1 ? 's' : ''}`;
+  } else if (adultCount !== undefined && childCount !== undefined) {
+    paxLabel = `${adultCount} Adult${adultCount !== 1 ? 's' : ''} + ${childCount} Child${childCount !== 1 ? 'ren' : ''}`;
+  } else if (adultCount !== undefined) {
+    paxLabel = `${adultCount} pax`;
+  }
+
   if (item.type === 'SHARED') {
     return (paxLabel ? `Shared transport for ${paxLabel}` : 'Shared transport') + capacity;
   }

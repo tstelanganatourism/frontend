@@ -27,6 +27,7 @@ interface PassengerInput {
   aadhaar: string;
   relationship: string;
   is_primary: boolean;
+  student_class?: string;
 }
 
 interface CheckoutPassengerModalProps {
@@ -37,9 +38,10 @@ interface CheckoutPassengerModalProps {
   children: number;
   isProcessing: boolean;
   targetType?: 'package' | 'room';
+  isStudentPackage?: boolean;
 }
 
-export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adults, children, isProcessing, targetType = 'package' }: CheckoutPassengerModalProps) {
+export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adults, children, isProcessing, targetType = 'package', isStudentPackage = false }: CheckoutPassengerModalProps) {
   const totalPassengers = adults + children;
   const { user } = useAuthStore();
   const isAgentOrAdmin = user?.role === 'ADMIN' || user?.role === 'AGENT';
@@ -54,6 +56,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
     aadhaar: '',
     relationship: 'self',
     is_primary: true,
+    student_class: '',
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToAadhaarConsent, setAgreedToAadhaarConsent] = useState(false);
@@ -63,29 +66,31 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
     if (isOpen) {
       const initial: PassengerInput[] = Array.from({ length: totalPassengers }).map((_, i) => ({
         full_name: '',
-        age: '',
+        age: isStudentPackage ? 0 : '',
         gender: '',
         phone: '',
         aadhaar: '',
         relationship: i === 0 ? 'self' : '',
         is_primary: i === 0,
+        student_class: '',
       }));
       setPassengers(initial);
       setPassengerMode('full');
       setQuickPassenger({
         full_name: '',
-        age: '',
+        age: isStudentPackage ? 0 : '',
         gender: '',
         phone: '',
         aadhaar: '',
         relationship: 'self',
         is_primary: true,
+        student_class: '',
       });
       setAgreedToTerms(false);
       setAgreedToAadhaarConsent(false);
       setCustomerEmail('');
     }
-  }, [isOpen, totalPassengers]);
+  }, [isOpen, totalPassengers, isStudentPackage]);
 
   if (!isOpen) return null;
 
@@ -110,35 +115,57 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
       const passengersPayload: PassengerInput[] = [
         {
           ...quickPassenger,
+          age: isStudentPackage ? 0 : (quickPassenger.age || 25),
           aadhaar: quickPassenger.aadhaar || '',
           phone: quickPassenger.phone || '',
+          student_class: isStudentPackage ? (quickPassenger.student_class || 'General') : undefined,
         }
       ];
-      for (let i = 1; i < adults; i++) {
-        passengersPayload.push({
-          full_name: 'TBA (Guest)',
-          age: 25,
-          gender: 'MALE',
-          phone: '',
-          aadhaar: '',
-          relationship: '',
-          is_primary: false,
-        });
-      }
-      for (let i = 0; i < children; i++) {
-        passengersPayload.push({
-          full_name: 'TBA (Guest)',
-          age: 7,
-          gender: 'MALE',
-          phone: '',
-          aadhaar: '',
-          relationship: '',
-          is_primary: false,
-        });
+      if (isStudentPackage) {
+        for (let i = 1; i < adults; i++) {
+          passengersPayload.push({
+            full_name: 'TBA (Student)',
+            age: 0,
+            gender: 'MALE',
+            phone: '',
+            aadhaar: '',
+            relationship: '',
+            is_primary: false,
+            student_class: quickPassenger.student_class || 'General',
+          });
+        }
+      } else {
+        for (let i = 1; i < adults; i++) {
+          passengersPayload.push({
+            full_name: 'TBA (Guest)',
+            age: 25,
+            gender: 'MALE',
+            phone: '',
+            aadhaar: '',
+            relationship: '',
+            is_primary: false,
+          });
+        }
+        for (let i = 0; i < children; i++) {
+          passengersPayload.push({
+            full_name: 'TBA (Guest)',
+            age: 7,
+            gender: 'MALE',
+            phone: '',
+            aadhaar: '',
+            relationship: '',
+            is_primary: false,
+          });
+        }
       }
       await onSubmit(passengersPayload, true, customerEmail.trim() || undefined);
     } else {
-      await onSubmit(passengers, false, customerEmail.trim() || undefined);
+      // Clean up ages for student package
+      const cleanPassengers = passengers.map(p => ({
+        ...p,
+        age: isStudentPackage ? 0 : p.age,
+      }));
+      await onSubmit(cleanPassengers, false, customerEmail.trim() || undefined);
     }
   };
 
@@ -224,7 +251,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-5 space-y-4">
                   <p className="text-xs font-black text-[#1a6b7a] uppercase tracking-wider flex items-center gap-2">
-                    Lead Adult Contact
+                    {isStudentPackage ? 'Lead Student Contact' : 'Lead Adult Contact'}
                     <span className="rounded bg-[#1a6b7a] px-1.5 py-0.5 text-[10px] text-white font-black">Primary</span>
                   </p>
                   
@@ -242,25 +269,40 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">Age (min 18) *</label>
-                      <input
-                        type="number"
-                        required
-                        min={18}
-                        max={150}
-                        disabled={isProcessing}
-                        value={quickPassenger.age}
-                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: e.target.value === '' ? '' : parseInt(e.target.value) }))}
-                        className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
-                          quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50' : 'border-slate-300'
-                        }`}
-                        placeholder="Age"
-                      />
-                      {quickPassenger.age !== '' && Number(quickPassenger.age) < 18 && (
-                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Must be adult (18+)</p>
-                      )}
-                    </div>
+                    {isStudentPackage ? (
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-600">Class / Grade *</label>
+                        <input
+                          type="text"
+                          required
+                          disabled={isProcessing}
+                          value={quickPassenger.student_class || ''}
+                          onChange={(e) => setQuickPassenger(prev => ({ ...prev, student_class: e.target.value }))}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                          placeholder="e.g. LKG, Class 5, Inter 1st Year"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-600">Age (min 18) *</label>
+                        <input
+                          type="number"
+                          required
+                          min={18}
+                          max={150}
+                          disabled={isProcessing}
+                          value={quickPassenger.age}
+                          onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: e.target.value === '' ? '' : parseInt(e.target.value) }))}
+                          className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
+                            quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50' : 'border-slate-300'
+                          }`}
+                          placeholder="Age"
+                        />
+                        {quickPassenger.age !== '' && Number(quickPassenger.age) < 18 && (
+                          <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Must be adult (18+)</p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-1">
                       <PremiumSelect
@@ -278,10 +320,12 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">Aadhaar Number *</label>
+                      <label className="text-xs font-bold text-slate-600">
+                        Aadhaar Number {isStudentPackage && <span className="text-[10px] font-semibold text-slate-400">(Optional)</span>}
+                      </label>
                       <input
                         type="text"
-                        required
+                        required={!isStudentPackage}
                         pattern="[0-9]{12}"
                         title="12 digit Aadhaar number"
                         disabled={isProcessing}
@@ -300,10 +344,12 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">Contact Number *</label>
+                      <label className="text-xs font-bold text-slate-600">
+                        Contact Number {isStudentPackage && <span className="text-[10px] font-semibold text-slate-400">(Optional)</span>}
+                      </label>
                       <input
                         type="tel"
-                        required
+                        required={!isStudentPackage}
                         disabled={isProcessing}
                         value={quickPassenger.phone}
                         onChange={(e) => setQuickPassenger(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
@@ -326,18 +372,29 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                   {(totalPassengers > 1) && (
                     <div className="border-t border-[#1a6b7a]/15 pt-3 mt-1 space-y-1.5">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-generated Guests</p>
-                      {Array.from({ length: adults - 1 }, (_, idx) => (
-                        <div key={`qa-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                          <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
-                          Guest Adult {idx + 2}
-                        </div>
-                      ))}
-                      {Array.from({ length: children }, (_, idx) => (
-                        <div key={`qc-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                          <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
-                          Guest Child {idx + 1}
-                        </div>
-                      ))}
+                      {isStudentPackage ? (
+                        Array.from({ length: totalPassengers - 1 }, (_, idx) => (
+                          <div key={`qs-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                            <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
+                            Guest Student {idx + 2}
+                          </div>
+                        ))
+                      ) : (
+                        <>
+                          {Array.from({ length: adults - 1 }, (_, idx) => (
+                            <div key={`qa-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                              <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                              Guest Adult {idx + 2}
+                            </div>
+                          ))}
+                          {Array.from({ length: children }, (_, idx) => (
+                            <div key={`qc-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                              <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
+                              Guest Child {idx + 1}
+                            </div>
+                          ))}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -348,7 +405,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                 return (
                   <div key={i} className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#1a6b7a]/30 hover:shadow-md">
                     <p className="mb-4 text-xs font-black uppercase tracking-wider text-[#1a6b7a]">
-                      {targetType === 'room' ? `Guest Card ${i + 1}` : (isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`)}
+                      {isStudentPackage ? `🎓 Student Card ${i + 1}` : (targetType === 'room' ? `Guest Card ${i + 1}` : (isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`))}
                       {i === 0 && <span className="ml-2 rounded-full bg-[#1a6b7a]/10 px-2 py-0.5 text-[10px] text-[#1a6b7a]">Primary Contact</span>}
                     </p>
 
@@ -366,20 +423,35 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-600">Age</label>
-                        <input
-                          type="number"
-                          required
-                          min={targetType === 'package' ? (isChild ? 4 : 11) : 0}
-                          max={targetType === 'package' && isChild ? 10 : 150}
-                          disabled={isProcessing}
-                          value={p.age}
-                          onChange={(e) => handleChange(i, 'age', e.target.value === '' ? '' : parseInt(e.target.value))}
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
-                          placeholder={targetType === 'package' ? (isChild ? "4-10" : "11+") : "Age"}
-                        />
-                      </div>
+                      {isStudentPackage ? (
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-600">Class / Grade *</label>
+                          <input
+                            type="text"
+                            required
+                            disabled={isProcessing}
+                            value={p.student_class || ''}
+                            onChange={(e) => handleChange(i, 'student_class', e.target.value)}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                            placeholder="e.g. LKG, Class 5, Inter 1st Year"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-600">Age</label>
+                          <input
+                            type="number"
+                            required
+                            min={targetType === 'package' ? (isChild ? 4 : 11) : 0}
+                            max={targetType === 'package' && isChild ? 10 : 150}
+                            disabled={isProcessing}
+                            value={p.age}
+                            onChange={(e) => handleChange(i, 'age', e.target.value === '' ? '' : parseInt(e.target.value))}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                            placeholder={targetType === 'package' ? (isChild ? "4-10" : "11+") : "Age"}
+                          />
+                        </div>
+                      )}
 
                       <div className="space-y-1">
                         <PremiumSelect
@@ -399,13 +471,13 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-600">
                           Aadhaar Number
-                          {(typeof p.age === 'number' && p.age <= 10) && (
-                            <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional for children &le; 10)</span>
-                          )}
+                          {(isStudentPackage || (typeof p.age === 'number' && p.age <= 10)) ? (
+                            <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional)</span>
+                          ) : null}
                         </label>
                         <input
                           type="text"
-                          required={!(typeof p.age === 'number' && p.age <= 10)}
+                          required={!isStudentPackage && !(typeof p.age === 'number' && p.age <= 10)}
                           pattern="[0-9]{12}"
                           title="12 digit Aadhaar number"
                           disabled={isProcessing}
@@ -423,17 +495,17 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                         )}
                       </div>
 
-                      {!isChild && (
+                      {(!isChild || isStudentPackage) && (
                         <div className="space-y-1">
                           <label className="text-xs font-bold text-slate-600">
                             Contact Number
-                            {(i !== 0 || (typeof p.age === 'number' && p.age <= 10)) && (
+                            {(isStudentPackage || i !== 0 || (typeof p.age === 'number' && p.age <= 10)) && (
                               <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional)</span>
                             )}
                           </label>
                           <input
                             type="tel"
-                            required={i === 0 && !(typeof p.age === 'number' && p.age <= 10)}
+                            required={!isStudentPackage && i === 0 && !(typeof p.age === 'number' && p.age <= 10)}
                             disabled={isProcessing}
                             value={p.phone}
                             onChange={(e) => handleChange(i, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
@@ -534,28 +606,47 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               !agreedToTerms ||
               !agreedToAadhaarConsent ||
               (passengerMode === 'quick'
-                ? !(
-                    quickPassenger.full_name.trim() !== '' &&
-                    typeof quickPassenger.age === 'number' &&
-                    quickPassenger.age >= 18 &&
-                    quickPassenger.gender !== '' &&
-                    /^\d{10}$/.test(quickPassenger.phone.trim()) &&
-                    quickPassenger.aadhaar.length === 12 &&
-                    isValidAadhaar(quickPassenger.aadhaar)
+                ? (isStudentPackage
+                  ? !(
+                      quickPassenger.full_name.trim() !== '' &&
+                      quickPassenger.student_class?.trim() !== '' &&
+                      quickPassenger.gender !== '' &&
+                      (!quickPassenger.phone || /^\d{10}$/.test(quickPassenger.phone.trim())) &&
+                      (!quickPassenger.aadhaar || (quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar)))
+                    )
+                  : !(
+                      quickPassenger.full_name.trim() !== '' &&
+                      typeof quickPassenger.age === 'number' &&
+                      quickPassenger.age >= 18 &&
+                      quickPassenger.gender !== '' &&
+                      /^\d{10}$/.test(quickPassenger.phone.trim()) &&
+                      quickPassenger.aadhaar.length === 12 &&
+                      isValidAadhaar(quickPassenger.aadhaar)
+                    )
                   )
-                : !passengers.every((p, i) => {
-                    const isChild = i >= adults;
-                    const isChildAge = typeof p.age === 'number' && p.age <= 10;
-                    const nameOk = p.full_name.trim() !== '';
-                    const isPackage = targetType === 'package';
-                    const ageOk = typeof p.age === 'number' && (isPackage ? (isChild ? (p.age >= 4 && p.age <= 10) : p.age >= 11) : (p.age >= 0));
-                    const genderOk = p.gender !== '';
-                    const aadhaarOk = isChildAge
-                      ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
-                      : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
-                    const phoneOk = isChild || isChildAge || (i !== 0 && (!p.phone || p.phone.trim().length === 0)) || (p.phone && p.phone.trim().length === 10);
-                    return nameOk && ageOk && genderOk && aadhaarOk && phoneOk;
-                  })
+                : (isStudentPackage
+                  ? !passengers.every((p) => {
+                      const nameOk = p.full_name.trim() !== '';
+                      const classOk = p.student_class?.trim() !== '';
+                      const genderOk = p.gender !== '';
+                      const aadhaarOk = !p.aadhaar || (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
+                      const phoneOk = !p.phone || p.phone.trim().length === 0 || p.phone.trim().length === 10;
+                      return nameOk && classOk && genderOk && aadhaarOk && phoneOk;
+                    })
+                  : !passengers.every((p, i) => {
+                      const isChild = i >= adults;
+                      const isChildAge = typeof p.age === 'number' && p.age <= 10;
+                      const nameOk = p.full_name.trim() !== '';
+                      const isPackage = targetType === 'package';
+                      const ageOk = typeof p.age === 'number' && (isPackage ? (isChild ? (p.age >= 4 && p.age <= 10) : p.age >= 11) : (p.age >= 0));
+                      const genderOk = p.gender !== '';
+                      const aadhaarOk = isChildAge
+                        ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
+                        : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
+                      const phoneOk = isChild || isChildAge || (i !== 0 && (!p.phone || p.phone.trim().length === 0)) || (p.phone && p.phone.trim().length === 10);
+                      return nameOk && ageOk && genderOk && aadhaarOk && phoneOk;
+                    })
+                  )
               )
             }
             className="rounded-lg bg-[#1a6b7a] px-8 py-2.5 text-sm font-black text-white shadow-md hover:bg-[#13505c] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

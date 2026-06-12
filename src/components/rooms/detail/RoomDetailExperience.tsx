@@ -729,6 +729,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
           paymentSessionId: checkout_data.payment_session_id,
+          redirectTarget: "_self"
+        }).then((result: any) => {
+          if (result && result.error) {
+            console.warn("Cashfree checkout closed/failed:", result.error);
+            toast.error(result.error.message || "Payment closed or failed.");
+            setIsProcessingCheckout(false);
+          }
+        }).catch((err: any) => {
+          console.error("Cashfree checkout error:", err);
+          setIsProcessingCheckout(false);
         });
       } else {
         // PhonePe Redirect Flow
@@ -1461,12 +1471,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                           id="gateway-phonepe"
                           type="button"
                           onClick={() => setSelectedGateway('PHONEPE')}
-                          className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                          className={`relative flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
                             selectedGateway === 'PHONEPE'
                               ? 'border-[#5f259f] bg-[#5f259f]/5 shadow-md shadow-[#5f259f]/10 scale-[1.02]'
                               : 'border-slate-200 bg-white hover:border-[#5f259f]/40'
                           }`}
                         >
+                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#5f259f] text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-[#5f259f]/20">Recommended</span>
                           <div className="flex items-center gap-1.5">
                             <div className="bg-[#5f259f] p-0.5 rounded-full flex items-center justify-center shrink-0">
                               <svg fill="#ffffff" role="img" viewBox="0 0 24 24" className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg">

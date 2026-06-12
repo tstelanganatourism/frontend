@@ -66,6 +66,8 @@ export interface PublicDateAvailability {
   child_price: number;
   effective_adult_price: number;
   effective_child_price: number;
+  student_price?: number;
+  effective_student_price?: number;
   available_seats: number;
   is_closed: boolean;
   price_override?: number | null;
@@ -324,6 +326,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
           is_closed: payload.is_closed,
           effective_adult_price: payload.effective_adult_price,
           effective_child_price: payload.effective_child_price,
+          effective_student_price: payload.effective_student_price,
           status: payload.is_closed ? 'CLOSED' : (payload.available <= 0 ? 'SOLD_OUT' : 'OPEN')
         } as PublicDateAvailability;
       }

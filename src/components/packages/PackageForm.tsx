@@ -113,6 +113,8 @@ export default function PackageForm({
   const [isActive, setIsActive] = useState(true);
   const [status, setStatus] = useState('DRAFT');
   const [minPassengers, setMinPassengers] = useState<number>(1);
+  const [isStudentPackage, setIsStudentPackage] = useState(false);
+  const [refreshmentStudentPrice, setRefreshmentStudentPrice] = useState<number | ''>('');
 
   // Brochure (R2 integration & backend PDF generation)
   const [brochurePdfUrl, setBrochurePdfUrl] = useState('');
@@ -163,6 +165,8 @@ export default function PackageForm({
       setIsActive(initialData.is_active !== false);
       setStatus(initialData.status || 'DRAFT');
       setMinPassengers(initialData.min_passengers ?? 1);
+      setIsStudentPackage(initialData.is_student_package || false);
+      setRefreshmentStudentPrice(initialData.refreshment_student_price ?? '');
 
       setMetaTitle(initialData.meta_title || '');
       setMetaDescription(initialData.meta_description || '');
@@ -374,7 +378,9 @@ export default function PackageForm({
   const addVariant = () => {
     setVariants(prev => [
       ...prev,
-      { title: '', adult_price: 1500, child_price: 1000, weekend_adult_price: 1700, weekend_child_price: 1200, is_active: true }
+      isStudentPackage
+        ? { title: '', adult_price: 0, child_price: 0, student_price: 500, weekend_student_price: 600, is_active: true }
+        : { title: '', adult_price: 1500, child_price: 1000, weekend_adult_price: 1700, weekend_child_price: 1200, is_active: true }
     ]);
   };
   const updateVariant = (index: number, key: string, value: any) => {
@@ -540,8 +546,10 @@ export default function PackageForm({
       order_priority: Number(orderPriority),
       has_transport: hasTransport,
       has_refreshments: hasRefreshments,
-      refreshment_adult_price: hasRefreshments && refreshmentAdultPrice !== '' ? Number(refreshmentAdultPrice) : null,
-      refreshment_child_price: hasRefreshments && refreshmentChildPrice !== '' ? Number(refreshmentChildPrice) : null,
+    is_student_package: isStudentPackage,
+      refreshment_adult_price: !isStudentPackage && hasRefreshments && refreshmentAdultPrice !== '' ? Number(refreshmentAdultPrice) : null,
+      refreshment_child_price: !isStudentPackage && hasRefreshments && refreshmentChildPrice !== '' ? Number(refreshmentChildPrice) : null,
+      refreshment_student_price: isStudentPackage && hasRefreshments && refreshmentStudentPrice !== '' ? Number(refreshmentStudentPrice) : null,
       is_featured: isFeatured,
       is_active: isActive,
       status,
@@ -550,14 +558,25 @@ export default function PackageForm({
       meta_description: metaDescription || null,
       og_image_url: ogImageUrl || null,
       canonical_url: canonicalUrl || null,
-      variants: variants.map((v, idx) => ({ ...v, adult_price: Number(v.adult_price), child_price: Number(v.child_price), weekend_adult_price: v.weekend_adult_price ? Number(v.weekend_adult_price) : null, weekend_child_price: v.weekend_child_price ? Number(v.weekend_child_price) : null, sort_order: idx + 1 })),
-      transport_options: hasTransport ? transportOptions.map((t) => ({ 
-        ...t, 
+      variants: variants.map((v, idx) => ({
+        ...v,
+        adult_price: Number(v.adult_price || 0),
+        child_price: Number(v.child_price || 0),
+        weekend_adult_price: v.weekend_adult_price ? Number(v.weekend_adult_price) : null,
+        weekend_child_price: v.weekend_child_price ? Number(v.weekend_child_price) : null,
+        student_price: v.student_price ? Number(v.student_price) : null,
+        weekend_student_price: v.weekend_student_price ? Number(v.weekend_student_price) : null,
+        sort_order: idx + 1
+      })),
+      transport_options: hasTransport ? transportOptions.map((t) => ({
+        ...t,
         capacity: Number(t.capacity),
         adult_price: t.adult_price ? Number(t.adult_price) : null,
         child_price: t.child_price ? Number(t.child_price) : null,
         weekend_adult_price: t.weekend_adult_price ? Number(t.weekend_adult_price) : null,
         weekend_child_price: t.weekend_child_price ? Number(t.weekend_child_price) : null,
+        student_price: t.student_price ? Number(t.student_price) : null,
+        weekend_student_price: t.weekend_student_price ? Number(t.weekend_student_price) : null,
         fixed_price: t.fixed_price ? Number(t.fixed_price) : null,
         weekend_fixed_price: t.weekend_fixed_price ? Number(t.weekend_fixed_price) : null
       })) : [],
@@ -970,7 +989,8 @@ export default function PackageForm({
               </label>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 grid gap-6 sm:grid-cols-2">
+            <div className="pt-4 border-t border-slate-100 grid gap-4 sm:grid-cols-3">
+              {/* Transport Toggle */}
               <label className="flex items-center gap-3 cursor-pointer group bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-xl border border-indigo-200/60 hover:border-indigo-400/50 transition-all">
                 <input
                   type="checkbox"
@@ -984,6 +1004,28 @@ export default function PackageForm({
                 </div>
               </label>
 
+              {/* Student Package Toggle */}
+              <div className="flex flex-col gap-3 group bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/60 hover:border-amber-400/50 transition-all">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isStudentPackage}
+                    onChange={(e) => setIsStudentPackage(e.target.checked)}
+                    className="h-5 w-5 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+                  />
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800">🎓 Student Package</span>
+                    <span className="block text-xs font-medium text-slate-500 mt-0.5">Enable for school/college group bookings. Uses a single student rate.</span>
+                  </div>
+                </label>
+                {isStudentPackage && (
+                  <div className="ml-8 px-3 py-2 bg-amber-100/70 rounded-lg border border-amber-200 text-xs font-semibold text-amber-800">
+                    ✓ Set student prices in the <strong>Package Categories</strong> tab.
+                  </div>
+                )}
+              </div>
+
+              {/* Refreshments Toggle */}
               <div className="flex flex-col gap-3 group bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-200/60 hover:border-emerald-400/50 transition-all">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -999,26 +1041,41 @@ export default function PackageForm({
                 </label>
                 {hasRefreshments && (
                   <div className="grid grid-cols-2 gap-3 mt-2 pl-8">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Adult Price (₹)</label>
-                      <input
-                        type="number"
-                        value={refreshmentAdultPrice}
-                        onChange={(e) => setRefreshmentAdultPrice(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
-                        min={0}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Child Price (₹)</label>
-                      <input
-                        type="number"
-                        value={refreshmentChildPrice}
-                        onChange={(e) => setRefreshmentChildPrice(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
-                        min={0}
-                      />
-                    </div>
+                    {isStudentPackage ? (
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Student Refreshment Price (₹ per student)</label>
+                        <input
+                          type="number"
+                          value={refreshmentStudentPrice}
+                          onChange={(e) => setRefreshmentStudentPrice(e.target.value ? Number(e.target.value) : '')}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                          min={0}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Adult Price (₹)</label>
+                          <input
+                            type="number"
+                            value={refreshmentAdultPrice}
+                            onChange={(e) => setRefreshmentAdultPrice(e.target.value ? Number(e.target.value) : '')}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Child Price (₹)</label>
+                          <input
+                            type="number"
+                            value={refreshmentChildPrice}
+                            onChange={(e) => setRefreshmentChildPrice(e.target.value ? Number(e.target.value) : '')}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                            min={0}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -1141,48 +1198,76 @@ export default function PackageForm({
                           required
                         />
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Adult Price (₹) *</label>
-                        <input
-                          type="number"
-                          value={variant.adult_price}
-                          onChange={(e) => updateVariant(index, 'adult_price', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
-                          min={0}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Child Price (₹) *</label>
-                        <input
-                          type="number"
-                          value={variant.child_price}
-                          onChange={(e) => updateVariant(index, 'child_price', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
-                          min={0}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Adult Price (₹) (Optional)</label>
-                        <input
-                          type="number"
-                          value={variant.weekend_adult_price || ''}
-                          onChange={(e) => updateVariant(index, 'weekend_adult_price', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
-                          min={0}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Child Price (₹) (Optional)</label>
-                        <input
-                          type="number"
-                          value={variant.weekend_child_price || ''}
-                          onChange={(e) => updateVariant(index, 'weekend_child_price', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
-                          min={0}
-                        />
-                      </div>
+                      {isStudentPackage ? (
+                        <>
+                          <div>
+                            <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1.5">🎓 Student Price (₹) *</label>
+                            <input
+                              type="number"
+                              value={variant.student_price || ''}
+                              onChange={(e) => updateVariant(index, 'student_price', e.target.value)}
+                              className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm outline-none focus:border-amber-400 font-bold text-amber-700 shadow-sm"
+                              min={0}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1.5">Weekend Student Price (₹)</label>
+                            <input
+                              type="number"
+                              value={variant.weekend_student_price || ''}
+                              onChange={(e) => updateVariant(index, 'weekend_student_price', e.target.value)}
+                              className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm outline-none focus:border-amber-400 font-bold text-amber-700 shadow-sm"
+                              min={0}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Adult Price (₹) *</label>
+                            <input
+                              type="number"
+                              value={variant.adult_price}
+                              onChange={(e) => updateVariant(index, 'adult_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Child Price (₹) *</label>
+                            <input
+                              type="number"
+                              value={variant.child_price}
+                              onChange={(e) => updateVariant(index, 'child_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Adult Price (₹) (Optional)</label>
+                            <input
+                              type="number"
+                              value={variant.weekend_adult_price || ''}
+                              onChange={(e) => updateVariant(index, 'weekend_adult_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Child Price (₹) (Optional)</label>
+                            <input
+                              type="number"
+                              value={variant.weekend_child_price || ''}
+                              onChange={(e) => updateVariant(index, 'weekend_child_price', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] font-bold text-emerald-700 shadow-sm"
+                              min={0}
+                            />
+                          </div>
+                        </>
+                      )}
                       <div className="lg:col-span-2 pt-2">
                         <label className="flex items-center gap-3 cursor-pointer">
                           <input
@@ -1278,48 +1363,76 @@ export default function PackageForm({
 
                       {opt.type === 'SHARED' ? (
                         <>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Adult Price (₹) *</label>
-                            <input
-                              type="number"
-                              value={opt.adult_price || ''}
-                              onChange={(e) => updateTransportOption(index, 'adult_price', e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
-                              min={0}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Child Price (₹) *</label>
-                            <input
-                              type="number"
-                              value={opt.child_price || ''}
-                              onChange={(e) => updateTransportOption(index, 'child_price', e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
-                              min={0}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Adult Price (₹)</label>
-                            <input
-                              type="number"
-                              value={opt.weekend_adult_price || ''}
-                              onChange={(e) => updateTransportOption(index, 'weekend_adult_price', e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
-                              min={0}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Child Price (₹)</label>
-                            <input
-                              type="number"
-                              value={opt.weekend_child_price || ''}
-                              onChange={(e) => updateTransportOption(index, 'weekend_child_price', e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
-                              min={0}
-                            />
-                          </div>
+                          {isStudentPackage ? (
+                            <>
+                              <div>
+                                <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1.5">🎓 Student Price (₹) *</label>
+                                <input
+                                  type="number"
+                                  value={opt.student_price || ''}
+                                  onChange={(e) => updateTransportOption(index, 'student_price', e.target.value)}
+                                  className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm outline-none focus:border-amber-400 font-bold text-amber-700 shadow-sm"
+                                  min={0}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1.5">Weekend Student Price (₹)</label>
+                                <input
+                                  type="number"
+                                  value={opt.weekend_student_price || ''}
+                                  onChange={(e) => updateTransportOption(index, 'weekend_student_price', e.target.value)}
+                                  className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm outline-none focus:border-amber-400 font-bold text-amber-700 shadow-sm"
+                                  min={0}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Adult Price (₹) *</label>
+                                <input
+                                  type="number"
+                                  value={opt.adult_price || ''}
+                                  onChange={(e) => updateTransportOption(index, 'adult_price', e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                                  min={0}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Child Price (₹) *</label>
+                                <input
+                                  type="number"
+                                  value={opt.child_price || ''}
+                                  onChange={(e) => updateTransportOption(index, 'child_price', e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                                  min={0}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Adult Price (₹)</label>
+                                <input
+                                  type="number"
+                                  value={opt.weekend_adult_price || ''}
+                                  onChange={(e) => updateTransportOption(index, 'weekend_adult_price', e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                                  min={0}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Weekend Child Price (₹)</label>
+                                <input
+                                  type="number"
+                                  value={opt.weekend_child_price || ''}
+                                  onChange={(e) => updateTransportOption(index, 'weekend_child_price', e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 font-bold text-emerald-700 shadow-sm"
+                                  min={0}
+                                />
+                              </div>
+                            </>
+                          )}
                         </>
                       ) : (
                         <>

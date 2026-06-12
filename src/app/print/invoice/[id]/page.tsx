@@ -24,6 +24,7 @@ interface Passenger {
   id_proof_number: string | null;
   is_primary: boolean;
   phone_number?: string | null;
+  student_class?: string | null;
 }
 
 interface BookingDetails {
@@ -71,6 +72,7 @@ interface BookingDetails {
     requested_at?: string | null;
     processed_at?: string | null;
   };
+  student_count: number;
 }
 
 interface PageProps {
@@ -125,7 +127,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   const halfGst = (booking.gst_amount / 2).toFixed(2);
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
-  const passengerCount = booking.adult_count + booking.child_count;
+  const passengerCount = booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count;
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
@@ -404,7 +406,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             <tr>
               <th style={{ width: '5%' }}>#</th>
               <th style={{ width: '35%' }}>Name</th>
-              <th style={{ width: '10%' }}>Age</th>
+              <th style={{ width: '10%' }}>{booking.student_count > 0 ? 'Class' : 'Age'}</th>
               <th style={{ width: '15%' }}>Gender</th>
               <th style={{ width: '25%' }}>ID Proof (Last 4)</th>
               <th style={{ width: '10%' }}>Type</th>
@@ -416,6 +418,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
               const detailed: any[] = [];
               let quickAdults = 0;
               let quickChildren = 0;
+              let quickStudents = 0;
 
               booking.passengers.forEach((p: any) => {
                 const isQuickGuest = !p.is_primary && (
@@ -423,12 +426,20 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   (p.full_name || '').toLowerCase().includes("quick ticket") ||
                   (p.full_name || '').toLowerCase().includes("guest adult") ||
                   (p.full_name || '').toLowerCase().includes("guest child") ||
+                  (p.full_name || '').toLowerCase().includes("guest student") ||
+                  (p.full_name || '').toLowerCase().includes("tba (student)") ||
+                  (p.full_name || '').toLowerCase().includes("tba (guest)") ||
                   (p.full_name || '').toLowerCase().includes("quick ticket(not provided)")
                 );
 
                 if (isQuickGuest) {
-                  if (p.age >= 11) quickAdults++;
-                  else quickChildren++;
+                  if (booking.student_count > 0) {
+                    quickStudents++;
+                  } else if (p.age >= 11) {
+                    quickAdults++;
+                  } else {
+                    quickChildren++;
+                  }
                 } else {
                   detailed.push(p);
                 }
@@ -441,13 +452,25 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                     {p.full_name} {p.is_primary ? '(Primary)' : ''}
                     {(p.phone_number || primaryPassenger?.phone_number) && <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number || primaryPassenger?.phone_number}</div>}
                   </td>
-                  <td>{p.age}</td>
+                  <td>{booking.student_count > 0 ? (p.student_class || 'General') : p.age}</td>
                   <td>{p.gender || '-'}</td>
                   <td>{p.id_proof_number ? `${p.id_proof_type}: ${p.id_proof_number.slice(-4) || p.id_proof_number}` : '(Not Provided)'}</td>
-                  <td>{p.age >= 11 ? 'Adult' : 'Child'}</td>
+                  <td>{booking.student_count > 0 ? 'Student' : (p.age >= 11 ? 'Adult' : 'Child')}</td>
                 </tr>
               ));
 
+              if (quickStudents > 0) {
+                rows.push(
+                  <tr key="quick-students">
+                    <td>{rowIndex++}</td>
+                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Student) × {quickStudents}</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>Student</td>
+                  </tr>
+                );
+              }
               if (quickAdults > 0) {
                 rows.push(
                   <tr key="quick-adults">
@@ -477,7 +500,11 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             })()}
           </tbody>
         </table>
-        <div className="note">Note: ID Proof is mandatory for Adults (11+ years). Children (4-10 years) ID Proof is optional.</div>
+        <div className="note">
+          {booking.student_count > 0
+            ? 'Note: ID Proof and contact number are optional for students.'
+            : 'Note: ID Proof is mandatory for Adults (11+ years). Children (4-10 years) ID Proof is optional.'}
+        </div>
 
         {/* SUMMARY SECTION */}
         <div className="summary-layout">
@@ -488,7 +515,13 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 <tr>
                   <td>
                     {booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}
-                    <span className="line-meta">{booking.package_title} - {booking.variant_title} | {booking.adult_count} Adults, {booking.child_count} Children</span>
+                    <span className="line-meta">
+                      {booking.package_title} - {booking.variant_title} | {
+                        booking.student_count > 0
+                          ? `${booking.student_count} Student${booking.student_count > 1 ? 's' : ''}`
+                          : `${booking.adult_count} Adults, ${booking.child_count} Children`
+                      }
+                    </span>
                   </td>
                   <td>{money(baseFare, 2)}</td>
                 </tr>
@@ -507,7 +540,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <tr key={`transport-${idx}`}>
                     <td>
                       {ts.title || 'Transport'}
-                      <span className="line-meta">{describeTransport(ts, booking.adult_count, booking.child_count)}</span>
+                      <span className="line-meta">{describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)}</span>
                     </td>
                     <td>{money(ts.item_total || 0, 2)}</td>
                   </tr>
@@ -517,7 +550,10 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                     <td>
                       Refreshments
                       <span className="line-meta">
-                        Add-on for {booking.adult_count} Adults + {booking.child_count} Children
+                        {booking.student_count > 0
+                          ? `Add-on for ${booking.student_count} Student${booking.student_count > 1 ? 's' : ''}`
+                          : `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children`
+                        }
                       </span>
                     </td>
                     <td>{money(refreshmentAmount, 2)}</td>

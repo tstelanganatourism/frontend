@@ -26,6 +26,7 @@ interface BookingDetail {
   customer_email: string | null;
   adult_count: number;
   child_count: number;
+  student_count?: number;
   total_pax: number;
   has_transport: boolean;
   has_refreshment_addon: boolean;
@@ -156,7 +157,11 @@ function BookingRow({ booking }: { booking: BookingDetail }) {
       </td>
       <td className="px-4 py-3 text-center">
         <span className="text-xs font-bold text-slate-700">
-          {booking.adult_count}A{booking.child_count > 0 ? ` + ${booking.child_count}C` : ''}
+          {booking.student_count && booking.student_count > 0 ? (
+            `${booking.student_count}S`
+          ) : (
+            <>{booking.adult_count}A{booking.child_count > 0 ? ` + ${booking.child_count}C` : ''}</>
+          )}
         </span>
         <p className="text-[10px] text-slate-400">{booking.total_pax} pax</p>
       </td>
@@ -418,7 +423,11 @@ function PackageSection({ group }: { group: PackageGroup }) {
                     <div>
                       <span className="text-slate-400 font-medium">Pax:</span>{' '}
                       <span className="font-bold text-slate-700">
-                        {b.adult_count}A{b.child_count > 0 ? ` + ${b.child_count}C` : ''} ({b.total_pax} total)
+                        {b.student_count && b.student_count > 0 ? (
+                          `${b.student_count}S`
+                        ) : (
+                          <>{b.adult_count}A{b.child_count > 0 ? ` + ${b.child_count}C` : ''}</>
+                        )} ({b.total_pax} total)
                       </span>
                     </div>
                     <a

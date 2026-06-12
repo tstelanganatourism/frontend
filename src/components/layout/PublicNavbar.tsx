@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, User, Home, Ship, BedDouble, Camera, Image as ImageIcon, Info, LogOut, LayoutDashboard, ChevronDown, Settings, FileText } from 'lucide-react';
+import { Menu, X, User, Home, Ship, BedDouble, Camera, Image as ImageIcon, Info, LogOut, LayoutDashboard, ChevronDown, Settings, FileText, CalendarDays, ClipboardList } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { logout } from '@/services/authService';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -361,6 +361,24 @@ export default function PublicNavbar() {
                                   Admin Dashboard
                                 </Link>
                                 <Link
+                                  href="/admin/bookings"
+                                  prefetch={false}
+                                  onClick={() => { setDropdownOpen(false); handleNavigate(); }}
+                                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-extrabold text-slate-700 hover:bg-slate-50 hover:text-[var(--color-brand-teal)] rounded-xl transition-colors"
+                                >
+                                  <CalendarDays className="h-4 w-4 text-slate-400" />
+                                  Bookings
+                                </Link>
+                                <Link
+                                  href="/admin/inventory"
+                                  prefetch={false}
+                                  onClick={() => { setDropdownOpen(false); handleNavigate(); }}
+                                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-extrabold text-slate-700 hover:bg-slate-50 hover:text-[var(--color-brand-teal)] rounded-xl transition-colors"
+                                >
+                                  <ClipboardList className="h-4 w-4 text-slate-400" />
+                                  Inventory
+                                </Link>
+                                <Link
                                   href="/admin/settings"
                                   prefetch={false}
                                   onClick={() => { setDropdownOpen(false); handleNavigate(); }}
@@ -597,6 +615,28 @@ export default function PublicNavbar() {
                           <LayoutDashboard className="h-4.5 w-4.5 text-[var(--color-brand-teal)]" />
                           {user?.role === 'ADMIN' ? 'Admin Dashboard' : user?.role === 'AGENT' ? 'Agent Dashboard' : 'User Dashboard'}
                         </Link>
+                        {user?.role === 'ADMIN' && (
+                          <>
+                            <Link
+                              href="/admin/bookings"
+                              prefetch={false}
+                              onClick={() => setIsOpen(false)}
+                              className="flex items-center gap-3 rounded-2xl bg-teal-50 px-3 py-2.5 text-sm font-extrabold text-[var(--color-brand-river)] transition-all hover:bg-teal-100"
+                            >
+                              <CalendarDays className="h-4.5 w-4.5 text-[var(--color-brand-teal)]" />
+                              Bookings
+                            </Link>
+                            <Link
+                              href="/admin/inventory"
+                              prefetch={false}
+                              onClick={() => setIsOpen(false)}
+                              className="flex items-center gap-3 rounded-2xl bg-teal-50 px-3 py-2.5 text-sm font-extrabold text-[var(--color-brand-river)] transition-all hover:bg-teal-100"
+                            >
+                              <ClipboardList className="h-4.5 w-4.5 text-[var(--color-brand-teal)]" />
+                              Inventory
+                            </Link>
+                          </>
+                        )}
                         <button
                           onClick={() => { setIsLogoutModalOpen(true); }}
                           className="flex w-full items-center gap-3 rounded-2xl bg-red-50 px-3 py-2.5 text-left text-sm font-extrabold text-red-600 transition-all hover:bg-red-100"

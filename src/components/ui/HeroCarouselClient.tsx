@@ -80,9 +80,20 @@ type ApiSlide = {
   package_type: string | null;
   starting_weekend_price: number | null;
   child_price: number | null;
+  is_student_package?: boolean;
+  student_price?: number | null;
+  weekend_student_price?: number | null;
+  refreshment_student_price?: number | null;
+  has_refreshments?: boolean;
 };
 
-type Slide = typeof DEFAULT_SLIDE | ApiSlide;
+type Slide = typeof DEFAULT_SLIDE & {
+  is_student_package?: boolean;
+  student_price?: number | null;
+  weekend_student_price?: number | null;
+  refreshment_student_price?: number | null;
+  has_refreshments?: boolean;
+} | ApiSlide;
 
 // ─── SVG decorators ─────────────────────────────────────────────────────────
 
@@ -511,20 +522,42 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                         {activeSlide.duration}
                       </span>
                     )}
-                    {activeSlide.starting_price && (
-                      <span className="flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/15 px-3 py-1.5 sm:px-4 sm:py-2 text-amber-300 backdrop-blur-sm font-extrabold lg:hidden">
-                        {isRoom ? 'Weekday' : 'Adult'}: {formatPrice(activeSlide.starting_price)}
-                      </span>
-                    )}
-                    {isPackage && activeSlide.child_price && (
-                      <span className="flex items-center gap-1.5 rounded-full border border-amber-300/15 bg-amber-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-amber-250 backdrop-blur-sm font-extrabold lg:hidden">
-                        Child: {formatPrice(activeSlide.child_price)}
-                      </span>
-                    )}
-                    {isRoom && activeSlide.starting_weekend_price && (
-                      <span className="flex items-center gap-1.5 rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-sky-300 backdrop-blur-sm font-extrabold lg:hidden">
-                        Weekend: {formatPrice(activeSlide.starting_weekend_price)}
-                      </span>
+                    {activeSlide.is_student_package ? (
+                      <>
+                        {activeSlide.student_price && (
+                          <span className="flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/15 px-3 py-1.5 sm:px-4 sm:py-2 text-amber-300 backdrop-blur-sm font-extrabold lg:hidden">
+                            Student: {formatPrice(activeSlide.student_price ?? null)}
+                          </span>
+                        )}
+                        {activeSlide.weekend_student_price && (
+                          <span className="flex items-center gap-1.5 rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-sky-300 backdrop-blur-sm font-extrabold lg:hidden">
+                            Weekend: {formatPrice(activeSlide.weekend_student_price ?? null)}
+                          </span>
+                        )}
+                        {activeSlide.has_refreshments && activeSlide.refreshment_student_price && (
+                          <span className="flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-emerald-300 backdrop-blur-sm font-extrabold lg:hidden">
+                            Food: +{formatPrice(activeSlide.refreshment_student_price ?? null)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {activeSlide.starting_price && (
+                          <span className="flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/15 px-3 py-1.5 sm:px-4 sm:py-2 text-amber-300 backdrop-blur-sm font-extrabold lg:hidden">
+                            {isRoom ? 'Weekday' : 'Adult'}: {formatPrice(activeSlide.starting_price)}
+                          </span>
+                        )}
+                        {isPackage && activeSlide.child_price && (
+                          <span className="flex items-center gap-1.5 rounded-full border border-amber-300/15 bg-amber-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-amber-250 backdrop-blur-sm font-extrabold lg:hidden">
+                            Child: {formatPrice(activeSlide.child_price)}
+                          </span>
+                        )}
+                        {isRoom && activeSlide.starting_weekend_price && (
+                          <span className="flex items-center gap-1.5 rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1.5 sm:px-4 sm:py-2 text-sky-300 backdrop-blur-sm font-extrabold lg:hidden">
+                            Weekend: {formatPrice(activeSlide.starting_weekend_price)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -568,7 +601,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                       Pricing & Rates
                     </h3>
                     <p className="mt-1 text-lg font-black text-white">
-                      {isRoom ? 'Premium Stay Rates' : 'All-Inclusive Fares'}
+                      {isRoom ? 'Premium Stay Rates' : activeSlide.is_student_package ? 'Student Group Fares' : 'All-Inclusive Fares'}
                     </p>
 
                     <div className="mt-4 space-y-4">
@@ -576,13 +609,15 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                       <div className="flex items-center justify-between border-b border-white/10 pb-3">
                         <div>
                           <p className="text-xs font-bold text-white/70">
-                            {isRoom ? 'Weekday Stay (Sun - Thu)' : 'Adult Package Ticket'}
+                            {isRoom ? 'Weekday Stay (Sun - Thu)' : activeSlide.is_student_package ? 'Student Ticket (Regular)' : 'Adult Package Ticket'}
                           </p>
-                          <p className="text-[10px] text-white/50">{isRoom ? 'Per night, double occupancy' : 'Standard all-inclusive passenger'}</p>
+                          <p className="text-[10px] text-white/50">
+                            {isRoom ? 'Per night, double occupancy' : activeSlide.is_student_package ? 'Per-student regular weekday fare' : 'Standard all-inclusive passenger'}
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-black text-amber-300">
-                            {formatPrice(activeSlide.starting_price)}
+                            {formatPrice((activeSlide.is_student_package ? activeSlide.student_price : activeSlide.starting_price) ?? null)}
                           </p>
                         </div>
                       </div>
@@ -600,7 +635,36 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                             </p>
                           </div>
                         </div>
-                      ) : isPackage && activeSlide.child_price ? (
+                      ) : activeSlide.is_student_package ? (
+                        <>
+                          {activeSlide.weekend_student_price && (
+                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                              <div>
+                                <p className="text-xs font-bold text-white/70">Student Ticket (Weekend)</p>
+                                <p className="text-[10px] text-white/50">Weekend / festival / holiday fare</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-black text-sky-350">
+                                  {formatPrice(activeSlide.weekend_student_price ?? null)}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          {activeSlide.has_refreshments && activeSlide.refreshment_student_price && (
+                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                              <div>
+                                <p className="text-xs font-bold text-white/70">Refreshments (Optional)</p>
+                                {/* <p className="text-[10px] text-white/50">Veg lunch, breakfast, snacks</p> */}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-black text-emerald-400">
+                                  +{formatPrice(activeSlide.refreshment_student_price ?? null)}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : activeSlide.child_price ? (
                         <div className="flex items-center justify-between border-b border-white/10 pb-3">
                           <div>
                             <p className="text-xs font-bold text-white/70">Child Ticket (Ages 4-10)</p>

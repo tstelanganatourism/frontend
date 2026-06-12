@@ -79,7 +79,14 @@ export const PackageHeroV2 = ({
   const price = formatPrice(startingPrice);
   const stripHtml = (html: string | null | undefined) => {
     if (!html) return '';
-    return html.replace(/<[^>]*>?/gm, '');
+    const clean = html.replace(/<[^>]*>?/gm, '');
+    return clean
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'");
   };
 
   const plainDescription = stripHtml(description)?.replace(/\s+/g, ' ').trim();

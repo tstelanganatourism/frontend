@@ -22,6 +22,8 @@ interface Variant {
   child_price: number | string;
   weekend_adult_price?: number | string;
   weekend_child_price?: number | string;
+  student_price?: number | string;
+  weekend_student_price?: number | string;
   transport_info?: string | null;
 }
 
@@ -32,6 +34,7 @@ interface PackageDetail {
   type: string;
   region?: string | null;
   description?: string | null;
+  is_student_package?: boolean;
   brochure_pdf_url?: string | null;  generated_brochure_url?: string | null;  variants: Variant[];
   highlights?: Array<{ id: number; title?: string; label?: string; icon?: string | null; sort_order?: number }>;
   inclusions?: Array<{ id: number; title?: string; label?: string; icon?: string | null; sort_order?: number }>;
@@ -51,8 +54,8 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
   const included = (pkg.inclusions || []).map((item) => item.label || item.title).filter(Boolean);
   const excluded = (pkg.exclusions || []).map((item) => item.label || item.title).filter(Boolean);
   const primaryBoarding = pkg.boarding_points?.[0];
-  const lowestAdultFare = pkg.variants.length
-    ? Math.min(...pkg.variants.map((variant) => Number(variant.adult_price || 0)).filter(Boolean))
+  const lowestFare = pkg.variants.length
+    ? Math.min(...pkg.variants.map((variant) => Number((pkg.is_student_package ? variant.student_price : variant.adult_price) || 0)).filter(Boolean))
     : 0;
   const activeBrochureUrl = pkg.generated_brochure_url || pkg.brochure_pdf_url;
 
@@ -123,7 +126,7 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
               <CircleDollarSign className="mb-3 h-5 w-5 text-[#1a6b7a]" />
               <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Fare from</p>
-              <p className="mt-1 text-base font-black text-slate-950">{lowestAdultFare ? `₹${currency(lowestAdultFare)} / adult` : 'Check live fare'}</p>
+              <p className="mt-1 text-base font-black text-slate-950">{lowestFare ? `₹${currency(lowestFare)} / ${pkg.is_student_package ? 'student' : 'adult'}` : 'Check live fare'}</p>
             </div>
           </div>
 
@@ -147,50 +150,63 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                 <Bus className="h-5 w-5 text-[#1a6b7a]" />
                 Fare and Base Price Options
               </h3>
-               {pkg.variants.length ? (
+              {pkg.variants.length ? (
                 <div className="space-y-3">
-                  {pkg.variants.map((variant) => (
-                    <button
-                      key={variant.id}
-                      type="button"
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent('select-variant', { detail: { variantId: variant.id } }));
-                        const bookingEl = document.getElementById('booking');
-                        if (bookingEl) bookingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:border-[#1a6b7a] cursor-pointer group"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="text-sm font-black text-slate-950 group-hover:text-[#1a6b7a] transition-colors">{variant.title}</p>
-                          {variant.transport_info ? (
-                            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{variant.transport_info}</p>
-                          ) : null}
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <div className="text-sm font-black text-[#0f3d56]">
-                            <span className="text-slate-500 font-semibold text-[10px] mr-1 uppercase tracking-wider">Wkday:</span>
-                            ₹{currency(variant.adult_price)}
+                  {pkg.variants.map((variant) => {
+                    const isStudent = pkg.is_student_package;
+                    const primaryPrice = isStudent ? variant.student_price : variant.adult_price;
+                    const weekendPrice = isStudent ? variant.weekend_student_price : variant.weekend_adult_price;
+
+                    return (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('select-variant', { detail: { variantId: variant.id } }));
+                          const bookingEl = document.getElementById('booking');
+                          if (bookingEl) bookingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:border-[#1a6b7a] cursor-pointer group"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="text-sm font-black text-slate-950 group-hover:text-[#1a6b7a] transition-colors">{variant.title}</p>
+                            {variant.transport_info ? (
+                              <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{variant.transport_info}</p>
+                            ) : null}
                           </div>
-                          {(Number(variant.weekend_adult_price) > 0 && Number(variant.weekend_adult_price) !== Number(variant.adult_price)) && (
-                            <div className="text-sm font-black text-amber-700 mt-0.5">
-                              <span className="text-amber-600/70 font-semibold text-[10px] mr-1 uppercase tracking-wider">Wkend:</span>
-                              ₹{currency(variant.weekend_adult_price as any)}
+                          <div className="shrink-0 text-right">
+                            <div className="text-sm font-black text-[#0f3d56]">
+                              <span className="text-slate-500 font-semibold text-[10px] mr-1 uppercase tracking-wider">Wkday:</span>
+                              ₹{currency(primaryPrice || 0)}
                             </div>
-                          )}
-                          <p className="text-[10px] font-bold text-slate-500 mt-1">
-                            Child ₹{currency(variant.child_price)}
-                            {(Number(variant.weekend_child_price) > 0 && Number(variant.weekend_child_price) !== Number(variant.child_price)) && (
-                              <span className="text-amber-600/70 ml-1">
-                                (Wkend: ₹{currency(variant.weekend_child_price as any)})
-                              </span>
+                            {(Number(weekendPrice) > 0 && Number(weekendPrice) !== Number(primaryPrice)) && (
+                              <div className="text-sm font-black text-amber-700 mt-0.5">
+                                <span className="text-amber-600/70 font-semibold text-[10px] mr-1 uppercase tracking-wider">Wkend:</span>
+                                ₹{currency(weekendPrice as any)}
+                              </div>
                             )}
-                          </p>
-                          <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider text-[#1a6b7a] opacity-0 group-hover:opacity-100 transition-opacity">Select →</span>
+                            {!isStudent && (
+                              <p className="text-[10px] font-bold text-slate-500 mt-1">
+                                Child ₹{currency(variant.child_price)}
+                                {(Number(variant.weekend_child_price) > 0 && Number(variant.weekend_child_price) !== Number(variant.child_price)) && (
+                                  <span className="text-amber-600/70 ml-1">
+                                    (Wkend: ₹{currency(variant.weekend_child_price as any)})
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                            {isStudent && (
+                              <p className="text-[10px] font-bold text-slate-500 mt-1">
+                                Student package rate
+                              </p>
+                            )}
+                            <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider text-[#1a6b7a] opacity-0 group-hover:opacity-100 transition-opacity">Select →</span>
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">

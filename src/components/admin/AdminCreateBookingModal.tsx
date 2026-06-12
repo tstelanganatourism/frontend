@@ -29,6 +29,7 @@ interface PassengerForm {
   aadhaar: string;
   relationship: string;
   is_primary: boolean;
+  student_class?: string;
 }
 
 interface Props {
@@ -45,6 +46,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const [departureDate, setDepartureDate] = useState('');
   const [adultCount, setAdultCount] = useState(1);
   const [childCount, setChildCount] = useState(0);
+  const [studentCount, setStudentCount] = useState(1);
   const [amountPaid, setAmountPaid] = useState<string>('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,12 +77,24 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     aadhaar: '',
     relationship: 'self',
     is_primary: true,
+    student_class: '',
   });
+
+  const selectedPackage = useMemo(() => {
+    if (targetType !== 'package' || !variantId) return null;
+    const selectedVariantNum = parseInt(variantId);
+    return packagesList.find(p => (p.variants || []).some((v: any) => v.id === selectedVariantNum));
+  }, [variantId, packagesList, targetType]);
+
+  const isStudentPackage = !!selectedPackage?.is_student_package;
 
   useEffect(() => {
     if (isOpen) {
       fetchDropdownData();
       setPassengerMode('full');
+      setAdultCount(1);
+      setChildCount(0);
+      setStudentCount(1);
       setQuickPassenger({
         full_name: '',
         age: 25,
@@ -89,6 +103,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         aadhaar: '',
         relationship: 'self',
         is_primary: true,
+        student_class: '',
       });
       setCustomerEmail('');
     }
@@ -127,12 +142,28 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       setPackageHasTransport(!!pkg.has_transport);
       setPackageTransportOptions(pkg.transport_options || []);
       setPackageHasRefreshments(!!pkg.has_refreshments);
-      setPackageRefAdultPrice(Number(pkg.refreshment_adult_price) || 0);
-      setPackageRefChildPrice(Number(pkg.refreshment_child_price) || 0);
+      
+      const isStudentPkg = !!pkg.is_student_package;
+      if (isStudentPkg) {
+        const rStudent = Number(pkg.refreshment_student_price || pkg.refreshment_adult_price || 0);
+        setPackageRefAdultPrice(rStudent);
+        setPackageRefChildPrice(0);
+      } else {
+        setPackageRefAdultPrice(Number(pkg.refreshment_adult_price) || 0);
+        setPackageRefChildPrice(Number(pkg.refreshment_child_price) || 0);
+      }
+      
       const newMin = Number(pkg.min_passengers) || 1;
       setMinPassengers(newMin);
-      if (adultCount + childCount < newMin) {
-        setAdultCount(Math.max(1, newMin - childCount));
+      
+      if (isStudentPkg) {
+        if (studentCount < newMin) {
+          setStudentCount(newMin);
+        }
+      } else {
+        if (adultCount + childCount < newMin) {
+          setAdultCount(Math.max(1, newMin - childCount));
+        }
       }
       // Reset transport when package changes
       setTransportMode('NONE');
@@ -144,24 +175,26 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   // Sync passenger list with count
   useEffect(() => {
-    const totalCount = adultCount + childCount;
+    const isStudentPkg = targetType === 'package' && !!packagesList.find(p => (p.variants || []).some((v: any) => v.id === parseInt(variantId)))?.is_student_package;
+    const totalCount = isStudentPkg ? studentCount : (adultCount + childCount);
     setPassengers(prev => {
       if (prev.length === totalCount) return prev;
       const newList: PassengerForm[] = [];
       for (let i = 0; i < totalCount; i++) {
         newList.push(prev[i] || {
           full_name: '',
-          age: i < adultCount ? 25 : 5,
+          age: isStudentPkg ? 0 : (i < adultCount ? 25 : 5),
           gender: '',
           phone: '',
           aadhaar: '',
           relationship: i === 0 ? 'self' : '',
           is_primary: i === 0,
-        });
+          student_class: '',
+        } as any);
       }
       return newList;
     });
-  }, [adultCount, childCount]);
+  }, [adultCount, childCount, studentCount, variantId, packagesList, targetType]);
 
   const handlePassengerChange = (idx: number, field: keyof PassengerForm, value: any) => {
     setPassengers(prev => {
@@ -176,7 +209,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const separateCapacityOk = useMemo(() => {
     if (transportMode !== 'SEPARATE') return true;
-    const totalPax = adultCount + childCount;
+    const totalPax = isStudentPackage ? studentCount : (adultCount + childCount);
     const totalCapacity = separateOpts.reduce((sum: number, opt: any) => {
       const qty = separateVehicleQtys[opt.id] || 0;
       return sum + qty * (Number(opt.capacity) || 1);
@@ -184,35 +217,47 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     const hasAnyVehicle = Object.values(separateVehicleQtys).some(q => q > 0);
     if (!hasAnyVehicle) return true;
     return totalCapacity >= totalPax;
-  }, [transportMode, separateVehicleQtys, separateOpts, adultCount, childCount]);
+  }, [transportMode, separateVehicleQtys, separateOpts, adultCount, childCount, studentCount, isStudentPackage]);
 
   const canSubmit = () => {
     if (!travelDate) return false;
     if (targetType === 'package' && !variantId) return false;
     if (targetType === 'room' && !roomVariantId) return false;
     if (!separateCapacityOk) return false;
-    if (targetType === 'package' && (adultCount + childCount) < minPassengers) return false;
+    if (targetType === 'package' && (isStudentPackage ? studentCount : (adultCount + childCount)) < minPassengers) return false;
 
     if (passengerMode === 'quick') {
       const nameOk = quickPassenger.full_name.trim() !== '';
-      const ageOk = quickPassenger.age !== '' && Number(quickPassenger.age) >= 18;
       const genderOk = quickPassenger.gender !== '';
-      const phoneOk = /^\d{10}$/.test(quickPassenger.phone.trim());
-      const aadhaarOk = quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar);
-      return nameOk && ageOk && genderOk && phoneOk && aadhaarOk;
+      if (isStudentPackage) {
+        const classOk = (quickPassenger.student_class || '').trim() !== '';
+        const phoneOk = !quickPassenger.phone || /^\d{10}$/.test(quickPassenger.phone.trim());
+        const aadhaarOk = !quickPassenger.aadhaar || (quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar));
+        return nameOk && classOk && genderOk && phoneOk && aadhaarOk;
+      } else {
+        const ageOk = quickPassenger.age !== '' && Number(quickPassenger.age) >= 18;
+        const phoneOk = /^\d{10}$/.test(quickPassenger.phone.trim());
+        const aadhaarOk = quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar);
+        return nameOk && ageOk && genderOk && phoneOk && aadhaarOk;
+      }
     }
 
     if (passengers.length === 0) return false;
     return passengers.every((p, i) => {
       const nameOk = p.full_name.trim() !== '';
-      const ageOk = p.age !== '';
+      const ageOk = isStudentPackage ? true : p.age !== '';
       const genderOk = p.gender !== '';
-      const phoneOk = i === 0 ? /^\d{10}$/.test(p.phone.trim()) : true;
+      const phoneOk = isStudentPackage
+        ? (!p.phone || /^\d{10}$/.test(p.phone.trim()))
+        : (i === 0 ? /^\d{10}$/.test(p.phone.trim()) : true);
       const isChild = i >= adultCount;
-      const aadhaarOk = isChild
-        ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
-        : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
-      return nameOk && ageOk && genderOk && phoneOk && aadhaarOk;
+      const aadhaarOk = isStudentPackage
+        ? (!p.aadhaar || (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar)))
+        : (isChild
+            ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
+            : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar)));
+      const classOk = isStudentPackage ? (p.student_class || '').trim() !== '' : true;
+      return nameOk && ageOk && genderOk && phoneOk && aadhaarOk && classOk;
     });
   };
 
@@ -239,51 +284,71 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         passengersPayload = [
           {
             full_name: quickPassenger.full_name,
-            age: Number(quickPassenger.age),
+            age: isStudentPackage ? 0 : Number(quickPassenger.age),
             gender: quickPassenger.gender,
-            phone: quickPassenger.phone,
+            phone: quickPassenger.phone || undefined,
             aadhaar: quickPassenger.aadhaar || undefined,
             relationship: 'self',
             is_primary: true,
+            student_class: isStudentPackage ? (quickPassenger.student_class || 'General') : undefined,
           }
         ];
-        // Auto-fill remaining adults
-        for (let i = 1; i < adultCount; i++) {
-          passengersPayload.push({
-            full_name: 'quick ticket(not provided)',
-            age: 25,
-            gender: 'MALE',
-            phone: '',
-            aadhaar: undefined,
-            relationship: '',
-            is_primary: false,
-          });
-        }
-        // Auto-fill children
-        for (let i = 0; i < childCount; i++) {
-          passengersPayload.push({
-            full_name: 'quick ticket(not provided)',
-            age: 7,
-            gender: 'MALE',
-            phone: '',
-            aadhaar: undefined,
-            relationship: '',
-            is_primary: false,
-          });
+        if (isStudentPackage) {
+          // Auto-fill remaining students
+          for (let i = 1; i < studentCount; i++) {
+            passengersPayload.push({
+              full_name: 'quick ticket(not provided)',
+              age: 0,
+              gender: 'MALE',
+              phone: undefined,
+              aadhaar: undefined,
+              relationship: '',
+              is_primary: false,
+              student_class: quickPassenger.student_class || 'General',
+            });
+          }
+        } else {
+          // Auto-fill remaining adults
+          for (let i = 1; i < adultCount; i++) {
+            passengersPayload.push({
+              full_name: 'quick ticket(not provided)',
+              age: 25,
+              gender: 'MALE',
+              phone: '',
+              aadhaar: undefined,
+              relationship: '',
+              is_primary: false,
+            });
+          }
+          // Auto-fill children
+          for (let i = 0; i < childCount; i++) {
+            passengersPayload.push({
+              full_name: 'quick ticket(not provided)',
+              age: 7,
+              gender: 'MALE',
+              phone: '',
+              aadhaar: undefined,
+              relationship: '',
+              is_primary: false,
+            });
+          }
         }
       } else {
         passengersPayload = passengers.map(p => ({
           ...p,
+          age: isStudentPackage ? 0 : p.age,
           aadhaar: p.aadhaar || undefined,
+          phone: p.phone || undefined,
         }));
       }
 
       const payload: any = {
         target_type: targetType,
         travel_date: travelDate,
-        quantity: adultCount + childCount,
-        adult_count: adultCount,
-        child_count: childCount,
+        quantity: isStudentPackage ? studentCount : (adultCount + childCount),
+        adult_count: isStudentPackage ? 0 : adultCount,
+        child_count: isStudentPackage ? 0 : childCount,
+        student_count: isStudentPackage ? studentCount : 0,
         passengers: passengersPayload,
         transport_selections: transport_selections.length > 0 ? transport_selections : undefined,
         include_refreshments: includeRefreshments,
@@ -339,12 +404,26 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       const pkg = packagesList.find(p => (p.variants || []).some((v: any) => v.id === selectedVariantNum));
       const v = pkg?.variants?.find((v: any) => v.id === selectedVariantNum);
       if (v) {
-        subtotal = (adultCount * (Number(v.adult_price) || 0)) + (childCount * (Number(v.child_price) || 0));
+        if (pkg?.is_student_package) {
+          const isWeekend = travelDate ? (new Date(travelDate).getDay() === 0 || new Date(travelDate).getDay() === 6) : false;
+          const studentPrice = (isWeekend && v.weekend_student_price) ? Number(v.weekend_student_price) : Number(v.student_price || 0);
+          subtotal = studentCount * studentPrice;
+        } else {
+          subtotal = (adultCount * (Number(v.adult_price) || 0)) + (childCount * (Number(v.child_price) || 0));
+        }
       }
       // Transport cost
       if (transportMode === 'SHARED' && selectedSharedOptId) {
         const tOpt = packageTransportOptions.find((o: any) => o.id === selectedSharedOptId);
-        if (tOpt) subtotal += (adultCount * Number(tOpt.adult_price || 0)) + (childCount * Number(tOpt.child_price || 0));
+        if (tOpt) {
+          if (pkg?.is_student_package) {
+            const isWeekend = travelDate ? (new Date(travelDate).getDay() === 0 || new Date(travelDate).getDay() === 6) : false;
+            const tPrice = (isWeekend && tOpt.weekend_student_price) ? Number(tOpt.weekend_student_price) : Number(tOpt.student_price || 0);
+            subtotal += studentCount * tPrice;
+          } else {
+            subtotal += (adultCount * Number(tOpt.adult_price || 0)) + (childCount * Number(tOpt.child_price || 0));
+          }
+        }
       } else if (transportMode === 'SEPARATE') {
         for (const [idStr, qty] of Object.entries(separateVehicleQtys)) {
           if (!qty || qty <= 0) continue;
@@ -354,7 +433,12 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       }
       // Refreshments cost
       if (includeRefreshments && packageHasRefreshments) {
-        subtotal += (adultCount * packageRefAdultPrice) + (childCount * packageRefChildPrice);
+        if (pkg?.is_student_package) {
+          const rStudent = Number(pkg.refreshment_student_price || pkg.refreshment_adult_price || 0);
+          subtotal += studentCount * rStudent;
+        } else {
+          subtotal += (adultCount * packageRefAdultPrice) + (childCount * packageRefChildPrice);
+        }
       }
     } else if (targetType === 'room' && roomVariantId && travelDate) {
       const selected = roomOptions.find(o => o.value === roomVariantId);
@@ -379,7 +463,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     const gst = subtotal * 0.05;
     const gatewayFee = (subtotal + gst) * 0.01;
     return subtotal + gst + gatewayFee;
-  }, [targetType, variantId, roomVariantId, packagesList, packageOptions, roomOptions, adultCount, childCount, travelDate, departureDate, transportMode, selectedSharedOptId, separateVehicleQtys, packageTransportOptions, includeRefreshments, packageHasRefreshments, packageRefAdultPrice, packageRefChildPrice]);
+  }, [targetType, variantId, roomVariantId, packagesList, packageOptions, roomOptions, adultCount, childCount, studentCount, travelDate, departureDate, transportMode, selectedSharedOptId, separateVehicleQtys, packageTransportOptions, includeRefreshments, packageHasRefreshments, packageRefAdultPrice, packageRefChildPrice]);
 
   if (!isOpen) return null;
 
@@ -451,16 +535,26 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 <CustomDatePicker label="Check-out Date" value={departureDate} onChange={setDepartureDate} allowPast={true} />
               </div>
             )}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-600">Adults</label>
-              <input type="number" min="1" max="50" value={adultCount} onChange={(e) => setAdultCount(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-600">Children</label>
-              <input type="number" min="0" max="50" value={childCount} onChange={(e) => setChildCount(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
-            </div>
+            {isStudentPackage ? (
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-600">Students</label>
+                <input type="number" min="1" max="1000" value={studentCount} onChange={(e) => setStudentCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-600">Adults</label>
+                  <input type="number" min="1" max="50" value={adultCount} onChange={(e) => setAdultCount(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-600">Children</label>
+                  <input type="number" min="0" max="50" value={childCount} onChange={(e) => setChildCount(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Transport Options for Package Bookings */}
@@ -490,7 +584,11 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                   <input type="radio" name="adminSharedTransport" checked={selectedSharedOptId === opt.id} onChange={() => setSelectedSharedOptId(opt.id)} className="text-[#1a6b7a]" />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-slate-800 truncate">{opt.title} {opt.capacity ? `(${opt.capacity} Seater)` : ''}</div>
-                    <div className="text-[10px] text-[#1a6b7a] font-semibold mt-0.5">₹{opt.adult_price}/adult · ₹{opt.child_price}/child</div>
+                    {isStudentPackage ? (
+                      <div className="text-[10px] text-[#1a6b7a] font-semibold mt-0.5">₹{opt.student_price}/student</div>
+                    ) : (
+                      <div className="text-[10px] text-[#1a6b7a] font-semibold mt-0.5">₹{opt.adult_price}/adult · ₹{opt.child_price}/child</div>
+                    )}
                   </div>
                 </label>
               ))}
@@ -525,13 +623,13 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                   {!separateCapacityOk && (
                     <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[10px] font-bold text-rose-600">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      <span>Not enough capacity for {adultCount + childCount} passengers. Add more vehicles.</span>
+                      <span>Not enough capacity for {isStudentPackage ? studentCount : (adultCount + childCount)} passengers. Add more vehicles.</span>
                     </div>
                   )}
                   {separateCapacityOk && Object.values(separateVehicleQtys).some(q => q > 0) && (
                     <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-[10px] font-bold text-emerald-700">
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                      <span>Vehicles confirmed for {adultCount + childCount} passengers</span>
+                      <span>Vehicles confirmed for {isStudentPackage ? studentCount : (adultCount + childCount)} passengers</span>
                     </div>
                   )}
                 </div>
@@ -545,7 +643,11 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
               <input type="checkbox" checked={includeRefreshments} onChange={e => setIncludeRefreshments(e.target.checked)} className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4" />
               <div className="flex-1">
                 <div className="text-xs font-bold text-slate-800">Add Refreshments</div>
-                <div className="text-[10px] text-slate-500 font-semibold mt-0.5">₹{packageRefAdultPrice}/adult · ₹{packageRefChildPrice}/child</div>
+                {isStudentPackage ? (
+                  <div className="text-[10px] text-slate-500 font-semibold mt-0.5">₹{packageRefAdultPrice}/student</div>
+                ) : (
+                  <div className="text-[10px] text-slate-500 font-semibold mt-0.5">₹{packageRefAdultPrice}/adult · ₹{packageRefChildPrice}/child</div>
+                )}
               </div>
             </label>
           )}
@@ -624,11 +726,11 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
               className="w-full sm:w-2/3 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
             />
             {/* Min Passengers Warning */}
-            {targetType === 'package' && minPassengers > 1 && (adultCount + childCount) < minPassengers && (
+            {targetType === 'package' && minPassengers > 1 && (isStudentPackage ? studentCount : (adultCount + childCount)) < minPassengers && (
               <div className="flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 p-3">
                 <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
                 <p className="text-xs font-bold text-rose-700 leading-relaxed">
-                  This package requires a minimum of <span className="font-black">{minPassengers} passengers</span> per booking. Add more passengers to proceed.
+                  This package requires a minimum of <span className="font-black">{minPassengers} {isStudentPackage ? 'students' : 'passengers'}</span> per booking. Add more to proceed.
                 </p>
               </div>
             )}
@@ -636,7 +738,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[#1a6b7a]" />
-              <h3 className="text-sm font-black text-slate-800">Passenger Details ({adultCount + childCount})</h3>
+              <h3 className="text-sm font-black text-slate-800">Passenger Details ({isStudentPackage ? studentCount : (adultCount + childCount)})</h3>
             </div>
 
             {/* Mode Toggle */}
@@ -675,13 +777,13 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex gap-2 items-start">
                   <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-xs font-semibold text-amber-700">
-                    Quick mode: Only the <strong>lead adult's</strong> details are required. The remaining {adultCount + childCount - 1} passenger(s) will be auto-filled as "Guest". You can update their names later from the booking detail screen.
+                    Quick mode: Only the <strong>{isStudentPackage ? "lead student's" : "lead adult's"}</strong> details are required. The remaining {(isStudentPackage ? studentCount : (adultCount + childCount)) - 1} passenger(s) will be auto-filled as "{isStudentPackage ? "Student" : "Guest"}". You can update their names later from the booking detail screen.
                   </p>
                 </div>
 
                 <div className="rounded-xl border-2 border-violet-200 bg-violet-50/30 p-4 space-y-3">
                   <p className="text-xs font-black text-violet-700 uppercase tracking-wider flex items-center gap-2">
-                    Lead Adult Contact
+                    {isStudentPackage ? 'Lead Student Contact' : 'Lead Adult Contact'}
                     <span className="rounded bg-violet-600 px-1.5 py-0.5 text-[10px] text-white font-black">Primary</span>
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -694,22 +796,35 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none"
                       />
                     </div>
-                    <div>
-                      <input
-                        type="number"
-                        min={18}
-                        max={120}
-                        placeholder="Age (min 18) *"
-                        value={quickPassenger.age}
-                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: parseInt(e.target.value) || '' }))}
-                        className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
-                          quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
-                        }`}
-                      />
-                      {quickPassenger.age !== '' && Number(quickPassenger.age) < 18 && (
-                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Must be adult (18+)</p>
-                      )}
-                    </div>
+                    {isStudentPackage ? (
+                      <div>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Class / Grade *"
+                          value={quickPassenger.student_class || ''}
+                          onChange={(e) => setQuickPassenger(prev => ({ ...prev, student_class: e.target.value }))}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="number"
+                          min={18}
+                          max={120}
+                          placeholder="Age (min 18) *"
+                          value={quickPassenger.age}
+                          onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: parseInt(e.target.value) || '' }))}
+                          className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
+                            quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
+                          }`}
+                        />
+                        {quickPassenger.age !== '' && Number(quickPassenger.age) < 18 && (
+                          <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Must be adult (18+)</p>
+                        )}
+                      </div>
+                    )}
                     <div>
                       <select
                         value={quickPassenger.gender}
@@ -725,7 +840,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                     <div className="sm:col-span-2">
                       <input
                         type="text"
-                        placeholder="Aadhaar Number (12 digits) *"
+                        placeholder={isStudentPackage ? "Aadhaar Number (Optional)" : "Aadhaar Number (12 digits) *"}
                         value={quickPassenger.aadhaar}
                         onChange={(e) => setQuickPassenger(prev => ({ ...prev, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
                         className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
@@ -739,7 +854,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                     <div className="sm:col-span-3">
                       <input
                         type="tel"
-                        placeholder="Phone Number (10 digits) *"
+                        placeholder={isStudentPackage ? "Phone Number (Optional)" : "Phone Number (10 digits) *"}
                         value={quickPassenger.phone}
                         onChange={(e) => setQuickPassenger(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                         className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
@@ -753,21 +868,32 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                   </div>
 
                   {/* Auto-generated guests preview */}
-                  {(adultCount + childCount > 1) && (
+                  {((isStudentPackage ? studentCount : (adultCount + childCount)) > 1) && (
                     <div className="border-t border-violet-100 pt-3 mt-1 space-y-1.5">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-generated Guests</p>
-                      {Array.from({ length: adultCount - 1 }, (_, i) => (
-                        <div key={`qa-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                          <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
-                          Guest Adult {i + 2}
-                        </div>
-                      ))}
-                      {Array.from({ length: childCount }, (_, i) => (
-                        <div key={`qc-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                          <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
-                          Guest Child {i + 1}
-                        </div>
-                      ))}
+                      {isStudentPackage ? (
+                        Array.from({ length: studentCount - 1 }, (_, i) => (
+                          <div key={`qs-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                            <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
+                            Guest Student {i + 2}
+                          </div>
+                        ))
+                      ) : (
+                        <>
+                          {Array.from({ length: adultCount - 1 }, (_, i) => (
+                            <div key={`qa-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                              <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                              Guest Adult {i + 2}
+                            </div>
+                          ))}
+                          {Array.from({ length: childCount }, (_, i) => (
+                            <div key={`qc-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                              <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
+                              Guest Child {i + 1}
+                            </div>
+                          ))}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -780,7 +906,10 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
               return (
                 <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
                   <p className="text-xs font-black text-[#1a6b7a] uppercase tracking-wider">
-                    {i < adultCount ? `Adult ${i + 1}` : `Child ${i + 1 - adultCount}`} {i === 0 && <span className="ml-1 rounded bg-[#1a6b7a] px-1.5 py-0.5 text-[10px] text-white">Primary</span>}
+                    {isStudentPackage
+                      ? `Student ${i + 1}`
+                      : (i < adultCount ? `Adult ${i + 1}` : `Child ${i + 1 - adultCount}`)}{' '}
+                    {i === 0 && <span className="ml-1 rounded bg-[#1a6b7a] px-1.5 py-0.5 text-[10px] text-white">Primary</span>}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
@@ -789,9 +918,15 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
                     </div>
                     <div>
-                      <input type="number" required min={i < adultCount ? 11 : 4} max={i < adultCount ? 120 : 10} placeholder="Age" value={p.age}
-                        onChange={(e) => handlePassengerChange(i, 'age', parseInt(e.target.value) || '')}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                      {isStudentPackage ? (
+                        <input type="text" required placeholder="Class / Grade" value={p.student_class || ''}
+                          onChange={(e) => handlePassengerChange(i, 'student_class', e.target.value)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                      ) : (
+                        <input type="number" required min={i < adultCount ? 11 : 4} max={i < adultCount ? 120 : 10} placeholder="Age" value={p.age}
+                          onChange={(e) => handlePassengerChange(i, 'age', parseInt(e.target.value) || '')}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                      )}
                     </div>
                     <div>
                       <select value={p.gender} onChange={(e) => handlePassengerChange(i, 'gender', e.target.value)}
@@ -803,8 +938,8 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                       </select>
                     </div>
                     <div className="sm:col-span-2">
-                      <input type="text" placeholder={isChild ? "Aadhaar (Optional)" : "Aadhaar Number"}
-                        required={!isChild} value={p.aadhaar}
+                      <input type="text" placeholder={isStudentPackage || isChild ? "Aadhaar (Optional)" : "Aadhaar Number"}
+                        required={!isStudentPackage && !isChild} value={p.aadhaar}
                         onChange={(e) => handlePassengerChange(i, 'aadhaar', e.target.value.replace(/\D/g, '').slice(0, 12))}
                         className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none ${p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar) ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
                           }`} />
@@ -812,9 +947,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar (checksum failed)</p>
                       )}
                     </div>
-                    {i === 0 && (
+                    {(i === 0 || isStudentPackage) && (
                       <div className="sm:col-span-3">
-                        <input type="tel" required placeholder="Phone Number" value={p.phone}
+                        <input type="tel" required={i === 0 && !isStudentPackage} placeholder={isStudentPackage ? "Phone Number (Optional)" : "Phone Number"} value={p.phone}
                           onChange={(e) => handlePassengerChange(i, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                           className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none ${p.phone.length > 0 && p.phone.length !== 10 ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
                             }`} />

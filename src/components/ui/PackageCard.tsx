@@ -23,12 +23,17 @@ interface PackageProps {
     is_featured: boolean;
     tags: string[];
     starting_price: number | null;
+    is_student_package?: boolean;
     transport_info?: string | null;
     variants?: Array<{
       id: number;
       title: string;
       adult_price: number;
       child_price: number;
+      weekend_adult_price?: number;
+      weekend_child_price?: number;
+      student_price?: number;
+      weekend_student_price?: number;
       transport_info?: string | null;
       is_active: boolean;
     }>;
@@ -67,6 +72,12 @@ function getTransportType(
 }
 
 function getDisplayPrice(pkg: PackageProps['pkg']) {
+  if (pkg.is_student_package) {
+    const activeStudentPrices = (pkg.variants || [])
+      .filter((variant) => variant.is_active && variant.student_price && Number(variant.student_price) > 0)
+      .map((variant) => Number(variant.student_price));
+    if (activeStudentPrices.length > 0) return Math.min(...activeStudentPrices);
+  }
   const startingPrice = Number(pkg.starting_price || 0);
   if (startingPrice > 0) return startingPrice;
 
@@ -95,9 +106,13 @@ function PackageCard({ pkg, priority = false }: PackageProps) {
 
   const adultPrices = activeVariants.map(v => Number(v.adult_price)).filter(p => p > 0);
   const childPrices = activeVariants.map(v => Number(v.child_price)).filter(p => p > 0);
+  const studentPrices = activeVariants.map(v => Number(v.student_price || 0)).filter(p => p > 0);
+  const weekendStudentPrices = activeVariants.map(v => Number(v.weekend_student_price || 0)).filter(p => p > 0);
 
   const adultPrice = adultPrices.length > 0 ? Math.min(...adultPrices) : (pkg.starting_price ? Number(pkg.starting_price) : 0);
   const childPrice = childPrices.length > 0 ? Math.min(...childPrices) : null;
+  const studentPrice = studentPrices.length > 0 ? Math.min(...studentPrices) : (pkg.starting_price ? Number(pkg.starting_price) : 0);
+  const weekendStudentPrice = weekendStudentPrices.length > 0 ? Math.min(...weekendStudentPrices) : null;
 
   // Experience type designation
   const isStayPkg = pkg.title.toLowerCase().includes('stay') || pkg.title.toLowerCase().includes('bamboo') || pkg.title.toLowerCase().includes('hut');
@@ -239,30 +254,62 @@ function PackageCard({ pkg, priority = false }: PackageProps) {
               Starts From
             </p>
             <div className="flex items-end justify-between">
-              <div>
-                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                  Adult Fare
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
-                    {adultPrice ? `₹${adultPrice.toLocaleString('en-IN')}` : 'updating'}
-                  </span>
-                  <span className="text-[11px] font-bold text-slate-600">/ adult</span>
-                </div>
-              </div>
-
-              {childPrice !== null && childPrice > 0 && (
-                <div className="text-right">
-                  <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                    Child Fare
-                  </p>
-                  <div className="flex items-baseline justify-end gap-1">
-                    <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
-                      ₹{childPrice.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-[11px] font-bold text-slate-600">/ child</span>
+              {pkg.is_student_package ? (
+                <>
+                  <div>
+                    <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                      Student Fare
+                    </p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
+                        {studentPrice ? `₹${studentPrice.toLocaleString('en-IN')}` : 'updating'}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-600">/ student</span>
+                    </div>
                   </div>
-                </div>
+
+                  {weekendStudentPrice !== null && weekendStudentPrice > 0 && (
+                    <div className="text-right">
+                      <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                        Weekend Fare
+                      </p>
+                      <div className="flex items-baseline justify-end gap-1">
+                        <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
+                          ₹{weekendStudentPrice.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-600">/ student</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                      Adult Fare
+                    </p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
+                        {adultPrice ? `₹${adultPrice.toLocaleString('en-IN')}` : 'updating'}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-600">/ adult</span>
+                    </div>
+                  </div>
+
+                  {childPrice !== null && childPrice > 0 && (
+                    <div className="text-right">
+                      <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                        Child Fare
+                      </p>
+                      <div className="flex items-baseline justify-end gap-1">
+                        <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
+                          ₹{childPrice.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-600">/ child</span>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

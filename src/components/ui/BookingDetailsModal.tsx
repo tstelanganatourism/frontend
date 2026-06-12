@@ -27,6 +27,7 @@ interface Passenger {
   is_child: boolean;
   phone_number: string | null;
   is_primary?: boolean;
+  student_class?: string | null;
 }
 
 interface PaymentLedgerEntry {
@@ -47,6 +48,7 @@ interface BookingDetails {
   travel_date: string;
   adult_count: number;
   child_count: number;
+  student_count: number;
   subtotal_amount: number;
   coupon_discount: number;
   coupon_applied: string | null;
@@ -418,7 +420,7 @@ export default function BookingDetailsModal({
   const refreshmentIncluded = booking ? hasRefreshment(booking) : false;
   const refreshmentAmount = booking ? getRefreshmentAmount(booking.pricing_snapshot) : 0;
   const baseFare = booking ? getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot) : 0;
-  const passengerCount = booking ? booking.adult_count + booking.child_count : 0;
+  const passengerCount = booking ? (booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count) : 0;
 
   return (
     <>
@@ -531,7 +533,10 @@ export default function BookingDetailsModal({
                     <div>
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Passengers</span>
                       <span className="text-sm font-bold text-slate-800">
-                        {booking.adult_count} Adults {booking.child_count > 0 ? `+ ${booking.child_count} Children` : ''}
+                        {booking.student_count > 0 
+                          ? `${booking.student_count} Student${booking.student_count > 1 ? 's' : ''}`
+                          : `${booking.adult_count} Adults${booking.child_count > 0 ? ` + ${booking.child_count} Children` : ''}`
+                        }
                       </span>
                     </div>
                   </div>
@@ -550,16 +555,19 @@ export default function BookingDetailsModal({
                         const detailed: any[] = [];
                         let quickAdults = 0;
                         let quickChildren = 0;
+                        let quickStudents = 0;
 
                         booking.passengers.forEach((p: any) => {
                           const isQuickGuest = !p.is_primary && (
                             booking.pricing_snapshot?.booking_mode === 'QUICK' ||
                             p.full_name.toLowerCase().includes("quick ticket") ||
                             p.full_name.toLowerCase().includes("guest adult") ||
-                            p.full_name.toLowerCase().includes("guest child")
+                            p.full_name.toLowerCase().includes("guest child") ||
+                            p.full_name.toLowerCase().includes("student")
                           );
                           if (isQuickGuest) {
-                            if (p.age >= 11) quickAdults++;
+                            if (booking.student_count > 0) quickStudents++;
+                            else if (p.age >= 11) quickAdults++;
                             else quickChildren++;
                           } else {
                             detailed.push(p);
@@ -585,7 +593,11 @@ export default function BookingDetailsModal({
                                 {p.full_name}
                               </p>
                               <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">
-                                {p.gender || '—'} • Age {p.age} {p.is_child ? '(Child)' : ''}
+                                {p.gender || '—'}
+                                {booking.student_count > 0 
+                                  ? ` • ${p.student_class || 'General'}`
+                                  : ` • Age ${p.age} ${p.is_child ? '(Child)' : ''}`
+                                }
                               </p>
                               <div className="mt-1">
                               {(p.phone_number || booking.passengers?.[0]?.phone_number) && (
@@ -625,6 +637,19 @@ export default function BookingDetailsModal({
                           );
                         }
 
+                        if (quickStudents > 0) {
+                          elements.push(
+                            <div key="quick-students" className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm opacity-80">
+                              <div className="h-9 w-9 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs shrink-0">🎓</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="mb-2">{typeLabel}</div>
+                                <p className="font-bold text-slate-600 text-xs italic">Not Provided (Student) × {quickStudents}</p>
+                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Student Count</p>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return elements;
                       })()}
                     </div>
@@ -642,7 +667,7 @@ export default function BookingDetailsModal({
                           <div key={idx} className="flex flex-col justify-center p-3.5 rounded-2xl bg-slate-50/50 border border-slate-100 shadow-sm">
                             <span className="text-xs font-bold text-slate-800">{ts.title}</span>
                             <span className="text-[10px] text-slate-500 font-semibold mt-1">
-                              {describeTransport(ts, booking.adult_count, booking.child_count)} • {formatCurrency(Number(ts.item_total || 0))}
+                              {describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)} • {formatCurrency(Number(ts.item_total || 0))}
                             </span>
                           </div>
                         ))}
@@ -650,7 +675,10 @@ export default function BookingDetailsModal({
                           <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 shadow-sm">
                             <span className="text-xs font-bold text-emerald-800">Refreshments</span>
                             <span className="text-[10px] text-emerald-600 font-semibold mt-1">
-                              Add-on for {booking.adult_count} Adults + {booking.child_count} Children • {formatCurrency(refreshmentAmount)}
+                              {booking.student_count > 0
+                                ? `Add-on for ${booking.student_count} Students • ${formatCurrency(refreshmentAmount)}`
+                                : `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children • ${formatCurrency(refreshmentAmount)}`
+                              }
                             </span>
                           </div>
                         )}
@@ -671,7 +699,7 @@ export default function BookingDetailsModal({
                           <React.Fragment key={`billing-transport-${idx}`}>
                             <div className="flex flex-col">
                               <span>{ts.title || 'Transport'}</span>
-                              <span className="text-[10px] text-slate-400 font-medium">{describeTransport(ts, passengerCount)}</span>
+                              <span className="text-[10px] text-slate-400 font-medium">{describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)}</span>
                             </div>
                             <div className="text-right font-bold text-slate-700">{formatCurrency(Number(ts.item_total || 0))}</div>
                           </React.Fragment>

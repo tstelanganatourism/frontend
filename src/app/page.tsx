@@ -89,11 +89,26 @@ type FeaturedPackage = {
   slug: string;
   title: string;
   type: string;
+  duration?: string | null;
+  place?: string | null;
   region: string;
   cover_image_url: string | null;
   is_featured: boolean;
+  is_student_package?: boolean;
   tags: string[];
   starting_price: number | null;
+  variants?: Array<{
+    id: number;
+    title: string;
+    adult_price: number;
+    child_price: number;
+    weekend_adult_price?: number;
+    weekend_child_price?: number;
+    student_price?: number;
+    weekend_student_price?: number;
+    transport_info?: string | null;
+    is_active: boolean;
+  }>;
 };
 
 type FeaturedRoom = {

@@ -49,6 +49,7 @@ interface BookingItem {
   agent_payable?: number | null;
   passenger_count: number;
   primary_passenger_name?: string | null;
+  student_count?: number;
 }
 
 interface BookingSummary {
@@ -430,7 +431,11 @@ export default function AdminBookingsPage() {
                       </div>
                       <p className="text-[10px] text-slate-400 truncate max-w-[160px]">{b.variant_title}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
-                        {b.adult_count}A {b.child_count > 0 ? `+ ${b.child_count}C` : ''}
+                        {b.student_count && b.student_count > 0 ? (
+                          `${b.student_count}S`
+                        ) : (
+                          <>{b.adult_count}A {b.child_count > 0 ? `+ ${b.child_count}C` : ''}</>
+                        )}
                         {b.passenger_count > 0 && ` · ${b.passenger_count} pax`}
                       </p>
                       {(b as any).pricing_snapshot?.transport_selections?.length > 0 && (

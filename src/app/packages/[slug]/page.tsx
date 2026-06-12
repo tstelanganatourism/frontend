@@ -22,7 +22,15 @@ export const revalidate = 60;
 export const dynamicParams = true;
 
 
-type Variant = { id: number; title: string; adult_price: number; child_price: number; transport_info?: string | null };
+type Variant = { 
+  id: number; 
+  title: string; 
+  adult_price: number; 
+  child_price: number; 
+  student_price?: number; 
+  weekend_student_price?: number; 
+  transport_info?: string | null 
+};
 type Item = { id: number; title?: string; label?: string; icon?: string | null; sort_order?: number };
 type PackageDetail = {
   id: number;
@@ -52,13 +60,17 @@ type PackageDetail = {
     child_price?: number | string | null;
     weekend_adult_price?: number | string | null;
     weekend_child_price?: number | string | null;
+    student_price?: number | string | null;
+    weekend_student_price?: number | string | null;
     fixed_price?: number | string | null;
     weekend_fixed_price?: number | string | null;
   }>;
   has_refreshments?: boolean;
   refreshment_adult_price?: number | string | null;
   refreshment_child_price?: number | string | null;
+  refreshment_student_price?: number | string | null;
   min_passengers?: number;
+  is_student_package?: boolean;
   variants: Variant[];
   gallery: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
   itinerary: Array<{ id: number; day_number: number; title: string; description?: string | null; icon?: string | null; sort_order: number }>;
@@ -176,7 +188,7 @@ function getPositiveStartingPrice(pkg: PackageDetail) {
   if (explicit > 0) return explicit;
 
   const variantPrices = pkg.variants
-    .map((variant) => Number(variant.adult_price || 0))
+    .map((variant) => Number((pkg.is_student_package ? variant.student_price : variant.adult_price) || 0))
     .filter((price) => price > 0);
 
   return variantPrices.length ? Math.min(...variantPrices) : null;
@@ -343,7 +355,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
           <PackagePolicies policies={pkg.policies} primaryBoarding={pkg.boarding_points?.[0]} />
 
           {/* Visual Brochure Download Panel */}
-          {/* {(pkg.generated_brochure_url || pkg.brochure_pdf_url) && (
+          {(pkg.generated_brochure_url || pkg.brochure_pdf_url) && (
             <section id="brochure" className="scroll-mt-32">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">Offline Planning</p>
               <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">Official Tour Brochure</h2>
@@ -364,7 +376,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
                 </a>
               </div>
             </section>
-          )} */}
+          )}
 
           <PackageGallery gallery={pkg.gallery} />
 
@@ -383,7 +395,9 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
             hasRefreshments={pkg.has_refreshments}
             refreshmentAdultPrice={pkg.refreshment_adult_price}
             refreshmentChildPrice={pkg.refreshment_child_price}
+            refreshmentStudentPrice={pkg.refreshment_student_price}
             minPassengers={pkg.min_passengers}
+            isStudentPackage={pkg.is_student_package}
           />
         </aside>
 
@@ -401,7 +415,9 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         hasRefreshments={pkg.has_refreshments}
         refreshmentAdultPrice={pkg.refreshment_adult_price}
         refreshmentChildPrice={pkg.refreshment_child_price}
+        refreshmentStudentPrice={pkg.refreshment_student_price}
         minPassengers={pkg.min_passengers}
+        isStudentPackage={pkg.is_student_package}
       />
 
       <CouponPopup targetType="PACKAGE" targetId={pkg.id} />

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useTransition } from 'react';
 import Image from 'next/image';
 import { Anchor, Camera, Search, Sparkles } from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
@@ -8,6 +8,7 @@ import PackageFilters from '@/components/packages/PackageFilters';
 import PackageListPagination from '@/components/packages/PackageListPagination';
 import MobileFilterSheet from '@/components/packages/MobileFilterSheet';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 
 type PackageData = {
   items: PackageItem[];
@@ -25,6 +26,7 @@ type PackageItem = {
   region: string;
   cover_image_url: string | null;
   is_featured: boolean;
+  is_student_package?: boolean;
   tags: string[];
   starting_price: number | null;
   variants?: Array<{
@@ -32,6 +34,10 @@ type PackageItem = {
     title: string;
     adult_price: number;
     child_price: number;
+    weekend_adult_price?: number;
+    weekend_child_price?: number;
+    student_price?: number;
+    weekend_student_price?: number;
     transport_info?: string | null;
     is_active: boolean;
   }>;
@@ -48,6 +54,9 @@ export default function PackagesList({
 }) {
   const isBoatRide = pathname === '/boat-rides';
   const isSightseeing = pathname === '/sightseeing';
+  const router = useRouter();
+  const pathnameHook = usePathname();
+  const [isPending, startTransition] = useTransition();
 
   const [liveData, setLiveData] = React.useState<{ query: string; data: PackageData } | undefined>(undefined);
   const [isFetching, setIsFetching] = React.useState(false);
@@ -55,6 +64,15 @@ export default function PackagesList({
   const isInitialMount = React.useRef(true);
   const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
   const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Sync search input with URL parameter 'q'
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setSearchVal(params.get('q') || '');
+    }
+  }, [currentBrowserSearch]);
 
   // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
   // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
@@ -99,6 +117,11 @@ export default function PackagesList({
 
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      const currentSearch = window.location.search;
+      if (currentSearch) {
+        previousSearchStr.current = currentSearch;
+        fetchLive();
+      }
       return;
     }
 
@@ -111,12 +134,33 @@ export default function PackagesList({
 
   const activeData = liveData?.query === currentBrowserSearch ? liveData.data : data;
 
-  // Extract active items and filter locally
-  const filteredItems = activeData ? activeData.items.filter((pkg) =>
-    searchVal === '' ||
-    (pkg.title && pkg.title.toLowerCase().includes(searchVal.toLowerCase())) ||
-    (pkg.slug && pkg.slug.toLowerCase().includes(searchVal.toLowerCase()))
-  ) : [];
+  const filteredItems = activeData ? activeData.items : [];
+
+  const handleSearchChange = (val: string) => {
+    setSearchVal(val);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const cleanVal = val.trim();
+        if (cleanVal) {
+          params.set('q', cleanVal);
+        } else {
+          params.delete('q');
+        }
+        params.delete('page'); // Reset to page 1 on new search query
+        
+        const query = params.toString();
+        startTransition(() => {
+          router.replace(query ? `${pathnameHook}?${query}` : pathnameHook, { scroll: false });
+        });
+      }
+    }, 400);
+  };
 
   const badgeText = isBoatRide
     ? 'Official Godavari Cruises'
@@ -202,7 +246,7 @@ export default function PackagesList({
                 <input
                   type="text"
                   value={searchVal}
-                  onChange={(e) => setSearchVal(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search experiences..."
                   className="w-full bg-white/10 border border-white/20 backdrop-blur-md rounded-full py-3 px-6 pl-12 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] transition-all"
                 />

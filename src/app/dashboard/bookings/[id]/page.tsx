@@ -28,6 +28,7 @@ interface Passenger {
   id_proof_number: string | null;
   is_lead: boolean;
   is_primary?: boolean;
+  student_class?: string | null;
 }
 
 interface BoardingPoint {
@@ -86,6 +87,7 @@ interface BookingDetails {
   agent_payable?: number | null;
   payment_ledger: PaymentLedgerEntry[];
   pricing_snapshot?: any;
+  student_count: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -388,7 +390,7 @@ export default function BookingDetailPage() {
   const refreshmentIncluded = booking ? hasRefreshment(booking) : false;
   const refreshmentAmount = booking ? getRefreshmentAmount(booking.pricing_snapshot) : 0;
   const baseFare = booking ? getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot) : 0;
-  const passengerCount = booking ? booking.adult_count + booking.child_count : 0;
+  const passengerCount = booking ? (booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count) : 0;
 
   // ─── Loading / error states ─────────────────────────────────────────────────
   if (loading) {
@@ -685,7 +687,7 @@ export default function BookingDetailPage() {
                     <div key={idx} className="flex flex-col justify-center p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm">
                       <span className="text-xs font-bold text-slate-800">{ts.title}</span>
                       <span className="text-[10px] text-slate-500 font-semibold mt-1">
-                        {describeTransport(ts, booking.adult_count, booking.child_count)} • {formatINR(Number(ts.item_total || 0))}
+                        {describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)} • {formatINR(Number(ts.item_total || 0))}
                       </span>
                     </div>
                   ))}
@@ -693,7 +695,10 @@ export default function BookingDetailPage() {
                     <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 shadow-sm">
                       <span className="text-xs font-bold text-emerald-800">Refreshments</span>
                       <span className="text-[10px] text-emerald-600 font-semibold mt-1">
-                        Add-on for {booking.adult_count} Adults + {booking.child_count} Children • {formatINR(refreshmentAmount)}
+                        {booking.student_count > 0
+                          ? `Add-on for ${booking.student_count} Student${booking.student_count > 1 ? 's' : ''} • {formatINR(refreshmentAmount)}`
+                          : `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children • {formatINR(refreshmentAmount)}`
+                        }
                       </span>
                     </div>
                   )}
@@ -713,18 +718,28 @@ export default function BookingDetailPage() {
                   const detailed: any[] = [];
                   let quickAdults = 0;
                   let quickChildren = 0;
+                  let quickStudents = 0;
 
                   booking.passengers.forEach((p: any) => {
                     const isQuickGuest = !p.is_primary && !p.is_lead && (
                       booking.pricing_snapshot?.booking_mode === 'QUICK' ||
                       p.full_name.toLowerCase().includes("quick ticket") ||
                       p.full_name.toLowerCase().includes("guest adult") ||
-                      p.full_name.toLowerCase().includes("guest child")
+                      p.full_name.toLowerCase().includes("guest child") ||
+                      p.full_name.toLowerCase().includes("guest student") ||
+                      p.full_name.toLowerCase().includes("tba (student)") ||
+                      p.full_name.toLowerCase().includes("tba (guest)") ||
+                      p.full_name.toLowerCase().includes("quick ticket(not provided)")
                     );
 
                     if (isQuickGuest) {
-                      if (p.age >= 11) quickAdults++;
-                      else quickChildren++;
+                      if (booking.student_count > 0) {
+                        quickStudents++;
+                      } else if (p.age >= 11) {
+                        quickAdults++;
+                      } else {
+                        quickChildren++;
+                      }
                     } else {
                       detailed.push(p);
                     }
@@ -743,16 +758,28 @@ export default function BookingDetailPage() {
                           )}
                         </p>
                         <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">
-                          {p.gender} • Age {p.age}
+                          {p.gender} • {booking.student_count > 0 ? `Class ${p.student_class || 'General'}` : `Age ${p.age}`}
                         </p>
                       </div>
                       {p.id_proof_number && (
                         <div className="text-right text-[10px] font-bold text-slate-400 shrink-0">
-                          {p.id_proof_type || 'ID'}: {p.id_proof_number}
+                           {p.id_proof_type || 'ID'}: {p.id_proof_number}
                         </div>
                       )}
                     </div>
                   ));
+
+                  if (quickStudents > 0) {
+                    elements.push(
+                      <div key="quick-students" className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 opacity-80">
+                        <div className="h-10 w-10 rounded-xl bg-slate-300 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">QT</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-600 text-xs italic">Not Provided (Student) × {quickStudents}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Student Count</p>
+                        </div>
+                      </div>
+                    );
+                  }
 
                   if (quickAdults > 0) {
                     elements.push(

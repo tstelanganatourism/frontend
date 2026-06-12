@@ -21,6 +21,8 @@ interface PackageVariant {
   child_price: number | string;
   weekend_adult_price?: number | string | null;
   weekend_child_price?: number | string | null;
+  student_price?: number | string | null;
+  weekend_student_price?: number | string | null;
   transport_info?: string | null;
 }
 
@@ -33,6 +35,8 @@ export interface PackageTransportOption {
   child_price?: number | string | null;
   weekend_adult_price?: number | string | null;
   weekend_child_price?: number | string | null;
+  student_price?: number | string | null;
+  weekend_student_price?: number | string | null;
   fixed_price?: number | string | null;
   weekend_fixed_price?: number | string | null;
 }
@@ -48,7 +52,9 @@ interface BookingSidebarV2Props {
   hasRefreshments?: boolean;
   refreshmentAdultPrice?: number | string | null;
   refreshmentChildPrice?: number | string | null;
+  refreshmentStudentPrice?: number | string | null;
   minPassengers?: number;
+  isStudentPackage?: boolean;
 }
 
 function todayIST(): Date {
@@ -83,18 +89,20 @@ function positiveNumber(value: number | string | null | undefined) {
   return numeric > 0 ? numeric : 0;
 }
 
-export const BookingSidebarV2 = ({ 
-  startingPrice, 
-  variants, 
-  packageId, 
-  packageSlug, 
+export const BookingSidebarV2 = ({
+  startingPrice,
+  variants,
+  packageId,
+  packageSlug,
   brochurePdfUrl,
   hasTransport,
   transportOptions = [],
   hasRefreshments,
   refreshmentAdultPrice,
   refreshmentChildPrice,
-  minPassengers = 1
+  refreshmentStudentPrice,
+  minPassengers = 1,
+  isStudentPackage = false,
 }: BookingSidebarV2Props) => {
   const { isAuthenticated, user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
@@ -142,9 +150,9 @@ export const BookingSidebarV2 = ({
 
   const validVariants = useMemo(() => {
     return variants.filter(
-      (v) => v.title && v.title.trim() !== '' && Number(v.adult_price) > 0
+      (v) => v.title && v.title.trim() !== '' && (isStudentPackage ? Number(v.student_price) > 0 : Number(v.adult_price) > 0)
     );
-  }, [variants]);
+  }, [variants, isStudentPackage]);
 
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
@@ -181,6 +189,12 @@ export const BookingSidebarV2 = ({
   const [paymentPercentage, setPaymentPercentage] = useState(100);
   // Custom pay-now amount in rupees (null = full payment)
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
+
+  useEffect(() => {
+    if (isStudentPackage) {
+      setChildren(0);
+    }
+  }, [isStudentPackage]);
 
   const [couponCode, setCouponCode] = useState('');
   const [pendingCouponCode, setPendingCouponCode] = useState<string | null>(null);
@@ -437,56 +451,88 @@ export const BookingSidebarV2 = ({
     // BASE PRICING Breakdown
     let pureBaseAdult = positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice);
     let pureBaseChild = positiveNumber(selectedVariant?.child_price);
+    let pureBaseStudent = positiveNumber(selectedVariant?.student_price) || positiveNumber(startingPrice);
 
     let baseAdult = 0;
     let baseChild = 0;
+    let baseStudent = 0;
 
-    if (selectedSlot) {
-      baseAdult = (selectedSlot.effective_adult_price !== undefined && selectedSlot.effective_adult_price !== null)
-        ? Number(selectedSlot.effective_adult_price)
-        : Number(selectedSlot.adult_price);
-        
-      baseChild = (selectedSlot.effective_child_price !== undefined && selectedSlot.effective_child_price !== null)
-        ? Number(selectedSlot.effective_child_price)
-        : Number(selectedSlot.child_price);
+    if (isStudentPackage) {
+      if (selectedSlot) {
+        baseStudent = (selectedSlot.effective_student_price !== undefined && selectedSlot.effective_student_price !== null)
+          ? Number(selectedSlot.effective_student_price)
+          : (selectedSlot.student_price !== undefined && selectedSlot.student_price !== null ? Number(selectedSlot.student_price) : Number(selectedVariant?.student_price || startingPrice));
+      } else {
+        baseStudent = isWeekend && selectedVariant?.weekend_student_price 
+          ? positiveNumber(selectedVariant.weekend_student_price) 
+          : pureBaseStudent;
+      }
     } else {
-      baseAdult = isWeekend && selectedVariant?.weekend_adult_price 
-        ? positiveNumber(selectedVariant.weekend_adult_price) 
-        : pureBaseAdult;
-        
-      baseChild = isWeekend && selectedVariant?.weekend_child_price 
-        ? positiveNumber(selectedVariant.weekend_child_price) 
-        : pureBaseChild;
+      if (selectedSlot) {
+        baseAdult = (selectedSlot.effective_adult_price !== undefined && selectedSlot.effective_adult_price !== null)
+          ? Number(selectedSlot.effective_adult_price)
+          : Number(selectedSlot.adult_price);
+          
+        baseChild = (selectedSlot.effective_child_price !== undefined && selectedSlot.effective_child_price !== null)
+          ? Number(selectedSlot.effective_child_price)
+          : Number(selectedSlot.child_price);
+      } else {
+        baseAdult = isWeekend && selectedVariant?.weekend_adult_price 
+          ? positiveNumber(selectedVariant.weekend_adult_price) 
+          : pureBaseAdult;
+          
+        baseChild = isWeekend && selectedVariant?.weekend_child_price 
+          ? positiveNumber(selectedVariant.weekend_child_price) 
+          : pureBaseChild;
+      }
     }
 
-    const pureBaseSubtotal = (adults * pureBaseAdult) + (children * pureBaseChild);
+    const pureBaseSubtotal = isStudentPackage 
+      ? (adults * pureBaseStudent)
+      : (adults * pureBaseAdult) + (children * pureBaseChild);
     
     let weekendSurchargeSubtotal = 0;
     let expectedEffAdult = pureBaseAdult;
     let expectedEffChild = pureBaseChild;
+    let expectedEffStudent = pureBaseStudent;
     
     if (isWeekend) {
-      expectedEffAdult = positiveNumber(selectedVariant?.weekend_adult_price) || pureBaseAdult;
-      expectedEffChild = positiveNumber(selectedVariant?.weekend_child_price) || pureBaseChild;
-      weekendSurchargeSubtotal = (adults * (expectedEffAdult - pureBaseAdult)) + (children * (expectedEffChild - pureBaseChild));
+      if (isStudentPackage) {
+        expectedEffStudent = positiveNumber(selectedVariant?.weekend_student_price) || pureBaseStudent;
+        weekendSurchargeSubtotal = adults * (expectedEffStudent - pureBaseStudent);
+      } else {
+        expectedEffAdult = positiveNumber(selectedVariant?.weekend_adult_price) || pureBaseAdult;
+        expectedEffChild = positiveNumber(selectedVariant?.weekend_child_price) || pureBaseChild;
+        weekendSurchargeSubtotal = (adults * (expectedEffAdult - pureBaseAdult)) + (children * (expectedEffChild - pureBaseChild));
+      }
     }
 
     let surgeSubtotal = 0;
     let discountSubtotal = 0;
 
-    if (baseAdult > expectedEffAdult) {
-      surgeSubtotal += (adults * (baseAdult - expectedEffAdult));
-    } else if (baseAdult < expectedEffAdult) {
-      discountSubtotal += (adults * (expectedEffAdult - baseAdult));
+    if (isStudentPackage) {
+      if (baseStudent > expectedEffStudent) {
+        surgeSubtotal += (adults * (baseStudent - expectedEffStudent));
+      } else if (baseStudent < expectedEffStudent) {
+        discountSubtotal += (adults * (expectedEffStudent - baseStudent));
+      }
+    } else {
+      if (baseAdult > expectedEffAdult) {
+        surgeSubtotal += (adults * (baseAdult - expectedEffAdult));
+      } else if (baseAdult < expectedEffAdult) {
+        discountSubtotal += (adults * (expectedEffAdult - baseAdult));
+      }
+
+      if (baseChild > expectedEffChild) {
+        surgeSubtotal += (children * (baseChild - expectedEffChild));
+      } else if (baseChild < expectedEffChild) {
+        discountSubtotal += (children * (expectedEffChild - baseChild));
+      }
     }
 
-    if (baseChild > expectedEffChild) {
-      surgeSubtotal += (children * (baseChild - expectedEffChild));
-    } else if (baseChild < expectedEffChild) {
-      discountSubtotal += (children * (expectedEffChild - baseChild));
-    }
-
-    const baseSubtotal = (adults * baseAdult) + (children * baseChild);
+    const baseSubtotal = isStudentPackage
+      ? (adults * baseStudent)
+      : (adults * baseAdult) + (children * baseChild);
     
     // TRANSPORT PRICING
     let transportSubtotal = 0;
@@ -496,11 +542,18 @@ export const BookingSidebarV2 = ({
       if (selectedTransportMode === 'SHARED' && selectedSharedOptionId) {
         const tOpt = transportOptions.find(o => o.id === selectedSharedOptionId);
         if (tOpt) {
-          const tAdult = positiveNumber(isWeekend && tOpt.weekend_adult_price ? tOpt.weekend_adult_price : tOpt.adult_price);
-          const tChild = positiveNumber(isWeekend && tOpt.weekend_child_price ? tOpt.weekend_child_price : tOpt.child_price);
-          const cost = (adults * tAdult) + (children * tChild);
-          transportSubtotal = cost;
-          transportBreakdown.push({ title: tOpt.title, type: 'SHARED', quantity: 1, unitPrice: tAdult, subtotal: cost });
+          if (isStudentPackage) {
+            const tStudent = positiveNumber(isWeekend && tOpt.weekend_student_price ? tOpt.weekend_student_price : tOpt.student_price);
+            const cost = adults * tStudent;
+            transportSubtotal = cost;
+            transportBreakdown.push({ title: tOpt.title, type: 'SHARED', quantity: 1, unitPrice: tStudent, subtotal: cost });
+          } else {
+            const tAdult = positiveNumber(isWeekend && tOpt.weekend_adult_price ? tOpt.weekend_adult_price : tOpt.adult_price);
+            const tChild = positiveNumber(isWeekend && tOpt.weekend_child_price ? tOpt.weekend_child_price : tOpt.child_price);
+            const cost = (adults * tAdult) + (children * tChild);
+            transportSubtotal = cost;
+            transportBreakdown.push({ title: tOpt.title, type: 'SHARED', quantity: 1, unitPrice: tAdult, subtotal: cost });
+          }
         }
       } else if (selectedTransportMode === 'SEPARATE') {
         for (const [optIdStr, qty] of Object.entries(separateVehicleQtys)) {
@@ -521,10 +574,16 @@ export const BookingSidebarV2 = ({
     let refreshmentSubtotal = 0;
     let refAdult = 0;
     let refChild = 0;
+    let refStudent = 0;
     if (hasRefreshments && includeRefreshments) {
-      refAdult = positiveNumber(refreshmentAdultPrice);
-      refChild = positiveNumber(refreshmentChildPrice);
-      refreshmentSubtotal = (adults * refAdult) + (children * refChild);
+      if (isStudentPackage) {
+        refStudent = positiveNumber(refreshmentStudentPrice);
+        refreshmentSubtotal = adults * refStudent;
+      } else {
+        refAdult = positiveNumber(refreshmentAdultPrice);
+        refChild = positiveNumber(refreshmentChildPrice);
+        refreshmentSubtotal = (adults * refAdult) + (children * refChild);
+      }
     }
 
     const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal;
@@ -558,14 +617,14 @@ export const BookingSidebarV2 = ({
     const agentPayable = Math.max(0, grandTotal - agentDiscount);
 
     return { 
-      baseAdult, baseChild, baseSubtotal,
+      baseAdult, baseChild, baseStudent, baseSubtotal,
       pureBaseSubtotal, weekendSurchargeSubtotal, surgeSubtotal, discountSubtotal,
       transportSubtotal, transportBreakdown,
       refreshmentSubtotal, 
       rawSubtotal, discount, subtotal, gst, gatewayFee, 
       grandTotal, agentDiscount, agentPayable 
     };
-  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice]);
+  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice]);
 
   const { effectivePayNow, isPartial } = useMemo(() => {
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
@@ -823,12 +882,13 @@ export const BookingSidebarV2 = ({
     setIsProcessingCheckout(true);
     try {
       if (isAdmin) {
-        const adminPayload = {
+        const adminPayload: any = {
           target_type: 'package',
           travel_date: selectedDate,
           quantity: adults + children,
-          adult_count: adults,
-          child_count: children,
+          adult_count: isStudentPackage ? 0 : adults,
+          child_count: isStudentPackage ? 0 : children,
+          student_count: isStudentPackage ? (adults + children) : 0,
           variant_id: selectedVariantId,
           transport_selections: buildTransportSelections(),
           include_refreshments: hasRefreshments ? includeRefreshments : false,
@@ -855,8 +915,9 @@ export const BookingSidebarV2 = ({
         transport_selections: buildTransportSelections(),
         include_refreshments: hasRefreshments ? includeRefreshments : false,
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
-        adult_count: adults,
-        child_count: children,
+        adult_count: isStudentPackage ? 0 : adults,
+        child_count: isStudentPackage ? 0 : children,
+        student_count: isStudentPackage ? (adults + children) : 0,
         passengers: passengers.map((p: any) => ({
           ...p,
           aadhaar: p.aadhaar || undefined,
@@ -909,6 +970,16 @@ export const BookingSidebarV2 = ({
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
           paymentSessionId: checkout_data.payment_session_id,
+          redirectTarget: "_self"
+        }).then((result: any) => {
+          if (result && result.error) {
+            console.warn("Cashfree checkout closed/failed:", result.error);
+            toast.error(result.error.message || "Payment closed or failed.");
+            setIsProcessingCheckout(false);
+          }
+        }).catch((err: any) => {
+          console.error("Cashfree checkout error:", err);
+          setIsProcessingCheckout(false);
         });
       } else {
         // PhonePe Redirect Flow
@@ -1043,50 +1114,98 @@ export const BookingSidebarV2 = ({
           <h2 className="text-base font-black tracking-wide">Book this package</h2>
           <div className="mt-1 flex flex-wrap items-baseline gap-2">
             <span className="text-2xl font-black tracking-tight">
-              {prices.baseAdult > 0 ? `₹${formatINR(prices.baseAdult)}` : 'Fare updating'}
+              {isStudentPackage 
+                ? (prices.baseStudent > 0 ? `₹${formatINR(prices.baseStudent)}` : 'Fare updating')
+                : (prices.baseAdult > 0 ? `₹${formatINR(prices.baseAdult)}` : 'Fare updating')
+              }
             </span>
-            {prices.baseAdult > 0 && <span className="text-xs font-semibold text-white/70">per adult</span>}
+            {(isStudentPackage ? prices.baseStudent > 0 : prices.baseAdult > 0) && (
+              <span className="text-xs font-semibold text-white/70">
+                {isStudentPackage ? 'per student' : 'per adult'}
+              </span>
+            )}
 
             {/* Price Override Badge */}
             {(() => {
-              if (!selectedDate || !selectedSlot || !selectedVariant || Number(selectedVariant.adult_price) === 0) return null;
-              
-              const pureAdult = Number(selectedVariant.adult_price);
-              const wAdult = Number(selectedVariant.weekend_adult_price) || pureAdult;
-              const effAdult = prices.baseAdult;
-              const isWeekend = isWeekendSelected;
-              const expectedAdult = isWeekend ? wAdult : pureAdult;
-              
-              if (effAdult === pureAdult && !isWeekend) return null;
-              if (effAdult === pureAdult && isWeekend && wAdult === pureAdult) return null;
-              
-              const badges = [];
-              
-              if (isWeekend && wAdult > pureAdult) {
-                badges.push(
-                  <span key="weekend" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-amber-500/20 text-amber-200 border border-amber-500/30">
-                    Weekend Surge +₹{formatINR(wAdult - pureAdult)}
-                  </span>
-                );
+              if (isStudentPackage) {
+                if (!selectedDate || !selectedSlot || !selectedVariant || Number(selectedVariant.student_price) === 0) return null;
+                
+                const pureStudent = Number(selectedVariant.student_price);
+                const wStudent = Number(selectedVariant.weekend_student_price) || pureStudent;
+                const effStudent = prices.baseStudent;
+                const isWeekend = isWeekendSelected;
+                const expectedStudent = isWeekend ? wStudent : pureStudent;
+                
+                if (effStudent === pureStudent && !isWeekend) return null;
+                if (effStudent === pureStudent && isWeekend && wStudent === pureStudent) return null;
+                
+                const badges = [];
+                
+                if (isWeekend && wStudent > pureStudent) {
+                  badges.push(
+                    <span key="weekend" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                      Weekend Surge +₹{formatINR(wStudent - pureStudent)}
+                    </span>
+                  );
+                }
+                
+                if (effStudent > expectedStudent) {
+                  badges.push(
+                    <span key="demand" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-rose-500/20 text-rose-200 border border-rose-500/30">
+                      High Demand +₹{formatINR(effStudent - expectedStudent)}
+                    </span>
+                  );
+                }
+                
+                if (effStudent < expectedStudent) {
+                  badges.push(
+                    <span key="discount" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-emerald-500/20 text-emerald-200 border border-emerald-500/30">
+                      Discount -₹{formatINR(expectedStudent - effStudent)}
+                    </span>
+                  );
+                }
+                
+                return <>{badges}</>;
+              } else {
+                if (!selectedDate || !selectedSlot || !selectedVariant || Number(selectedVariant.adult_price) === 0) return null;
+                
+                const pureAdult = Number(selectedVariant.adult_price);
+                const wAdult = Number(selectedVariant.weekend_adult_price) || pureAdult;
+                const effAdult = prices.baseAdult;
+                const isWeekend = isWeekendSelected;
+                const expectedAdult = isWeekend ? wAdult : pureAdult;
+                
+                if (effAdult === pureAdult && !isWeekend) return null;
+                if (effAdult === pureAdult && isWeekend && wAdult === pureAdult) return null;
+                
+                const badges = [];
+                
+                if (isWeekend && wAdult > pureAdult) {
+                  badges.push(
+                    <span key="weekend" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                      Weekend Surge +₹{formatINR(wAdult - pureAdult)}
+                    </span>
+                  );
+                }
+                
+                if (effAdult > expectedAdult) {
+                  badges.push(
+                    <span key="demand" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-rose-500/20 text-rose-200 border border-rose-500/30">
+                      High Demand +₹{formatINR(effAdult - expectedAdult)}
+                    </span>
+                  );
+                }
+                
+                if (effAdult < expectedAdult) {
+                  badges.push(
+                    <span key="discount" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-emerald-500/20 text-emerald-200 border border-emerald-500/30">
+                      Discount -₹{formatINR(expectedAdult - effAdult)}
+                    </span>
+                  );
+                }
+                
+                return <>{badges}</>;
               }
-              
-              if (effAdult > expectedAdult) {
-                badges.push(
-                  <span key="demand" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-rose-500/20 text-rose-200 border border-rose-500/30">
-                    High Demand +₹{formatINR(effAdult - expectedAdult)}
-                  </span>
-                );
-              }
-              
-              if (effAdult < expectedAdult) {
-                badges.push(
-                  <span key="discount" className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ml-1 -translate-y-0.5 bg-emerald-500/20 text-emerald-200 border border-emerald-500/30">
-                    Discount -₹{formatINR(expectedAdult - effAdult)}
-                  </span>
-                );
-              }
-              
-              return <>{badges}</>;
             })()}
           </div>
         </div>
@@ -1148,7 +1267,10 @@ export const BookingSidebarV2 = ({
                           <span className="min-w-0">
                             <span className="block text-xs font-bold">{variant.title}</span>
                             <span className="mt-0.5 block text-[10px] font-semibold text-[#1a6b7a]">
-                              Adult ₹{Number(variant.adult_price).toLocaleString('en-IN')} / Child ₹{Number(variant.child_price).toLocaleString('en-IN')}
+                              {isStudentPackage
+                                ? `🎓 Student ₹${Number(variant.student_price || 0).toLocaleString('en-IN')}`
+                                : `Adult ₹${Number(variant.adult_price || 0).toLocaleString('en-IN')} / Child ₹${Number(variant.child_price || 0).toLocaleString('en-IN')}`
+                              }
                             </span>
                           </span>
                           {selected ? <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0f3d56]" /> : null}
@@ -1209,24 +1331,77 @@ export const BookingSidebarV2 = ({
           )}
 
           {/* Passengers */}
-          <div className="grid grid-cols-2 gap-3">
+          {isStudentPackage ? (
             <div>
-              <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Adults (11+)</label>
-              <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
-                <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
-                <span className="text-sm font-semibold">{adults}</span>
-                <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+              <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-amber-600">🎓 Students</label>
+              <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50/30 px-3 py-1">
+                <button
+                  type="button"
+                  disabled={(isPackageInactive && !isAdmin)}
+                  onClick={() => setAdults(p => Math.max(1, p - 1))}
+                  className={`h-9 w-9 rounded-lg font-black text-lg transition flex items-center justify-center cursor-pointer ${
+                    (isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-[#b45309] hover:bg-amber-100'
+                  }`}
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  disabled={(isPackageInactive && !isAdmin)}
+                  value={adults || ''}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) {
+                      const minVal = minPassengers || 1;
+                      const maxVal = (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open')
+                        ? Number(selectedSlot?.available_seats || 9999)
+                        : 9999;
+                      setAdults(Math.min(maxVal, Math.max(0, val)));
+                    } else {
+                      setAdults(0);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (adults < (minPassengers || 1)) {
+                      setAdults(minPassengers || 1);
+                    }
+                  }}
+                  className="w-20 text-center bg-transparent border-none outline-none font-black text-slate-800 text-base focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
+                  onClick={() => setAdults(p => p + 1)}
+                  className={`h-9 w-9 rounded-lg font-black text-lg transition flex items-center justify-center cursor-pointer ${
+                    (isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : 'text-[#b45309] hover:bg-amber-100'
+                  }`}
+                >
+                  +
+                </button>
               </div>
             </div>
-            <div>
-              <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Children (4-10)</label>
-              <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
-                <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
-                <span className="text-sm font-semibold">{children}</span>
-                <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Adults (11+)</label>
+                <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
+                  <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
+                  <span className="text-sm font-semibold">{adults}</span>
+                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Children (4-10)</label>
+                <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
+                  <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
+                  <span className="text-sm font-semibold">{children}</span>
+                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
 
           {/* Transport Selection — Premium Grouped UI */}
@@ -1274,7 +1449,8 @@ export const BookingSidebarV2 = ({
                   {sharedOptions.map(opt => {
                     const tAdultUi = positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price);
                     const tChildUi = positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price);
-                    const extraCost = (adults * tAdultUi) + (children * tChildUi);
+                    const tStudentUi = positiveNumber(isWeekendSelected && opt.weekend_student_price ? opt.weekend_student_price : opt.student_price);
+                    const extraCost = isStudentPackage ? (adults * tStudentUi) : ((adults * tAdultUi) + (children * tChildUi));
                     const isSelected = selectedSharedOptionId === opt.id;
                     return (
                       <label
@@ -1295,7 +1471,10 @@ export const BookingSidebarV2 = ({
                           </div>
                           <div className="flex items-center justify-between gap-2 mt-1">
                             <span className="text-[10px] text-slate-500 font-semibold">
-                              ₹{formatINR(positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price))}/adult · ₹{formatINR(positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price))}/child
+                              {isStudentPackage
+                                ? `₹${formatINR(tStudentUi)}/student`
+                                : `₹${formatINR(tAdultUi)}/adult · ₹${formatINR(tChildUi)}/child`
+                              }
                             </span>
                             {isSelected && extraCost > 0 && (
                               <span className="text-[10px] font-black text-[#1a6b7a] shrink-0 whitespace-nowrap">+₹{formatINR(extraCost)}</span>
@@ -1397,7 +1576,10 @@ export const BookingSidebarV2 = ({
                 <div className="flex-1">
                   <div className="text-xs font-bold text-slate-800">Add Refreshments</div>
                   <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                    ₹{formatINR(refreshmentAdultPrice || 0)}/Adult, ₹{formatINR(refreshmentChildPrice || 0)}/Child
+                    {isStudentPackage
+                      ? `₹${formatINR(refreshmentStudentPrice || 0)}/Student`
+                      : `₹${formatINR(refreshmentAdultPrice || 0)}/Adult, ₹${formatINR(refreshmentChildPrice || 0)}/Child`
+                    }
                   </div>
                 </div>
               </label>
@@ -1453,7 +1635,9 @@ export const BookingSidebarV2 = ({
           <div className="rounded-2xl border border-[#dfe8e2]/85 bg-slate-50/70 p-4 space-y-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
             <div className="space-y-2 text-xs text-slate-500">
               <div className="flex justify-between items-center">
-                <span>Base Fare <span className="text-[10px] text-slate-400">({adults}A, {children}C)</span></span>
+                <span>Base Fare <span className="text-[10px] text-slate-400">
+                  {isStudentPackage ? `(${adults} Student${adults > 1 ? 's' : ''})` : `(${adults}A, ${children}C)`}
+                </span></span>
                 <span className="font-bold text-slate-800">₹{formatINR(prices.pureBaseSubtotal)}</span>
               </div>
               {prices.weekendSurchargeSubtotal > 0 && (
@@ -1608,11 +1792,11 @@ export const BookingSidebarV2 = ({
           </div>
 
           {/* Min Passengers Warning */}
-          {minPassengers > 1 && (adults + children) < minPassengers && (
+          {minPassengers > 1 && adults < minPassengers && (
             <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2.5">
               <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
               <p className="text-xs font-bold text-rose-700 leading-relaxed">
-                This package requires a minimum of <span className="font-black">{minPassengers} passengers</span> per booking. Add more passengers to proceed.
+                This package requires a minimum of <span className="font-black">{minPassengers} students</span> per booking. Add more students to proceed.
               </p>
             </div>
           )}
@@ -1626,12 +1810,13 @@ export const BookingSidebarV2 = ({
                   id="gateway-phonepe"
                   type="button"
                   onClick={() => setSelectedGateway('PHONEPE')}
-                  className={`flex flex-col items-center justify-center gap-2 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                  className={`relative flex flex-col items-center justify-center gap-2 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
                     selectedGateway === 'PHONEPE'
                       ? 'border-[#5f259f] bg-[#5f259f]/5 shadow-md shadow-[#5f259f]/10 scale-[1.02]'
                       : 'border-slate-200 bg-white hover:border-[#5f259f]/40'
                   }`}
                 >
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#5f259f] text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-[#5f259f]/20">Recommended</span>
                   <div className="flex items-center gap-2">
                     <div className="bg-[#5f259f] p-1 rounded-full flex items-center justify-center shrink-0">
                       <svg fill="#ffffff" role="img" viewBox="0 0 24 24" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
@@ -1729,7 +1914,7 @@ export const BookingSidebarV2 = ({
         >
           {isProcessingCheckout ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (minPassengers > 1 && (adults + children) < minPassengers) ? `Min ${minPassengers} pax` : ctaText}
+          ) : (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers) ? (isStudentPackage ? `Min ${minPassengers} students` : `Min ${minPassengers} pax`) : ctaText}
         </button>
       </div>
 
@@ -1748,9 +1933,10 @@ export const BookingSidebarV2 = ({
         onClose={() => setShowPassengerModal(false)}
         onSubmit={handleCheckoutSubmit}
         adults={adults}
-        children={children}
+        children={isStudentPackage ? 0 : children}
         isProcessing={isProcessingCheckout}
         targetType="package"
+        isStudentPackage={isStudentPackage}
       />
     </div>
   );

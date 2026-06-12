@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useTransition } from 'react';
 import Image from 'next/image';
 import { BedDouble, Sparkles } from 'lucide-react';
 import RoomCard from '@/components/ui/RoomCard';
@@ -9,6 +9,7 @@ import RoomListPagination from '@/components/rooms/RoomListPagination';
 import MobileRoomFilterSheet from '@/components/rooms/MobileRoomFilterSheet';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
 
 type RoomData = {
   items: RoomItem[];
@@ -35,12 +36,25 @@ export default function RoomsList({
   data?: RoomData; 
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  const router = useRouter();
+  const pathnameHook = usePathname();
+  const [isPending, startTransition] = useTransition();
+
   const [liveData, setLiveData] = React.useState<{ query: string; data: RoomData } | undefined>(undefined);
   const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
   const isInitialMount = React.useRef(true);
   const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
   const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Sync search input with URL parameter 'q'
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setSearchVal(params.get('q') || '');
+    }
+  }, [currentBrowserSearch]);
 
   // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
   // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
@@ -77,6 +91,11 @@ export default function RoomsList({
     
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      const currentSearch = window.location.search;
+      if (currentSearch) {
+        previousSearchStr.current = currentSearch;
+        fetchLive();
+      }
       return;
     }
 
@@ -89,11 +108,33 @@ export default function RoomsList({
 
   const activeData = liveData?.query === currentBrowserSearch ? liveData.data : data;
 
-  // Extract active items and filter locally
-  const filteredItems = activeData ? activeData.items.filter((room) => 
-    searchVal === '' || 
-    (room.lodge_name && room.lodge_name.toLowerCase().includes(searchVal.toLowerCase()))
-  ) : [];
+  const filteredItems = activeData ? activeData.items : [];
+
+  const handleSearchChange = (val: string) => {
+    setSearchVal(val);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const cleanVal = val.trim();
+        if (cleanVal) {
+          params.set('q', cleanVal);
+        } else {
+          params.delete('q');
+        }
+        params.delete('page'); // Reset to page 1 on new search query
+        
+        const query = params.toString();
+        startTransition(() => {
+          router.replace(query ? `${pathnameHook}?${query}` : pathnameHook, { scroll: false });
+        });
+      }
+    }, 400);
+  };
 
   return (
     <div className="bg-[#f4f6ef]">
@@ -141,7 +182,7 @@ export default function RoomsList({
                 <input 
                   type="text" 
                   value={searchVal}
-                  onChange={(e) => setSearchVal(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search by hotel or area..." 
                   className="w-full bg-white/10 border border-white/20 backdrop-blur-md rounded-full py-3 px-6 pl-12 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] transition-all"
                 />
