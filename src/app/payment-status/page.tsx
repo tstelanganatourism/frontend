@@ -75,15 +75,13 @@ export default function PaymentStatusPage() {
         toast.error(err.response?.data?.detail || 'Failed to verify transaction status.');
       }
       
-      // If we've exhausted retries or this was a manual check, show the error state
-      if (showToast || retryCountRef.current >= 6) {
-        setResult({
-          status: 'failed',
-          message: err.response?.data?.detail || 'Failed to verify transaction status with the server. Please try again.'
-        });
-        setLoading(false);
-        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-      }
+      // Stop loading and show error immediately on API errors (like 404) or manual checks
+      setResult({
+        status: 'failed',
+        message: err.response?.data?.detail || 'Failed to verify transaction status with the server. Please try again.'
+      });
+      setLoading(false);
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
     }
   };
 
