@@ -809,8 +809,8 @@ export default function AdminInventoryPage() {
 
   // Load baseline data
   useEffect(() => {
-    fetchPackages();
-    fetchRooms();
+    fetchPackages(undefined, undefined, 1, 1000);
+    fetchRooms(undefined, undefined, 1, 1000);
   }, [fetchPackages, fetchRooms]);
 
   const packageList = Array.isArray(adminPackages) ? adminPackages : [];

@@ -30,8 +30,8 @@ export default function AdminCouponsPage() {
   useEffect(() => {
     Promise.all([
       fetchCoupons(searchQuery),
-      fetchPackages(),
-      fetchRooms()
+      fetchPackages(undefined, undefined, 1, 1000),
+      fetchRooms(undefined, undefined, 1, 1000)
     ]).finally(() => {
       setIsInitialMount(false);
     });

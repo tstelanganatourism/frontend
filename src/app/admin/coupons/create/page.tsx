@@ -38,8 +38,8 @@ export default function AdminCouponCreatePage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetchPackages();
-    fetchRooms();
+    fetchPackages(undefined, undefined, 1, 1000);
+    fetchRooms(undefined, undefined, 1, 1000);
   }, [fetchPackages, fetchRooms]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -43,8 +43,8 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetchPackages();
-    fetchRooms();
+    fetchPackages(undefined, undefined, 1, 1000);
+    fetchRooms(undefined, undefined, 1, 1000);
     fetchCouponById(resolvedParams.id);
   }, [fetchPackages, fetchRooms, fetchCouponById, resolvedParams.id]);
 
