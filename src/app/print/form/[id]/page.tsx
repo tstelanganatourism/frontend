@@ -28,15 +28,15 @@ interface BookingDetails {
 
 export const dynamic = 'force-dynamic';
 
-export default async function PrintFormPage({ 
+export default async function PrintFormPage({
   params,
-}: { 
+}: {
   params: Promise<{ id: string }>,
 }) {
   const { id } = await params;
-  
+
   let booking: BookingDetails | null = null;
-  
+
   try {
     const res = await apiFetch(`/api/v1/bookings/${id}`);
     booking = await res.json() as BookingDetails;
@@ -58,7 +58,8 @@ export default async function PrintFormPage({
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @page { size: A4 portrait; margin: 10mm; }
         body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background: #f0f0f0; }
         * { box-sizing: border-box; }
@@ -125,11 +126,11 @@ export default async function PrintFormPage({
       <div className="page-container">
         <div className="form-border">
           <div className="form-header">
-            <img src="/telangana-tourism-logo.svg" className="logo-img" alt="Telangana Tourism" />
+            <img src="/apple-icon.png" className="logo-img" alt="Telangana Boat Tourism" />
             <div className="title-block">
               <h1>CUSTOMER DETAIL FORM</h1>
               <h2>TELANGANA BOAT TOURISM</h2>
-              <h3>APTDC PAPIKONDALU</h3>
+              <h3>AP  BOAT TOURISM</h3>
               <h4>
                 {booking.package_title} {booking.variant_title && booking.variant_title !== '—' && `- ${booking.variant_title}`}
               </h4>
@@ -162,12 +163,12 @@ export default async function PrintFormPage({
           <table className="form-table">
             <thead>
               <tr>
-                <th style={{width: '5%'}}>Sr</th>
-                <th style={{width: '35%'}}>PASSENGER NAME</th>
-                <th style={{width: '5%'}}>M/F</th>
-                <th style={{width: '10%'}}>{booking.student_count && booking.student_count > 0 ? 'CLASS' : 'AGE'}</th>
-                <th style={{width: '20%'}}>AADHAR NUMBER</th>
-                <th style={{width: '25%'}} className="address-col-header">ADDRESS</th>
+                <th style={{ width: '5%' }}>Sr</th>
+                <th style={{ width: '35%' }}>PASSENGER NAME</th>
+                <th style={{ width: '5%' }}>M/F</th>
+                <th style={{ width: '10%' }}>{booking.student_count && booking.student_count > 0 ? 'CLASS' : 'AGE'}</th>
+                <th style={{ width: '20%' }}>AADHAR NUMBER</th>
+                <th style={{ width: '25%' }} className="address-col-header">ADDRESS</th>
               </tr>
             </thead>
             <tbody>
@@ -178,20 +179,20 @@ export default async function PrintFormPage({
                   <td></td>
                   <td></td>
                   <td></td>
-                  
+
                   {/* Handle Row Span for Right Column */}
                   {i === 0 && (
-                    <td rowSpan={12} className="td-left" style={{verticalAlign: 'top', paddingTop: '10px'}}>
+                    <td rowSpan={12} className="td-left" style={{ verticalAlign: 'top', paddingTop: '10px' }}>
                       ADDRESS LINE 1
                     </td>
                   )}
                   {i === 12 && (
-                    <td rowSpan={11} className="td-left" style={{verticalAlign: 'top', paddingTop: '10px'}}>
+                    <td rowSpan={11} className="td-left" style={{ verticalAlign: 'top', paddingTop: '10px' }}>
                       ADDRESS LINE 2
                     </td>
                   )}
                   {i === 23 && (
-                    <td className="td-left" style={{verticalAlign: 'middle'}}>
+                    <td className="td-left" style={{ verticalAlign: 'middle' }}>
                       MOBILE NO 1
                     </td>
                   )}
@@ -199,7 +200,7 @@ export default async function PrintFormPage({
                     <td className="td-left"></td>
                   )}
                   {i === 25 && (
-                    <td className="td-left" style={{verticalAlign: 'middle'}}>
+                    <td className="td-left" style={{ verticalAlign: 'middle' }}>
                       MOBILE NO 2
                     </td>
                   )}
@@ -207,7 +208,7 @@ export default async function PrintFormPage({
                     <td className="td-left"></td>
                   )}
                   {i === 27 && (
-                    <td rowSpan={3} className="td-left" style={{verticalAlign: 'top', paddingTop: '5px'}}>
+                    <td rowSpan={3} className="td-left" style={{ verticalAlign: 'top', paddingTop: '5px' }}>
                       SIGNATURE
                     </td>
                   )}
@@ -225,6 +226,10 @@ export default async function PrintFormPage({
 
           <div className="footer-note">
             ALL PASSENGERS MUST SUMBIT AADHAR CARD ZEROX COPIES AT BOAT
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', borderTop: '1px solid #000' }}>
+            <img src="/apple-icon.png" style={{ height: '40px', width: '40px', borderRadius: '50%', border: '1px solid #000' }} alt="Telangana Boat Tourism" />
+            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>TELANGANA BOAT TOURISM</span>
           </div>
         </div>
       </div>
