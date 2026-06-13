@@ -102,6 +102,17 @@ interface AdminState {
   deleteAgent: (id: number | string) => Promise<void>;
   toggleAgentStatus: (id: number | string) => Promise<any>;
   resetAgentPassword: (id: number | string, newPassword: string) => Promise<void>;
+
+  users: any[];
+  usersTotal: number;
+  usersPage: number;
+  usersLimit: number;
+  currentUser: any | null;
+  fetchUsers: (search?: string, statusFilter?: string, page?: number, limit?: number) => Promise<void>;
+  fetchUserById: (id: number | string) => Promise<void>;
+  deleteUser: (id: number | string) => Promise<void>;
+  toggleUserStatus: (id: number | string) => Promise<any>;
+  resetUserPassword: (id: number | string, newPassword: string) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set) => ({
@@ -124,6 +135,11 @@ export const useAdminStore = create<AdminState>((set) => ({
   currentRoom: null,
   currentCoupon: null,
   currentAgent: null,
+  users: [],
+  usersTotal: 0,
+  usersPage: 1,
+  usersLimit: 10,
+  currentUser: null,
   isLoading: false,
   error: null,
 
@@ -568,6 +584,74 @@ export const useAdminStore = create<AdminState>((set) => ({
   resetAgentPassword: async (id, newPassword) => {
     try {
       await apiClient.post(`/api/v1/admin/agents/${id}/reset-password`, { new_password: newPassword });
+    } catch (err: any) {
+      throw new Error(err.response?.data?.detail || 'Failed to reset password');
+    }
+  },
+
+  fetchUsers: async (search, statusFilter, page = 1, limit = 10) => {
+    set({ isLoading: true, error: null });
+    const safePage = Number(page) || 1;
+    const safeLimit = Number(limit) || 10;
+    try {
+      const params: any = {};
+      if (search) params.search = search;
+      if (statusFilter) params.status_filter = statusFilter;
+      params.limit = safeLimit;
+      params.offset = (safePage - 1) * safeLimit;
+      const response = await apiClient.get('/api/v1/admin/users', { params });
+      const items = response.data && Array.isArray(response.data.items) ? response.data.items : [];
+      const total = response.data && typeof response.data.total === 'number' ? response.data.total : items.length;
+      set({ 
+        users: items, 
+        usersTotal: total,
+        usersPage: safePage,
+        usersLimit: safeLimit,
+        isLoading: false 
+      });
+    } catch (err: any) {
+      set({ error: err.response?.data?.detail || 'Failed to fetch users', isLoading: false });
+    }
+  },
+
+  fetchUserById: async (id) => {
+    set({ isLoading: true, error: null, currentUser: null });
+    try {
+      const response = await apiClient.get(`/api/v1/admin/users/${id}`);
+      set({ currentUser: response.data, isLoading: false });
+    } catch (err: any) {
+      set({ error: err.response?.data?.detail || 'Failed to fetch user details', isLoading: false });
+    }
+  },
+
+  deleteUser: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.delete(`/api/v1/admin/users/${id}`);
+      set((state) => ({
+        users: state.users.filter((u) => u.id !== id),
+        isLoading: false
+      }));
+    } catch (err: any) {
+      set({ error: err.response?.data?.detail || 'Failed to delete user', isLoading: false });
+    }
+  },
+
+  toggleUserStatus: async (id) => {
+    try {
+      const response = await apiClient.post(`/api/v1/admin/users/${id}/toggle-status`);
+      set((state) => ({
+        users: state.users.map((u) => u.id === id ? response.data : u),
+      }));
+      return response.data;
+    } catch (err: any) {
+      throw new Error(err.response?.data?.detail || 'Failed to toggle user status');
+    }
+  },
+
+  resetUserPassword: async (id, newPassword) => {
+    try {
+      await apiClient.patch(`/api/v1/admin/users/${id}/password`, { new_password: newPassword });
     } catch (err: any) {
       throw new Error(err.response?.data?.detail || 'Failed to reset password');
     }

@@ -8,6 +8,7 @@ import {
 import { BookingSidebarV2 } from './BookingSidebarV2';
 import { Sparkles } from 'lucide-react';
 import { useInventoryStore } from '@/stores/inventoryStore';
+import { useAuthStore } from '@/stores/authStore';
 import { API_BASE } from '@/lib/api';
 import { downloadFileViaFetch } from '@/lib/downloadUtils';
 
@@ -68,7 +69,9 @@ export const MobileBookingSheet = ({
   isStudentPackage = false,
 }: MobileBookingSheetProps) => {
   const { publicAvailability, publicLoading } = useInventoryStore();
+  const { user } = useAuthStore();
   const isPackageInactive = !publicLoading && !publicAvailability;
+  const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
   const positiveStartingPrice = Number(startingPrice || 0) > 0
     ? Number(startingPrice)
@@ -134,6 +137,13 @@ export const MobileBookingSheet = ({
             className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-slate-400 px-6 text-xs font-black uppercase tracking-[0.14em] text-white cursor-not-allowed shadow-none"
           >
             Closed
+          </button>
+        ) : isSuspended ? (
+          <button
+            disabled
+            className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-rose-500 px-6 text-xs font-black uppercase tracking-[0.14em] text-white cursor-not-allowed shadow-none"
+          >
+            Suspended
           </button>
         ) : (
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

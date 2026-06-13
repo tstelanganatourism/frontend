@@ -12,13 +12,18 @@ import { touristSignup, getGoogleAuthUrl } from '@/services/authService';
 
 const schema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-  email: z.string().email('Enter a valid email address'),
+  email: z.string().optional().refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()), {
+    message: 'Enter a valid email address',
+  }),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   phone_number: z.string()
     .optional()
     .refine((val) => !val || /^\d{10}$/.test(val.trim()), {
       message: 'Phone number must be exactly 10 digits',
     }),
+}).refine((data) => data.email || data.phone_number, {
+  message: 'Please provide either an email address or a 10-digit phone number',
+  path: ['email'],
 });
 type FormData = z.infer<typeof schema>;
 
@@ -105,7 +110,7 @@ export default function SignupPage() {
 
           <div className="my-4 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/15" />
-            <span className="text-xs font-medium text-white/40">or create with email</span>
+            <span className="text-xs font-medium text-white/40">or create with email / phone</span>
             <div className="h-px flex-1 bg-white/15" />
           </div>
 
@@ -128,7 +133,7 @@ export default function SignupPage() {
 
             {/* Email */}
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-white/60">Email Address</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-white/60">Email Address <span className="text-white/30 font-normal normal-case">(optional if phone provided)</span></label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <input
@@ -144,7 +149,7 @@ export default function SignupPage() {
 
             {/* Phone (optional) */}
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-white/60">Phone Number <span className="text-white/30 font-normal normal-case">(optional)</span></label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-white/60">Phone Number <span className="text-white/30 font-normal normal-case">(optional if email provided)</span></label>
               <div className="relative">
                 <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <input

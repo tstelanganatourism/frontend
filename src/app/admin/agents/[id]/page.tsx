@@ -10,12 +10,13 @@ import {
   User, Phone, Mail, Building2, Percent, Calendar, MapPin,
   TrendingUp, Ticket, CheckCircle2, XCircle, Clock, IndianRupee,
   Wallet, FileText, BarChart3, CreditCard, Activity, ChevronLeft,
-  ChevronRight, Loader2
+  ChevronRight, Loader2, ChevronDown, ChevronUp
 } from 'lucide-react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { Lock, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
 function generatePassword(length = 12) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
@@ -91,9 +92,87 @@ export default function AgentDetailPage() {
   const [selectedPublicId, setSelectedPublicId] = useState<string | null>(null);
   const BOOKINGS_PAGE_SIZE = 5;
 
+  // Agent Quotas and Daywise Usage state
+  const [quotas, setQuotas] = useState<any[]>([]);
+  const [quotasLoading, setQuotasLoading] = useState(true);
+  const [quotasUsage, setQuotasUsage] = useState<any[]>([]);
+  const [quotasUsageLoading, setQuotasUsageLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'quotas' | 'usage'>('quotas');
+
+  const getTodayString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
+  const [updatingQuotas, setUpdatingQuotas] = useState<Record<number, boolean>>({});
+  const [expandedPackages, setExpandedPackages] = useState<Record<number, boolean>>({});
+
+  const fetchAgentQuotas = useCallback(async () => {
+    if (!agentId) return;
+    setQuotasLoading(true);
+    try {
+      const res = await apiClient.get(`/api/v1/admin/agents/${agentId}/quotas`);
+      setQuotas(res.data || []);
+    } catch (err) {
+      console.error('Failed to load quotas:', err);
+      toast.error('Failed to load package quotas');
+    } finally {
+      setQuotasLoading(false);
+    }
+  }, [agentId]);
+
+  const fetchAgentQuotasUsage = useCallback(async () => {
+    if (!agentId) return;
+    setQuotasUsageLoading(true);
+    try {
+      const res = await apiClient.get(`/api/v1/admin/agents/${agentId}/quotas/usage`, {
+        params: {
+          start_date: selectedDate,
+          end_date: selectedDate
+        }
+      });
+      setQuotasUsage(res.data || []);
+    } catch (err) {
+      console.error('Failed to load quota usage:', err);
+    } finally {
+      setQuotasUsageLoading(false);
+    }
+  }, [agentId, selectedDate]);
+
+  const handleUpdateQuota = async (packageId: number, dailyQuota: number, isAllowed: boolean) => {
+    setUpdatingQuotas(prev => ({ ...prev, [packageId]: true }));
+    try {
+      await apiClient.put(`/api/v1/admin/agents/${agentId}/quotas`, {
+        package_id: packageId,
+        daily_quota: dailyQuota,
+        is_allowed: isAllowed
+      });
+      toast.success('Quota updated successfully');
+      await Promise.all([fetchAgentQuotas(), fetchAgentQuotasUsage()]);
+    } catch (err: any) {
+      console.error('Failed to update quota:', err);
+      toast.error(err.response?.data?.detail || 'Failed to update quota');
+    } finally {
+      setUpdatingQuotas(prev => ({ ...prev, [packageId]: false }));
+    }
+  };
+
   useEffect(() => {
-    if (agentId) fetchAgentById(agentId as string);
-  }, [agentId, fetchAgentById]);
+    if (agentId) {
+      fetchAgentById(agentId as string);
+      fetchAgentQuotas();
+    }
+  }, [agentId, fetchAgentById, fetchAgentQuotas]);
+
+  useEffect(() => {
+    if (agentId) {
+      fetchAgentQuotasUsage();
+    }
+  }, [agentId, selectedDate, fetchAgentQuotasUsage]);
 
   const fetchAgentBookings = useCallback(async () => {
     if (!agentId) return;
@@ -432,41 +511,256 @@ export default function AgentDetailPage() {
       </div>
 
       {/* Future-Ready Sections */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Payout History */}
+      <div className="w-full">
+        {/* Package Quotas & Daywise Usage */}
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-[#5ac4d7]" /> Payout History
+              <Ticket className="h-5 w-5 text-[#5ac4d7]" /> Quota & Access Management
             </h3>
-          </div>
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="rounded-2xl bg-slate-50 p-5 mb-4">
-              <CreditCard className="h-10 w-10 text-slate-300" />
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setActiveTab('quotas')}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'quotas'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Package Quotas
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('usage')}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'usage'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Daywise Summary
+              </button>
             </div>
-            <h4 className="font-bold text-slate-900 text-sm">No payouts processed</h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-[250px]">
-              Commission payouts will be tracked here once the payment engine is integrated.
-            </p>
           </div>
-        </div>
 
-        {/* Performance */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-[#5ac4d7]" /> Performance Analytics
-            </h3>
-          </div>
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="rounded-2xl bg-slate-50 p-5 mb-4">
-              <BarChart3 className="h-10 w-10 text-slate-300" />
+          {activeTab === 'usage' && (
+            <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100 gap-4">
+              <span className="text-xs font-bold text-slate-600 flex items-center gap-2 shrink-0">
+                <Calendar className="h-4 w-4 text-[#5ac4d7]" /> Select Travel Date:
+              </span>
+              <div className="w-[180px]">
+                <CustomDatePicker
+                  value={selectedDate}
+                  onChange={(v) => setSelectedDate(v)}
+                  allowPast={true}
+                  align="right"
+                />
+              </div>
             </div>
-            <h4 className="font-bold text-slate-900 text-sm">Analytics coming soon</h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-[250px]">
-              Conversion rates, monthly trends, and performance rankings will be available when booking volume grows.
-            </p>
-          </div>
+          )}
+
+          {activeTab === 'quotas' ? (
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+              {quotasLoading ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#5ac4d7]" />
+                </div>
+              ) : quotas.length === 0 ? (
+                <p className="text-slate-500 text-sm text-center py-8">No packages found.</p>
+              ) : (
+                quotas.map((q) => (
+                  <div key={q.package_id} className="p-4 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1">
+                      <h4 className="font-bold text-slate-800 text-sm">{q.package_title}</h4>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {q.is_allowed ? `Daily Limit: ${q.daily_quota} tickets` : 'Booking Suspended'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Allowed Toggle */}
+                      <button
+                        disabled={updatingQuotas[q.package_id]}
+                        onClick={() => handleUpdateQuota(q.package_id, q.daily_quota, !q.is_allowed)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                          q.is_allowed
+                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                            : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        {updatingQuotas[q.package_id] && (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        )}
+                        {q.is_allowed ? 'Allowed' : 'Suspended'}
+                      </button>
+
+                      {/* Limit Input */}
+                      {q.is_allowed && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            disabled={updatingQuotas[q.package_id]}
+                            defaultValue={q.daily_quota}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (!isNaN(val) && val >= 0) {
+                                handleUpdateQuota(q.package_id, val, q.is_allowed);
+                              }
+                            }}
+                            className="w-16 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-center text-xs font-bold focus:border-[#5ac4d7] focus:bg-white outline-none transition-all disabled:opacity-50"
+                          />
+                          <span className="text-[11px] text-slate-400 font-bold">pax/day</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {quotasUsageLoading ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#5ac4d7]" />
+                </div>
+              ) : quotasUsage.length === 0 || !quotasUsage[0]?.packages ? (
+                <p className="text-slate-500 text-sm text-center py-8">No daily statistics available for this date.</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                      Bookings Status for {new Date(selectedDate).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </h4>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {quotasUsage[0].packages.map((pkg: any) => {
+                      const isOverLimit = pkg.is_allowed && pkg.booked_passengers >= pkg.daily_quota;
+                      const hasBookings = pkg.bookings && pkg.bookings.length > 0;
+                      const isExpanded = !!expandedPackages[pkg.package_id];
+
+                      return (
+                        <div key={pkg.package_id} className="rounded-2xl border border-slate-150 bg-white overflow-hidden shadow-sm transition-all hover:border-slate-300">
+                          {/* Row Header */}
+                          <div
+                            onClick={() => {
+                              if (hasBookings) {
+                                setExpandedPackages(prev => ({ ...prev, [pkg.package_id]: !prev[pkg.package_id] }));
+                              }
+                            }}
+                            className={`flex justify-between items-center p-4 ${
+                              hasBookings ? 'cursor-pointer hover:bg-slate-50/50' : 'bg-slate-50/30'
+                            } transition-colors`}
+                          >
+                            <span className="font-bold text-slate-800 text-sm truncate max-w-[300px] md:max-w-xl">
+                              {pkg.package_title}
+                            </span>
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                {!pkg.is_allowed ? (
+                                  <span className="px-2 py-0.5 rounded-md bg-red-50 text-red-700 font-extrabold uppercase text-[9px] border border-red-150">
+                                    Suspended
+                                  </span>
+                                ) : isOverLimit ? (
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-extrabold uppercase text-[9px] border border-amber-150">
+                                    Limit Reached ({pkg.booked_passengers}/{pkg.daily_quota})
+                                  </span>
+                                ) : (
+                                  <span className={`px-2 py-0.5 rounded-md font-extrabold uppercase text-[9px] ${
+                                    pkg.booked_passengers > 0 ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-500'
+                                  }`}>
+                                    {pkg.booked_passengers} / {pkg.daily_quota} Booked
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {hasBookings && (
+                                <div className="text-slate-400 p-0.5 rounded-lg hover:bg-slate-100 transition-colors">
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Accordion Content */}
+                          {hasBookings && isExpanded && (
+                            <div className="border-t border-slate-100 bg-slate-50/50 p-4">
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead>
+                                    <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                                      <th className="py-2 px-3">Booking ID</th>
+                                      <th className="py-2 px-3">Customer Name</th>
+                                      <th className="py-2 px-3 text-center">Tickets</th>
+                                      <th className="py-2 px-3 text-right">Amount</th>
+                                      <th className="py-2 px-3 text-center">Status</th>
+                                      <th className="py-2 px-3 text-center">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100">
+                                    {pkg.bookings.map((b: any) => (
+                                      <tr key={b.id} className="hover:bg-slate-100/50 transition-colors">
+                                        <td className="py-2.5 px-3">
+                                          <button
+                                            onClick={() => {
+                                              setSelectedPublicId(b.public_id);
+                                              setIsDetailsOpen(true);
+                                            }}
+                                            className="font-mono font-black text-[#5ac4d7] hover:underline text-xs bg-transparent border-0 cursor-pointer"
+                                          >
+                                            {b.public_id}
+                                          </button>
+                                        </td>
+                                        <td className="py-2.5 px-3 font-semibold text-slate-700">
+                                          {b.customer_name}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center font-bold text-slate-600">
+                                          {b.passenger_count}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-right font-black text-slate-900">
+                                          ₹{Number(b.total_amount).toLocaleString('en-IN')}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center">
+                                          <BookingStatusBadge status={b.status} />
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center">
+                                          <button
+                                            onClick={() => {
+                                              setSelectedPublicId(b.public_id);
+                                              setIsDetailsOpen(true);
+                                            }}
+                                            className="px-2.5 py-1 bg-white hover:bg-[#0f3d56] hover:text-white rounded-md text-[10px] font-extrabold uppercase tracking-wider text-slate-600 transition-all cursor-pointer border border-slate-200"
+                                          >
+                                            Details
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

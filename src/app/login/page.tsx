@@ -7,12 +7,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, Briefcase, ShieldAlert } from 'lucide-react';
+import { Eye, EyeOff, Mail, Phone, Lock, ArrowRight, AlertCircle, Briefcase, ShieldAlert } from 'lucide-react';
 import { touristLogin, getGoogleAuthUrl } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 
+const isPhoneNumber = (value: string) => /^\d{10}$/.test(value.trim());
+const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
 const schema = z.object({
-  email: z.string().email('Enter a valid email address'),
+  login_id: z.string().min(1, 'Please enter your email or phone number').refine(
+    (val) => isEmail(val) || isPhoneNumber(val),
+    { message: 'Enter a valid email address or 10-digit phone number' }
+  ),
   password: z.string().min(1, 'Password is required'),
 });
 type FormData = z.infer<typeof schema>;
@@ -29,6 +35,7 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [loginIdValue, setLoginIdValue] = useState('');
 
   const { isAuthenticated, user, isHydrated } = useAuthStore();
   const agentLoginHref = `/agent/login${redirect?.startsWith('/agent') ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
@@ -50,7 +57,7 @@ function LoginContent() {
   const onSubmit = async (data: FormData) => {
     setApiError(null);
     try {
-      await touristLogin(data);
+      await touristLogin({ login_id: data.login_id.trim(), password: data.password });
       const destination = redirect || '/';
       router.push(destination);
       router.refresh();
@@ -69,6 +76,10 @@ function LoginContent() {
       setGoogleLoading(false);
     }
   };
+
+  // Detect whether input looks like a phone number or email
+  const inputIsPhone = isPhoneNumber(loginIdValue);
+  const InputIcon = inputIsPhone ? Phone : Mail;
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#061d2b] flex items-center justify-center px-4 py-8">
@@ -122,29 +133,32 @@ function LoginContent() {
 
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/15" />
-            <span className="text-xs font-medium text-white/40">or sign in with email</span>
+            <span className="text-xs font-medium text-white/40">or sign in with email / phone</span>
             <div className="h-px flex-1 bg-white/15" />
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            {/* Email */}
+            {/* Email or Phone */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/60">
-                Email Address
+                Email or Phone Number
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                <InputIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <input
-                  {...register('email')}
-                  type="email"
+                  {...register('login_id', {
+                    onChange: (e) => setLoginIdValue(e.target.value),
+                  })}
+                  type="text"
+                  inputMode={inputIsPhone ? 'numeric' : 'email'}
                   autoComplete="email"
-                  placeholder="you@example.com"
+                  placeholder="you@example.com or 9876543210"
                   className="auth-input w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
                 />
               </div>
-              {errors.email && (
+              {errors.login_id && (
                 <p className="mt-1.5 flex items-center gap-1 text-xs text-red-400">
-                  <AlertCircle className="h-3 w-3" /> {errors.email.message}
+                  <AlertCircle className="h-3 w-3" /> {errors.login_id.message}
                 </p>
               )}
             </div>

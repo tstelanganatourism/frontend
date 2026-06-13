@@ -322,34 +322,37 @@ export default function AdminRoomsPage() {
             onChange={setStatusFilter}
             placeholder="All Statuses"
           />
-          <select
+          <CustomFilterSelect
             value={regionFilter}
-            onChange={(e) => setRegionFilter(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
-          >
-            <option value="all">All Regions</option>
-            <option value="AP">Andhra Pradesh (AP / Kolluru)</option>
-            <option value="TS">Telangana (TS / Bhadrachalam)</option>
-          </select>
-          <select
+            options={[
+              { value: 'all', label: 'All Regions' },
+              { value: 'AP', label: 'Andhra Pradesh (AP)' },
+              { value: 'TS', label: 'Telangana (TS)' },
+            ]}
+            onChange={setRegionFilter}
+            placeholder="All Regions"
+          />
+          <CustomFilterSelect
             value={featuredFilter}
-            onChange={(e) => setFeaturedFilter(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
-          >
-            <option value="all">All Features</option>
-            <option value="featured">Featured Only</option>
-            <option value="non-featured">Non-Featured Only</option>
-          </select>
-          <select
+            options={[
+              { value: 'all', label: 'All Features' },
+              { value: 'featured', label: 'Featured Only' },
+              { value: 'non-featured', label: 'Non-Featured Only' },
+            ]}
+            onChange={setFeaturedFilter}
+            placeholder="All Features"
+          />
+          <CustomFilterSelect
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:border-[#5ac4d7] outline-none cursor-pointer"
-          >
-            <option value="default">Sort: Default</option>
-            <option value="bookings-desc">Sort: Highest Bookings</option>
-            <option value="price-asc">Sort: Price (Low to High)</option>
-            <option value="price-desc">Sort: Price (High to Low)</option>
-          </select>
+            options={[
+              { value: 'default', label: 'Sort: Default' },
+              { value: 'bookings-desc', label: 'Sort: Highest Bookings' },
+              { value: 'price-asc', label: 'Sort: Price (Low to High)' },
+              { value: 'price-desc', label: 'Sort: Price (High to Low)' },
+            ]}
+            onChange={setSortBy}
+            placeholder="Sort: Default"
+          />
         </div>
       </div>
 

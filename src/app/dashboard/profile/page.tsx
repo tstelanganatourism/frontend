@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const { user, updateUser } = useAuthStore();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [gstNumber, setGstNumber] = useState('');
@@ -24,6 +25,7 @@ export default function ProfilePage() {
     if (user) {
       setFullName(user.full_name || '');
       setPhoneNumber(user.phone_number || '');
+      setEmail(user.email || '');
       setAvatarUrl(user.avatar_url || '');
       setGstNumber(user.gst_number || '');
       setAddress(user.address || '');
@@ -81,6 +83,11 @@ export default function ProfilePage() {
       toast.error('Full name is required');
       return;
     }
+
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
     
     if (phoneNumber.trim() && !/^\d{10}$/.test(phoneNumber.trim())) {
       toast.error('Phone number must be exactly 10 digits');
@@ -91,6 +98,7 @@ export default function ProfilePage() {
     try {
       const response = await apiClient.put('/api/v1/auth/me', {
         full_name: fullName.trim(),
+        email: email.trim() || null,
         phone_number: phoneNumber.trim() || null,
         avatar_url: avatarUrl || null,
         gst_number: gstNumber.trim() || null,
@@ -207,9 +215,27 @@ export default function ProfilePage() {
               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
                 <Mail className="h-4 w-4 text-[#5ac4d7]" /> Email Address
               </label>
-              <div className="text-slate-800 font-bold py-2 opacity-70 cursor-not-allowed">
-                {user?.email} <span className="text-xs text-amber-600 ml-2 font-normal">(Cannot be changed)</span>
-              </div>
+              {user?.email ? (
+                <div className="text-slate-800 font-bold py-2 opacity-70 cursor-not-allowed flex items-center">
+                  {user.email} <span className="text-xs text-slate-400 ml-2 font-normal">(Cannot be changed)</span>
+                </div>
+              ) : isEditingProfile ? (
+                <div className="space-y-1">
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="add-email@example.com"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#5ac4d7] focus:ring-1 focus:ring-[#5ac4d7] font-semibold text-slate-800 transition-all" 
+                  />
+                  <p className="text-[10px] text-amber-600 font-bold">Required for account recovery. Once added, it cannot be changed.</p>
+                </div>
+              ) : (
+                <div className="text-slate-800 font-bold py-2 flex items-center gap-2">
+                  <span className="text-slate-400 italic">Not set</span>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/50">Required for password recovery</span>
+                </div>
+              )}
             </div>
             
             <div className="space-y-1.5 sm:col-span-2">

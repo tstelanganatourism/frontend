@@ -19,7 +19,7 @@ export interface OTPInitResponse {
 
 export async function touristSignup(data: {
   full_name: string;
-  email: string;
+  email?: string;
   password: string;
   phone_number?: string;
 }): Promise<TokenResponse> {
@@ -29,7 +29,7 @@ export async function touristSignup(data: {
 }
 
 export async function touristLogin(data: {
-  email: string;
+  login_id: string;
   password: string;
 }): Promise<TokenResponse> {
   const res = await apiClient.post<TokenResponse>('/api/v1/auth/tourist/login', data);
@@ -129,7 +129,7 @@ export async function getMe(): Promise<AuthUser> {
   return res.data;
 }
 
-export async function updateProfile(data: { full_name?: string; phone_number?: string; avatar_url?: string }): Promise<AuthUser> {
+export async function updateProfile(data: { full_name?: string; email?: string; phone_number?: string; avatar_url?: string }): Promise<AuthUser> {
   const res = await apiClient.put<AuthUser>('/api/v1/auth/me', data);
   useAuthStore.getState().setAuth(res.data, useAuthStore.getState().accessToken || '');
   return res.data;

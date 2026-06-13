@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X as CloseIcon, Ticket, Calendar, Clock, CreditCard, ExternalLink,
   Loader2, Users, Phone, FileText, History, Banknote, Wifi,
-  CheckCircle2, AlertCircle, IndianRupee, TrendingUp
+  CheckCircle2, AlertCircle, IndianRupee, TrendingUp, MessageCircle
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
@@ -378,6 +378,54 @@ export default function BookingDetailsModal({
       window.open(`/print/form/${booking.public_id}`, '_blank');
       setIsPreparingForm(false);
     }, 1200);
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!booking) return;
+
+    const primaryPassenger = booking.passengers?.find(p => p.is_primary) || booking.passengers?.[0];
+    const primaryPhone = primaryPassenger?.phone_number || '';
+    const primaryName = primaryPassenger?.full_name || 'there';
+    
+    if (!primaryPhone) {
+      toast.error('No customer phone number found on this booking.');
+      return;
+    }
+
+    const bookingId = booking.public_id;
+    const title = booking.package_title || booking.variant_title || '';
+    const dateStr = booking.target_type === 'ROOM' 
+      ? `Check-in: ${booking.room_checkin || '—'}, Check-out: ${booking.room_checkout || '—'}` 
+      : `Travel Date: ${booking.travel_date || '—'}`;
+    const paxStr = `${booking.adult_count} Adults${booking.child_count > 0 ? `, ${booking.child_count} Children` : ''}${booking.student_count > 0 ? `, ${booking.student_count} Students` : ''}`;
+    const totalAmount = formatCurrency(booking.total_amount);
+
+    const baseUrl = window.location.origin;
+    const ticketUrl = `${baseUrl}/print/ticket/${bookingId}`;
+    const formUrl = booking.target_type === 'PACKAGE' ? `${baseUrl}/print/form/${bookingId}` : '';
+    const invoiceUrl = `${baseUrl}/print/invoice/${bookingId}`;
+
+    let message = `Hello ${primaryName}! Here are the details of your TS Tourism booking:\n\n` +
+      `- *Booking ID*: ${bookingId}\n` +
+      `- *Details*: ${title}\n` +
+      `- *Date*: ${dateStr}\n` +
+      `- *Passengers*: ${paxStr}\n` +
+      `- *Total Amount*: ${totalAmount}\n\n` +
+      `- *Ticket Link*: ${ticketUrl}\n`;
+
+    if (formUrl) {
+      message += `- *Form Link*: ${formUrl}\n`;
+    }
+    message += `- *Invoice Link*: ${invoiceUrl}\n\n`;
+    message += `Thank you for booking with us!`;
+
+    let formattedPhone = primaryPhone.replace(/\D/g, '');
+    if (formattedPhone.length === 10) {
+      formattedPhone = `91${formattedPhone}`;
+    }
+
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
   };
 
   const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
@@ -886,6 +934,15 @@ export default function BookingDetailsModal({
 
                   {/* Right: Documents */}
                   <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
+                    {isAdmin && (
+                      <button
+                        onClick={handleSendWhatsApp}
+                        className="inline-flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all active:scale-95 w-full sm:w-auto border border-emerald-700 cursor-pointer"
+                      >
+                        <MessageCircle className="h-4 w-4" /> Send WhatsApp
+                      </button>
+                    )}
+
                     {(isFullyPaid || isAdmin) && (
                       <button
                         onClick={handleDownloadInvoice}

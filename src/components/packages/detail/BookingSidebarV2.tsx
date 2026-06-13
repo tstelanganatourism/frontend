@@ -862,7 +862,10 @@ export const BookingSidebarV2 = ({
     return totalCapacity >= totalPax;
   }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children]);
 
+  const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
+
   const isBookingDisabled =
+    isSuspended ||
     !isAuthenticated ||
     (!isAdmin && isPackageInactive) ||
     validVariants.length === 0 ||
@@ -872,6 +875,7 @@ export const BookingSidebarV2 = ({
 
   const ctaText = useMemo(() => {
     if (isProcessingCheckout) return 'Processing...';
+    if (isSuspended) return 'Booking Suspended';
     if (isPackageInactive && !isAdmin) return 'Bookings Closed / Inactive';
     if (validVariants.length === 0) return 'Fare updating';
     if (!isAuthenticated) return 'Login to Book';
@@ -881,7 +885,7 @@ export const BookingSidebarV2 = ({
     if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Unavailable';
     if (availabilityState.kind === 'open') return 'Book Now';
     return 'Call to confirm availability';
-  }, [isProcessingCheckout, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, availabilityState.kind]);
+  }, [isProcessingCheckout, isSuspended, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, availabilityState.kind]);
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal
   useEffect(() => {
@@ -1834,11 +1838,11 @@ export const BookingSidebarV2 = ({
           </div>
 
           {/* Min Passengers Warning */}
-          {minPassengers > 1 && adults < minPassengers && (
+          {minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers && (
             <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2.5">
               <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
               <p className="text-xs font-bold text-rose-700 leading-relaxed">
-                This package requires a minimum of <span className="font-black">{minPassengers} students</span> per booking. Add more students to proceed.
+                This package requires a minimum of <span className="font-black">{minPassengers} {isStudentPackage ? 'students' : 'passengers'}</span> per booking. Add more {isStudentPackage ? 'students' : 'passengers'} to proceed.
               </p>
             </div>
           )}

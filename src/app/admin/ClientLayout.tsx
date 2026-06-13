@@ -12,6 +12,7 @@ import {
   Ticket, 
   Tag, 
   Users, 
+  User,
   Settings, 
   LogOut, 
   Menu, 
@@ -37,6 +38,7 @@ const navItems = [
   { name: 'Cancellations', href: '/admin/cancellations', icon: AlertTriangle },
   { name: 'Coupons', href: '/admin/coupons', icon: Tag },
   { name: 'Agents', href: '/admin/agents', icon: Users },
+  { name: 'Users', href: '/admin/users', icon: User },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
   { name: 'View Website', href: '/', icon: Globe },
 ];
