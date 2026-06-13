@@ -136,11 +136,11 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   const primaryPassenger = booking.passengers?.find(p => p.is_primary) || booking.passengers?.[0];
   const billedName = primaryPassenger?.full_name || booking.user?.full_name || 'Guest User';
-  const billedPhone = 
-    primaryPassenger?.phone_number || 
-    (primaryPassenger as any)?.phone || 
-    (booking as any)?.user?.phone_number || 
-    booking?.user?.phone || 
+  const billedPhone =
+    primaryPassenger?.phone_number ||
+    (primaryPassenger as any)?.phone ||
+    (booking as any)?.user?.phone_number ||
+    booking?.user?.phone ||
     (booking as any)?.agent_phone ||
     'N/A';
 
@@ -193,7 +193,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             display: inline-block;
           }
           
-          .header-right { width: 30%; text-align: right; }
+          .header-right { width: 30%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; text-align: right; }
           .header-right h2 { margin: 0; font-size: 18px; font-weight: 900; color: #ea580c; line-height: 1.1; }
           .header-right h3 { margin: 2px 0 0 0; font-size: 14px; font-weight: 800; color: #1e3a8a; }
 
@@ -283,8 +283,11 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             <div className="tax-badge">TAX INVOICE</div>
           </div>
           <div className="header-right">
-            <h2>Telangana Boat Tourism</h2>
-            <h3>Papikondalu </h3>
+            <div>
+              <h2>Telangana Boat Tourism</h2>
+              <h3>AP Boat Tourism</h3>
+            </div>
+            <img src="/apple-icon.png" className="logo-img" alt="Telangana Boat Tourism" />
           </div>
         </div>
 
@@ -607,42 +610,42 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           <div className="summary-right">
             {/* Hide raw payment transaction details for agent bookings */}
             {!(booking.agent_id || booking.pricing_snapshot?.agent_metadata || booking.agent_name || booking.pricing_snapshot?.agent_discount || booking.pricing_snapshot?.agent_payable) && (
-            <div>
-              <div className="table-title">PAYMENT BREAKDOWN</div>
-              <table className="summary-table">
-                <thead>
-                  <tr>
-                    <th>Payment Date</th>
-                    <th>Mode</th>
-                    <th>Transaction / Ref No.</th>
-                    <th>Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {capturedPayments.length > 0 ? (
-                    capturedPayments.map((payment) => (
-                      <tr key={payment.id}>
-                        <td>{payment.created_at ? new Date(payment.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : invoiceDateFormatted}</td>
-                        <td>{getPaymentMethodLabel(payment.payment_method)}</td>
-                        <td>{payment.payment_reference_id || payment.collected_by_label || 'N/A'}</td>
-                        <td>{Number(payment.amount || 0).toFixed(2)}</td>
-                      </tr>
-                    ))
-                  ) : (
+              <div>
+                <div className="table-title">PAYMENT BREAKDOWN</div>
+                <table className="summary-table">
+                  <thead>
                     <tr>
-                      <td>{invoiceDateFormatted}</td>
-                      <td>{paymentMode}</td>
-                      <td>{paymentId}</td>
-                      <td>{totalPaid.toFixed(2)}</td>
+                      <th>Payment Date</th>
+                      <th>Mode</th>
+                      <th>Transaction / Ref No.</th>
+                      <th>Amount (₹)</th>
                     </tr>
-                  )}
-                  <tr className="paid-row">
-                    <td colSpan={3}>TOTAL PAID</td>
-                    <td>{money(totalPaid, 2)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {capturedPayments.length > 0 ? (
+                      capturedPayments.map((payment) => (
+                        <tr key={payment.id}>
+                          <td>{payment.created_at ? new Date(payment.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : invoiceDateFormatted}</td>
+                          <td>{getPaymentMethodLabel(payment.payment_method)}</td>
+                          <td>{payment.payment_reference_id || payment.collected_by_label || 'N/A'}</td>
+                          <td>{Number(payment.amount || 0).toFixed(2)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td>{invoiceDateFormatted}</td>
+                        <td>{paymentMode}</td>
+                        <td>{paymentId}</td>
+                        <td>{totalPaid.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    <tr className="paid-row">
+                      <td colSpan={3}>TOTAL PAID</td>
+                      <td>{money(totalPaid, 2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             )}
 
             <div>
@@ -676,6 +679,46 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 </tbody>
               </table>
             </div>
+
+            {booking.gateway_fee > 0 && (
+              <div style={{ marginTop: '15px' }}>
+                <div className="table-title">GATEWAY FEE BREAKUP</div>
+                <table className="summary-table">
+                  <thead>
+                    <tr>
+                      <th>Fee Type</th>
+                      <th>Taxable Amount (₹)</th>
+                      <th>Tax Rate (%)</th>
+                      <th>Tax Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Convenience Charges</td>
+                      <td>{(booking.gateway_fee / 1.18).toFixed(2)}</td>
+                      <td>—</td>
+                      <td>—</td>
+                    </tr>
+                    <tr>
+                      <td>CGST</td>
+                      <td>{(booking.gateway_fee / 1.18).toFixed(2)}</td>
+                      <td>9.00</td>
+                      <td>{((booking.gateway_fee / 1.18) * 0.09).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td>SGST</td>
+                      <td>{(booking.gateway_fee / 1.18).toFixed(2)}</td>
+                      <td>9.00</td>
+                      <td>{((booking.gateway_fee / 1.18) * 0.09).toFixed(2)}</td>
+                    </tr>
+                    <tr className="paid-row">
+                      <td colSpan={3}>TOTAL GATEWAY FEE</td>
+                      <td>₹ {booking.gateway_fee.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
