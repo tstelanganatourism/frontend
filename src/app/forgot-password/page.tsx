@@ -200,7 +200,9 @@ export default function ForgotPasswordPage() {
                   Please contact support on WhatsApp to reset your password.
                 </p>
                 <a
-                  href="https://wa.me/919849848938?text=I+need+to+reset+my+password"
+                  href={`https://wa.me/919849848938?text=${encodeURIComponent(
+                    `Hi Telangana Boat Tourism Support, I need to reset my password for my account. My registered phone/email identifier is: ${loginId.trim()}`
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 text-sm font-bold text-white shadow-[0_8px_24px_rgba(37,211,102,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#20ba5a] active:translate-y-0"

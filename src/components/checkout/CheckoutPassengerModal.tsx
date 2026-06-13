@@ -45,6 +45,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
   const totalPassengers = adults + children;
   const { user } = useAuthStore();
   const isAgentOrAdmin = user?.role === 'ADMIN' || user?.role === 'AGENT';
+  const isEmailRequired = !isAgentOrAdmin && (!user || !user.email || user.email.trim() === '');
 
   const [passengers, setPassengers] = useState<PassengerInput[]>([]);
   const [passengerMode, setPassengerMode] = useState<'full' | 'quick'>('full');
@@ -561,16 +562,21 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
             )}
           </form>
 
-          {isAgentOrAdmin && (
+          {(isAgentOrAdmin || isEmailRequired) && (
             <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-slate-800">Tourist Email (Optional)</span>
+                <span className="text-sm font-black text-slate-800">
+                  {isEmailRequired ? 'Email Address *' : 'Tourist Email (Optional)'}
+                </span>
               </div>
               <p className="text-[11px] font-semibold text-slate-500">
-                Booking confirmation and tickets will be sent directly to the tourist in addition to your agent account.
+                {isEmailRequired
+                  ? 'We will send your booking confirmation, e-tickets, and travel details to this email address.'
+                  : 'Booking confirmation and tickets will be sent directly to the tourist in addition to your agent account.'}
               </p>
               <input
                 type="email"
+                required={isEmailRequired}
                 placeholder="e.g. tourist@example.com"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
@@ -636,6 +642,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               isProcessing ||
               !agreedToTerms ||
               !agreedToAadhaarConsent ||
+              (isEmailRequired && (!customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim()))) ||
               (passengerMode === 'quick'
                 ? (isStudentPackage
                   ? !(

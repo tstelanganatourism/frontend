@@ -95,7 +95,7 @@ export default function PackagesList({
         } else if (isSightseeing) {
           queryParams.set('type', 'TRIP');
         }
-        queryParams.set('size', '6');
+        queryParams.set('size', '20');
 
         const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
         

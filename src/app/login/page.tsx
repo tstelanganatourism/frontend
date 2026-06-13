@@ -57,8 +57,8 @@ function LoginContent() {
   const onSubmit = async (data: FormData) => {
     setApiError(null);
     try {
-      await touristLogin({ login_id: data.login_id.trim(), password: data.password });
-      const destination = redirect || '/';
+      const res = await touristLogin({ login_id: data.login_id.trim(), password: data.password });
+      const destination = redirect || (res.user?.role === 'ADMIN' ? '/admin/dashboard' : res.user?.role === 'AGENT' ? '/agent/dashboard' : '/dashboard');
       router.push(destination);
       router.refresh();
     } catch (err: unknown) {

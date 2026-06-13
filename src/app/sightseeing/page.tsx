@@ -20,7 +20,7 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
   }
 
   params.set('type', 'TRIP');
-  params.set('size', '6');
+  params.set('size', '20');
 
   try {
     const query = params.toString();
