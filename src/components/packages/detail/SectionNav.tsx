@@ -23,36 +23,28 @@ export const SectionNav = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const scrollPosition = window.scrollY + 150; // Offset for navbar + sticky nav
-
-          for (const item of navItems) {
-            const section = document.getElementById(item.id);
-            if (section) {
-              const { top } = section.getBoundingClientRect();
-              const sectionTop = top + window.scrollY;
-              const sectionBottom = sectionTop + section.offsetHeight;
-
-              if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-                setActiveSection(item.id);
-                break;
-              }
-            }
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
+    const observerOptions = {
+      root: null,
+      rootMargin: '-130px 0px -70% 0px',
+      threshold: 0,
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    // Initial check
-    handleScroll();
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    };
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const elements = navItems.map((item) => document.getElementById(item.id)).filter(Boolean);
+    elements.forEach((el) => observer.observe(el!));
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el!));
+      observer.disconnect();
+    };
   }, []);
 
   const scrollToSection = (id: string) => {

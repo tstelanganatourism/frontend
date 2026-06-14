@@ -314,10 +314,30 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     if (typeof window !== 'undefined' && window.location.search.includes('restore_checkout=true')) {
       const savedCustomPay = sessionStorage.getItem('last_checkout_custom_pay');
       const savedGateway = sessionStorage.getItem('last_checkout_gateway');
+      const savedVariantId = sessionStorage.getItem('last_checkout_selected_variant_id');
+      const savedArrivalDate = sessionStorage.getItem('last_checkout_arrival_date');
+      const savedDepartureDate = sessionStorage.getItem('last_checkout_departure_date');
+      const savedGuests = sessionStorage.getItem('last_checkout_guests');
+      const savedSlotIndex = sessionStorage.getItem('last_checkout_selected_slot_index');
       
       if (savedCustomPay !== null) setCustomPayAmount(savedCustomPay);
       if (savedGateway === 'PHONEPE' || savedGateway === 'CASHFREE') {
         setSelectedGateway(savedGateway as 'PHONEPE' | 'CASHFREE');
+      }
+      if (savedVariantId) {
+        setSelectedVariantId(Number(savedVariantId));
+      }
+      if (savedArrivalDate) {
+        setArrivalDate(savedArrivalDate);
+      }
+      if (savedDepartureDate) {
+        setDepartureDate(savedDepartureDate);
+      }
+      if (savedGuests) {
+        setGuests(Number(savedGuests));
+      }
+      if (savedSlotIndex !== null) {
+        setSelectedSlotIndex(Number(savedSlotIndex));
       }
       
       // Auto-open passenger details modal
@@ -761,6 +781,11 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         sessionStorage.setItem('last_checkout_custom_pay', customPayAmount || '');
         sessionStorage.setItem('last_checkout_gateway', selectedGateway);
         sessionStorage.setItem('last_checkout_quick_booking', String(quickBooking));
+        sessionStorage.setItem('last_checkout_selected_variant_id', String(selectedVariantId || ''));
+        sessionStorage.setItem('last_checkout_arrival_date', arrivalDate || '');
+        sessionStorage.setItem('last_checkout_departure_date', departureDate || '');
+        sessionStorage.setItem('last_checkout_guests', String(guests || ''));
+        sessionStorage.setItem('last_checkout_selected_slot_index', String(selectedSlotIndex));
       }
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
@@ -2070,31 +2095,28 @@ const RoomSectionNav = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const scrollPosition = window.scrollY + 150;
-          for (const item of ROOM_NAV_ITEMS) {
-            const section = document.getElementById(item.id);
-            if (section) {
-              const { top } = section.getBoundingClientRect();
-              const sectionTop = top + window.scrollY;
-              const sectionBottom = sectionTop + section.offsetHeight;
-              if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-                setActiveSection(item.id);
-                break;
-              }
-            }
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
+    const observerOptions = {
+      root: null,
+      rootMargin: '-130px 0px -70% 0px',
+      threshold: 0,
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const elements = ROOM_NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(Boolean);
+    elements.forEach((el) => observer.observe(el!));
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el!));
+      observer.disconnect();
+    };
   }, []); // stable: ROOM_NAV_ITEMS is a module-level constant
 
   const scrollToSection = (id: string) => {

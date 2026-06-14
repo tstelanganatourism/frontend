@@ -208,11 +208,31 @@ export const BookingSidebarV2 = ({
     if (typeof window !== 'undefined' && window.location.search.includes('restore_checkout=true')) {
       const savedCustomPay = sessionStorage.getItem('last_checkout_custom_pay');
       const savedGateway = sessionStorage.getItem('last_checkout_gateway');
+      const savedDate = sessionStorage.getItem('last_checkout_selected_date');
+      const savedVariantId = sessionStorage.getItem('last_checkout_selected_variant_id');
+      const savedTransportMode = sessionStorage.getItem('last_checkout_selected_transport_mode');
+      const savedSharedOptionId = sessionStorage.getItem('last_checkout_selected_shared_option_id');
+      const savedSeparateVehicleQtys = sessionStorage.getItem('last_checkout_separate_vehicle_qtys');
+      const savedIncludeRefreshments = sessionStorage.getItem('last_checkout_include_refreshments');
+      const savedAdults = sessionStorage.getItem('last_checkout_adults');
+      const savedChildren = sessionStorage.getItem('last_checkout_children');
       
       if (savedCustomPay !== null) setCustomPayAmount(savedCustomPay);
       if (savedGateway === 'PHONEPE' || savedGateway === 'CASHFREE') {
         setSelectedGateway(savedGateway as 'PHONEPE' | 'CASHFREE');
       }
+      if (savedDate) setSelectedDate(savedDate);
+      if (savedVariantId) setSelectedVariantId(Number(savedVariantId));
+      if (savedTransportMode) setSelectedTransportMode(savedTransportMode as 'NONE' | 'SHARED' | 'SEPARATE');
+      if (savedSharedOptionId) setSelectedSharedOptionId(Number(savedSharedOptionId));
+      if (savedSeparateVehicleQtys) {
+        try {
+          setSeparateVehicleQtys(JSON.parse(savedSeparateVehicleQtys));
+        } catch (e) {}
+      }
+      if (savedIncludeRefreshments) setIncludeRefreshments(savedIncludeRefreshments === 'true');
+      if (savedAdults) setAdults(Number(savedAdults));
+      if (savedChildren) setChildren(Number(savedChildren));
       
       // Auto-open passenger details modal
       setShowPassengerModal(true);
@@ -982,6 +1002,14 @@ export const BookingSidebarV2 = ({
         sessionStorage.setItem('last_checkout_custom_pay', customPayAmount || '');
         sessionStorage.setItem('last_checkout_gateway', selectedGateway);
         sessionStorage.setItem('last_checkout_quick_booking', String(quickBooking));
+        sessionStorage.setItem('last_checkout_selected_date', selectedDate || '');
+        sessionStorage.setItem('last_checkout_selected_variant_id', String(selectedVariantId || ''));
+        sessionStorage.setItem('last_checkout_selected_transport_mode', selectedTransportMode);
+        sessionStorage.setItem('last_checkout_selected_shared_option_id', String(selectedSharedOptionId || ''));
+        sessionStorage.setItem('last_checkout_separate_vehicle_qtys', JSON.stringify(separateVehicleQtys));
+        sessionStorage.setItem('last_checkout_include_refreshments', String(includeRefreshments));
+        sessionStorage.setItem('last_checkout_adults', String(adults));
+        sessionStorage.setItem('last_checkout_children', String(children));
       }
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);

@@ -25,34 +25,27 @@ export default function FAQClient() {
   useEffect(() => {
     if (visibleFaqs.length === 0) return;
 
-    let frame = 0;
-
-    const updateActiveCategory = () => {
-      const triggerLine = window.innerHeight * 0.38;
-      const currentSection = visibleFaqs.reduce<string | null>((active, category) => {
-        const section = document.getElementById(category.category);
-        if (!section) return active;
-
-        const { top } = section.getBoundingClientRect();
-        return top <= triggerLine ? category.category : active;
-      }, null);
-
-      setActiveCategory(currentSection ?? visibleFaqs[0].category);
+    const observerOptions = {
+      root: null,
+      rootMargin: '-130px 0px -70% 0px',
+      threshold: 0,
     };
 
-    const onScroll = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(updateActiveCategory);
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveCategory(entry.target.id);
+        }
+      });
     };
 
-    updateActiveCategory();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const elements = visibleFaqs.map((category) => document.getElementById(category.category)).filter(Boolean);
+    elements.forEach((el) => observer.observe(el!));
 
     return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      elements.forEach((el) => observer.unobserve(el!));
+      observer.disconnect();
     };
   }, [visibleFaqs]);
 
