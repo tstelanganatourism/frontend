@@ -92,9 +92,26 @@ export default function PaymentStatusPage() {
     pollingIntervalRef.current = setInterval(() => {
       retryCountRef.current += 1;
       setRetryCount(retryCountRef.current);
+
       if (retryCountRef.current >= 6) {
+        // Give up polling — payment was not confirmed within 30 seconds.
+        // Transition to failed so the user isn't stuck on the pending screen.
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+        setResult(prev => {
+          // Only override if still pending (don't clobber a late success)
+          if (prev?.status === 'pending') {
+            return {
+              status: 'failed',
+              message:
+                'Your payment was not confirmed within 30 seconds. If money was deducted, it will be refunded automatically within 5-7 business days. You can try booking again below.'
+            };
+          }
+          return prev;
+        });
+        setLoading(false);
+        return;
       }
+
       verifyPayment();
     }, 5000);
 
