@@ -216,7 +216,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     const phone = user.phone_number || '';
     const name = room.lodge_name || '';
     return (
-      (email === '2024eb01987@online.bits-pilani.ac.in' || phone === '8887773331') &&
+      (email === '2024eb01987@online.bits-pilani.ac.in' || phone === '8886154275') &&
       name.toLowerCase().includes('vashista') &&
       name.toLowerCase().includes('bhadrachalam')
     );
@@ -737,7 +737,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
         toast.success(`Booking ${res.data.public_id} created successfully!`);
-        router.push(`/admin/bookings`);
+        router.push(`/admin/bookings?new_booking=${res.data.public_id}`);
         return;
       }
 
@@ -816,8 +816,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           document.head.appendChild(script);
         });
         await loadCashfreeSDK();
-        const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        const cfMode = isLocal ? 'sandbox' : 'production';
+        const cfMode = checkout_data.mode || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
+        console.log("[Cashfree Room Checkout] Initialized with cfMode:", cfMode, "checkout_data:", checkout_data);
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
           paymentSessionId: checkout_data.payment_session_id,

@@ -97,7 +97,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
             <ul className="grid gap-2.5 sm:grid-cols-2 min-[1120px]:grid-cols-1">
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><MapPin className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 text-[12px] leading-relaxed text-slate-100">Telangana Boat Tourism, near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm, Bhadrachalam, Telangana 507111.</span>
+                <span className="min-w-0 text-[12px] leading-relaxed text-slate-100 font-medium">DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Phone className="h-3.5 w-3.5" /></span>

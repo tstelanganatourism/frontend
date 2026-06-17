@@ -233,7 +233,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="text-slate-800 font-bold py-2 flex items-center gap-2">
                   <span className="text-slate-400 italic">Not set</span>
-                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/50">Required for password recovery</span>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/50">Required for account recovery</span>
                 </div>
               )}
             </div>

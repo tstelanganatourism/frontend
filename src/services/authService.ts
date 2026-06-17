@@ -37,6 +37,23 @@ export async function touristLogin(data: {
   return res.data;
 }
 
+export interface PhoneOTPSendResponse {
+  message: string;
+  cooldown_seconds: number;
+  attempts_remaining: number;
+}
+
+export async function sendPhoneOtp(phone: string): Promise<PhoneOTPSendResponse> {
+  const res = await apiClient.post<PhoneOTPSendResponse>('/api/v1/auth/otp/send', { phone });
+  return res.data;
+}
+
+export async function verifyPhoneOtp(phone: string, otp: string): Promise<TokenResponse> {
+  const res = await apiClient.post<TokenResponse>('/api/v1/auth/otp/verify', { phone, otp });
+  useAuthStore.getState().setAuth(res.data.user, res.data.access_token);
+  return res.data;
+}
+
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 
 export async function getGoogleAuthUrl(redirectUri?: string, state?: string): Promise<string> {

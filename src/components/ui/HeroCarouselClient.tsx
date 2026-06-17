@@ -157,7 +157,7 @@ function StatBlock({ icon: Icon, value, label }: { icon: LucideIcon; value: stri
 
 function formatPrice(price: number | null) {
   if (!price) return null;
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(price);
 }
 
 // ─── Main HeroBody Component ─────────────────────────────────────────────────

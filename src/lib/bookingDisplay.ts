@@ -18,7 +18,7 @@ export interface PaymentLedgerEntry {
   created_at: string | null;
 }
 
-export function money(amount: number | string | null | undefined, digits = 0) {
+export function money(amount: number | string | null | undefined, digits = 2) {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',

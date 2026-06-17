@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic';
 // ─── Company constants (fixed for every brochure) ──────────────────────────
 const CO = {
   bannerUrl: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1780902910/8f1dd045-5038-4ae4-9b7c-1f8ba27c897f_uftvpr.png',
-  addr1: 'D.no: 4-1-78/1 (Near SBI ATM),',
-  addr2: 'Kalyana Mandapam Road, Opp SBI ATM,',
-  addr3: 'Bhadrachalam, BHADRADRI KOTHAGUDEM Dist.,',
-  addr4: 'Telangana State - 507 111',
+  addr1: 'DR NO:4-1-78/1,',
+  addr2: 'KALYANA MANDAPAM ROAD OPP SBI ATM,',
+  addr3: 'BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),',
+  addr4: 'TELANGANA-507111',
   phones: ['+91 95420 69573', '+91 984 984 89 82', '+91 984 984 89 83', '+91 984 984 89 38'],
   website: 'www.tsboattourism.org',
 };

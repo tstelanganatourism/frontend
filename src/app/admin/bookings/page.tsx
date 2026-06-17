@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import {
   Ticket, Search, RefreshCw, ChevronLeft, ChevronRight,
@@ -8,6 +9,7 @@ import {
   ExternalLink, Filter, Users, Loader2, Plus
 } from 'lucide-react';
 import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
+import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
 import AdminCreateBookingModal from '@/components/admin/AdminCreateBookingModal';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
@@ -22,6 +24,8 @@ interface BookingItem {
   source: string;
   status: string;
   travel_date: string;
+  is_rescheduled?: boolean;
+  has_pending_postpone?: boolean;
   adult_count: number;
   child_count: number;
   subtotal_amount: number;
@@ -97,12 +101,21 @@ function SourceBadge({ source }: { source: string }) {
 }
 
 function formatINR(amount: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(amount);
 }
 
 function formatDate(iso: string | null) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function AdminOfficePopupHandler() {
+  const searchParams = useSearchParams();
+  const rawNewBooking = searchParams?.get('new_booking');
+  const { activeBookingId, dismiss } = useOfficeVisitPopup(rawNewBooking || null);
+
+  if (!activeBookingId) return null;
+  return <OfficeVisitPopup bookingId={activeBookingId} onClose={dismiss} isAdmin={true} />;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -127,6 +140,12 @@ export default function AdminBookingsPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedPublicId, setSelectedPublicId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [activePopupDetails, setActivePopupDetails] = useState<{
+    bookingId: string;
+    targetType: string;
+    isPartial: boolean;
+    remainingBalance: number;
+  } | null>(null);
 
   const fetchBookings = useCallback(async () => {
     setIsLoading(true);
@@ -231,8 +250,20 @@ export default function AdminBookingsPage() {
       <AdminCreateBookingModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={fetchBookings}
+        onSuccess={(publicId, info) => {
+          fetchBookings();
+          setActivePopupDetails({
+            bookingId: publicId,
+            targetType: info.targetType,
+            isPartial: info.isPartial,
+            remainingBalance: info.remainingBalance,
+          });
+        }}
       />
+
+      <Suspense fallback={null}>
+        <AdminOfficePopupHandler />
+      </Suspense>
 
       {/* KPI Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -447,7 +478,7 @@ export default function AdminBookingsPage() {
 
                     {/* Travel Date */}
                     <td className="px-5 py-4 text-center">
-                      <div className="flex justify-center text-left">
+                      <div className="flex flex-col items-center justify-center text-left gap-1">
                         <BookingDateDisplay 
                           targetType={b.target_type} 
                           travelDate={b.travel_date}
@@ -458,6 +489,16 @@ export default function AdminBookingsPage() {
                           compact={true}
                           className="!text-xs"
                         />
+                        {b.is_rescheduled && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700 w-fit">
+                            Rescheduled
+                          </span>
+                        )}
+                        {b.has_pending_postpone && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 w-fit">
+                            Postpone Req.
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -526,6 +567,17 @@ export default function AdminBookingsPage() {
         publicId={selectedPublicId}
         onPaymentRecorded={fetchBookings}
       />
+
+      {activePopupDetails && (
+        <OfficeVisitPopup
+          bookingId={activePopupDetails.bookingId}
+          targetType={activePopupDetails.targetType}
+          isPartial={activePopupDetails.isPartial}
+          remainingBalance={activePopupDetails.remainingBalance}
+          onClose={() => setActivePopupDetails(null)}
+          isAdmin={true}
+        />
+      )}
     </div>
   );
 }

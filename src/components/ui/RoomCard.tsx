@@ -184,11 +184,11 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
                     <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekdays</p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
-                        {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
+                        {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}` : 'TBA'}
                       </span>
                       {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
                         <span className="text-[11px] font-semibold text-slate-600 line-through decoration-rose-400/70">
-                          ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                          ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
                         </span>
                       )}
                       <span className="text-[11px] font-bold text-slate-600">/ night</span>
@@ -199,7 +199,7 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
                       <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekends</p>
                       <div className="flex items-baseline gap-1">
                         <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
-                          ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                          ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
                         </span>
                         <span className="text-[11px] font-bold text-slate-600">/ night</span>
                       </div>
@@ -324,11 +324,11 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
                 <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekdays</p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
-                    {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
+                    {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}` : 'TBA'}
                   </span>
                   {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
                     <span className="text-[11px] font-semibold text-slate-600 line-through decoration-rose-400/70">
-                      ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
                     </span>
                   )}
                   <span className="text-[11px] font-bold text-slate-600">/ night</span>
@@ -339,7 +339,7 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
                   <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekends</p>
                   <div className="flex items-baseline justify-end gap-1">
                     <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
-                      ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
                     </span>
                     <span className="text-[11px] font-bold text-slate-600">/ night</span>
                   </div>

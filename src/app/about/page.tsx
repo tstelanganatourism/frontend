@@ -16,10 +16,10 @@ export const metadata: Metadata = {
   ],
 };
 
-const MAPS_LOCATION_URL = 'https://maps.app.goo.gl/6YDfViEq3RLuvNN36?g_st=awb';
+const MAPS_LOCATION_URL = 'https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb';
 
 const OFFICE_ADDRESS =
-  'Telangana Boat Tourism, near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm, Bhadrachalam, Telangana 507111';
+  'DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111';
 
 const TOURISM_METRICS = [
   { number: '20+', title: 'Years in tourism', text: 'Local Godavari expertise since 2004.' },

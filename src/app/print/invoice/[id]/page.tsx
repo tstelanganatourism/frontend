@@ -295,10 +295,20 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
         <div className="address-row">
           <div className="company-address">
             <strong>Telangana Boat Tourism</strong><br />
-            D.no: 4 - 1 - 78/1 (Near SBI ATM),<br />
-            Kalyana Mandapam Road, Opp SBI ATM,<br />
-            Bhadrachalam, BHADRADRI KOTHAGUDEM Dist.,<br />
-            Telangana State - 507 111<br />
+            DR NO:4-1-78/1<br />
+            KALYANA MANDAPAM ROAD OPP SBI ATM<br />
+            BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),<br />
+            TELANGANA-507111<br />
+            <div style={{ marginTop: '6px', marginBottom: '4px' }} className="no-print">
+              <a
+                href="https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 800, textDecoration: 'none', border: '1px solid #bae6fd' }}
+              >
+                🗺️ Open in Google Maps
+              </a>
+            </div>
             <strong>GSTIN: {gstNumber}</strong>
             {booking.agent_gst && (
               <>
@@ -608,39 +618,71 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           </div>
 
           <div className="summary-right">
-            {/* Hide raw payment transaction details for agent bookings */}
-            {!(booking.agent_id || booking.pricing_snapshot?.agent_metadata || booking.agent_name || booking.pricing_snapshot?.agent_discount || booking.pricing_snapshot?.agent_payable) && (
+            {/* Payment transaction details breakdown */}
+            {true && (
               <div>
                 <div className="table-title">PAYMENT BREAKDOWN</div>
                 <table className="summary-table">
                   <thead>
                     <tr>
-                      <th>Payment Date</th>
-                      <th>Mode</th>
-                      <th>Transaction / Ref No.</th>
+                      <th>Transaction Details</th>
+                      <th>Payment Mode</th>
                       <th>Amount (₹)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {capturedPayments.length > 0 ? (
-                      capturedPayments.map((payment) => (
-                        <tr key={payment.id}>
-                          <td>{payment.created_at ? new Date(payment.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : invoiceDateFormatted}</td>
-                          <td>{getPaymentMethodLabel(payment.payment_method)}</td>
-                          <td>{payment.payment_reference_id || payment.collected_by_label || 'N/A'}</td>
-                          <td>{Number(payment.amount || 0).toFixed(2)}</td>
-                        </tr>
-                      ))
+                      capturedPayments.map((payment, idx) => {
+                        const payDate = payment.created_at ? new Date(payment.created_at) : null;
+                        const formattedDate = payDate 
+                          ? payDate.toLocaleString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })
+                          : invoiceDateFormatted;
+                        const classification = idx === 0 
+                          ? (payment.amount >= booking!.total_amount ? 'Full Payment' : 'Advance Payment') 
+                          : 'Remaining Balance';
+
+                        return (
+                          <tr key={payment.id}>
+                            <td>
+                              <span style={{ fontWeight: 800, display: 'block' }}>{classification}</span>
+                              <span className="line-meta">{formattedDate}</span>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 700, display: 'block' }}>{getPaymentMethodLabel(payment.payment_method)}</span>
+                              {(payment.payment_reference_id || payment.collected_by_label) && (
+                                <span className="line-meta">
+                                  {payment.payment_reference_id ? `Txn: ${payment.payment_reference_id}` : ''}
+                                  {payment.payment_reference_id && payment.collected_by_label ? ' · ' : ''}
+                                  {payment.collected_by_label ? `Ref: ${payment.collected_by_label}` : ''}
+                                </span>
+                              )}
+                            </td>
+                            <td>{money(payment.amount, 2)}</td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
-                        <td>{invoiceDateFormatted}</td>
-                        <td>{paymentMode}</td>
-                        <td>{paymentId}</td>
-                        <td>{totalPaid.toFixed(2)}</td>
+                        <td>
+                          <span style={{ fontWeight: 800, display: 'block' }}>Full Payment</span>
+                          <span className="line-meta">{invoiceDateFormatted}</span>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 700, display: 'block' }}>{paymentMode}</span>
+                          {paymentId !== 'N/A' && <span className="line-meta">Txn: {paymentId}</span>}
+                        </td>
+                        <td>{money(totalPaid, 2)}</td>
                       </tr>
                     )}
                     <tr className="paid-row">
-                      <td colSpan={3}>TOTAL PAID</td>
+                      <td colSpan={2}>TOTAL PAID</td>
                       <td>{money(totalPaid, 2)}</td>
                     </tr>
                   </tbody>
@@ -741,8 +783,18 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             <div className="fc-body office-details">
               <div>
                 <strong>📍 TOURISM OFFICE</strong><br />
-                D.no: 4 - 1 - 78/1 (Near SBI ATM), Kalyana Mandapam Road,<br />
-                Bhadrachalam, BHADRADRI KOTHAGUDEM Dist, Telangana - 507 111<br /><br />
+                DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM,<br />
+                BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA - 507 111<br />
+                <div style={{ marginTop: '6px', marginBottom: '6px' }} className="no-print">
+                  <a
+                    href="https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 800, textDecoration: 'none', border: '1px solid #bae6fd' }}
+                  >
+                    🗺️ Open in Google Maps
+                  </a>
+                </div>
                 <strong>📞 +91 95420 69573 | +91 984 984 89 82</strong><br />
                 🕒 Office Time: 06:00 AM to 08:00 PM (All Days)
               </div>

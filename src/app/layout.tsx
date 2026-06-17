@@ -8,6 +8,7 @@ import PromoBanner from "@/components/ui/PromoBanner";
 import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { Toaster } from 'sonner';
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
+import PhoneCollectionModal from '@/components/ui/PhoneCollectionModal';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap' });
@@ -109,7 +110,7 @@ export default function RootLayout({
                 "email": "bookings@tsboattourism.org",
                 "address": {
                   "@type": "PostalAddress",
-                  "streetAddress": "near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm",
+                  "streetAddress": "DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM",
                   "addressLocality": "Bhadrachalam",
                   "addressRegion": "Telangana",
                   "postalCode": "507111",
@@ -189,6 +190,7 @@ export default function RootLayout({
               {children}
             </ClientLayoutWrapper>
             <Toaster position="top-center" richColors />
+            <PhoneCollectionModal />
           </AuthProvider>
         </QueryProvider>
         <AnalyticsProvider />

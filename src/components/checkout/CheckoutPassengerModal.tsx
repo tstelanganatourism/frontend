@@ -239,8 +239,8 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
 
         {/* Form Body */}
         <div className="overflow-y-auto p-6 scrollbar-thin flex-1">
-          {/* Mode Toggle for Admin & Agent */}
-          {isAgentOrAdmin && (
+          {/* Mode Toggle — available to ALL logged-in users (tourist, agent, admin) */}
+          {(
             <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl mb-6">
               <button
                 type="button"

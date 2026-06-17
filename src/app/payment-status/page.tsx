@@ -27,6 +27,8 @@ export default function PaymentStatusPage() {
   const retryCountRef = useRef(0);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isRoom = result?.booking_id ? (result.booking_id.toUpperCase().includes('AC') || result.booking_id.toUpperCase().includes('-AC-')) : false;
+
   const verifyPayment = async (showToast = false) => {
     if (!merchantTransactionId) {
       setResult({
@@ -219,10 +221,16 @@ export default function PaymentStatusPage() {
 
             <div className="pt-2 flex flex-col gap-2">
               <button
-                onClick={() => router.push(`/dashboard/bookings/${result.booking_id}`)}
+                onClick={() => router.push(`/dashboard/bookings/${result.booking_id}?new_booking=${result.booking_id}`)}
                 className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#1a6b7a] text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-[#13505c] transition-all shadow-md hover:shadow-lg"
               >
-                <Ticket className="h-4 w-4" /> View Ticket & Form <ArrowRight className="h-4 w-4" />
+                <Ticket className="h-4 w-4" /> {isRoom ? 'View Ticket Details' : 'View Ticket & Form'} <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => router.push(`/dashboard/bookings?new_booking=${result.booking_id}`)}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md hover:shadow-lg"
+              >
+                <MapPin className="h-4 w-4" /> {isRoom ? 'Office Instructions & Download' : 'Office Instructions & Downloads'}
               </button>
               <button
                 onClick={() => router.push('/')}

@@ -144,6 +144,14 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
   const isFullyPaid = booking.status === 'FULLY_PAID';
   const passengerCount = booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count;
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
+  const has25Seater = transportSelections.some(ts => 
+    Number(ts.capacity) === 25 ||
+    (ts.title && (
+      ts.title.toLowerCase().includes('25') ||
+      ts.title.toLowerCase().includes('25-seater') ||
+      ts.title.toLowerCase().includes('25 seater')
+    ))
+  );
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
   const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
@@ -378,6 +386,26 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         .rule-check li { list-style: none; position: relative; padding-left: 2px; }
         .rule-check li::before { content: '✓'; color: #2e7d32; font-weight: 900; margin-right: 3px; }
 
+        /* ── BUS WARNING ── */
+        .bus-warning-box {
+          border: 1.5px solid #d97706; background: #fffbeb; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px;
+        }
+        .bus-warning-title {
+          font-size: 10px; font-weight: 900; color: #b45309; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;
+        }
+        .bus-warning-grid {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+        .bus-warning-col {
+          font-size: 8px; color: #4b5563; line-height: 1.4; font-weight: 600;
+        }
+        .bus-warning-col ul {
+          list-style: none; margin: 0; padding: 0;
+        }
+        .bus-warning-col li {
+          display: flex; gap: 4px; margin-bottom: 3px;
+        }
+
         /* ── AGENT BAR ── */
         .agent-bar {
           display: flex; align-items: center; justify-content: space-between;
@@ -581,6 +609,16 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 KALYANA MANDAPAM ROAD OPP SBI ATM<br />
                 BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),<br />
                 TELANGANA-507111<br />
+                <div style={{ marginTop: '6px', marginBottom: '4px' }}>
+                  <a
+                    href="https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 800, textDecoration: 'none', border: '1px solid #bae6fd' }}
+                  >
+                    🗺️ Open in Google Maps
+                  </a>
+                </div>
                 <strong>GSTIN: {gstNumber}</strong>
                 {booking.agent_gst && (
                   <>
@@ -796,16 +834,51 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             {booking.remaining_balance > 0 && (
               <div className="pay-bal"><span>REMAINING BALANCE</span><span>{money(booking.remaining_balance, 2)}</span></div>
             )}
-            {/* For agent bookings, hide the internal payment method (PhonePe/Cashfree) — the tourist doesn't need to see that */}
-            {!(booking.agent_id || booking.pricing_snapshot?.agent_metadata || booking.agent_name || booking.pricing_snapshot?.agent_discount || booking.pricing_snapshot?.agent_payable) && capturedPayments.length > 0 && (
-              <div className="pay-note">
-                <span className="pay-note-icon">✓</span>
-                <span>
-                  Payments: {capturedPayments.map((payment) => {
-                    const methodNames: Record<string, string> = { RAZORPAY: 'PhonePe', PHONEPE: 'PhonePe', CASHFREE: 'Cashfree', CASH: 'Cash', BANK_TRANSFER: 'Bank Transfer', ADMIN_MANUAL: 'Admin' };
-                    return `${money(payment.amount, 2)} ${methodNames[payment.payment_method] ?? payment.payment_method}`;
-                  }).join(', ')}
-                </span>
+            {capturedPayments.length > 0 && (
+              <div style={{ borderTop: '1px dashed #ddd', padding: '6px 10px', background: '#f8fafc' }}>
+                <div style={{ fontSize: '8px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>🕒 Payment History</div>
+                {capturedPayments.map((payment, idx) => {
+                  const methodNames: Record<string, string> = { 
+                    RAZORPAY: 'Online (PhonePe)', 
+                    PHONEPE: 'Online (PhonePe)', 
+                    CASHFREE: 'Online (Cashfree)', 
+                    CASH: 'Cash', 
+                    BANK_TRANSFER: 'Bank Transfer', 
+                    ADMIN_MANUAL: 'Manual (Admin)' 
+                  };
+                  const methodName = methodNames[payment.payment_method] ?? payment.payment_method;
+                  
+                  const payDate = payment.created_at ? new Date(payment.created_at) : null;
+                  const formattedDate = payDate 
+                    ? payDate.toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })
+                    : '—';
+
+                  return (
+                    <div key={payment.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#334155', fontWeight: 600, padding: '3px 0', borderBottom: idx < capturedPayments.length - 1 ? '1px solid #e2e8f0' : 'none' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                        <span style={{ fontWeight: 800 }}>
+                          {idx === 0 
+                            ? (payment.amount >= booking.total_amount ? 'Full Payment' : 'Advance Payment') 
+                            : 'Remaining Balance Payment'}
+                        </span>
+                        <span style={{ fontSize: '6.5px', color: '#64748b', fontWeight: 700 }}>
+                          {methodName} {payment.payment_reference_id ? `· Txn: ${payment.payment_reference_id}` : ''}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, gap: '1px' }}>
+                        <span style={{ fontWeight: 800, color: '#1e293b' }}>{money(payment.amount, 2)}</span>
+                        <span style={{ fontSize: '6.5px', color: '#64748b' }}>{formattedDate}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
             <div className="pay-status-row" style={{ color: booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? '#d32f2f' : isFullyPaid ? '#2e7d32' : booking.remaining_balance > 0 ? '#e65100' : '#d32f2f' }}>
@@ -892,7 +965,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         </div>
 
         {/* ═══════ RULES GRID ═══════ */}
-        <div className="rules-grid">
+        <div className="rules-grid" style={has25Seater ? { gridTemplateColumns: '1fr 1fr 1fr 1fr' } : undefined}>
           <div className="rule-box">
             <div className="rule-box-title">⛔ Cancellation Policy</div>
             {isRoom ? (
@@ -941,6 +1014,29 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               )}
             </ul>
           </div>
+
+          {/* Bus Warning Box inside rules-grid (as 4th column card) */}
+          {has25Seater && (
+            <div className="rule-box" style={{ border: '1.5px solid #d97706', background: '#fffbeb', display: 'flex', flexDirection: 'column' }}>
+              <div className="rule-box-title" style={{ color: '#b45309', borderBottom: '1px solid #fed7aa', paddingBottom: '4px', marginBottom: '4px' }}>🚌 Bus Notice</div>
+              
+              <div style={{ fontSize: '7.5px', fontWeight: 900, color: '#b45309', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📢 ముఖ్య గమనిక</div>
+              <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: '6px' }}>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>🚌</span><span>కనీస ప్రయాణికుల సంఖ్య పూర్తికాక బస్సు ఫుల్ కాకపోతే, టూర్ను టాటా మ్యాజిక్ / 7 సీటర్ వాహనంలో నిర్వహించబడుతుంది.</span></li>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>💰</span><span>బస్సు చార్జీ మరియు టాటా మ్యాజిక్ చార్జీ మధ్య ఉన్న అదనపు మొత్తాన్ని ప్రయాణికులకు రిఫండ్ చేయబడుతుంది.</span></li>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>✅</span><span>బస్సు పూర్తిగా నిండిన సందర్భంలో మాత్రమే బస్సు టికెట్ కన్ఫర్మ్ చేయబడుతుంది.</span></li>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>⚠️</span><span>ప్రయాణికుల సంఖ్యను బట్టి వాహనం మార్చే హక్కు యాజమాన్యానికి ఉంటుంది.</span></li>
+              </ul>
+
+              <div style={{ fontSize: '7.5px', fontWeight: 900, color: '#b45309', marginBottom: '2px', borderTop: '1px dashed #fed7aa', paddingTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📢 Important Note</div>
+              <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>🚌</span><span>If the minimum passenger count is not met and the bus is not fully occupied, the tour will be operated using a Tata Magic / 7-Seater vehicle.</span></li>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>💰</span><span>The difference between the bus fare and the Tata Magic fare will be refunded to passengers.</span></li>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>✅</span><span>Bus tickets will be confirmed only when sufficient passengers are available to operate the bus.</span></li>
+                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>⚠️</span><span>Management reserves the right to change the vehicle based on passenger occupancy.</span></li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Agent bar */}

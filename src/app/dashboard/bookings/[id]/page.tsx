@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Printer, FileText, MapPin, Calendar, Clock,
   CheckCircle2, CreditCard, Loader2, AlertCircle, Shield,
@@ -17,6 +17,9 @@ import {
   getTransportSelections,
   hasRefreshment,
 } from '@/lib/bookingDisplay';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +83,14 @@ interface BookingDetails {
   agent_company?: string | null;
   boarding_point: BoardingPoint | null;
   has_pending_cancellation?: boolean;
+  has_pending_postpone?: boolean;
+  postpone_details?: {
+    status: string;
+    reason: string;
+    requested_new_date: string | null;
+    requested_at: string | null;
+    processed_at: string | null;
+  } | null;
   ticket_pdf_url?: string | null;
   ticket_generation_status?: string;
   has_refreshment_addon?: boolean;
@@ -88,12 +99,13 @@ interface BookingDetails {
   payment_ledger: PaymentLedgerEntry[];
   pricing_snapshot?: any;
   student_count: number;
+  is_rescheduled?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatINR(amount: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 }
 
 function formatDate(iso: string | null) {
@@ -244,7 +256,11 @@ function PaymentTimeline({ ledger }: { ledger: PaymentLedgerEntry[] }) {
 export default function BookingDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const bookingId = params.id as string;
+
+  const rawNewBooking = searchParams.get('new_booking');
+  const { activeBookingId, dismiss: dismissPopup } = useOfficeVisitPopup(rawNewBooking);
 
   const { user } = useAuthStore();
   const [booking, setBooking] = useState<BookingDetails | null>(null);
@@ -262,6 +278,13 @@ export default function BookingDetailPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [submittingCancel, setSubmittingCancel] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+
+  // Postponement state
+  const [showPostponeModal, setShowPostponeModal] = useState(false);
+  const [postponeReason, setPostponeReason] = useState('');
+  const [postponeNewDate, setPostponeNewDate] = useState('');
+  const [submittingPostpone, setSubmittingPostpone] = useState(false);
+  const [postponeError, setPostponeError] = useState<string | null>(null);
 
   // ─── Fetch booking (refreshable) ───────────────────────────────────────────
   const fetchBooking = useCallback(async () => {
@@ -289,7 +312,15 @@ export default function BookingDetailPage() {
       setSubmittingCancel(true);
       setCancelError(null);
       await apiClient.post(`/api/v1/bookings/${bookingId}/cancel`, { reason: cancelReason });
-      const message = `Hello TS Boat Tourism, I would like to request a cancellation for:\n\nBooking ID: ${booking?.public_id}\nPackage: ${booking?.package_title}\nTravel Date: ${new Date(booking?.travel_date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}\nReason: ${cancelReason}`;
+      
+      const travelDateObj = new Date(booking?.travel_date || '');
+      travelDateObj.setHours(0, 0, 0, 0);
+      const todayObj = new Date();
+      todayObj.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((travelDateObj.getTime() - todayObj.getTime()) / (1000 * 60 * 60 * 24));
+      const feePct = diffDays >= 7 ? 35 : 50;
+
+      const message = `Hello TS Boat Tourism, I would like to request a cancellation for:\n\nBooking ID: ${booking?.public_id}\nPackage: ${booking?.package_title}\nTravel Date: ${new Date(booking?.travel_date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}\nCancellation Fee: ${feePct}%\nReason: ${cancelReason}`;
       window.open(`https://wa.me/919542069573?text=${encodeURIComponent(message)}`, '_blank');
       setBooking(prev => prev ? { ...prev, has_pending_cancellation: true } : null);
       setShowCancelModal(false);
@@ -299,6 +330,42 @@ export default function BookingDetailPage() {
       setCancelError(err?.response?.data?.detail || 'Failed to submit cancellation request.');
     } finally {
       setSubmittingCancel(false);
+    }
+  };
+
+  // ─── Postponement ──────────────────────────────────────────────────────────
+  const handlePostponeSubmit = async () => {
+    if (postponeReason.trim().length < 5 || !postponeNewDate) return;
+    try {
+      setSubmittingPostpone(true);
+      setPostponeError(null);
+      await apiClient.post(`/api/v1/bookings/${bookingId}/postpone`, {
+        requested_new_date: postponeNewDate,
+        reason: postponeReason,
+      });
+      const formattedCurrentDate = new Date(booking?.travel_date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+      const formattedNewDate = new Date(postponeNewDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+      const message = `Hello TS Boat Tourism, I would like to request a postponement for:\n\nBooking ID: ${booking?.public_id}\nPackage: ${booking?.package_title}\nCurrent Travel Date: ${formattedCurrentDate}\nRequested New Date: ${formattedNewDate}\nReason: ${postponeReason}`;
+      window.open(`https://wa.me/919542069573?text=${encodeURIComponent(message)}`, '_blank');
+      setBooking(prev => prev ? {
+        ...prev,
+        has_pending_postpone: true,
+        postpone_details: {
+          status: 'PENDING',
+          reason: postponeReason,
+          requested_new_date: postponeNewDate,
+          requested_at: new Date().toISOString(),
+          processed_at: null
+        }
+      } : null);
+      setShowPostponeModal(false);
+      setPostponeReason('');
+      setPostponeNewDate('');
+      toast.success("Postponement request logged and WhatsApp chat opened!");
+    } catch (err: any) {
+      setPostponeError(err?.response?.data?.detail || 'Failed to submit postponement request.');
+    } finally {
+      setSubmittingPostpone(false);
     }
   };
 
@@ -337,8 +404,8 @@ export default function BookingDetailPage() {
           document.head.appendChild(script);
         });
         await loadCashfreeSDK();
-        const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        const cfMode = isLocal ? 'sandbox' : 'production';
+        const cfMode = checkout_data.mode || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
+        console.log("[Cashfree Balance Checkout] Initialized with cfMode:", cfMode, "checkout_data:", checkout_data);
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
           paymentSessionId: checkout_data.payment_session_id,
@@ -430,10 +497,16 @@ export default function BookingDetailPage() {
   const todayObj = new Date();
   todayObj.setHours(0, 0, 0, 0);
   const diffDays = Math.ceil((travelDateObj.getTime() - todayObj.getTime()) / (1000 * 60 * 60 * 24));
-  const isEligibleToCancel = diffDays > 7;
+  const isEligibleToCancel = diffDays >= 4;
+  const isEligibleToPostpone = diffDays >= 7;
+
   const canCancel = booking.target_type !== 'ROOM' && (
     booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED' || booking.status === 'PARTIAL_PAID'
   ) && !booking.has_pending_cancellation;
+
+  const canPostpone = booking.target_type !== 'ROOM' && (
+    booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED' || booking.status === 'PARTIAL_PAID'
+  ) && !booking.has_pending_postpone;
 
   const isFullyPaid = booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED';
   const isOnlinePayment = !!(
@@ -443,7 +516,17 @@ export default function BookingDetailPage() {
 
 
   return (
-    <div className="space-y-6">
+    <>
+      {activeBookingId && (
+        <OfficeVisitPopup
+          bookingId={activeBookingId}
+          onClose={dismissPopup}
+          targetType={booking?.target_type}
+          isPartial={booking?.status === 'PARTIAL_PAID'}
+          remainingBalance={booking?.remaining_balance}
+        />
+      )}
+      <div className="space-y-6">
       {/* Back Button & Actions */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <button
@@ -453,6 +536,7 @@ export default function BookingDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
         <div className="flex gap-1.5 sm:gap-2 items-center flex-wrap">
+          {/* Cancellation Section */}
           {canCancel && (
             isEligibleToCancel ? (
               <button
@@ -462,14 +546,35 @@ export default function BookingDetailPage() {
                 Cancel Booking
               </button>
             ) : (
-              <span className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[10px] sm:text-xs font-bold text-rose-700 text-center leading-tight">
-                No cancel within 7 days
+              <span className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[10px] sm:text-xs font-bold text-rose-705 text-rose-700 text-center leading-tight opacity-75">
+                No cancel within 4 days
               </span>
             )
           )}
           {booking.has_pending_cancellation && (
             <span className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-700">
               <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Cancel Pending
+            </span>
+          )}
+
+          {/* Postponement Section */}
+          {canPostpone && (
+            isEligibleToPostpone ? (
+              <button
+                onClick={() => setShowPostponeModal(true)}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-indigo-700 hover:bg-indigo-100 transition-colors"
+              >
+                Postpone Booking
+              </button>
+            ) : (
+              <span className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-[10px] sm:text-xs font-bold text-indigo-700 text-center leading-tight opacity-75">
+                No postpone within 7 days
+              </span>
+            )
+          )}
+          {booking.has_pending_postpone && (
+            <span className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-700">
+              <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Postpone Pending
             </span>
           )}
 
@@ -563,10 +668,48 @@ export default function BookingDetailPage() {
         {/* ── Main Ticket Info ── */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-border">
+            {booking.has_pending_cancellation && (
+              <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-extrabold">Cancellation Request Pending</p>
+                    <p className="text-[11px] text-amber-700 font-semibold mt-1 leading-relaxed">
+                      You have submitted a request to cancel this booking via WhatsApp. Our admin is reviewing the request and will process it shortly based on the policy.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {booking.postpone_details && (
+              <div className="mb-6 p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <Calendar className="h-4 w-4 shrink-0 text-indigo-650 mt-0.5" />
+                  <div>
+                    <p className="font-extrabold text-indigo-900">
+                      Postponement Request ({booking.postpone_details.status === 'PENDING' ? 'Pending Review' : booking.postpone_details.status})
+                    </p>
+                    <p className="text-[11px] text-indigo-700 font-semibold mt-1 leading-relaxed">
+                      Requested new travel date: <strong className="font-black text-indigo-850">{new Date(booking.postpone_details.requested_new_date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</strong>
+                    </p>
+                    {booking.postpone_details.reason && (
+                      <p className="text-[11px] text-indigo-600 italic mt-1 font-medium">Reason: "{booking.postpone_details.reason}"</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 pb-6 border-b border-slate-100">
               <div>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   {getStatusBadge(booking.status)}
+                  {booking.is_rescheduled && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-purple-700 ring-1 ring-inset ring-purple-600/20">
+                      Rescheduled
+                    </span>
+                  )}
                   {!isFullyPaid && remainingAmount > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-amber-700 ring-1 ring-inset ring-amber-600/20">
                       Pending: {formatINR(remainingAmount)}
@@ -1023,7 +1166,15 @@ export default function BookingDetailPage() {
               <span className="font-bold flex items-center gap-1.5 mb-1 text-amber-900">
                 <AlertCircle className="h-4 w-4 shrink-0" /> Important Cancellation Terms
               </span>
-              Approved cancellations are subject to a strict 35% cancellation deduction fee. The remaining 65% will be automatically refunded.
+              Approved cancellations are subject to a cancellation fee based on the time remaining:
+              <ul className="list-disc list-inside mt-1 font-semibold space-y-0.5">
+                <li>&ge; 7 days left: 35% fee (65% refund)</li>
+                <li>4 to 6 days left: 50% fee (50% refund)</li>
+                <li>&lt; 4 days left: Not eligible for cancellation</li>
+              </ul>
+              <div className="mt-2 text-[11px] font-black text-amber-800 bg-amber-100/50 p-1.5 rounded-lg border border-amber-200">
+                Current estimate: {diffDays >= 7 ? '35% Fee / 65% Refund' : '50% Fee / 50% Refund'}
+              </div>
             </div>
             {cancelError && (
               <div className="mt-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
@@ -1066,6 +1217,82 @@ export default function BookingDetailPage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Postponement Modal */}
+      {showPostponeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-black text-slate-800">Request Postponement</h3>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              You are requesting to postpone your booking for <span className="font-bold">{booking.package_title}</span>.
+            </p>
+            <div className="mt-4 p-3 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-850 text-xs leading-relaxed">
+              <span className="font-bold flex items-center gap-1.5 mb-1 text-indigo-900">
+                <Calendar className="h-4 w-4 shrink-0" /> Important Postponement Terms
+              </span>
+              Postponement is subject to slot availability on the requested date. Actual dates are changed by the admin upon request approval.
+            </div>
+            {postponeError && (
+              <div className="mt-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {postponeError}
+              </div>
+            )}
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Proposed New Travel Date
+                </label>
+                <CustomDatePicker
+                  value={postponeNewDate}
+                  onChange={(val) => setPostponeNewDate(val)}
+                  min={(() => {
+                    const tom = new Date();
+                    tom.setDate(tom.getDate() + 1);
+                    return tom.toISOString().split('T')[0];
+                  })()}
+                  allowPast={false}
+                  isAdmin={false}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Reason for Postponement
+                </label>
+                <textarea
+                  value={postponeReason}
+                  onChange={e => setPostponeReason(e.target.value)}
+                  placeholder="Please state the reason for your postponement request (minimum 5 characters)..."
+                  rows={4}
+                  className="w-full rounded-2xl border border-slate-200 p-3.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)]/30 focus:border-[var(--color-brand-teal)] transition-all resize-none"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                disabled={submittingPostpone}
+                onClick={() => { setShowPostponeModal(false); setPostponeReason(''); setPostponeNewDate(''); setPostponeError(null); }}
+                className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                disabled={submittingPostpone || postponeReason.trim().length < 5 || !postponeNewDate}
+                onClick={handlePostponeSubmit}
+                className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingPostpone
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</>
+                  : 'Confirm Postpone'
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   );
 }
+

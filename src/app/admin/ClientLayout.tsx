@@ -36,6 +36,7 @@ const navItems = [
   { name: 'Bookings', href: '/admin/bookings', icon: Ticket },
   { name: 'Transport Planning', href: '/admin/transport', icon: Truck },
   { name: 'Cancellations', href: '/admin/cancellations', icon: AlertTriangle },
+  { name: 'Postponements', href: '/admin/postpones', icon: CalendarDays },
   { name: 'Coupons', href: '/admin/coupons', icon: Tag },
   { name: 'Agents', href: '/admin/agents', icon: Users },
   { name: 'Users', href: '/admin/users', icon: User },

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAdminStore } from '@/stores/adminStore';
 import Link from 'next/link';
 import { 
-  Search, Users, Trash2, Eye, KeyRound, Phone, Mail, ChevronDown, MoreHorizontal, Loader2, X, AlertCircle
+  Search, Users, Trash2, Eye, Phone, Mail, ChevronDown, MoreHorizontal, Loader2, AlertCircle, Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -45,7 +45,7 @@ export default function AdminUsersPage() {
     fetchUsers, 
     deleteUser, 
     toggleUserStatus,
-    resetUserPassword
+    updateUser
   } = useAdminStore();
 
   const [searchVal, setSearchVal] = useState('');
@@ -54,9 +54,10 @@ export default function AdminUsersPage() {
   // Modals state
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editUserForm, setEditUserForm] = useState({ id: 0, full_name: '', email: '', phone_number: '' });
+  const [isSavingUser, setIsSavingUser] = useState(false);
   
   const [togglingStatusId, setTogglingStatusId] = useState<number | null>(null);
   const [isInitialMount, setIsInitialMount] = useState(true);
@@ -80,6 +81,43 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleEditClick = (u: any) => {
+    setEditUserForm({
+      id: u.id,
+      full_name: u.full_name || '',
+      email: u.email || '',
+      phone_number: u.phone_number || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUserForm.full_name.trim()) {
+      toast.error('Full name is required');
+      return;
+    }
+    if (editUserForm.phone_number && !/^\d{10}$/.test(editUserForm.phone_number.trim())) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
+    setIsSavingUser(true);
+    try {
+      await updateUser(editUserForm.id, {
+        full_name: editUserForm.full_name.trim(),
+        email: editUserForm.email.trim() || undefined,
+        phone_number: editUserForm.phone_number.trim() || undefined
+      });
+      toast.success('User profile updated successfully');
+      setIsEditModalOpen(false);
+      fetchUsers(searchVal, statusFilter, usersPage, usersLimit);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update user profile');
+    } finally {
+      setIsSavingUser(false);
+    }
+  };
+
   const handleToggleStatus = async (user: any) => {
     if (togglingStatusId) return;
     setTogglingStatusId(user.id);
@@ -90,28 +128,6 @@ export default function AdminUsersPage() {
       toast.error(err.message || 'Failed to toggle status');
     } finally {
       setTogglingStatusId(null);
-    }
-  };
-
-  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedUserId) return;
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters long');
-      return;
-    }
-
-    setIsSavingPassword(true);
-    try {
-      await resetUserPassword(selectedUserId, newPassword);
-      toast.success('Password changed successfully');
-      setIsPasswordModalOpen(false);
-      setNewPassword('');
-      setSelectedUserId(null);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to reset password');
-    } finally {
-      setIsSavingPassword(false);
     }
   };
 
@@ -250,11 +266,11 @@ export default function AdminUsersPage() {
                           <Eye className="h-4 w-4" />
                         </Link>
                         <button 
-                          onClick={() => { setSelectedUserId(u.id); setIsPasswordModalOpen(true); }}
-                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 hover:text-amber-600 transition-all cursor-pointer" 
-                          title="Reset Password"
+                          onClick={() => handleEditClick(u)}
+                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 hover:text-[#5ac4d7] transition-all cursor-pointer" 
+                          title="Edit User Profile"
                         >
-                          <KeyRound className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => { setSelectedUserId(u.id); setIsDeleteModalOpen(true); }}
@@ -292,54 +308,76 @@ export default function AdminUsersPage() {
         type="danger" 
       />
 
-      {/* Password Reset Modal */}
-      {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-100">
-            <button 
-              onClick={() => { setIsPasswordModalOpen(false); setNewPassword(''); }}
-              className="absolute right-4 top-4 p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-700 rounded-xl transition-colors cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center">
-                <KeyRound className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-950">Change User Password</h3>
-                <p className="text-xs text-slate-500">Provide a new password for password recovery request.</p>
-              </div>
+      {/* Edit User Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            onClick={() => setIsEditModalOpen(false)}
+            className="fixed inset-0 bg-slate-950/65 backdrop-blur-sm transition-opacity" 
+          />
+          
+          {/* Modal Container */}
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden z-10 p-6 space-y-6">
+            <div>
+              <h3 className="text-xl font-black text-slate-900">Edit User Profile</h3>
+              <p className="text-xs text-slate-500 mt-1">Modify user contact details and credentials.</p>
             </div>
-
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+            
+            <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">New Password</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
                 <input 
-                  type="password"
+                  type="text" 
+                  value={editUserForm.full_name} 
+                  onChange={(e) => setEditUserForm({ ...editUserForm, full_name: e.target.value })}
+                  placeholder="Enter full name"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800 transition-all"
                   required
-                  placeholder="Minimum 8 characters"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#5ac4d7] focus:ring-1 focus:ring-[#5ac4d7] font-semibold text-slate-800 text-sm transition-all"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => { setIsPasswordModalOpen(false); setNewPassword(''); }}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer"
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                <input 
+                  type="email" 
+                  value={editUserForm.email} 
+                  onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
+                  placeholder="Enter email address"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">+91</span>
+                  <input 
+                    type="text" 
+                    value={editUserForm.phone_number} 
+                    onChange={(e) => setEditUserForm({ ...editUserForm, phone_number: e.target.value })}
+                    placeholder="10-digit number"
+                    maxLength={10}
+                    className="w-full rounded-xl border border-slate-200 pl-12 pr-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={isSavingPassword}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                <button
+                  type="submit"
+                  disabled={isSavingUser}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-black text-white bg-[#0f3d56] hover:bg-[#1a4a63] transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer"
                 >
-                  {isSavingPassword && <Loader2 className="h-3 w-3 animate-spin" />}
-                  Change Password
+                  {isSavingUser ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  {isSavingUser ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

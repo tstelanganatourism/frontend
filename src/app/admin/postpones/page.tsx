@@ -3,14 +3,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 import {
-  Search, RefreshCw, ChevronLeft, ChevronRight,
-  CheckCircle2, Clock, XCircle, AlertCircle, IndianRupee,
-  Loader2, Filter, FileText, X as CloseIcon, Info
+  Calendar, RefreshCw, ChevronLeft, ChevronRight,
+  CheckCircle2, Clock, XCircle, AlertCircle,
+  Loader2, FileText, X as CloseIcon, Info
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
-interface CancellationRequest {
+interface PostponeRequest {
   id: number;
   booking_id: number;
   booking_public_id: string;
@@ -20,10 +21,9 @@ interface CancellationRequest {
   paid_amount: number;
   reason: string;
   status: string;
+  requested_new_date: string | null;
   requested_at: string;
   processed_at: string | null;
-  cancellation_fee: number | null;
-  refund_amount: number | null;
   admin_notes: string | null;
   booking_status: string;
 }
@@ -39,28 +39,26 @@ function formatDate(iso: string | null) {
   return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export default function AdminCancellationsPage() {
-  const [requests, setRequests] = useState<CancellationRequest[]>([]);
+export default function AdminPostponesPage() {
+  const [requests, setRequests] = useState<PostponeRequest[]>([]);
   const [offset, setOffset] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<number | null>(null);
   
-  const [selectedRequest, setSelectedRequest] = useState<CancellationRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<PostponeRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
-  
-  const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
-  const [isRefundConfirmOpen, setIsRefundConfirmOpen] = useState(false);
+  const [confirmedNewDate, setConfirmedNewDate] = useState('');
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await apiClient.get('/api/v1/admin/bookings/cancellation-requests', {
+      const res = await apiClient.get('/api/v1/admin/bookings/postpone-requests', {
         params: { limit: PAGE_SIZE, offset }
       });
       setRequests(res.data || []);
     } catch (err) {
-      console.error('Failed to load cancellation requests:', err);
-      toast.error('Failed to load cancellation requests');
+      console.error('Failed to load postponement requests:', err);
+      toast.error('Failed to load postponement requests');
     } finally {
       setIsLoading(false);
     }
@@ -70,40 +68,43 @@ export default function AdminCancellationsPage() {
     fetchRequests();
   }, [fetchRequests]);
 
+  useEffect(() => {
+    if (selectedRequest) {
+      setAdminNotes(selectedRequest.admin_notes || '');
+      setConfirmedNewDate(selectedRequest.requested_new_date || '');
+    } else {
+      setAdminNotes('');
+      setConfirmedNewDate('');
+    }
+  }, [selectedRequest]);
+
   const handleProcessRequest = async (id: number, status: 'APPROVED' | 'REJECTED') => {
     if (!selectedRequest) return;
     
     setIsProcessing(id);
     try {
-      await apiClient.patch(`/api/v1/admin/bookings/${selectedRequest.booking_id}/cancel`, {
+      const payload: any = {
         status,
         admin_notes: adminNotes
-      });
-      toast.success(`Cancellation request ${status.toLowerCase()} successfully`);
+      };
+      if (status === 'APPROVED') {
+        if (!confirmedNewDate) {
+          toast.error("Please select a new travel date for postponement approval.");
+          setIsProcessing(null);
+          return;
+        }
+        payload.confirmed_new_date = confirmedNewDate;
+      }
+      
+      await apiClient.patch(`/api/v1/admin/bookings/postpone/${selectedRequest.id}`, payload);
+      toast.success(`Postponement request ${status.toLowerCase()} successfully`);
       setSelectedRequest(null);
-      setAdminNotes('');
       fetchRequests();
     } catch (err: any) {
-      console.error('Failed to process request:', err);
+      console.error('Failed to process postpone request:', err);
       toast.error(err.response?.data?.detail || 'Failed to process request');
     } finally {
       setIsProcessing(null);
-    }
-  };
-
-  const handleMarkRefunded = async () => {
-    if (!selectedRequest) return;
-    setIsSubmittingRefund(true);
-    try {
-      await apiClient.post(`/api/v1/admin/bookings/${selectedRequest.booking_id}/mark-refunded`);
-      toast.success("Booking successfully marked as refunded.");
-      setIsRefundConfirmOpen(false);
-      setSelectedRequest(null);
-      fetchRequests();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to mark booking as refunded.");
-    } finally {
-      setIsSubmittingRefund(false);
     }
   };
 
@@ -111,12 +112,12 @@ export default function AdminCancellationsPage() {
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Cancellation Requests</h1>
-          <p className="text-sm text-slate-500">Manage tourist and agent booking cancellations</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Postponement Requests</h1>
+          <p className="text-sm text-slate-500">Manage tourist and agent booking date-change requests</p>
         </div>
         <button
           onClick={() => fetchRequests()}
-          className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
+          className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-all active:scale-95"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
@@ -130,8 +131,8 @@ export default function AdminCancellationsPage() {
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Booking</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Customer</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Travel Date</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Amount Paid</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Original Date</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Proposed Date</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900">Requested At</th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-slate-900">Actions</th>
@@ -148,7 +149,7 @@ export default function AdminCancellationsPage() {
               ) : requests.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">
-                    No cancellation requests found.
+                    No postponement requests found.
                   </td>
                 </tr>
               ) : (
@@ -163,8 +164,8 @@ export default function AdminCancellationsPage() {
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
                       {formatDate(req.travel_date)}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-900 font-medium">
-                      {formatINR(req.paid_amount)}
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-indigo-600 font-bold">
+                      {formatDate(req.requested_new_date)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       {req.status === 'PENDING' && (
@@ -191,7 +192,7 @@ export default function AdminCancellationsPage() {
                         onClick={() => setSelectedRequest(req)}
                         className="text-blue-600 hover:text-blue-900"
                       >
-                        View Details
+                        Review
                       </button>
                     </td>
                   </tr>
@@ -240,18 +241,18 @@ export default function AdminCancellationsPage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 z-10 flex flex-col max-h-[90vh]"
             >
-              {/* Modal Header */}
+              {/* Header */}
               <div className="bg-slate-50/80 border-b border-slate-100 p-6 md:p-8 flex justify-between items-start shrink-0">
                 <div>
                   <div className="flex flex-wrap items-center gap-3 mb-3">
                     <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-inset ring-indigo-600/20">
-                      Cancellation Request
+                      Postponement Request
                     </span>
                     <span className="font-mono text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1 rounded-lg tracking-wider">
                       {selectedRequest.booking_public_id}
                     </span>
                   </div>
-                  <h3 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">Review Request</h3>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">Review Reschedule Request</h3>
                 </div>
                 <button
                   onClick={() => setSelectedRequest(null)}
@@ -261,20 +262,20 @@ export default function AdminCancellationsPage() {
                 </button>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-6 md:p-8 space-y-8 overflow-y-auto">
+              {/* Body */}
+              <div className="p-6 md:p-8 space-y-7 overflow-y-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 bg-slate-50/50 rounded-2xl border border-slate-100 p-5">
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Customer</p>
                     <p className="text-sm font-bold text-slate-800 truncate">{selectedRequest.customer_name}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Amount Paid</p>
-                    <p className="text-sm font-bold text-slate-800">{formatINR(selectedRequest.paid_amount)}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Original Date</p>
+                    <p className="text-sm font-bold text-slate-800">{formatDate(selectedRequest.travel_date)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Travel Date</p>
-                    <p className="text-sm font-bold text-slate-800">{formatDate(selectedRequest.travel_date)}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Proposed Date</p>
+                    <p className="text-sm font-bold text-indigo-600">{formatDate(selectedRequest.requested_new_date)}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Requested At</p>
@@ -284,7 +285,7 @@ export default function AdminCancellationsPage() {
 
                 <div>
                   <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-slate-400" /> Reason for Cancellation
+                    <FileText className="h-4 w-4 text-slate-400" /> Reason for Postponement
                   </h4>
                   <div className="rounded-2xl bg-white p-5 text-sm text-slate-700 border border-slate-200 shadow-sm leading-relaxed">
                     {selectedRequest.reason}
@@ -293,22 +294,33 @@ export default function AdminCancellationsPage() {
 
                 {selectedRequest.status === 'PENDING' && (
                   <div className="space-y-5">
+                    {/* Confirmed New Date Picker */}
                     <div>
-                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3">Admin Notes (Optional)</h4>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Calendar className="h-4 w-4 text-slate-400" /> Confirm Reschedule Date
+                      </h4>
+                      <div className="w-full sm:w-64">
+                        <CustomDatePicker
+                          value={confirmedNewDate}
+                          onChange={(val) => setConfirmedNewDate(val)}
+                          allowPast={false}
+                          isAdmin={true}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium mt-1">
+                        You can keep the proposed date or select a different date before approving.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-2">Admin Notes (Optional)</h4>
                       <textarea
                         value={adminNotes}
                         onChange={(e) => setAdminNotes(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm focus:border-[#0f3d56] focus:ring-2 focus:ring-[#0f3d56]/20 outline-none transition-all shadow-sm resize-none font-medium"
+                        className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all shadow-sm resize-none font-medium"
                         rows={3}
-                        placeholder="Enter internal notes for this decision..."
+                        placeholder="Enter notes regarding this reschedule decision..."
                       />
-                    </div>
-                    <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-5 text-sm text-indigo-800 flex gap-4 items-start shadow-sm">
-                      <AlertCircle className="h-6 w-6 shrink-0 text-indigo-600 mt-0.5" />
-                      <div className="leading-relaxed">
-                        <p className="font-black text-indigo-900 mb-1 text-base">Cancellation Policy Applies</p>
-                        <p className="font-medium">Approving will automatically deduct a <span className="font-extrabold text-indigo-900 bg-indigo-100 px-1.5 py-0.5 rounded">35% cancellation fee</span> from the total amount. Refund processing to the customer is manual.</p>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -318,30 +330,25 @@ export default function AdminCancellationsPage() {
                     <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
                       <Info className="h-4 w-4 text-slate-400" /> Resolution Details
                     </h4>
-                    <div className="grid grid-cols-2 gap-4 bg-slate-50/50 rounded-2xl border border-slate-100 p-5">
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Cancellation Fee Deducted</p>
-                        <p className="text-xl font-black text-red-600">
-                          {selectedRequest.cancellation_fee !== null ? formatINR(selectedRequest.cancellation_fee) : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
-                          {selectedRequest.booking_status === 'REFUNDED' ? 'Amount Refunded' : 'Refund Amount Due'}
-                        </p>
-                        <p className={`text-xl font-black ${selectedRequest.booking_status === 'REFUNDED' ? 'text-emerald-700' : 'text-emerald-600'} flex items-center gap-2`}>
-                          {selectedRequest.refund_amount !== null ? formatINR(selectedRequest.refund_amount) : '—'}
-                          {selectedRequest.booking_status === 'REFUNDED' && (
-                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">
-                              <CheckCircle2 className="mr-1 w-3 h-3" /> REFUNDED
-                            </span>
-                          )}
-                        </p>
+                    <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-5 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Status</p>
+                          <p className={`text-sm font-black ${selectedRequest.status === 'APPROVED' ? 'text-emerald-700' : 'text-red-700'}`}>
+                            {selectedRequest.status}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Rescheduled Travel Date</p>
+                          <p className="text-sm font-bold text-slate-800">
+                            {formatDate(selectedRequest.requested_new_date)}
+                          </p>
+                        </div>
                       </div>
                       {selectedRequest.admin_notes && (
-                        <div className="col-span-2 pt-4 mt-4 border-t border-slate-200 border-dashed">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Admin Notes</p>
-                          <p className="text-sm text-slate-700 italic font-medium bg-white p-3 rounded-xl border border-slate-100">{selectedRequest.admin_notes}</p>
+                        <div className="pt-4 border-t border-slate-200 border-dashed">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Admin Decision Notes</p>
+                          <p className="text-sm text-slate-700 italic font-medium bg-white p-3 rounded-xl border border-slate-105">{selectedRequest.admin_notes}</p>
                         </div>
                       )}
                     </div>
@@ -349,7 +356,7 @@ export default function AdminCancellationsPage() {
                 )}
               </div>
 
-              {/* Modal Footer */}
+              {/* Footer */}
               <div className="border-t border-slate-100 p-6 md:px-8 md:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-b-[32px] shrink-0">
                 <button
                   onClick={() => setSelectedRequest(null)}
@@ -369,86 +376,13 @@ export default function AdminCancellationsPage() {
                     <button
                       disabled={isProcessing === selectedRequest.id}
                       onClick={() => handleProcessRequest(selectedRequest.id, 'APPROVED')}
-                      className="flex-1 sm:flex-none inline-flex justify-center items-center px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 active:scale-95"
+                      className="flex-1 sm:flex-none inline-flex justify-center items-center px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-indigo-650 to-indigo-700 hover:from-indigo-750 hover:to-indigo-800 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 active:scale-95"
                     >
                       {isProcessing === selectedRequest.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      {isProcessing === selectedRequest.id ? 'Processing...' : 'Approve & Deduct Fee'}
+                      {isProcessing === selectedRequest.id ? 'Processing...' : 'Approve Reschedule'}
                     </button>
                   </div>
                 )}
-                {selectedRequest.status === 'APPROVED' && selectedRequest.booking_status === 'CANCELLED' && (
-                  <div className="flex w-full sm:w-auto gap-3">
-                    <button
-                      onClick={() => setIsRefundConfirmOpen(true)}
-                      className="flex-1 sm:flex-none inline-flex justify-center items-center px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border-2 border-emerald-100 hover:bg-emerald-100 hover:border-emerald-200 transition-all active:scale-95 gap-2"
-                    >
-                      <IndianRupee className="h-4 w-4" />
-                      Mark as Refunded
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Refund Confirmation Modal */}
-      <AnimatePresence>
-        {isRefundConfirmOpen && selectedRequest && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-              onClick={() => !isSubmittingRefund && setIsRefundConfirmOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden p-6"
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-                  <IndianRupee className="text-emerald-600 h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">Mark as Refunded?</h3>
-                <p className="text-sm text-slate-500 mb-4">
-                  Confirm refund details before processing.
-                </p>
-                <div className="w-full bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-left space-y-2">
-                  <div className="flex justify-between text-xs font-bold text-slate-600">
-                    <span>Amount Paid:</span>
-                    <span>{formatINR(selectedRequest.paid_amount || 0)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-bold text-red-600">
-                    <span>Cancellation Fee:</span>
-                    <span>{formatINR(selectedRequest.cancellation_fee || 0)}</span>
-                  </div>
-                  <div className="h-px w-full bg-slate-200 my-1"></div>
-                  <div className="flex justify-between text-sm font-black text-emerald-700">
-                    <span>Refund Amount:</span>
-                    <span>{formatINR(selectedRequest.refund_amount || 0)}</span>
-                  </div>
-                </div>
-                <div className="flex w-full gap-3">
-                  <button
-                    onClick={() => setIsRefundConfirmOpen(false)}
-                    disabled={isSubmittingRefund}
-                    className="flex-1 px-4 py-2.5 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleMarkRefunded}
-                    disabled={isSubmittingRefund}
-                    className="flex-1 px-4 py-2.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex justify-center items-center disabled:opacity-50 gap-2"
-                  >
-                    {isSubmittingRefund ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Refund'}
-                  </button>
-                </div>
               </div>
             </motion.div>
           </div>

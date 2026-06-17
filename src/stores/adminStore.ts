@@ -113,6 +113,7 @@ interface AdminState {
   deleteUser: (id: number | string) => Promise<void>;
   toggleUserStatus: (id: number | string) => Promise<any>;
   resetUserPassword: (id: number | string, newPassword: string) => Promise<void>;
+  updateUser: (id: number | string, data: { full_name?: string; email?: string; phone_number?: string }) => Promise<any>;
 }
 
 export const useAdminStore = create<AdminState>((set) => ({
@@ -654,6 +655,19 @@ export const useAdminStore = create<AdminState>((set) => ({
       await apiClient.patch(`/api/v1/admin/users/${id}/password`, { new_password: newPassword });
     } catch (err: any) {
       throw new Error(err.response?.data?.detail || 'Failed to reset password');
+    }
+  },
+
+  updateUser: async (id, data) => {
+    try {
+      const response = await apiClient.patch(`/api/v1/admin/users/${id}`, data);
+      set((state) => ({
+        users: state.users.map((u) => u.id === id ? response.data : u),
+        currentUser: state.currentUser && state.currentUser.id === id ? { ...state.currentUser, ...response.data } : state.currentUser
+      }));
+      return response.data;
+    } catch (err: any) {
+      throw new Error(err.response?.data?.detail || 'Failed to update user profile');
     }
   },
 }));

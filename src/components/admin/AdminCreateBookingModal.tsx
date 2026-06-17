@@ -35,7 +35,7 @@ interface PassengerForm {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (publicId: string, info: { targetType: 'ROOM' | 'PACKAGE'; isPartial: boolean; remainingBalance: number }) => void;
 }
 
 export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: Props) {
@@ -368,7 +368,14 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
       const res = await apiClient.post('/api/v1/admin/bookings/create', payload);
       toast.success(`Booking ${res.data.public_id} created successfully!`);
-      onSuccess();
+      
+      const isPartial = payload.amount_paid !== undefined && payload.amount_paid < estimatedTotal;
+      const remainingBalance = isPartial ? estimatedTotal - (payload.amount_paid || 0) : 0;
+      onSuccess(res.data.public_id, {
+        targetType: targetType.toUpperCase() as 'ROOM' | 'PACKAGE',
+        isPartial,
+        remainingBalance
+      });
       onClose();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;

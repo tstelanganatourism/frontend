@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useInventoryStore, PublicDateAvailability } from '@/stores/inventoryStore';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import BusWarningModal from '@/components/ui/BusWarningModal';
 import { apiClient } from '@/lib/api';
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
 
@@ -81,7 +82,10 @@ function getFirstDayOfMonth(year: number, month: number) {
 }
 
 function formatINR(value: number | string) {
-  return Number(value || 0).toLocaleString('en-IN');
+  return Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
 function positiveNumber(value: number | string | null | undefined) {
@@ -105,13 +109,25 @@ export const BookingSidebarV2 = ({
   isStudentPackage = false,
 }: BookingSidebarV2Props) => {
   const { isAuthenticated, user } = useAuthStore();
+  const isSpecialUser = useMemo(() => {
+    if (!user) return false;
+    const email = user.email || '';
+    const phone = user.phone_number || '';
+    return email === '2024eb01987@online.bits-pilani.ac.in' || phone === '8886154275';
+  }, [user]);
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
   const router = useRouter();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { publicAvailability, publicLoading, fetchPublicAvailability } = useInventoryStore();
   const [showPassengerModal, setShowPassengerModal] = useState(false);
+  const [showBusWarningModal, setShowBusWarningModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+
+  const handleAgreeBusWarning = () => {
+    setShowBusWarningModal(false);
+    setShowPassengerModal(true);
+  };
 
   const extractObjectKey = (url: string): string | null => {
     if (!url) return null;
@@ -274,6 +290,19 @@ export const BookingSidebarV2 = ({
   // Derived: split transport options by type
   const sharedOptions = useMemo(() => transportOptions.filter(o => o.type === 'SHARED'), [transportOptions]);
   const separateOptions = useMemo(() => transportOptions.filter(o => o.type === 'SEPARATE_VEHICLE'), [transportOptions]);
+
+  const selectedSharedOption = useMemo(() => {
+    return transportOptions.find(o => o.id === selectedSharedOptionId);
+  }, [transportOptions, selectedSharedOptionId]);
+
+  const is25SeaterSelected = useMemo(() => {
+    return selectedTransportMode === 'SHARED' && 
+      selectedSharedOption && 
+      (selectedSharedOption.capacity === 25 ||
+       selectedSharedOption.title.toLowerCase().includes('25') ||
+       selectedSharedOption.title.toLowerCase().includes('25-seater') ||
+       selectedSharedOption.title.toLowerCase().includes('25 seater'));
+  }, [selectedTransportMode, selectedSharedOption]);
 
   // Auto-select first valid variant when loaded
   useEffect(() => {
@@ -502,40 +531,40 @@ export const BookingSidebarV2 = ({
     const isWeekend = isWeekendSelected;
 
     // BASE PRICING Breakdown
-    let pureBaseAdult = positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice);
-    let pureBaseChild = positiveNumber(selectedVariant?.child_price);
-    let pureBaseStudent = positiveNumber(selectedVariant?.student_price) || positiveNumber(startingPrice);
+    let pureBaseAdult = isSpecialUser ? 1 : (positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice));
+    let pureBaseChild = isSpecialUser ? 1 : positiveNumber(selectedVariant?.child_price);
+    let pureBaseStudent = isSpecialUser ? 1 : (positiveNumber(selectedVariant?.student_price) || positiveNumber(startingPrice));
 
-    let baseAdult = 0;
-    let baseChild = 0;
-    let baseStudent = 0;
+    let baseAdult = isSpecialUser ? 1 : 0;
+    let baseChild = isSpecialUser ? 1 : 0;
+    let baseStudent = isSpecialUser ? 1 : 0;
 
     if (isStudentPackage) {
       if (selectedSlot) {
-        baseStudent = (selectedSlot.effective_student_price !== undefined && selectedSlot.effective_student_price !== null)
+        baseStudent = isSpecialUser ? 1 : ((selectedSlot.effective_student_price !== undefined && selectedSlot.effective_student_price !== null)
           ? Number(selectedSlot.effective_student_price)
-          : (selectedSlot.student_price !== undefined && selectedSlot.student_price !== null ? Number(selectedSlot.student_price) : Number(selectedVariant?.student_price || startingPrice));
+          : (selectedSlot.student_price !== undefined && selectedSlot.student_price !== null ? Number(selectedSlot.student_price) : Number(selectedVariant?.student_price || startingPrice)));
       } else {
         baseStudent = isWeekend && selectedVariant?.weekend_student_price 
-          ? positiveNumber(selectedVariant.weekend_student_price) 
+          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_student_price)) 
           : pureBaseStudent;
       }
     } else {
       if (selectedSlot) {
-        baseAdult = (selectedSlot.effective_adult_price !== undefined && selectedSlot.effective_adult_price !== null)
+        baseAdult = isSpecialUser ? 1 : ((selectedSlot.effective_adult_price !== undefined && selectedSlot.effective_adult_price !== null)
           ? Number(selectedSlot.effective_adult_price)
-          : Number(selectedSlot.adult_price);
+          : Number(selectedSlot.adult_price));
           
-        baseChild = (selectedSlot.effective_child_price !== undefined && selectedSlot.effective_child_price !== null)
+        baseChild = isSpecialUser ? 1 : ((selectedSlot.effective_child_price !== undefined && selectedSlot.effective_child_price !== null)
           ? Number(selectedSlot.effective_child_price)
-          : Number(selectedSlot.child_price);
+          : Number(selectedSlot.child_price));
       } else {
         baseAdult = isWeekend && selectedVariant?.weekend_adult_price 
-          ? positiveNumber(selectedVariant.weekend_adult_price) 
+          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_adult_price)) 
           : pureBaseAdult;
           
         baseChild = isWeekend && selectedVariant?.weekend_child_price 
-          ? positiveNumber(selectedVariant.weekend_child_price) 
+          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_child_price)) 
           : pureBaseChild;
       }
     }
@@ -596,13 +625,13 @@ export const BookingSidebarV2 = ({
         const tOpt = transportOptions.find(o => o.id === selectedSharedOptionId);
         if (tOpt) {
           if (isStudentPackage) {
-            const tStudent = positiveNumber(isWeekend && tOpt.weekend_student_price ? tOpt.weekend_student_price : tOpt.student_price);
+            const tStudent = isSpecialUser ? 1 : positiveNumber(isWeekend && tOpt.weekend_student_price ? tOpt.weekend_student_price : tOpt.student_price);
             const cost = adults * tStudent;
             transportSubtotal = cost;
             transportBreakdown.push({ title: tOpt.title, type: 'SHARED', quantity: 1, unitPrice: tStudent, subtotal: cost });
           } else {
-            const tAdult = positiveNumber(isWeekend && tOpt.weekend_adult_price ? tOpt.weekend_adult_price : tOpt.adult_price);
-            const tChild = positiveNumber(isWeekend && tOpt.weekend_child_price ? tOpt.weekend_child_price : tOpt.child_price);
+            const tAdult = isSpecialUser ? 1 : positiveNumber(isWeekend && tOpt.weekend_adult_price ? tOpt.weekend_adult_price : tOpt.adult_price);
+            const tChild = isSpecialUser ? 1 : positiveNumber(isWeekend && tOpt.weekend_child_price ? tOpt.weekend_child_price : tOpt.child_price);
             const cost = (adults * tAdult) + (children * tChild);
             transportSubtotal = cost;
             transportBreakdown.push({ title: tOpt.title, type: 'SHARED', quantity: 1, unitPrice: tAdult, subtotal: cost });
@@ -614,7 +643,7 @@ export const BookingSidebarV2 = ({
           const optId = Number(optIdStr);
           const tOpt = transportOptions.find(o => o.id === optId);
           if (tOpt) {
-            const tFixed = positiveNumber(isWeekend && tOpt.weekend_fixed_price ? tOpt.weekend_fixed_price : tOpt.fixed_price);
+            const tFixed = isSpecialUser ? 1 : positiveNumber(isWeekend && tOpt.weekend_fixed_price ? tOpt.weekend_fixed_price : tOpt.fixed_price);
             const cost = qty * tFixed;
             transportSubtotal += cost;
             transportBreakdown.push({ title: tOpt.title, type: 'SEPARATE_VEHICLE', quantity: qty, unitPrice: tFixed, subtotal: cost });
@@ -630,11 +659,11 @@ export const BookingSidebarV2 = ({
     let refStudent = 0;
     if (hasRefreshments && includeRefreshments) {
       if (isStudentPackage) {
-        refStudent = positiveNumber(refreshmentStudentPrice);
+        refStudent = isSpecialUser ? 1 : positiveNumber(refreshmentStudentPrice);
         refreshmentSubtotal = adults * refStudent;
       } else {
-        refAdult = positiveNumber(refreshmentAdultPrice);
-        refChild = positiveNumber(refreshmentChildPrice);
+        refAdult = isSpecialUser ? 1 : positiveNumber(refreshmentAdultPrice);
+        refChild = isSpecialUser ? 1 : positiveNumber(refreshmentChildPrice);
         refreshmentSubtotal = (adults * refAdult) + (children * refChild);
       }
     }
@@ -932,7 +961,11 @@ export const BookingSidebarV2 = ({
       setShowLoginPrompt(true);
       return;
     }
-    setShowPassengerModal(true);
+    if (is25SeaterSelected) {
+      setShowBusWarningModal(true);
+    } else {
+      setShowPassengerModal(true);
+    }
   };
 
   const handleCheckoutSubmit = async (passengers: any[], quickBooking: boolean = false, customerEmail?: string) => {
@@ -960,7 +993,7 @@ export const BookingSidebarV2 = ({
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
         toast.success(`Booking ${res.data.public_id} created successfully!`);
-        router.push(`/admin/bookings`);
+        router.push(`/admin/bookings?new_booking=${res.data.public_id}`);
         return;
       }
 
@@ -1039,8 +1072,8 @@ export const BookingSidebarV2 = ({
           document.head.appendChild(script);
         });
         await loadCashfreeSDK();
-        const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        const cfMode = isLocal ? 'sandbox' : 'production';
+        const cfMode = checkout_data.mode || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
+        console.log("[Cashfree Package Checkout] Initialized with cfMode:", cfMode, "checkout_data:", checkout_data);
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
           paymentSessionId: checkout_data.payment_session_id,
@@ -1342,8 +1375,8 @@ export const BookingSidebarV2 = ({
                             <span className="block text-xs font-bold">{variant.title}</span>
                             <span className="mt-0.5 block text-[10px] font-semibold text-[#1a6b7a]">
                               {isStudentPackage
-                                ? `🎓 Student ₹${Number(variant.student_price || 0).toLocaleString('en-IN')}`
-                                : `Adult ₹${Number(variant.adult_price || 0).toLocaleString('en-IN')} / Child ₹${Number(variant.child_price || 0).toLocaleString('en-IN')}`
+                                ? `🎓 Student ₹${(isSpecialUser ? 1 : Number(variant.student_price || 0)).toLocaleString('en-IN')}`
+                                : `Adult ₹${(isSpecialUser ? 1 : Number(variant.adult_price || 0)).toLocaleString('en-IN')} / Child ₹${(isSpecialUser ? 1 : Number(variant.child_price || 0)).toLocaleString('en-IN')}`
                               }
                             </span>
                           </span>
@@ -1930,9 +1963,9 @@ export const BookingSidebarV2 = ({
 
           {/* CTA */}
           <button
-            disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)}
+            disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
             onClick={handleBookingClick}
-            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)
+            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
                 ? 'bg-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-[#1a6b7a] hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-md'
               }`}
@@ -1978,10 +2011,10 @@ export const BookingSidebarV2 = ({
         </div>
 
         <button
-          disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)}
+          disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
           onClick={handleBookingClick}
           className={`flex-1 rounded-xl h-11 px-4 font-black text-white text-xs uppercase tracking-wider transition-all flex items-center justify-center ${
-            isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (adults + children) < minPassengers)
+            isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
               ? 'bg-slate-400 cursor-not-allowed shadow-none'
               : 'bg-[#1a6b7a] active:scale-95 shadow-md shadow-[#1a6b7a]/10'
           }`}
@@ -2011,6 +2044,12 @@ export const BookingSidebarV2 = ({
         isProcessing={isProcessingCheckout}
         targetType="package"
         isStudentPackage={isStudentPackage}
+      />
+
+      <BusWarningModal
+        isOpen={showBusWarningModal}
+        onClose={() => setShowBusWarningModal(false)}
+        onConfirm={handleAgreeBusWarning}
       />
     </div>
   );

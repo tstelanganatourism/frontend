@@ -17,6 +17,7 @@ import {
   getTransportSelections,
   hasRefreshment,
 } from '@/lib/bookingDisplay';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,13 @@ interface BookingDetails {
     requested_at?: string | null;
     processed_at?: string | null;
   };
+  postpone_details?: {
+    status: string;
+    reason: string;
+    requested_new_date: string | null;
+    requested_at: string | null;
+    processed_at: string | null;
+  };
 }
 
 interface BookingDetailsModalProps {
@@ -134,7 +142,7 @@ const PAYMENT_STATUS_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 }
 
 function formatDateTime(iso: string | null) {
@@ -142,6 +150,13 @@ function formatDateTime(iso: string | null) {
   return new Date(iso).toLocaleString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric'
   });
 }
 
@@ -296,6 +311,83 @@ function RecordCashPanel({
         >
           {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
           {isSubmitting ? 'Recording...' : 'Confirm Payment'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Reschedule Travel Date Panel ──────────────────────────────────────────────
+
+function RescheduleDatePanel({
+  booking,
+  onSuccess,
+}: {
+  booking: BookingDetails;
+  onSuccess: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [newTravelDate, setNewTravelDate] = useState(booking.travel_date);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!newTravelDate) return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await apiClient.patch(`/api/v1/admin/bookings/${booking.id}/change-date`, {
+        new_travel_date: newTravelDate,
+      });
+      toast.success(res.data.message || 'Travel date rescheduled successfully.');
+      setIsOpen(false);
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to reschedule travel date.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black tracking-wide border-2 border-indigo-500 text-indigo-750 bg-indigo-50 hover:bg-indigo-600 hover:text-white transition-all shadow-sm w-full sm:w-auto active:scale-95 cursor-pointer"
+      >
+        <Calendar className="w-4 h-4" />
+        Reschedule Travel Date
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 bg-indigo-50/60 border border-indigo-200 rounded-xl p-4 space-y-3">
+      <p className="text-xs font-black text-indigo-850 flex items-center gap-1.5">
+        <Calendar className="h-3.5 w-3.5" />
+        Reschedule Travel Date
+      </p>
+
+      <CustomDatePicker
+        value={newTravelDate}
+        onChange={setNewTravelDate}
+        allowPast={false}
+        isAdmin={true}
+      />
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsOpen(false)}
+          className="flex-1 py-2 rounded-lg text-[10px] font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || newTravelDate === booking.travel_date}
+          className="flex-1 py-2 rounded-lg text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer"
+        >
+          {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+          {isSubmitting ? 'Rescheduling...' : 'Confirm Reschedule'}
         </button>
       </div>
     </div>
@@ -465,6 +557,14 @@ export default function BookingDetailsModal({
     ? Math.min(100, (booking.paid_amount / targetTotalAmount) * 100)
     : 0;
   const transportSelections = booking ? getTransportSelections(booking.pricing_snapshot) : [];
+  const has25Seater = transportSelections.some(ts => 
+    Number(ts.capacity) === 25 ||
+    (ts.title && (
+      ts.title.toLowerCase().includes('25') ||
+      ts.title.toLowerCase().includes('25-seater') ||
+      ts.title.toLowerCase().includes('25 seater')
+    ))
+  );
   const refreshmentIncluded = booking ? hasRefreshment(booking) : false;
   const refreshmentAmount = booking ? getRefreshmentAmount(booking.pricing_snapshot) : 0;
   const baseFare = booking ? getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot) : 0;
@@ -731,6 +831,56 @@ export default function BookingDetailsModal({
                           </div>
                         )}
                       </div>
+
+                      {has25Seater && (
+                        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/60 shadow-sm mb-6">
+                          <div className="text-xs font-black text-amber-800 flex items-center gap-1.5 mb-3 uppercase tracking-wider">
+                            <span>📢</span> ముఖ్య గమనిక / Important Note
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="text-[11px] leading-relaxed text-amber-900/90 font-medium">
+                              <ul className="space-y-2">
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">🚌</span>
+                                  <span>కనీస ప్రయాణికుల సంఖ్య పూర్తికాక బస్సు ఫుల్ కాకపోతే, టూర్ను టాటా మ్యాజిక్ / 7 సీటర్ వాహనంలో నిర్వహించబడుతుంది.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">💰</span>
+                                  <span>బస్సు చార్జీ మరియు టాటా మ్యాజిక్ చార్జీ మధ్య ఉన్న అదనపు మొత్తాన్ని ప్రయాణికులకు రిఫండ్ చేయబడుతుంది.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">✅</span>
+                                  <span>బస్సు పూర్తిగా నిండిన సందర్భంలో మాత్రమే బస్సు టికెట్ కన్ఫర్మ్ చేయబడుతుంది.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">⚠️</span>
+                                  <span>ప్రయాణికుల సంఖ్యను బట్టి వాహనం మార్చే హక్కు యాజమాన్యానికి ఉంటుంది.</span>
+                                </li>
+                              </ul>
+                            </div>
+                            <div className="text-[11px] leading-relaxed text-amber-900/90 font-medium">
+                              <ul className="space-y-2">
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">🚌</span>
+                                  <span>If the minimum passenger count is not met and the bus is not fully occupied, the tour will be operated using a Tata Magic / 7-Seater vehicle.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">💰</span>
+                                  <span>The difference between the bus fare and the Tata Magic fare will be refunded to passengers.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">✅</span>
+                                  <span>Bus tickets will be confirmed only when sufficient passengers are available to operate the bus.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="shrink-0 text-xs">⚠️</span>
+                                  <span>Management reserves the right to change the vehicle based on passenger occupancy.</span>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -860,6 +1010,39 @@ export default function BookingDetailsModal({
                     </div>
                   </div>
 
+                  {/* Postponement History */}
+                  {booking.postpone_details && (
+                    <div className="mb-6">
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-slate-400" /> Postponement History
+                      </h4>
+                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-3">
+                        <div className="flex justify-between items-center text-xs font-bold">
+                          <span className="text-slate-600">Status</span>
+                          <span className={`px-2 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${
+                            booking.postpone_details.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                            booking.postpone_details.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>
+                            {booking.postpone_details.status}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                          <span>Requested New Date</span>
+                          <span className="text-indigo-700">{formatDate(booking.postpone_details.requested_new_date)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                          <span>Requested At</span>
+                          <span className="text-slate-500">{formatDateTime(booking.postpone_details.requested_at)}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span className="font-bold text-slate-600">Reason:</span>
+                          <span className="text-slate-500 italic">"{booking.postpone_details.reason}"</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Payment Ledger */}
                   <div>
                     <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
@@ -871,6 +1054,13 @@ export default function BookingDetailsModal({
                     {isAdmin && isPartialPaid && remainingBalance > 0 && (
                       <div className="mt-3">
                         <RecordCashPanel booking={booking} onSuccess={handlePaymentRecorded} />
+                      </div>
+                    )}
+
+                    {/* Admin: Reschedule travel date panel */}
+                    {isAdmin && booking.status !== 'CANCELLED' && booking.status !== 'REFUNDED' && (
+                      <div className="mt-3">
+                        <RescheduleDatePanel booking={booking} onSuccess={handlePaymentRecorded} />
                       </div>
                     )}
                   </div>

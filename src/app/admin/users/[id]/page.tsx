@@ -6,20 +6,13 @@ import { useAdminStore } from '@/stores/adminStore';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, KeyRound, ShieldCheck, ShieldOff, Trash2,
+  ArrowLeft, ShieldCheck, ShieldOff, Trash2,
   User, Phone, Mail, Calendar, TrendingUp, Ticket, 
   CheckCircle2, XCircle, Clock, IndianRupee, Activity, 
-  ChevronLeft, ChevronRight, Loader2, Lock, Eye, EyeOff, RefreshCw
+  ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
-
-function generatePassword(length = 12) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
-  let pw = '';
-  for (let i = 0; i < length; i++) pw += chars[Math.floor(Math.random() * chars.length)];
-  return pw;
-}
 
 function StatusPill({ status }: { status: string }) {
   const cfg: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -72,13 +65,9 @@ export default function UserDetailPage() {
   const params = useParams();
   const router = useRouter();
   const userId = params?.id;
-  const { currentUser, isLoading, fetchUserById, toggleUserStatus, deleteUser, resetUserPassword } = useAdminStore();
+  const { currentUser, isLoading, fetchUserById, toggleUserStatus, deleteUser } = useAdminStore();
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
 
   // Pagination state for user's bookings (Client side pagination of the user.bookings array)
   const [currentPage, setCurrentPage] = useState(1);
@@ -105,24 +94,6 @@ export default function UserDetailPage() {
     await deleteUser(userId as string);
     toast.success('User account deactivated successfully');
     router.push('/admin/users');
-  };
-
-  const handleResetPassword = async () => {
-    if (!newPassword || newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-    setResetLoading(true);
-    try {
-      await resetUserPassword(userId as string, newPassword);
-      toast.success('Password changed successfully');
-      setIsResetModalOpen(false);
-      setNewPassword('');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to reset password');
-    } finally {
-      setResetLoading(false);
-    }
   };
 
   if (isLoading && !currentUser) {
@@ -173,10 +144,6 @@ export default function UserDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => { setNewPassword(''); setShowNewPassword(false); setIsResetModalOpen(true); }}
-            className="flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-4 py-2.5 text-sm font-bold text-amber-600 hover:bg-amber-50 transition-all cursor-pointer">
-            <KeyRound className="h-4 w-4" /> Reset Password
-          </button>
           <button onClick={handleToggleStatus}
             className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition-all cursor-pointer ${
               user.account_status === 'BLOCKED' 
@@ -376,43 +343,6 @@ export default function UserDetailPage() {
         type="danger" 
       />
 
-      {/* Password Reset Modal */}
-      {isResetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsResetModalOpen(false)} />
-          <div className="relative z-10 w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-black text-slate-900 mb-2">Reset Password</h3>
-            <p className="text-sm text-slate-500 mb-6">Specify a new password for {user.full_name}.</p>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-12 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
-                    placeholder="Minimum 8 characters" />
-                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
-                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <button type="button" onClick={() => { setNewPassword(generatePassword()); setShowNewPassword(true); }}
-                  className="rounded-xl border border-slate-200 bg-white p-3 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
-                  <RefreshCw className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setIsResetModalOpen(false)}
-                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">Cancel</button>
-                <button type="button" onClick={handleResetPassword} disabled={resetLoading}
-                  className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-700 transition-all disabled:opacity-50 cursor-pointer">
-                  {resetLoading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <KeyRound className="h-4 w-4" />}
-                  Change Password
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <BookingDetailsModal
         isOpen={isDetailsOpen}

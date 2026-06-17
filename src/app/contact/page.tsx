@@ -35,7 +35,7 @@ const CONTACT_CHANNELS = [
     title: 'Central Booking Office',
     desc: 'Visit our ticketing counter in Bhadrachalam.',
     details: [
-      'Telangana Boat Tourism, near SBI ATM, SREE SEETHA RAMA TEMPLE PARKING, DR-NO-4-1-78/1, kalyana mandapam road, opp. sbi atm, Bhadrachalam, Telangana 507111'
+      'DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111'
     ],
     tone: 'bg-amber-50 text-amber-700'
   }

@@ -1,85 +1,175 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Phone, Lock, ArrowRight, AlertCircle, Briefcase, ShieldAlert } from 'lucide-react';
-import { touristLogin, getGoogleAuthUrl } from '@/services/authService';
+import { Phone, ArrowRight, AlertCircle, Briefcase, ShieldAlert, RefreshCw, CheckCircle2, ChevronLeft } from 'lucide-react';
+import { sendPhoneOtp, verifyPhoneOtp } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 
-const isPhoneNumber = (value: string) => /^\d{10}$/.test(value.trim());
-const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+function getApiError(err: unknown, fallback: string): string {
+  const e = err as { response?: { data?: { detail?: string } } };
+  return e?.response?.data?.detail || fallback;
+}
 
-const schema = z.object({
-  login_id: z.string().min(1, 'Please enter your email or phone number').refine(
-    (val) => isEmail(val) || isPhoneNumber(val),
-    { message: 'Enter a valid email address or 10-digit phone number' }
-  ),
-  password: z.string().min(1, 'Password is required'),
-});
-type FormData = z.infer<typeof schema>;
+function useCountdown(initial: number) {
+  const [remaining, setRemaining] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-function getAuthErrorMessage(error: unknown, fallback: string) {
-  const responseError = error as { response?: { data?: { detail?: string } } };
-  return responseError.response?.data?.detail || fallback;
+  const start = useCallback((seconds: number) => {
+    setRemaining(seconds);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setRemaining(prev => {
+        if (prev <= 1) { clearInterval(timerRef.current!); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+  return { remaining, start };
 }
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
-  const [showPassword, setShowPassword] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [loginIdValue, setLoginIdValue] = useState('');
-
   const { isAuthenticated, user, isHydrated } = useAuthStore();
-  const agentLoginHref = `/agent/login${redirect?.startsWith('/agent') ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
-  const adminLoginHref = `/admin/login${redirect?.startsWith('/admin') ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
 
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpError, setOtpError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const [locked, setLocked] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const { remaining: cooldown, start: startCooldown } = useCountdown(60);
+
+  // Redirect if already logged in
   useEffect(() => {
     if (isHydrated && isAuthenticated && user) {
-      const destination = redirect || (user.role === 'ADMIN' ? '/admin/dashboard' : user.role === 'AGENT' ? '/agent/dashboard' : '/dashboard');
-      router.push(destination);
+      const dest = redirect || (user.role === 'ADMIN' ? '/admin/dashboard' : user.role === 'AGENT' ? '/agent/dashboard' : '/dashboard');
+      router.replace(dest);
     }
   }, [isHydrated, isAuthenticated, user, redirect, router]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const agentHref = `/agent/login${redirect?.startsWith('/agent') ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
+  const adminHref = `/admin/login${redirect?.startsWith('/admin') ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
 
-  const onSubmit = async (data: FormData) => {
-    setApiError(null);
+  // ── Step 1: Send OTP ───────────────────────────────────────────────────────
+
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const cleaned = phone.trim().replace(/\D/g, '');
+    if (!/^\d{10}$/.test(cleaned)) {
+      setPhoneError('Enter a valid 10-digit mobile number');
+      return;
+    }
+    setPhoneError('');
+    setApiError('');
+    setSubmitting(true);
     try {
-      const res = await touristLogin({ login_id: data.login_id.trim(), password: data.password });
-      const destination = redirect || (res.user?.role === 'ADMIN' ? '/admin/dashboard' : res.user?.role === 'AGENT' ? '/agent/dashboard' : '/dashboard');
-      router.push(destination);
-      router.refresh();
+      const res = await sendPhoneOtp(cleaned);
+      setAttemptsLeft(res.attempts_remaining);
+      startCooldown(res.cooldown_seconds || 60);
+      setStep('otp');
+      // Auto-focus first OTP box
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (err: unknown) {
-      setApiError(getAuthErrorMessage(err, 'Login failed. Please try again.'));
+      const msg = getApiError(err, 'Failed to send OTP. Please try again.');
+      if (msg.toLowerCase().includes('wait')) {
+        setLocked(msg.toLowerCase().includes('too many'));
+        setApiError(msg);
+      } else {
+        setApiError(msg);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
+  // ── OTP input logic ────────────────────────────────────────────────────────
+
+  const handleOtpChange = (idx: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const next = [...otp];
+    next[idx] = digit;
+    setOtp(next);
+    setOtpError('');
+    if (digit && idx < 5) {
+      otpRefs.current[idx + 1]?.focus();
+    }
+    // Auto-submit when all 6 digits are filled
+    if (digit && idx === 5 && next.every(d => d)) {
+      handleVerify(next.join(''));
+    }
+  };
+
+  const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
+      otpRefs.current[idx - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (paste.length === 6) {
+      const next = paste.split('');
+      setOtp(next);
+      otpRefs.current[5]?.focus();
+      setTimeout(() => handleVerify(paste), 50);
+    }
+  };
+
+  // ── Step 2: Verify OTP ─────────────────────────────────────────────────────
+
+  const handleVerify = async (otpValue?: string) => {
+    const code = otpValue ?? otp.join('');
+    if (code.length < 6) { setOtpError('Enter the 6-digit code'); return; }
+    setSubmitting(true);
+    setOtpError('');
     try {
-      const url = await getGoogleAuthUrl(undefined, redirect || undefined);
-      window.location.href = url;
-    } catch {
-      setApiError('Google login unavailable. Please try again.');
-      setGoogleLoading(false);
+      const res = await verifyPhoneOtp(phone.trim().replace(/\D/g, ''), code);
+      const role = res.user?.role;
+      const dest = redirect || (role === 'ADMIN' ? '/admin/dashboard' : role === 'AGENT' ? '/agent/dashboard' : '/dashboard');
+      router.replace(dest);
+    } catch (err) {
+      setOtpError(getApiError(err, 'Invalid or expired OTP. Please try again.'));
+      setOtp(['', '', '', '', '', '']);
+      otpRefs.current[0]?.focus();
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // Detect whether input looks like a phone number or email
-  const inputIsPhone = isPhoneNumber(loginIdValue);
-  const InputIcon = inputIsPhone ? Phone : Mail;
+  // ── Resend OTP ─────────────────────────────────────────────────────────────
+
+  const handleResend = async () => {
+    if (cooldown > 0 || locked) return;
+    setOtpError('');
+    setApiError('');
+    setSubmitting(true);
+    try {
+      const res = await sendPhoneOtp(phone.trim().replace(/\D/g, ''));
+      setAttemptsLeft(res.attempts_remaining);
+      startCooldown(60);
+      setOtp(['', '', '', '', '', '']);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch (err) {
+      const msg = getApiError(err, 'Failed to resend OTP.');
+      if (msg.toLowerCase().includes('too many')) setLocked(true);
+      setOtpError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#061d2b] flex items-center justify-center px-4 py-8">
@@ -93,151 +183,154 @@ function LoginContent() {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="relative w-full max-w-md"
       >
-        {/* Brand mark */}
+        {/* Brand */}
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
-            <img 
-              src="/apple-touch-icon.png" 
-              alt="Telangana Boat Tourism Logo" 
-              className="h-full w-full object-contain rounded-xl"
-            />
+            <img src="/apple-touch-icon.png" alt="Telangana Boat Tourism" className="h-full w-full object-contain rounded-xl" />
           </div>
-          <h1 className="text-2xl font-black text-white">Welcome back</h1>
-          <p className="mt-1 text-sm text-white/60">Sign in to your Telangana Boat Tourism account</p>
+          <h1 className="text-2xl font-black text-white">
+            {step === 'phone' ? 'Welcome back' : 'Verify your number'}
+          </h1>
+          <p className="mt-1 text-sm text-white/60">
+            {step === 'phone'
+              ? 'Sign in with your mobile number — no password needed'
+              : `Enter the 6-digit code sent to +91 ${phone.replace(/\D/g, '')}`}
+          </p>
         </div>
 
-        {/* Card */}
         <div className="rounded-3xl border border-white/12 bg-white/8 p-7 backdrop-blur-2xl shadow-[0_32px_80px_rgba(0,0,0,0.45)]">
-          {/* Google sign-in */}
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={googleLoading || isSubmitting}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/18 disabled:opacity-60"
-          >
-            {googleLoading ? (
-              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3" />
-                <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
+          <AnimatePresence mode="wait">
+
+            {/* ── STEP 1: Phone ── */}
+            {step === 'phone' && (
+              <motion.div key="phone-step" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.25 }}>
+
+
+                <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/60">Mobile Number</label>
+                    <div className="relative">
+                      <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        maxLength={10}
+                        value={phone}
+                        onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setPhoneError(''); setApiError(''); }}
+                        placeholder="10-digit mobile number"
+                        className="w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
+                      />
+                    </div>
+                    {phoneError && (
+                      <p className="mt-1.5 flex items-center gap-1 text-xs text-red-400"><AlertCircle className="h-3 w-3" />{phoneError}</p>
+                    )}
+                  </div>
+
+                  <AnimatePresence>
+                    {apiError && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                        className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{apiError}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <button
+                    type="submit"
+                    disabled={submitting || phone.replace(/\D/g, '').length !== 10}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a6b7a] py-3.5 text-sm font-bold text-white shadow-[0_8px_24px_rgba(26,107,122,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d7a8a] hover:shadow-[0_12px_32px_rgba(26,107,122,0.5)] disabled:opacity-60 disabled:translate-y-0"
+                  >
+                    {submitting ? (
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3" /><path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" /></svg>
+                    ) : (<>Send OTP <ArrowRight className="h-4 w-4" /></>)}
+                  </button>
+                </form>
+              </motion.div>
             )}
-            Continue with Google
-          </button>
 
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/15" />
-            <span className="text-xs font-medium text-white/40">or sign in with email / phone</span>
-            <div className="h-px flex-1 bg-white/15" />
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            {/* Email or Phone */}
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/60">
-                Email or Phone Number
-              </label>
-              <div className="relative">
-                <InputIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                <input
-                  {...register('login_id', {
-                    onChange: (e) => setLoginIdValue(e.target.value),
-                  })}
-                  type="text"
-                  inputMode={inputIsPhone ? 'numeric' : 'email'}
-                  autoComplete="email"
-                  placeholder="you@example.com or 9876543210"
-                  className="auth-input w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
-                />
-              </div>
-              {errors.login_id && (
-                <p className="mt-1.5 flex items-center gap-1 text-xs text-red-400">
-                  <AlertCircle className="h-3 w-3" /> {errors.login_id.message}
-                </p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
-                  Password
-                </label>
-                <Link href="/forgot-password" className="text-xs text-[#5ac4d7] hover:text-white transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                <input
-                  {...register('password')}
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="Your password"
-                  className="auth-input w-full rounded-xl border border-white/15 bg-white/8 py-3 pl-10 pr-10 text-sm text-white placeholder-white/30 outline-none ring-0 transition-all duration-200 focus:border-[#5ac4d7]/70 focus:bg-white/12 focus:ring-2 focus:ring-[#5ac4d7]/20"
-                />
+            {/* ── STEP 2: OTP ── */}
+            {step === 'otp' && (
+              <motion.div key="otp-step" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
+                {/* Back button */}
                 <button
                   type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => { setStep('phone'); setOtp(['', '', '', '', '', '']); setOtpError(''); setApiError(''); }}
+                  className="mb-5 flex items-center gap-1.5 text-xs font-semibold text-white/50 hover:text-white/80 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <ChevronLeft className="h-4 w-4" /> Change number
                 </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1.5 flex items-center gap-1 text-xs text-red-400">
-                  <AlertCircle className="h-3 w-3" /> {errors.password.message}
-                </p>
-              )}
-            </div>
 
-            {/* API Error */}
-            <AnimatePresence>
-              {apiError && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+                {/* OTP success hint */}
+                <div className="mb-5 flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <p className="text-xs text-emerald-300 font-semibold">OTP sent! Check your SMS.</p>
+                </div>
+
+                {/* 6-box OTP input */}
+                <div className="mb-5">
+                  <label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-white/60">Enter 6-digit OTP</label>
+                  <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
+                    {otp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={el => { otpRefs.current[idx] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={e => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={e => handleOtpKeyDown(idx, e)}
+                        className={`h-12 w-full max-w-[3rem] rounded-xl border text-center text-xl font-black text-white outline-none ring-0 transition-all duration-150 bg-white/8
+                          ${digit ? 'border-[#5ac4d7] bg-[#5ac4d7]/15' : 'border-white/20'}
+                          focus:border-[#5ac4d7]/80 focus:ring-2 focus:ring-[#5ac4d7]/25
+                          ${otpError ? 'border-red-400/60 bg-red-500/10' : ''}`}
+                        aria-label={`OTP digit ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                  {otpError && (
+                    <p className="mt-2 flex items-center gap-1 text-xs text-red-400"><AlertCircle className="h-3 w-3" />{otpError}</p>
+                  )}
+                </div>
+
+                {/* Verify button */}
+                <button
+                  type="button"
+                  onClick={() => handleVerify()}
+                  disabled={submitting || otp.some(d => !d)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a6b7a] py-3.5 text-sm font-bold text-white shadow-[0_8px_24px_rgba(26,107,122,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d7a8a] disabled:opacity-60 disabled:translate-y-0"
                 >
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {apiError}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {submitting ? (
+                    <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3" /><path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" /></svg>
+                  ) : (<>Verify & Sign In <ArrowRight className="h-4 w-4" /></>)}
+                </button>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isSubmitting || googleLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a6b7a] py-3.5 text-sm font-bold text-white shadow-[0_8px_24px_rgba(26,107,122,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d7a8a] hover:shadow-[0_12px_32px_rgba(26,107,122,0.5)] disabled:opacity-60 disabled:translate-y-0"
-            >
-              {isSubmitting ? (
-                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3" />
-                  <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
-                </svg>
-              ) : (
-                <>Sign In <ArrowRight className="h-4 w-4" /></>
-              )}
-            </button>
-          </form>
+                {/* Resend section */}
+                <div className="mt-4 text-center">
+                  {locked ? (
+                    <p className="text-xs text-amber-400 font-semibold">Too many attempts. Please wait 10 minutes before retrying.</p>
+                  ) : cooldown > 0 ? (
+                    <p className="text-xs text-white/40">Resend OTP in <span className="font-black text-white/70">{cooldown}s</span> &nbsp;·&nbsp; {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left</p>
+                  ) : attemptsLeft > 0 ? (
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      disabled={submitting}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5ac4d7] hover:text-white transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" /> Resend OTP ({attemptsLeft} left)
+                    </button>
+                  ) : (
+                    <p className="text-xs text-amber-400 font-semibold">No resend attempts left. Please wait 10 minutes.</p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <p className="mt-6 text-center text-sm text-white/50">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold text-[#5ac4d7] hover:text-white transition-colors">
-            Create account
-          </Link>
-        </p>
-
+        {/* Portal logins */}
         <div className="mt-5">
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/12" />
@@ -245,15 +338,13 @@ function LoginContent() {
             <div className="h-px flex-1 bg-white/12" />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link
-              href={agentLoginHref}
+            <Link href={agentHref}
               className="group flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-teal-300/20 bg-teal-400/10 px-4 py-3 text-sm font-bold text-teal-100 transition-all hover:-translate-y-0.5 hover:border-teal-300/45 hover:bg-teal-400/18"
             >
               <Briefcase className="h-4 w-4 text-teal-300 transition-transform group-hover:scale-110" />
               Agent Login
             </Link>
-            <Link
-              href={adminLoginHref}
+            <Link href={adminHref}
               className="group flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-violet-300/20 bg-violet-400/10 px-4 py-3 text-sm font-bold text-violet-100 transition-all hover:-translate-y-0.5 hover:border-violet-300/45 hover:bg-violet-400/18"
             >
               <ShieldAlert className="h-4 w-4 text-violet-300 transition-transform group-hover:scale-110" />
