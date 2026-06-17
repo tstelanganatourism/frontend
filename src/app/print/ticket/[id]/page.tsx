@@ -144,7 +144,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
   const isFullyPaid = booking.status === 'FULLY_PAID';
   const passengerCount = booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count;
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
-  const has25Seater = transportSelections.some(ts => 
+  const has25Seater = transportSelections.some(ts =>
     Number(ts.capacity) === 25 ||
     (ts.title && (
       ts.title.toLowerCase().includes('25') ||
@@ -604,7 +604,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             )}
             <div className="note-addr">
               <div className="note-addr-col">
-                <strong>📍 TSTG Tourism Office Address</strong>
+                <strong>📍 Telangana Boat Tourism Office Address</strong>
                 DR NO:4-1-78/1<br />
                 KALYANA MANDAPAM ROAD OPP SBI ATM<br />
                 BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),<br />
@@ -838,34 +838,34 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               <div style={{ borderTop: '1px dashed #ddd', padding: '6px 10px', background: '#f8fafc' }}>
                 <div style={{ fontSize: '8px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>🕒 Payment History</div>
                 {capturedPayments.map((payment, idx) => {
-                  const methodNames: Record<string, string> = { 
-                    RAZORPAY: 'Online (PhonePe)', 
-                    PHONEPE: 'Online (PhonePe)', 
-                    CASHFREE: 'Online (Cashfree)', 
-                    CASH: 'Cash', 
-                    BANK_TRANSFER: 'Bank Transfer', 
-                    ADMIN_MANUAL: 'Manual (Admin)' 
+                  const methodNames: Record<string, string> = {
+                    RAZORPAY: 'Online (PhonePe)',
+                    PHONEPE: 'Online (PhonePe)',
+                    CASHFREE: 'Online (Cashfree)',
+                    CASH: 'Cash',
+                    BANK_TRANSFER: 'Bank Transfer',
+                    ADMIN_MANUAL: 'Manual (Admin)'
                   };
                   const methodName = methodNames[payment.payment_method] ?? payment.payment_method;
-                  
+
                   const payDate = payment.created_at ? new Date(payment.created_at) : null;
-                  const formattedDate = payDate 
+                  const formattedDate = payDate
                     ? payDate.toLocaleString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      })
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    })
                     : '—';
 
                   return (
                     <div key={payment.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#334155', fontWeight: 600, padding: '3px 0', borderBottom: idx < capturedPayments.length - 1 ? '1px solid #e2e8f0' : 'none' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                         <span style={{ fontWeight: 800 }}>
-                          {idx === 0 
-                            ? (payment.amount >= booking.total_amount ? 'Full Payment' : 'Advance Payment') 
+                          {idx === 0
+                            ? (payment.amount >= booking.total_amount ? 'Full Payment' : 'Advance Payment')
                             : 'Remaining Balance Payment'}
                         </span>
                         <span style={{ fontSize: '6.5px', color: '#64748b', fontWeight: 700 }}>
@@ -1019,7 +1019,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
           {has25Seater && (
             <div className="rule-box" style={{ border: '1.5px solid #d97706', background: '#fffbeb', display: 'flex', flexDirection: 'column' }}>
               <div className="rule-box-title" style={{ color: '#b45309', borderBottom: '1px solid #fed7aa', paddingBottom: '4px', marginBottom: '4px' }}>🚌 Bus Notice</div>
-              
+
               <div style={{ fontSize: '7.5px', fontWeight: 900, color: '#b45309', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📢 ముఖ్య గమనిక</div>
               <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: '6px' }}>
                 <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>🚌</span><span>కనీస ప్రయాణికుల సంఖ్య పూర్తికాక బస్సు ఫుల్ కాకపోతే, టూర్ను టాటా మ్యాజిక్ / 7 సీటర్ వాహనంలో నిర్వహించబడుతుంది.</span></li>
