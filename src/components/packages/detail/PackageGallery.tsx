@@ -45,12 +45,12 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">Experience visualised</p>
         <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">Tour Gallery</h2>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {gallery.map((slide, index) => (
+          {gallery.filter(slide => slide.image_url).map((slide, index) => (
             <button
               key={slide.id || index}
               type="button"
               onClick={() => {
-                setActiveIdx(index);
+                setActiveIdx(gallery.indexOf(slide));
                 setLightboxOpen(true);
               }}
               className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30 focus:outline-none focus:ring-2 focus:ring-[#0f8d7d]"
@@ -86,8 +86,14 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
                 <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
               </button>
             )}
-            <div className="relative h-full w-full max-w-6xl">
-              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || 'Tour Photo'} fill sizes="100vw" className="object-contain" quality={85} />
+            <div className="relative w-full max-w-6xl" style={{ height: '70vh' }}>
+              {getHdImageUrl(activeSlide.image_url) ? (
+                <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || 'Tour Photo'} fill sizes="100vw" className="object-contain" quality={85} />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-white/40">
+                  <Camera className="h-16 w-16" />
+                </div>
+              )}
             </div>
             {gallery.length > 1 && (
               <button
