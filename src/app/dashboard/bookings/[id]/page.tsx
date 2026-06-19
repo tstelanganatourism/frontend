@@ -404,7 +404,9 @@ export default function BookingDetailPage() {
           document.head.appendChild(script);
         });
         await loadCashfreeSDK();
-        const cfMode = checkout_data.mode || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
+        const cfMode = (checkout_data.mode === 'production' || checkout_data.mode === 'sandbox')
+          ? checkout_data.mode
+          : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
         console.log("[Cashfree Balance Checkout] Initialized with cfMode:", cfMode, "checkout_data:", checkout_data);
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({

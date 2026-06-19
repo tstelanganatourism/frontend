@@ -169,6 +169,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     try {
       const response = await apiClient.put('/api/v1/admin/settings', data);
       set({ settings: response.data, isLoading: false });
+      revalidateStorefront(['/', '/about', '/contact', '/boat-rides', '/sightseeing', '/stays', '/packages'], ['settings']);
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to update settings', isLoading: false });
       throw err;
@@ -312,6 +313,7 @@ export const useAdminStore = create<AdminState>((set) => ({
         packages: state.packages.filter((p) => p.id !== id),
         isLoading: false
       }));
+      revalidateStorefront(['/', '/boat-rides', '/sightseeing', '/packages'], ['packages']);
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to delete package', isLoading: false });
     }
@@ -428,6 +430,7 @@ export const useAdminStore = create<AdminState>((set) => ({
         rooms: state.rooms.filter((r) => r.id !== id),
         isLoading: false
       }));
+      revalidateStorefront(['/', '/stays'], ['stays']);
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to delete room', isLoading: false });
     }

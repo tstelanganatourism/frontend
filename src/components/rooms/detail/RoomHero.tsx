@@ -15,7 +15,7 @@ export const RoomHero = ({ lodgeName, coverImage, address, isFeatured, startingP
   return (
     <section className="relative min-h-[640px] overflow-hidden bg-[#102f32] text-white md:min-h-[720px]">
       {coverImage ? (
-        <Image src={getHdImageUrl(coverImage)} alt={lodgeName} fill priority sizes="100vw" className="object-cover" unoptimized quality={100} />
+        <Image src={getHdImageUrl(coverImage)} alt={lodgeName} fill priority sizes="100vw" className="object-cover" quality={85} />
       ) : (
         <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f3d56,#2c5e43)]" />
       )}

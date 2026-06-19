@@ -88,6 +88,7 @@ interface BookingDetails {
   invoice_pdf_url?: string | null;
   ticket_generation_status?: string;
   invoice_generation_status?: string;
+  invoice_secret?: string | null;
   payment_ledger: PaymentLedgerEntry[];
   pricing_snapshot?: any;
   cancellation_details?: {
@@ -449,7 +450,10 @@ export default function BookingDetailsModal({
     if (!booking?.public_id || isPreparingInvoice) return;
     setIsPreparingInvoice(true);
     setTimeout(() => {
-      window.open(`/print/invoice/${booking.public_id}`, '_blank');
+      const url = booking.invoice_secret
+        ? `/print/invoice/${booking.public_id}?secret=${booking.invoice_secret}`
+        : `/print/invoice/${booking.public_id}`;
+      window.open(url, '_blank');
       setIsPreparingInvoice(false);
     }, 1200);
   };

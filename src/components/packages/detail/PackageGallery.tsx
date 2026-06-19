@@ -56,7 +56,7 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
               className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30 focus:outline-none focus:ring-2 focus:ring-[#0f8d7d]"
               aria-label={`View photo ${index + 1}`}
             >
-              <Image src={getHdImageUrl(slide.image_url)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover transition-transform duration-300 hover:scale-105" unoptimized quality={100} />
+              <Image src={getHdImageUrl(slide.image_url)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover transition-transform duration-300 hover:scale-105" quality={85} />
             </button>
           ))}
         </div>
@@ -87,7 +87,7 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
               </button>
             )}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || 'Tour Photo'} fill sizes="100vw" className="object-contain" unoptimized quality={100} />
+              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || 'Tour Photo'} fill sizes="100vw" className="object-contain" quality={85} />
             </div>
             {gallery.length > 1 && (
               <button

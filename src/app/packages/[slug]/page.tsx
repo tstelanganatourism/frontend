@@ -18,7 +18,7 @@ import { MobileBookingSheet } from '@/components/packages/detail/MobileBookingSh
 import CouponPopup from '@/components/ui/CouponPopup';
 
 // ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
-export const revalidate = 60;
+export const revalidate = 43200; // 12 hours — admin can bust via /api/revalidate?tag=packages
 export const dynamicParams = true;
 
 

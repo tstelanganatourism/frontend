@@ -29,7 +29,7 @@ export const API_BASE = getApiBaseUrl();
 
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  const signal = options.signal ?? AbortSignal.timeout(8_000);
+  const signal = options.signal ?? AbortSignal.timeout(30_000);
   
   return fetch(url, {
     ...options,

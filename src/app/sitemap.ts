@@ -1,8 +1,7 @@
 import { MetadataRoute } from 'next'
 import { apiFetch } from '@/lib/api'
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 86400; // Rebuild sitemap once per day max
 
 
 type SitemapListItem = {

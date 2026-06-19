@@ -16,7 +16,7 @@ async function fetchBrochurePackages() {
   try {
     while (hasNext && page <= 20) {
       const res = await apiFetch(`/api/v1/packages?page=${page}&size=100`, {
-        next: { revalidate: 60, tags: ['packages', 'brochures'] },
+        next: { revalidate: 43200, tags: ['packages', 'brochures'] }, // 12h
       });
 
       if (!res.ok) break;

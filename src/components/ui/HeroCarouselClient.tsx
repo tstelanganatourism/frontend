@@ -367,11 +367,10 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               alt={slide.title}
               fill
               priority={idx === 0}
-              unoptimized={idx === 0} // Bypass server-side optimization latency for LCP
               fetchPriority={idx === 0 ? 'high' : 'low'}
               sizes="(max-width: 640px) 100vw, 100vw"
               className="object-cover"
-              quality={60}
+              quality={80}
             />
           </div>
         );

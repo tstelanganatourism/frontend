@@ -64,6 +64,8 @@ interface BookingDetails {
   agent_name?: string | null;
   agent_gst?: string | null;
   agent_company?: string | null;
+  agent_commission?: number | null;
+  agent_payable?: number | null;
   cancellation_details?: {
     status: string;
     reason: string;
@@ -84,15 +86,15 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   const { id } = await params;
   const { secret } = await searchParams;
 
+  const secretKey = process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
+  const expectedSecret = crypto
+    .createHmac('sha256', secretKey)
+    .update(id)
+    .digest('hex');
+
   let hasSecret = false;
 
   if (secret) {
-    const secretKey = process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
-    const expectedSecret = crypto
-      .createHmac('sha256', secretKey)
-      .update(id)
-      .digest('hex');
-
     if (secret !== expectedSecret) {
       return (
         <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
@@ -106,7 +108,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   let booking: BookingDetails | null = null;
   try {
-    const res = await apiFetch(`/api/v1/bookings/${id}`);
+    const url = `/api/v1/bookings/${id}?secret=${expectedSecret}`;
+    const res = await apiFetch(url);
     if (res.status === 200) {
       booking = await res.json();
     }
@@ -590,12 +593,24 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <td>TOTAL AMOUNT</td>
                   <td>{money(booking.total_amount, 2)}</td>
                 </tr>
+                {booking.agent_commission != null && booking.agent_commission > 0 && (
+                  <>
+                    <tr style={{ color: '#16a34a', fontWeight: 'bold' }}>
+                      <td>AGENT COMMISSION</td>
+                      <td>-{money(booking.agent_commission, 2)}</td>
+                    </tr>
+                    <tr style={{ fontWeight: 800, color: '#1e3a8a', backgroundColor: '#f8fafc' }}>
+                      <td>AGENT NET PAYABLE</td>
+                      <td>{money(booking.agent_payable || 0, 2)}</td>
+                    </tr>
+                  </>
+                )}
                 <tr className="paid-row">
-                  <td>AMOUNT PAID</td>
+                  <td>{booking.agent_commission != null && booking.agent_commission > 0 ? 'AMOUNT RECEIVED (NET)' : 'AMOUNT PAID'}</td>
                   <td>{money(totalPaid, 2)}</td>
                 </tr>
                 <tr className="balance-row">
-                  <td>REMAINING BALANCE</td>
+                  <td>{booking.agent_commission != null && booking.agent_commission > 0 ? 'REMAINING BALANCE DUE' : 'REMAINING BALANCE'}</td>
                   <td>{money(booking.remaining_balance, 2)}</td>
                 </tr>
               </tbody>

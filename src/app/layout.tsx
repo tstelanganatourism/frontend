@@ -94,6 +94,19 @@ export default function RootLayout({
       <head>
         {/* Font loading and preloads managed by Next.js */}
         <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined' && window.trustedTypes && !window.trustedTypes.defaultPolicy) {
+                window.trustedTypes.createPolicy('default', {
+                  createHTML: (string) => string,
+                  createScript: (string) => string,
+                  createScriptURL: (string) => string,
+                });
+              }
+            `
+          }}
+        />
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify([

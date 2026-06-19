@@ -816,7 +816,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           document.head.appendChild(script);
         });
         await loadCashfreeSDK();
-        const cfMode = checkout_data.mode || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
+        const cfMode = (checkout_data.mode === 'production' || checkout_data.mode === 'sandbox')
+          ? checkout_data.mode
+          : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
         console.log("[Cashfree Room Checkout] Initialized with cfMode:", cfMode, "checkout_data:", checkout_data);
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
@@ -1064,7 +1066,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 <div className="relative overflow-hidden rounded-lg bg-slate-950">
                   <div className="relative aspect-[4/3] min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
                     <div className="absolute inset-0 bg-slate-900/40" />
-                    <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" unoptimized quality={100} />
+                    <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" quality={85} />
                     <button type="button" onClick={() => setLightboxOpen(true)} className="absolute inset-0 z-10" aria-label="Open stay photos" />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent p-3 sm:p-4">
                       <span className="inline-flex items-center gap-2 rounded-full bg-white/92 px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm">
@@ -1245,7 +1247,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30"
                     aria-label={`View photo ${index + 1}`}
                   >
-                    <Image src={getHdImageUrl(slide.image_url || fallbackImage)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" unoptimized quality={100} />
+                    <Image src={getHdImageUrl(slide.image_url || fallbackImage)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" quality={85} />
                   </button>
                 ))}
               </div>
@@ -2032,7 +2034,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </button>
             ) : null}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill sizes="100vw" className="object-contain" unoptimized quality={100} />
+              <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill sizes="100vw" className="object-contain" quality={85} />
             </div>
             {slides.length > 1 ? (
               <button onClick={() => moveSlide('right')} className="absolute right-2 z-10 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 md:right-8" aria-label="Next photo">

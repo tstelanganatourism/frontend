@@ -205,6 +205,7 @@ export const BookingSidebarV2 = ({
   const [paymentPercentage, setPaymentPercentage] = useState(100);
   // Custom pay-now amount in rupees (null = full payment)
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
+  const [isAdvanceSelected, setIsAdvanceSelected] = useState<boolean>(false);
 
   useEffect(() => {
     if (isStudentPackage) {
@@ -233,7 +234,10 @@ export const BookingSidebarV2 = ({
       const savedAdults = sessionStorage.getItem('last_checkout_adults');
       const savedChildren = sessionStorage.getItem('last_checkout_children');
       
-      if (savedCustomPay !== null) setCustomPayAmount(savedCustomPay);
+      if (savedCustomPay !== null) {
+        setCustomPayAmount(savedCustomPay);
+        if (savedCustomPay !== '') setIsAdvanceSelected(true);
+      }
       if (savedGateway === 'PHONEPE' || savedGateway === 'CASHFREE') {
         setSelectedGateway(savedGateway as 'PHONEPE' | 'CASHFREE');
       }
@@ -317,6 +321,7 @@ export const BookingSidebarV2 = ({
   useEffect(() => {
     setCustomPayAmount('');
     setPaymentPercentage(100);
+    setIsAdvanceSelected(false);
   }, [selectedVariantId, selectedDate, adults, children, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, includeRefreshments]);
 
   useEffect(() => {
@@ -378,22 +383,37 @@ export const BookingSidebarV2 = ({
           setShowPassengerModal(false);
           setSelectedDate('');
           toast.error('This package is now inactive. Bookings have been suspended.', { duration: 10000 });
-          fetchPublicAvailability(packageSlug, currentMonthStr);
+          fetchPublicAvailability(packageSlug, currentMonthStr, true);
         }
       } catch (err) {
         console.error('[SSE] Failed to parse entity event payload', err);
       }
     };
 
+    const handleQuotaUpdate = (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser && currentUser.role === 'AGENT' && payload.agent_id === currentUser.id) {
+          toast.info('Your daily booking quota for this package was just updated by an administrator!', { duration: 5000 });
+          fetchPublicAvailability(packageSlug, currentMonthStr, true);
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse quota event payload', err);
+      }
+    };
+
     sse.addEventListener('INVENTORY_UPDATE', handleUpdate);
     sse.addEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
+    sse.addEventListener('QUOTA_UPDATE', handleQuotaUpdate);
 
     return () => {
       sse.removeEventListener('INVENTORY_UPDATE', handleUpdate);
       sse.removeEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
+      sse.removeEventListener('QUOTA_UPDATE', handleQuotaUpdate);
       sse.close();
     };
-  }, [packageId]);
+  }, [packageId, packageSlug, currentMonthStr]);
 
   // Click outside to close menus
   useEffect(() => {
@@ -712,29 +732,33 @@ export const BookingSidebarV2 = ({
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
     const minPayable = Math.ceil(finalTotal * 0.35);
     const parsedCustom = parseInt(customPayAmount, 10);
-    const payNow = isNaN(parsedCustom) || customPayAmount === ''
+    const payNow = !isAdvanceSelected
       ? finalTotal
-      : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
+      : (isNaN(parsedCustom) || customPayAmount === '' ? minPayable : Math.min(finalTotal, Math.max(minPayable, parsedCustom)));
     return {
       effectivePayNow: payNow,
-      isPartial: payNow < finalTotal
+      isPartial: isAdvanceSelected
     };
-  }, [prices.agentPayable, prices.grandTotal, customPayAmount, isAgent]);
+  }, [prices.agentPayable, prices.grandTotal, customPayAmount, isAgent, isAdvanceSelected]);
 
   // Adjust custom pay amount when total price changes (e.g., removing a passenger)
   useEffect(() => {
+    if (!isAdvanceSelected) return;
     setCustomPayAmount(prev => {
       if (prev === '') return prev;
       const parsed = parseInt(prev, 10);
       const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
       const minPayable = Math.ceil(finalTotal * 0.35);
       if (!isNaN(parsed)) {
-        if (parsed >= finalTotal) return '';
+        if (parsed >= finalTotal) {
+          setIsAdvanceSelected(false);
+          return '';
+        }
         if (parsed < minPayable) return String(minPayable);
       }
       return prev;
     });
-  }, [prices.grandTotal, prices.agentPayable, isAgent]);
+  }, [prices.grandTotal, prices.agentPayable, isAgent, isAdvanceSelected]);
 
   // Live recalculation / revalidation when dependencies change
   useEffect(() => {
@@ -1072,7 +1096,9 @@ export const BookingSidebarV2 = ({
           document.head.appendChild(script);
         });
         await loadCashfreeSDK();
-        const cfMode = checkout_data.mode || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
+        const cfMode = (checkout_data.mode === 'production' || checkout_data.mode === 'sandbox')
+          ? checkout_data.mode
+          : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
         console.log("[Cashfree Package Checkout] Initialized with cfMode:", cfMode, "checkout_data:", checkout_data);
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
@@ -1833,27 +1859,28 @@ export const BookingSidebarV2 = ({
                     <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
                       <button
                         type="button"
-                        onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); }}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                        onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); setIsAdvanceSelected(false); }}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${!isAdvanceSelected ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
                       >
                         Full
                       </button>
                       <button
                         type="button"
                         onClick={() => {
+                          setIsAdvanceSelected(true);
                           if (customPayAmount === '') {
                             setCustomPayAmount(String(minPayable));
                             setPaymentPercentage(35);
                           }
                         }}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${isAdvanceSelected ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
                       >
                         Advance
                       </button>
                     </div>
 
                     {/* Amount input / display */}
-                    {customPayAmount !== '' ? (
+                    {isAdvanceSelected ? (
                       <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#1a6b7a]/40 rounded-lg px-2 py-1 shadow-sm">
                         <span className="text-xs font-black text-slate-400">₹</span>
                         <input
@@ -1867,7 +1894,10 @@ export const BookingSidebarV2 = ({
                           onBlur={() => {
                             const v = parseInt(customPayAmount, 10);
                             if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                            else if (v >= finalTotal) setCustomPayAmount('');
+                            else if (v >= finalTotal) {
+                              setCustomPayAmount('');
+                              setIsAdvanceSelected(false);
+                            }
                             else setCustomPayAmount(String(v));
                           }}
                           className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
@@ -1890,7 +1920,7 @@ export const BookingSidebarV2 = ({
                       <span className="font-black text-slate-600">₹{formatINR(finalTotal - effectivePayNow)}</span>
                     </div>
                   )}
-                  {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
+                  {isAdvanceSelected && customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
                     <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{formatINR(minPayable)} (35%)</p>
                   )}
                 </div>

@@ -125,7 +125,7 @@ type FeaturedRoom = {
 async function fetchFeaturedPackages() {
   try {
     const res = await apiFetch('/api/v1/packages?is_featured=true&size=3', {
-      next: { revalidate: 30, tags: ['packages'] } 
+      next: { revalidate: 43200, tags: ['packages'] }  // 12 hours — admin can bust via /api/revalidate
     });
     if (!res.ok) throw new Error('Failed to fetch packages');
     const data = await res.json();
@@ -139,7 +139,7 @@ async function fetchFeaturedPackages() {
 async function fetchFeaturedRooms() {
   try {
     const res = await apiFetch('/api/v1/rooms?is_featured=true&size=3', {
-      next: { revalidate: 60, tags: ['stays'] }
+      next: { revalidate: 43200, tags: ['stays'] }   // 12 hours — admin can bust via /api/revalidate
     });
     if (!res.ok) throw new Error('Failed to fetch rooms');
     const data = await res.json();
@@ -153,7 +153,7 @@ async function fetchFeaturedRooms() {
 async function fetchFeaturedSightseeing() {
   try {
     const res = await apiFetch('/api/v1/packages?type=TRIP&is_featured=true&size=3', {
-      next: { revalidate: 30, tags: ['packages'] }
+      next: { revalidate: 43200, tags: ['packages'] }  // 12 hours — admin can bust via /api/revalidate
     });
     if (!res.ok) throw new Error('Failed to fetch sightseeing packages');
     const data = await res.json();

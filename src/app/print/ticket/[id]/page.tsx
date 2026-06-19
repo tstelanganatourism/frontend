@@ -73,6 +73,15 @@ interface BookingDetails {
   pricing_snapshot?: any;
   has_refreshment_addon?: boolean;
   payment_ledger?: PaymentLedgerEntry[];
+  is_rescheduled?: boolean;
+  postpone_details?: {
+    status: string;
+    reason: string;
+    requested_new_date: string;
+    original_travel_date?: string | null;
+    requested_at?: string | null;
+    processed_at?: string | null;
+  };
   cancellation_details?: {
     status: string;
     reason: string;
@@ -128,6 +137,14 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
   const travelDateFormatted = travelDateObj.toLocaleDateString('en-IN', {
     day: '2-digit', month: 'long', year: 'numeric'
   }).toUpperCase() + ', ' + travelDateObj.toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase();
+
+  const hasRescheduled = !!(booking.is_rescheduled && booking.postpone_details?.original_travel_date);
+  const oldTravelDateObj = hasRescheduled ? new Date(booking.postpone_details!.original_travel_date!) : null;
+  const oldTravelDateFormatted = oldTravelDateObj
+    ? oldTravelDateObj.toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      }).toUpperCase() + ', ' + oldTravelDateObj.toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase()
+    : '';
 
   const isRoom = booking.target_type === 'ROOM';
   const isBoatRide = booking.package_type === 'TOUR';
@@ -526,7 +543,36 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               )}
               <div className="bk-row">
                 <div className="bk-icon">📅</div>
-                <div><div className="bk-lbl">{isRoom ? 'Check-In Date' : 'Travel Date'}</div><div className="bk-val">{travelDateFormatted}</div></div>
+                <div>
+                  <div className="bk-lbl" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{isRoom ? 'Check-In Date' : 'Travel Date'}</span>
+                    {hasRescheduled && (
+                      <span style={{
+                        backgroundColor: '#f97316',
+                        color: '#ffffff',
+                        fontSize: '7px',
+                        fontWeight: 900,
+                        padding: '1px 5px',
+                        borderRadius: '3px',
+                        letterSpacing: '0.5px'
+                      }}>RESCHEDULED</span>
+                    )}
+                  </div>
+                  <div className="bk-val">
+                    {hasRescheduled ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '9px', fontWeight: 600 }}>
+                          {oldTravelDateFormatted}
+                        </span>
+                        <span style={{ color: '#ea580c', fontWeight: 800 }}>
+                          {travelDateFormatted}
+                        </span>
+                      </div>
+                    ) : (
+                      travelDateFormatted
+                    )}
+                  </div>
+                </div>
               </div>
               {isRoom && (
                 <div className="bk-row">
@@ -897,6 +943,12 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
                 </div>
               </>
             )}
+            {hasRescheduled && (
+              <div className="pay-note" style={{ backgroundColor: '#fff7ed', borderTop: '1px solid #ffedd5', color: '#c2410c' }}>
+                <span className="pay-note-icon" style={{ color: '#ea580c' }}>📅</span>
+                <span>This booking has been rescheduled from <strong>{oldTravelDateFormatted}</strong> to <strong>{travelDateFormatted}</strong>.</span>
+              </div>
+            )}
             {booking.remaining_balance > 0 && (
               <div className="pay-note">
                 <span className="pay-note-icon">ℹ️</span>
@@ -1020,15 +1072,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             <div className="rule-box" style={{ border: '1.5px solid #d97706', background: '#fffbeb', display: 'flex', flexDirection: 'column' }}>
               <div className="rule-box-title" style={{ color: '#b45309', borderBottom: '1px solid #fed7aa', paddingBottom: '4px', marginBottom: '4px' }}>🚌 Bus Notice</div>
 
-              <div style={{ fontSize: '7.5px', fontWeight: 900, color: '#b45309', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📢 ముఖ్య గమనిక</div>
-              <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: '6px' }}>
-                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>🚌</span><span>కనీస ప్రయాణికుల సంఖ్య పూర్తికాక బస్సు ఫుల్ కాకపోతే, టూర్ను టాటా మ్యాజిక్ / 7 సీటర్ వాహనంలో నిర్వహించబడుతుంది.</span></li>
-                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>💰</span><span>బస్సు చార్జీ మరియు టాటా మ్యాజిక్ చార్జీ మధ్య ఉన్న అదనపు మొత్తాన్ని ప్రయాణికులకు రిఫండ్ చేయబడుతుంది.</span></li>
-                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>✅</span><span>బస్సు పూర్తిగా నిండిన సందర్భంలో మాత్రమే బస్సు టికెట్ కన్ఫర్మ్ చేయబడుతుంది.</span></li>
-                <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>⚠️</span><span>ప్రయాణికుల సంఖ్యను బట్టి వాహనం మార్చే హక్కు యాజమాన్యానికి ఉంటుంది.</span></li>
-              </ul>
-
-              <div style={{ fontSize: '7.5px', fontWeight: 900, color: '#b45309', marginBottom: '2px', borderTop: '1px dashed #fed7aa', paddingTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📢 Important Note</div>
+              <div style={{ fontSize: '7.5px', fontWeight: 900, color: '#b45309', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📢 Important Note</div>
               <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                 <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>🚌</span><span>If the minimum passenger count is not met and the bus is not fully occupied, the tour will be operated using a Tata Magic / 7-Seater vehicle.</span></li>
                 <li style={{ display: 'flex', gap: '3px', marginBottom: '2px', fontSize: '7.5px', lineHeight: '1.3' }}><span>💰</span><span>The difference between the bus fare and the Tata Magic fare will be refunded to passengers.</span></li>

@@ -321,7 +321,7 @@ export const PackageHeroV2 = ({
               </button>
             )}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || title} fill sizes="100vw" className="object-contain" unoptimized quality={100} />
+              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || title} fill sizes="100vw" className="object-contain" quality={85} />
             </div>
             {slides.length > 1 && (
               <button

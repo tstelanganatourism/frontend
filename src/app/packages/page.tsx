@@ -24,7 +24,7 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
 
   try {
     const query = params.toString();
-    const res = await apiFetch(`/api/v1/packages?${query}`, { next: { revalidate: 30, tags: ['packages'] } });
+    const res = await apiFetch(`/api/v1/packages?${query}`, { next: { revalidate: 43200, tags: ['packages'] } }); // 12h
     if (!res.ok) return { query, data: undefined };
     return { query, data: await res.json() };
   } catch {

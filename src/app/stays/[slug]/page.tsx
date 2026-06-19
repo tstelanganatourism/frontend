@@ -5,7 +5,7 @@ import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperi
 import CouponPopup from '@/components/ui/CouponPopup';
 
 // ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
-export const revalidate = 60;
+export const revalidate = 43200; // 12 hours — admin can bust via /api/revalidate?tag=stays
 export const dynamicParams = true;
 
 
