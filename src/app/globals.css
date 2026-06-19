@@ -58,6 +58,15 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   
+  /* Custom Screen Breakpoints for Layout Compile Safety */
+  --breakpoint-xs: 380px;
+  --breakpoint-xs-menu: 420px;
+  --breakpoint-sm-menu: 480px;
+  --breakpoint-nav: 980px;
+  --breakpoint-footer-col: 760px;
+  --breakpoint-footer-nav: 1120px;
+  --breakpoint-footer-max: 1500px;
+  
   /* Brand Tourism Colors */
   --color-brand-river: #0F3D56;
   --color-brand-teal: #1A6B7A;

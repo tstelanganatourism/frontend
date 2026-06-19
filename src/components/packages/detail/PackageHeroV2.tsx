@@ -79,7 +79,9 @@ export const PackageHeroV2 = ({
   const price = formatPrice(startingPrice);
   const stripHtml = (html: string | null | undefined) => {
     if (!html) return '';
-    const clean = html.replace(/<[^>]*>?/gm, '');
+    let clean = html.replace(/<\/(p|div|h1|h2|h3|h4|h5|h6|li|tr|p)>/gi, ' ');
+    clean = clean.replace(/<(br|hr)\s*\/?>/gi, ' ');
+    clean = clean.replace(/<[^>]*>?/gm, '');
     return clean
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
@@ -127,7 +129,7 @@ export const PackageHeroV2 = ({
         </div>
 
         <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-          <div className="text-white">
+          <div className="text-white min-w-0">
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-black backdrop-blur">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-200" />
@@ -145,7 +147,7 @@ export const PackageHeroV2 = ({
             </div>
 
             <h1 className="max-w-3xl text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl break-words">
-              {title}
+              {title.replace(/\s*\(/g, ' (')}
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-white/85 sm:text-base">
@@ -197,7 +199,7 @@ export const PackageHeroV2 = ({
               className="relative overflow-hidden rounded-lg bg-slate-950"
               {...lightboxHandlers}
             >
-              <div className="relative aspect-[4/3] min-h-[280px] sm:aspect-[16/10] lg:min-h-[470px]">
+              <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:min-h-[470px]">
                 {/* Removed heavily blurred background image to improve frontend performance */}
                 <div className="absolute inset-0 bg-slate-900/40" />
                 <Image

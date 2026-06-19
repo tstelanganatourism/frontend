@@ -103,7 +103,7 @@ export default function CouponPopup({ targetType, targetId }: CouponPopupProps) 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 overflow-hidden"
         >
           {/* Main Wrapper for Popup + Floating Elements */}
           <div className="relative w-full max-w-md">
@@ -112,30 +112,30 @@ export default function CouponPopup({ targetType, targetId }: CouponPopupProps) 
             <motion.div initial={{ y: 50, x: -20, opacity: 0, scale: 0 }} animate={{ y: -60, x: -50, opacity: 1, scale: 1, rotate: -15 }} transition={{ delay: 0.1, type: "spring" }} className="absolute -left-4 top-0 z-20 w-12 h-12 sm:w-16 sm:h-16 pointer-events-none drop-shadow-xl hidden sm:block">
               <Coin />
             </motion.div>
-            <motion.div initial={{ y: 50, x: 20, opacity: 0, scale: 0 }} animate={{ y: -60, x: 20, opacity: 1, scale: 1.2, rotate: 25 }} transition={{ delay: 0.2, type: "spring" }} className="absolute -right-4 sm:-right-8 top-10 z-20 w-16 h-16 sm:w-24 sm:h-24 pointer-events-none drop-shadow-xl">
+            <motion.div initial={{ y: 50, x: 20, opacity: 0, scale: 0 }} animate={{ y: -60, x: 20, opacity: 1, scale: 1.2, rotate: 25 }} transition={{ delay: 0.2, type: "spring" }} className="absolute -right-4 sm:-right-8 top-10 z-20 w-16 h-16 sm:w-24 sm:h-24 pointer-events-none drop-shadow-xl hidden sm:block">
               <Coin />
             </motion.div>
-            <motion.div initial={{ y: 50, x: -20, opacity: 0, scale: 0 }} animate={{ y: 40, x: -60, opacity: 1, scale: 0.9, rotate: -40 }} transition={{ delay: 0.3, type: "spring" }} className="absolute -left-6 sm:-left-12 top-20 z-20 w-10 h-10 sm:w-14 sm:h-14 pointer-events-none drop-shadow-xl">
+            <motion.div initial={{ y: 50, x: -20, opacity: 0, scale: 0 }} animate={{ y: 40, x: -60, opacity: 1, scale: 0.9, rotate: -40 }} transition={{ delay: 0.3, type: "spring" }} className="absolute -left-6 sm:-left-12 top-20 z-20 w-10 h-10 sm:w-14 sm:h-14 pointer-events-none drop-shadow-xl hidden sm:block">
               <Coin />
             </motion.div>
-            <motion.div initial={{ y: 50, x: 20, opacity: 0, scale: 0 }} animate={{ y: 80, x: 60, opacity: 1, scale: 1, rotate: 15 }} transition={{ delay: 0.4, type: "spring" }} className="absolute -right-4 sm:-right-6 top-32 z-20 w-14 h-14 sm:w-20 sm:h-20 pointer-events-none drop-shadow-xl">
+            <motion.div initial={{ y: 50, x: 20, opacity: 0, scale: 0 }} animate={{ y: 80, x: 60, opacity: 1, scale: 1, rotate: 15 }} transition={{ delay: 0.4, type: "spring" }} className="absolute -right-4 sm:-right-6 top-32 z-20 w-14 h-14 sm:w-20 sm:h-20 pointer-events-none drop-shadow-xl hidden sm:block">
               <Coin />
             </motion.div>
-            <motion.div initial={{ y: 20, opacity: 0, scale: 0 }} animate={{ y: -100, x: -10, opacity: 1, scale: 0.7, rotate: 10 }} transition={{ delay: 0.15, type: "spring" }} className="absolute left-1/4 -top-8 z-20 w-8 h-8 sm:w-12 sm:h-12 pointer-events-none drop-shadow-xl">
+            <motion.div initial={{ y: 20, opacity: 0, scale: 0 }} animate={{ y: -100, x: -10, opacity: 1, scale: 0.7, rotate: 10 }} transition={{ delay: 0.15, type: "spring" }} className="absolute left-1/4 -top-8 z-20 w-8 h-8 sm:w-12 sm:h-12 pointer-events-none drop-shadow-xl hidden sm:block">
               <Coin />
             </motion.div>
 
             {/* Sparkles */}
-            <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} className="absolute -left-16 top-10 z-10 w-6 h-6">
+            <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} className="absolute -left-16 top-10 z-10 w-6 h-6 hidden sm:block">
               <Sparkle />
             </motion.div>
-            <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 0.5 }} className="absolute -right-12 -top-4 z-10 w-8 h-8">
+            <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 0.5 }} className="absolute -right-12 -top-4 z-10 w-8 h-8 hidden sm:block">
               <Sparkle />
             </motion.div>
-            <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.8, delay: 0.2 }} className="absolute right-20 -top-12 z-10 w-5 h-5">
+            <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.8, delay: 0.2 }} className="absolute right-20 -top-12 z-10 w-5 h-5 hidden sm:block">
               <Sparkle />
             </motion.div>
-            <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.6, delay: 0.7 }} className="absolute -left-8 top-32 z-10 w-7 h-7">
+            <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.6, delay: 0.7 }} className="absolute -left-8 top-32 z-10 w-7 h-7 hidden sm:block">
               <Sparkle />
             </motion.div>
 

@@ -179,16 +179,16 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
             <div className="mt-auto flex flex-col gap-4 border-t border-dashed border-slate-100 pt-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex flex-col gap-2 min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Starts from</p>
-                <div className="flex flex-row items-center gap-4">
+                <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
                   <div>
                     <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekdays</p>
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
                       <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
-                        {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}` : 'TBA'}
+                        {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
                       </span>
                       {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
-                        <span className="text-[11px] font-semibold text-slate-600 line-through decoration-rose-400/70">
-                          ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                        <span className="text-[11px] font-semibold text-slate-500 line-through decoration-rose-500">
+                          ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                         </span>
                       )}
                       <span className="text-[11px] font-bold text-slate-600">/ night</span>
@@ -197,9 +197,9 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
                   {startWeekendNum && (
                     <div>
                       <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekends</p>
-                      <div className="flex items-baseline gap-1">
+                      <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
                         <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
-                          ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                          ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                         </span>
                         <span className="text-[11px] font-bold text-slate-600">/ night</span>
                       </div>
@@ -319,27 +319,27 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
             <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
               Starts From
             </p>
-            <div className="flex items-end justify-between">
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
               <div>
                 <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekdays</p>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
                   <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
-                    {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}` : 'TBA'}
+                    {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
                   </span>
                   {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
-                    <span className="text-[11px] font-semibold text-slate-600 line-through decoration-rose-400/70">
-                      ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                    <span className="text-[11px] font-semibold text-slate-500 line-through decoration-rose-500">
+                      ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </span>
                   )}
-                  <span className="text-[11px] font-bold text-slate-600">/ night</span>
+                  <span className="text-[11px] font-bold text-slate-500">/ night</span>
                 </div>
               </div>
               {startWeekendNum && (
                 <div className="text-right">
                   <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekends</p>
-                  <div className="flex items-baseline justify-end gap-1">
+                  <div className="flex items-baseline justify-end gap-x-1.5 whitespace-nowrap">
                     <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
-                      ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                      ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </span>
                     <span className="text-[11px] font-bold text-slate-600">/ night</span>
                   </div>

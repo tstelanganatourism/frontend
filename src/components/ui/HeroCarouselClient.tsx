@@ -369,7 +369,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               priority={idx === 0}
               fetchPriority={idx === 0 ? 'high' : 'low'}
               sizes="(max-width: 640px) 100vw, 100vw"
-              className="object-cover"
+              className="object-cover object-center"
               quality={80}
             />
           </div>

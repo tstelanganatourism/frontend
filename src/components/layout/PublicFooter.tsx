@@ -20,11 +20,11 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
   return (
     <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${isDashboard ? 'pb-[calc(10rem_+_env(safe-area-inset-bottom))]' : 'pb-[calc(7rem_+_env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
-      <div className="w-full px-4 sm:px-6 min-[980px]:px-8 min-[1280px]:px-10">
-        <div className="grid min-w-0 grid-cols-1 gap-6 min-[760px]:grid-cols-[1fr_0.9fr] min-[1120px]:grid-cols-[0.9fr_0.72fr_1.1fr_1.15fr] min-[1120px]:items-start min-[1120px]:gap-7 min-[1500px]:grid-cols-[0.9fr_0.7fr_1.08fr_1.22fr] min-[1500px]:gap-8">
+      <div className="w-full px-4 sm:px-6 nav:px-8 xl:px-10">
+        <div className="grid min-w-0 grid-cols-1 gap-6 footer-col:grid-cols-[1fr_0.9fr] footer-nav:grid-cols-[0.9fr_0.72fr_1.1fr_1.15fr] footer-nav:items-start footer-nav:gap-7 footer-max:grid-cols-[0.9fr_0.7fr_1.08fr_1.22fr] footer-max:gap-8">
 
           {/* Brand Info */}
-          <div className="min-w-0 rounded-xl border border-white/0 p-0 min-[1120px]:pr-4">
+          <div className="min-w-0 rounded-xl border border-white/0 p-0 footer-nav:pr-4">
             <div className="flex flex-col gap-3.5">
               <Link href="/" className="group flex min-w-0 items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white p-1 shadow-sm ring-1 ring-white/40">
@@ -66,7 +66,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
           </div>
 
           {/* Links */}
-          <div className="grid min-w-0 grid-cols-2 gap-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 min-[760px]:grid-cols-1 min-[1120px]:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-2 gap-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 footer-col:grid-cols-1 footer-nav:grid-cols-2">
             <div className="min-w-0">
               <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Quick Links</h3>
               <ul className="space-y-2.5">
@@ -92,9 +92,9 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
           </div>
 
           {/* Contact */}
-          <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 min-[760px]:col-span-2 min-[1120px]:col-span-1">
+          <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 footer-col:col-span-2 footer-nav:col-span-1">
             <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Contact Us</h3>
-            <ul className="grid gap-2.5 sm:grid-cols-2 min-[1120px]:grid-cols-1">
+            <ul className="grid gap-2.5 sm:grid-cols-2 footer-nav:grid-cols-1">
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><MapPin className="h-3.5 w-3.5" /></span>
                 <span className="min-w-0 text-[12px] leading-relaxed text-slate-100 font-medium">DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111.</span>
@@ -119,7 +119,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
           </div>
 
           {/* Map */}
-          <div className="min-w-0 overflow-hidden rounded-xl border border-white/12 bg-white/[0.04] p-2 shadow-[0_14px_40px_rgba(0,0,0,0.12)] min-[760px]:col-span-2 min-[1120px]:col-span-1">
+          <div className="min-w-0 overflow-hidden rounded-xl border border-white/12 bg-white/[0.04] p-2 shadow-[0_14px_40px_rgba(0,0,0,0.12)] footer-col:col-span-2 footer-nav:col-span-1">
             <div className="mb-2 flex items-center justify-between gap-3 px-1.5">
               <h3 className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">AP Tourism Papikondalu</h3>
               <a

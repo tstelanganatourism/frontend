@@ -1045,7 +1045,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </div>
 
               <h1 className="text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl break-words">
-                {room.lodge_name}
+                {room.lodge_name.replace(/\s*\(/g, ' (')}
               </h1>
               <p className="mt-4 text-sm font-medium leading-7 text-white/85 sm:text-base line-clamp-4">
                 {room.description
@@ -1064,7 +1064,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <div className="min-w-0 rounded-xl border border-white/18 bg-white p-2 shadow-2xl shadow-slate-950/18">
               <div className="relative">
                 <div className="relative overflow-hidden rounded-lg bg-slate-950">
-                  <div className="relative aspect-[4/3] min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
+                  <div className="relative aspect-[4/3] w-full sm:min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
                     <div className="absolute inset-0 bg-slate-900/40" />
                     <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" quality={85} />
                     <button type="button" onClick={() => setLightboxOpen(true)} className="absolute inset-0 z-10" aria-label="Open stay photos" />
