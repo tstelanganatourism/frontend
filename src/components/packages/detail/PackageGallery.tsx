@@ -42,8 +42,14 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
   return (
     <>
       <section id="gallery" className="scroll-mt-[170px]">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">Experience visualised</p>
-        <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">Tour Gallery</h2>
+        <div className="mb-6">
+          <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#1a6b7a]">
+            <Camera className="h-3.5 w-3.5" />
+            Experience Visualised
+          </span>
+          <h2 className="mt-2 text-3xl font-black text-[#0f3d56] tracking-tight md:text-4xl">Tour Gallery</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-500">Browse photographs from this route, stopovers, and scenic river stretches.</p>
+        </div>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {gallery.filter(slide => slide.image_url).map((slide, index) => (
             <button

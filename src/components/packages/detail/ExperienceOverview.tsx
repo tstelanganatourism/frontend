@@ -96,7 +96,7 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
         <div className="border-b border-slate-100 bg-gradient-to-r from-white via-[#f5fbfa] to-[#fff8eb] p-5 md:p-7">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#e7f5f2] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#0f6f7a]">
             <Sparkles className="h-3.5 w-3.5" />
-            Package at a glance
+            Package at a Glance
           </span>
           <h2 className="mt-3 text-2xl font-black tracking-normal text-slate-950 md:text-3xl">
             Everything you need before booking

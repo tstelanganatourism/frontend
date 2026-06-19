@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Landmark } from 'lucide-react';
 import { Sparkles, Ship, TreePine, Sunrise } from 'lucide-react';
 
 interface HighlightItem {
@@ -36,7 +37,10 @@ export const VisitingPlaces = ({ highlights }: VisitingPlacesProps) => {
   return (
     <section id="visiting-places" className="scroll-mt-[170px]">
       <div className="mb-8">
-        <span className="text-xs font-black uppercase tracking-[0.24em] text-[#1a6b7a]">Scenic Highlights</span>
+        <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-[#1a6b7a]">
+          <Landmark className="h-3.5 w-3.5" />
+          Scenic Highlights
+        </span>
         <h2 className="mt-3 text-3xl font-black text-[#0f3d56] tracking-tight md:text-4xl">
           Major Expedition Milestones
         </h2>

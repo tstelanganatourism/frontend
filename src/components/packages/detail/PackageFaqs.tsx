@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 
 interface FAQ {
   id: number;
@@ -25,7 +25,10 @@ export const PackageFaqs = ({ faqs }: PackageFaqsProps) => {
   return (
     <section id="faqs" className="scroll-mt-[170px]">
       <div className="mb-8">
-        <span className="text-xs font-black uppercase tracking-[0.24em] text-[#1a6b7a]">Guided Answers</span>
+        <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-[#1a6b7a]">
+          <HelpCircle className="h-3.5 w-3.5" />
+          Guided Answers
+        </span>
         <h2 className="mt-3 text-3xl font-black text-[#0f3d56] tracking-tight md:text-4xl">
           Frequently Answered Questions
         </h2>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, ListChecks } from 'lucide-react';
 
 interface InclusionItem {
   id: number;
@@ -21,8 +21,12 @@ export const FacilitiesInclusions = ({ inclusions, exclusions }: FacilitiesInclu
     <section id="inclusions" className="scroll-mt-[170px]">
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-gradient-to-r from-[#f4faf9] to-white p-5 md:p-7">
-          <h2 className="text-2xl font-black tracking-normal text-slate-950 md:text-3xl">
-            Inclusions and exclusions
+          <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#1a6b7a]">
+            <ListChecks className="h-3.5 w-3.5" />
+            What's Included
+          </span>
+          <h2 className="mt-2 text-3xl font-black tracking-tight text-[#0f3d56] md:text-4xl">
+            Inclusions & Exclusions
           </h2>
           <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
             Please check this once before payment. It helps avoid last-minute confusion at the reporting point.

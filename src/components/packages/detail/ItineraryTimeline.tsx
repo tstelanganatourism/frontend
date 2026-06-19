@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Route } from 'lucide-react';
 
 interface ItineraryDay {
   id: number;
@@ -153,8 +154,12 @@ export const ItineraryTimeline = (props: ItineraryTimelineProps) => {
     <section id="itinerary" className="scroll-mt-[170px]">
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-slate-50 p-5 md:p-7">
-          <h2 className="text-2xl font-black tracking-normal text-slate-950 md:text-3xl">
-            Tour schedule
+          <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#1a6b7a]">
+            <Route className="h-3.5 w-3.5" />
+            Day-by-Day Itinerary
+          </span>
+          <h2 className="mt-2 text-3xl font-black tracking-tight text-[#0f3d56] md:text-4xl">
+            Tour Schedule
           </h2>
           <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-600">
             Day-wise journey flow with practical timings. Final timing can change slightly based on water level, traffic, and operator instructions.

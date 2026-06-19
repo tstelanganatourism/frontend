@@ -52,7 +52,10 @@ export const ReportingInfo = ({ boardingPoints = [] }: ReportingInfoProps) => {
               <MapPin className="h-6 w-6" />
             </div>
             <div>
-              <span className="text-xs font-black uppercase tracking-[0.18em] text-[#1a6b7a]">Boarding information</span>
+              <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[#1a6b7a]">
+                <MapPin className="h-3.5 w-3.5" />
+                Boarding Information
+              </span>
               <h2 className="mt-1 text-2xl font-black tracking-normal text-[#0f3d56]">
                 Reporting point will be confirmed before travel
               </h2>
@@ -69,7 +72,10 @@ export const ReportingInfo = ({ boardingPoints = [] }: ReportingInfoProps) => {
   return (
     <section id="boarding" className="scroll-mt-[170px]">
       <div className="mb-8">
-        <span className="text-xs font-black uppercase tracking-[0.24em] text-[#1a6b7a]">Expedition Hubs</span>
+        <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-[#1a6b7a]">
+          <MapPin className="h-3.5 w-3.5" />
+          Expedition Hubs
+        </span>
         <h2 className="mt-3 text-3xl font-black text-[#0f3d56] tracking-tight md:text-4xl">
           Boarding & Departure Stations
         </h2>

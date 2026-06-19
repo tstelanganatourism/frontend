@@ -114,7 +114,11 @@ export const PackagePolicies = ({ policies, primaryBoarding }: PackagePoliciesPr
   return (
     <section id="policies" className="scroll-mt-[170px] mb-12">
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+        <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#1a6b7a]">
+          <ShieldAlert className="h-3.5 w-3.5" />
+          Booking Rules
+        </span>
+        <h2 className="mt-2 text-3xl font-black text-[#0f3d56] tracking-tight mb-2 md:text-4xl">
           Terms & Conditions
         </h2>
         <p className="mb-6 border-b border-slate-100 pb-4 text-sm font-medium text-slate-500">
