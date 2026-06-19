@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -17,6 +19,7 @@ interface PublicFooterProps {
 }
 
 export default function PublicFooter({ isDashboard = false }: PublicFooterProps) {
+  const [mapLoaded, setMapLoaded] = React.useState(false);
   return (
     <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${isDashboard ? 'pb-[calc(10rem_+_env(safe-area-inset-bottom))]' : 'pb-[calc(7rem_+_env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
@@ -131,16 +134,30 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                 Open Maps
               </a>
             </div>
-            <div className="h-40 overflow-hidden rounded-lg border border-white/15 bg-white/10 sm:h-48 lg:h-56 2xl:h-64">
-              <iframe
-                title="AP Tourism Papikondalu map"
-                src={MAP_EMBED_URL}
-                className="h-full w-full"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+            <div 
+              className="group/map relative h-40 overflow-hidden rounded-lg border border-white/15 bg-slate-900/60 sm:h-48 lg:h-56 2xl:h-64 cursor-pointer"
+              onMouseEnter={() => setMapLoaded(true)}
+              onClick={() => setMapLoaded(true)}
+            >
+              {mapLoaded ? (
+                <iframe
+                  title="AP Tourism Papikondalu map"
+                  src={MAP_EMBED_URL}
+                  className="h-full w-full"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-slate-950/40 transition-colors group-hover/map:bg-slate-950/60">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400/20 text-amber-300 ring-4 ring-amber-400/10 transition-transform group-hover/map:scale-110">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <p className="mt-3 text-xs font-black text-white">Click or Hover to Load Map</p>
+                  <p className="mt-1 text-[9px] text-slate-300">Saves data & speeds up page load</p>
+                </div>
+              )}
             </div>
           </div>
 
