@@ -11,6 +11,7 @@ interface OfficeVisitPopupProps {
   isPartial?: boolean;
   remainingBalance?: number;
   isAdmin?: boolean;
+  secret?: string | null;
 }
 
 const OFFICE_ADDRESS = 'DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111';
@@ -23,6 +24,7 @@ export function OfficeVisitPopup({
   isPartial = false,
   remainingBalance = 0,
   isAdmin = false,
+  secret = null,
 }: OfficeVisitPopupProps) {
   const [visible, setVisible] = useState(true);
   const derivedTargetType = targetType || (bookingId.toUpperCase().includes('AC') ? 'ROOM' : 'PACKAGE');
@@ -45,9 +47,9 @@ export function OfficeVisitPopup({
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const ticketUrl = `/print/ticket/${bookingId}`;
-  const formUrl = `/print/form/${bookingId}`;
-  const invoiceUrl = `/print/invoice/${bookingId}`;
+  const ticketUrl = `/print/ticket/${bookingId}${secret ? `?secret=${secret}` : ''}`;
+  const formUrl = `/print/form/${bookingId}${secret ? `?secret=${secret}` : ''}`;
+  const invoiceUrl = `/print/invoice/${bookingId}${secret ? `?secret=${secret}` : ''}`;
 
   // Dynamically build bullets list
   const bullets = [

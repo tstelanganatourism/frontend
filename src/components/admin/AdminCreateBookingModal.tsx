@@ -35,7 +35,7 @@ interface PassengerForm {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (publicId: string, info: { targetType: 'ROOM' | 'PACKAGE'; isPartial: boolean; remainingBalance: number }) => void;
+  onSuccess: (publicId: string, info: { targetType: 'ROOM' | 'PACKAGE'; isPartial: boolean; remainingBalance: number; secret?: string | null }) => void;
 }
 
 export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: Props) {
