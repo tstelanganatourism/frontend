@@ -1,6 +1,7 @@
 'use client';
 
 import { GoogleAnalytics } from '@next/third-parties/google';
+import Script from 'next/script';
 import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
@@ -20,11 +21,33 @@ function AnalyticsInner() {
   }, [pathname, searchParams]);
 
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const awId = process.env.NEXT_PUBLIC_AW_ID;
 
   if (!gaId) return null;
 
-  return <GoogleAnalytics gaId={gaId} />;
+  return (
+    <>
+      <GoogleAnalytics gaId={gaId} />
+      {awId && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${awId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-ads-tag" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${awId}');
+            `}
+          </Script>
+        </>
+      )}
+    </>
+  );
 }
+
 
 export function AnalyticsProvider() {
   return (
