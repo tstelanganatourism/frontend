@@ -100,7 +100,8 @@ function SourceBadge({ source }: { source: string }) {
   );
 }
 
-function formatINR(amount: number) {
+function formatINR(amount: number | null | undefined) {
+  if (amount == null || isNaN(amount)) return '₹0.00';
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(amount);
 }
 
@@ -182,11 +183,11 @@ export default function AdminBookingsPage() {
   const filteredBookings = bookings.filter((b) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    const idMatch = b.public_id?.toLowerCase().includes(q);
-    const customerMatch = b.customer?.full_name?.toLowerCase().includes(q);
-    const primaryMatch = b.primary_passenger_name?.toLowerCase().includes(q);
-    const emailMatch = b.customer?.email?.toLowerCase().includes(q);
-    const pkgMatch = b.package_title?.toLowerCase().includes(q);
+    const idMatch = b.public_id?.toLowerCase()?.includes(q) ?? false;
+    const customerMatch = b.customer?.full_name?.toLowerCase()?.includes(q) ?? false;
+    const primaryMatch = b.primary_passenger_name?.toLowerCase()?.includes(q) ?? false;
+    const emailMatch = b.customer?.email?.toLowerCase()?.includes(q) ?? false;
+    const pkgMatch = b.package_title?.toLowerCase()?.includes(q) ?? false;
     return idMatch || customerMatch || primaryMatch || emailMatch || pkgMatch;
   });
 
