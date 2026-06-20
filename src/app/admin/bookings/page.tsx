@@ -145,6 +145,7 @@ export default function AdminBookingsPage() {
     targetType: string;
     isPartial: boolean;
     remainingBalance: number;
+    secret?: string | null;
   } | null>(null);
 
   const fetchBookings = useCallback(async () => {
@@ -257,6 +258,7 @@ export default function AdminBookingsPage() {
             targetType: info.targetType,
             isPartial: info.isPartial,
             remainingBalance: info.remainingBalance,
+            secret: info.secret,
           });
         }}
       />
@@ -576,6 +578,7 @@ export default function AdminBookingsPage() {
           remainingBalance={activePopupDetails.remainingBalance}
           onClose={() => setActivePopupDetails(null)}
           isAdmin={true}
+          secret={activePopupDetails.secret}
         />
       )}
     </div>
