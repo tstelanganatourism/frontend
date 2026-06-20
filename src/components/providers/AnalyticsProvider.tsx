@@ -21,17 +21,22 @@ function AnalyticsInner() {
   }, [pathname, searchParams]);
 
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
-  const awId = process.env.NEXT_PUBLIC_AW_ID;
+  const awIdInput = process.env.NEXT_PUBLIC_AW_ID;
+
+  // Support single ID or comma-separated list of multiple IDs
+  const awIds = awIdInput
+    ? awIdInput.split(',').map((id) => id.trim()).filter(Boolean)
+    : [];
 
   if (!gaId) return null;
 
   return (
     <>
       <GoogleAnalytics gaId={gaId} />
-      {awId && (
+      {awIds.length > 0 && (
         <>
           <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${awId}`}
+            src={`https://www.googletagmanager.com/gtag/js?id=${awIds[0]}`}
             strategy="afterInteractive"
           />
           <Script id="google-ads-tag" strategy="afterInteractive">
@@ -39,7 +44,7 @@ function AnalyticsInner() {
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', '${awId}');
+              ${awIds.map((id) => `gtag('config', '${id}');`).join('\n              ')}
             `}
           </Script>
         </>
