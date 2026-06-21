@@ -181,7 +181,7 @@ interface InventoryState {
   // Transport admin actions
   fetchTransportAdminInventory: (packageId: number, month: string) => Promise<void>;
   generateTransportInventory: (req: TransportInventoryGenerateRequest) => Promise<any>;
-  updateTransportInventoryRow: (id: number, updates: Partial<TransportInventoryUpdateRequest>) => Promise<any>;
+  patchTransportInventoryRow: (id: number, updates: Partial<TransportInventoryUpdateRequest>) => Promise<any>;
   deleteTransportInventoryRow: (id: number) => Promise<any>;
   createTransportInventoryRow: (transportOptionId: number, slotDate: string, availableCount: number) => Promise<void>;
 
