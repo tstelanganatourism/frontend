@@ -300,8 +300,8 @@ export default function PackagesList({
                   </div>
                 ) : filteredItems.length > 0 ? (
                   <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
-                    {filteredItems.map((pkg) => (
-                      <PackageCard key={pkg.id} pkg={pkg} />
+                    {filteredItems.map((pkg, index) => (
+                      <PackageCard key={pkg.id} pkg={pkg} priority={index < 4} />
                     ))}
                   </div>
                 ) : (

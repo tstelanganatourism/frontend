@@ -26,7 +26,7 @@ interface EditPageProps {
 export default function AdminCouponEditPage({ params }: EditPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
-  const { packages, rooms, currentCoupon, isLoading, fetchPackages, fetchRooms, fetchCouponById, updateCoupon } = useAdminStore();
+  const { packages, rooms, currentCoupon, isLoading, error, fetchPackages, fetchRooms, fetchCouponById, updateCoupon } = useAdminStore();
 
   const [code, setCode] = useState('');
   const [discountType, setDiscountType] = useState('PERCENTAGE');
@@ -41,11 +41,12 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
   const [minTickets, setMinTickets] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     fetchPackages(undefined, undefined, 1, 1000);
     fetchRooms(undefined, undefined, 1, 1000);
-    fetchCouponById(resolvedParams.id);
+    fetchCouponById(resolvedParams.id).then(() => setHasFetched(true));
   }, [fetchPackages, fetchRooms, fetchCouponById, resolvedParams.id]);
 
   useEffect(() => {
@@ -108,10 +109,29 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
     }
   };
 
-  if (isLoading && !currentCoupon) {
+  if (isLoading || !hasFetched) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error || !currentCoupon) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <div className="text-rose-600 font-bold text-lg">
+          {error || 'Coupon not found'}
+        </div>
+        <button
+          onClick={() => {
+            setHasFetched(false);
+            fetchCouponById(resolvedParams.id).then(() => setHasFetched(true));
+          }}
+          className="rounded-xl bg-[#0f3d56] px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-[#1a4f6d] transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+        >
+          Retry Loading
+        </button>
       </div>
     );
   }

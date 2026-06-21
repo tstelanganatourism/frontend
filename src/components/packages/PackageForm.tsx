@@ -597,6 +597,10 @@ export default function PackageForm({
       toast.error('Package title is required');
       return;
     }
+    if (hasTransport && transportOptions.length === 0) {
+      toast.error('Please add at least one transport option under the Transport Options tab, or disable Has Transport Options in the Basic Info tab.');
+      return;
+    }
     try {
       await onSubmit(getPayload());
       

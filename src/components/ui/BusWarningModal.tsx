@@ -29,7 +29,12 @@ export default function BusWarningModal({ isOpen, onClose, onConfirm }: BusWarni
         <div className="fixed inset-0 z-[260] flex items-center justify-center p-4">
           <DialogPrimitive.Content 
             className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 outline-none z-10 max-h-[90dvh] flex flex-col overflow-hidden"
+            aria-describedby="bus-warning-description"
           >
+            <DialogPrimitive.Title className="sr-only">Bus Selection Warning</DialogPrimitive.Title>
+            <DialogPrimitive.Description id="bus-warning-description" className="sr-only">
+              Important notice regarding bus and Tata Magic vehicle allocation based on passenger count.
+            </DialogPrimitive.Description>
             {/* Close Button */}
             <div className="absolute top-4 right-4 z-10">
               <button 

@@ -56,7 +56,56 @@ export interface RoomUpdateRequest {
   is_closed?: boolean;
 }
 
+// ─── Transport inventory types ────────────────────────────────────────────────
+
+export interface TransportInventoryRow {
+  id: number;
+  transport_option_id: number;
+  transport_option_title: string;
+  transport_option_type: 'SHARED' | 'SEPARATE_VEHICLE';
+  transport_option_capacity: number;
+  date: string; // ISO: "YYYY-MM-DD"
+  available_count: number;
+  booked_count: number;
+  remaining: number;
+  is_closed: boolean;
+  price_override: number | null;
+}
+
+export interface TransportInventoryGenerateRequest {
+  package_id: number;
+  from_date: string;
+  to_date: string;
+  option_counts?: Record<string, number>;
+}
+
+export interface TransportInventoryUpdateRequest {
+  available_count?: number;
+  capacity?: number;
+  is_closed?: boolean;
+  price_override?: number | null;
+}
+
+export interface TransportOptionInfo {
+  id: number;
+  title: string;
+  type: string;
+  capacity: number;
+}
+
+export interface TransportInventoryCalendarResponse {
+  options: TransportOptionInfo[];
+  dates: Record<string, TransportInventoryRow[]>;
+}
+
 // ─── Public availability types ────────────────────────────────────────────────
+
+export interface PublicTransportDateAvailability {
+  option_id: number;
+  remaining: number;
+  is_closed: boolean;
+  price_override?: number | null;
+}
 
 export interface PublicDateAvailability {
   date: string;
@@ -72,6 +121,7 @@ export interface PublicDateAvailability {
   is_closed: boolean;
   price_override?: number | null;
   status: InventoryStatus;
+  transport_availability?: PublicTransportDateAvailability[] | null;
 }
 
 export interface PublicAvailabilityResponse {
@@ -105,6 +155,12 @@ interface InventoryState {
   roomIsLoading: boolean;
   roomError: string | null;
 
+  // Transport admin state
+  transportOptions: TransportOptionInfo[];
+  transportAdminRows: Record<string, TransportInventoryRow[]>;
+  transportIsLoading: boolean;
+  transportError: string | null;
+
   // Public state
   publicAvailability: PublicAvailabilityResponse | null;
   publicLoading: boolean;
@@ -122,9 +178,22 @@ interface InventoryState {
   patchRoomInventoryRow: (rowId: number, body: RoomUpdateRequest) => Promise<void>;
   deleteRoomInventoryRow: (rowId: number) => Promise<void>;
 
+  // Transport admin actions
+  fetchTransportAdminInventory: (packageId: number, month: string) => Promise<void>;
+  generateTransportInventory: (req: TransportInventoryGenerateRequest) => Promise<any>;
+  updateTransportInventoryRow: (id: number, updates: Partial<TransportInventoryUpdateRequest>) => Promise<any>;
+  deleteTransportInventoryRow: (id: number) => Promise<any>;
+  createTransportInventoryRow: (transportOptionId: number, slotDate: string, availableCount: number) => Promise<void>;
+
+  // Bulk Actions
+  bulkActionInventory: (req: any) => Promise<any>;
+  bulkActionRoomInventory: (req: any) => Promise<any>;
+  bulkActionTransportInventory: (req: any) => Promise<any>;
+
   // Public actions
   fetchPublicAvailability: (slug: string, month: string, force?: boolean) => Promise<void>;
   applySSEPayload: (payload: any) => void;
+  applyTransportSSEPayload: (payload: any) => void;
 }
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
@@ -135,6 +204,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   roomAdminRows: [],
   roomIsLoading: false,
   roomError: null,
+
+  transportOptions: [],
+  transportAdminRows: {},
+  transportIsLoading: false,
+  transportError: null,
 
   publicAvailability: null,
   publicLoading: false,
@@ -290,7 +364,165 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     }
   },
 
-  // ── Public actions ──────────────────────────────────────────────────────────
+  // ── Transport actions ───────────────────────────────────────────────────────
+
+  fetchTransportAdminInventory: async (packageId, month) => {
+    set({ transportIsLoading: true, transportError: null });
+    try {
+      const res = await apiClient.get<TransportInventoryCalendarResponse>(
+        `/api/v1/admin/inventory/transport/${packageId}/calendar`,
+        { params: { month } }
+      );
+      set({
+        transportOptions: res.data.options || [],
+        transportAdminRows: res.data.dates || {},
+        transportIsLoading: false
+      });
+    } catch (err: any) {
+      set({
+        transportError: err.response?.data?.detail || 'Failed to load transport inventory',
+        transportIsLoading: false
+      });
+    }
+  },
+
+  generateTransportInventory: async (body) => {
+    set({ transportIsLoading: true, transportError: null });
+    try {
+      const res = await apiClient.post<{ created: number; skipped: number; message: string }>(
+        '/api/v1/admin/inventory/transport/generate',
+        body
+      );
+      set({ transportIsLoading: false });
+      return res.data;
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'Failed to generate transport inventory';
+      set({ transportError: msg, transportIsLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  patchTransportInventoryRow: async (rowId, body) => {
+    const previousRows = { ...get().transportAdminRows };
+    
+    // Optimistic update
+    const updated = { ...get().transportAdminRows };
+    Object.keys(updated).forEach(date => {
+      updated[date] = updated[date].map(r => r.id === rowId ? { ...r, ...body } as TransportInventoryRow : r);
+    });
+    set({ transportAdminRows: updated, transportError: null });
+
+    try {
+      const res = await apiClient.patch<TransportInventoryRow>(
+        `/api/v1/admin/inventory/transport/slots/${rowId}`,
+        body
+      );
+      // Replace with actual database result
+      const fresh = { ...get().transportAdminRows };
+      Object.keys(fresh).forEach(date => {
+        fresh[date] = fresh[date].map(r => r.id === rowId ? res.data : r);
+      });
+      set({ transportAdminRows: fresh });
+    } catch (err: any) {
+      set({ transportAdminRows: previousRows });
+      const msg = err.response?.data?.detail || 'Failed to update transport inventory row';
+      set({ transportError: msg });
+      throw new Error(msg);
+    }
+  },
+
+  deleteTransportInventoryRow: async (rowId) => {
+    const previousRows = { ...get().transportAdminRows };
+
+    // Optimistic delete
+    const updated = { ...get().transportAdminRows };
+    Object.keys(updated).forEach(date => {
+      updated[date] = updated[date].filter(r => r.id !== rowId);
+    });
+    set({ transportAdminRows: updated, transportError: null });
+
+    try {
+      await apiClient.delete(`/api/v1/admin/inventory/slots/${rowId}`);
+    } catch (err: any) {
+      set({ transportAdminRows: previousRows });
+      const msg = err.response?.data?.detail || 'Failed to delete transport inventory row';
+      set({ transportError: msg });
+      throw new Error(msg);
+    }
+  },
+
+  createTransportInventoryRow: async (transportOptionId, slotDate, availableCount) => {
+    set({ transportIsLoading: true, transportError: null });
+    try {
+      const res = await apiClient.post<TransportInventoryRow>(
+        '/api/v1/admin/inventory/transport/slots',
+        null,
+        {
+          params: {
+            transport_option_id: transportOptionId,
+            slot_date: slotDate,
+            available_count: availableCount
+          }
+        }
+      );
+      
+      const updated = { ...get().transportAdminRows };
+      const dStr = slotDate;
+      if (!updated[dStr]) {
+        updated[dStr] = [];
+      }
+      updated[dStr] = [...updated[dStr], res.data].sort((a, b) => a.transport_option_id - b.transport_option_id);
+      
+      set({ transportAdminRows: updated, transportIsLoading: false });
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'Failed to create transport inventory slot';
+      set({ transportError: msg, transportIsLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Bulk Actions ────────────────────────────────────────────────────────────
+
+  bulkActionInventory: async (req: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await apiClient.post('/api/v1/admin/inventory/packages/bulk', req);
+      return data;
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to apply bulk action' });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  bulkActionRoomInventory: async (req: any) => {
+    set({ roomIsLoading: true, error: null });
+    try {
+      const { data } = await apiClient.post('/api/v1/admin/inventory/rooms/bulk', req);
+      return data;
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to apply bulk action' });
+      throw error;
+    } finally {
+      set({ roomIsLoading: false });
+    }
+  },
+
+  bulkActionTransportInventory: async (req: any) => {
+    set({ transportIsLoading: true, error: null });
+    try {
+      const { data } = await apiClient.post('/api/v1/admin/inventory/transport/bulk', req);
+      return data;
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to apply bulk action' });
+      throw error;
+    } finally {
+      set({ transportIsLoading: false });
+    }
+  },
+
+  // ─── Public SSE Actions ──────────────────────────────────────────────────────
 
   fetchPublicAvailability: async (slug, month, force = true) => {
     const key = `${slug}:${month}`;
@@ -329,6 +561,51 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
           effective_student_price: payload.effective_student_price,
           status: payload.is_closed ? 'CLOSED' : (payload.available <= 0 ? 'SOLD_OUT' : 'OPEN')
         } as PublicDateAvailability;
+      }
+      return d;
+    });
+
+    set({ publicAvailability: { ...current, dates: updatedDates } });
+  },
+
+  applyTransportSSEPayload: (payload: any) => {
+    const current = get().publicAvailability;
+    if (!current || current.package_id !== payload.package_id) return;
+
+    const updatedDates = current.dates.map(d => {
+      if (d.date === payload.travel_date) {
+        const transAvailability = d.transport_availability || [];
+        const optExists = transAvailability.some(t => t.option_id === payload.option_id);
+        
+        let newTransAvailability;
+        if (optExists) {
+          newTransAvailability = transAvailability.map(t => {
+            if (t.option_id === payload.option_id) {
+              return {
+                ...t,
+                remaining: payload.remaining,
+                is_closed: payload.is_closed,
+                price_override: payload.price_override
+              };
+            }
+            return t;
+          });
+        } else {
+          newTransAvailability = [
+            ...transAvailability,
+            {
+              option_id: payload.option_id,
+              remaining: payload.remaining,
+              is_closed: payload.is_closed,
+              price_override: payload.price_override
+            }
+          ];
+        }
+        
+        return {
+          ...d,
+          transport_availability: newTransAvailability
+        };
       }
       return d;
     });

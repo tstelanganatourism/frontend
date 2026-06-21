@@ -403,14 +403,25 @@ export const BookingSidebarV2 = ({
       }
     };
 
+    const handleTransportUpdate = (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        useInventoryStore.getState().applyTransportSSEPayload(payload);
+      } catch (err) {
+        console.error('[SSE] Failed to parse transport event payload', err);
+      }
+    };
+
     sse.addEventListener('INVENTORY_UPDATE', handleUpdate);
     sse.addEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
     sse.addEventListener('QUOTA_UPDATE', handleQuotaUpdate);
+    sse.addEventListener('TRANSPORT_UPDATE', handleTransportUpdate);
 
     return () => {
       sse.removeEventListener('INVENTORY_UPDATE', handleUpdate);
       sse.removeEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
       sse.removeEventListener('QUOTA_UPDATE', handleQuotaUpdate);
+      sse.removeEventListener('TRANSPORT_UPDATE', handleTransportUpdate);
       sse.close();
     };
   }, [packageId, packageSlug, currentMonthStr]);
@@ -923,6 +934,22 @@ export const BookingSidebarV2 = ({
   };
 
   // Validate that selected separate vehicles have enough capacity
+  const transportAvailMap = useMemo(() => {
+    if (!selectedSlot?.transport_availability) return {};
+    return selectedSlot.transport_availability.reduce((acc, curr) => {
+      acc[curr.option_id] = curr;
+      return acc;
+    }, {} as Record<number, any>);
+  }, [selectedSlot]);
+
+  const sharedCapacityOk = useMemo(() => {
+    if (selectedTransportMode !== 'SHARED' || !selectedSharedOptionId) return true;
+    const optAvail = transportAvailMap[selectedSharedOptionId];
+    if (!optAvail || optAvail.is_closed) return false;
+    const totalPax = adults + children;
+    return optAvail.remaining >= totalPax;
+  }, [selectedTransportMode, selectedSharedOptionId, adults, children, transportAvailMap]);
+
   const separateCapacityOk = useMemo(() => {
     if (selectedTransportMode !== 'SEPARATE') return true;
     const totalPax = adults + children;
@@ -931,9 +958,18 @@ export const BookingSidebarV2 = ({
       return sum + qty * (positiveNumber(opt.capacity) || 1);
     }, 0);
     const hasAnyVehicle = Object.values(separateVehicleQtys).some(q => q > 0);
-    if (!hasAnyVehicle) return true; // No vehicle selected yet — don't block
+    if (!hasAnyVehicle) return true; // Handled as validation later
+
+    for (const opt of separateOptions) {
+      const qty = separateVehicleQtys[opt.id] || 0;
+      if (qty > 0) {
+        const avail = transportAvailMap[opt.id];
+        if (!avail || avail.is_closed || avail.remaining < qty) return false;
+      }
+    }
+
     return totalCapacity >= totalPax;
-  }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children]);
+  }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children, transportAvailMap]);
 
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
@@ -944,7 +980,8 @@ export const BookingSidebarV2 = ({
     validVariants.length === 0 ||
     !selectedDate ||
     !separateCapacityOk ||
-    (!isAdmin && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out'));
+    !sharedCapacityOk ||
+    (!isAdmin && availabilityState.kind !== 'open');
 
   const ctaText = useMemo(() => {
     if (isProcessingCheckout) return 'Processing...';
@@ -953,7 +990,8 @@ export const BookingSidebarV2 = ({
     if (validVariants.length === 0) return 'Fare updating';
     if (!isAuthenticated) return 'Login to Book';
     if (!selectedDate) return 'Select a date';
-    if (!separateCapacityOk) return '⚠ Add more vehicles';
+    if (!separateCapacityOk) return '⚠ Not enough vehicles/capacity';
+    if (!sharedCapacityOk) return '⚠ Not enough transport seats';
     if (isAdmin) return 'Book Now (Admin)';
     if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Unavailable';
     if (availabilityState.kind === 'open') return 'Book Now';
@@ -1145,6 +1183,18 @@ export const BookingSidebarV2 = ({
 
   // Render calendar days
   const renderCalendar = () => {
+    if (publicLoading && !isAdmin) {
+      return (
+        <div className="p-8 w-full flex flex-col items-center justify-center min-h-[280px]">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full blur-md bg-[#1a6b7a]/20 animate-pulse"></div>
+            <Loader2 className="h-8 w-8 animate-spin text-[#1a6b7a] relative z-10" />
+          </div>
+          <p className="mt-4 text-[10px] font-black text-[#1a6b7a] uppercase tracking-widest">Checking Seats...</p>
+        </div>
+      );
+    }
+
     const daysInMonth = getDaysInMonth(calYear, calMonth);
     const firstDay = getFirstDayOfMonth(calYear, calMonth);
     const days = [];
@@ -1486,7 +1536,7 @@ export const BookingSidebarV2 = ({
                     const val = parseInt(e.target.value, 10);
                     if (!isNaN(val)) {
                       const minVal = minPassengers || 1;
-                      const maxVal = (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open')
+                      const maxVal = (Boolean(selectedDate) && availabilityState.kind === 'open')
                         ? Number(selectedSlot?.available_seats || 9999)
                         : 9999;
                       setAdults(Math.min(maxVal, Math.max(0, val)));
@@ -1503,10 +1553,10 @@ export const BookingSidebarV2 = ({
                 />
                 <button
                   type="button"
-                  disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
+                  disabled={(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
                   onClick={() => setAdults(p => p + 1)}
                   className={`h-9 w-9 rounded-lg font-black text-lg transition flex items-center justify-center cursor-pointer ${
-                    (isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))
+                    (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))
                       ? 'text-slate-300 cursor-not-allowed'
                       : 'text-[#b45309] hover:bg-amber-100'
                   }`}
@@ -1522,7 +1572,7 @@ export const BookingSidebarV2 = ({
                 <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
                   <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                   <span className="text-sm font-semibold">{adults}</span>
-                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
                 </div>
               </div>
               <div>
@@ -1530,7 +1580,7 @@ export const BookingSidebarV2 = ({
                 <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
                   <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                   <span className="text-sm font-semibold">{children}</span>
-                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (!isAdmin && Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
                 </div>
               </div>
             </div>
@@ -1580,28 +1630,47 @@ export const BookingSidebarV2 = ({
               {selectedTransportMode === 'SHARED' && (
                 <div className="grid gap-2">
                   {sharedOptions.map(opt => {
-                    const tAdultUi = positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price);
-                    const tChildUi = positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price);
-                    const tStudentUi = positiveNumber(isWeekendSelected && opt.weekend_student_price ? opt.weekend_student_price : opt.student_price);
+                    const optAvail = transportAvailMap[opt.id];
+                    const pOverride = Number(optAvail?.price_override ?? 0);
+                    
+                    const tAdultUi = positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price) + pOverride;
+                    const tChildUi = positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price) + pOverride;
+                    const tStudentUi = positiveNumber(isWeekendSelected && opt.weekend_student_price ? opt.weekend_student_price : opt.student_price) + pOverride;
                     const extraCost = isStudentPackage ? (adults * tStudentUi) : ((adults * tAdultUi) + (children * tChildUi));
                     const isSelected = selectedSharedOptionId === opt.id;
+                    
+                    const isClosed = optAvail?.is_closed;
+                    const seatsLeft = optAvail?.remaining ?? 0;
+                    const hasInventory = Boolean(optAvail);
+                    const totalPax = adults + children;
+                    const isDisabledForThis = (!hasInventory || isClosed || seatsLeft <= 0 || seatsLeft < totalPax);
+
                     return (
                       <label
                         key={opt.id}
-                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-[#1a6b7a]/40'}`}
+                        className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${isDisabledForThis ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'cursor-pointer'} ${isSelected ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-[#1a6b7a]/40'}`}
                       >
                         <input
                           type="radio"
                           name="sharedTransport"
                           checked={isSelected}
-                          onChange={() => setSelectedSharedOptionId(opt.id)}
-                          disabled={(isPackageInactive && !isAdmin)}
+                          onChange={() => { if (!isDisabledForThis) setSelectedSharedOptionId(opt.id); }}
+                          disabled={(isPackageInactive && !isAdmin) || isDisabledForThis}
                           className="mt-1 text-[#1a6b7a] focus:ring-[#1a6b7a] shrink-0"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug">
                             {opt.title}{opt.capacity ? ` · ${opt.capacity} Seater` : ''}
                           </div>
+                          {hasInventory && !isClosed && seatsLeft > 0 && seatsLeft >= totalPax && (
+                            <div className="text-[10px] font-bold text-[#b45309] mt-0.5">Only {seatsLeft} seats left</div>
+                          )}
+                          {(!hasInventory || isClosed || seatsLeft <= 0) && (
+                            <div className="text-[10px] font-bold text-red-500 mt-0.5">Unavailable</div>
+                          )}
+                          {hasInventory && !isClosed && seatsLeft > 0 && seatsLeft < totalPax && (
+                            <div className="text-[10px] font-bold text-rose-500 mt-0.5">Not enough capacity for {totalPax} pax</div>
+                          )}
                           <div className="flex items-center justify-between gap-2 mt-1">
                             <span className="text-[10px] text-slate-500 font-semibold">
                               {isStudentPackage
@@ -1624,20 +1693,35 @@ export const BookingSidebarV2 = ({
               {selectedTransportMode === 'SEPARATE' && (
                 <div className="space-y-2">
                   {separateOptions.map(opt => {
+                    const optAvail = transportAvailMap[opt.id];
+                    const pOverride = Number(optAvail?.price_override ?? 0);
                     const qty = separateVehicleQtys[opt.id] || 0;
-                    const fixedPrice = positiveNumber(opt.fixed_price);
+                    const fixedPrice = positiveNumber(isWeekendSelected && opt.weekend_fixed_price ? opt.weekend_fixed_price : opt.fixed_price) + pOverride;
                     const lineTotal = qty * fixedPrice;
+
+                    const isClosed = optAvail?.is_closed;
+                    const vehiclesLeft = optAvail?.remaining ?? 0;
+                    const hasInventory = Boolean(optAvail);
+                    const isDisabledForThis = (!hasInventory || isClosed || vehiclesLeft <= 0);
+                    const maxQty = vehiclesLeft;
+
                     return (
                       <div
                         key={opt.id}
-                        className={`p-3 rounded-xl border transition-all ${qty > 0 ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white'}`}
+                        className={`p-3 rounded-xl border transition-all ${isDisabledForThis ? 'opacity-50 bg-slate-50' : ''} ${qty > 0 && !isDisabledForThis ? 'border-[#1a6b7a] bg-[#1a6b7a]/5 shadow-sm' : 'border-slate-200 bg-white'}`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-bold text-slate-800 truncate">{opt.title}</div>
                             <div className="text-[10px] font-semibold mt-0.5 text-slate-500">
-                              Max {opt.capacity} pax · <span className="text-[#1a6b7a]">₹{formatINR(positiveNumber(isWeekendSelected && opt.weekend_fixed_price ? opt.weekend_fixed_price : opt.fixed_price))}/vehicle</span>
+                              Max {opt.capacity} pax · <span className="text-[#1a6b7a]">₹{formatINR(fixedPrice)}/vehicle</span>
                             </div>
+                            {hasInventory && !isClosed && vehiclesLeft > 0 && (
+                              <div className="text-[10px] font-bold text-[#b45309] mt-0.5">Only {vehiclesLeft} left</div>
+                            )}
+                            {(!hasInventory || isClosed || vehiclesLeft <= 0) && (
+                              <div className="text-[10px] font-bold text-red-500 mt-0.5">Unavailable</div>
+                            )}
                           </div>
                           {/* Qty Selector */}
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -1650,16 +1734,16 @@ export const BookingSidebarV2 = ({
                             <span className={`w-6 text-center text-sm font-black ${qty > 0 ? 'text-[#1a6b7a]' : 'text-slate-400'}`}>{qty}</span>
                             <button
                               type="button"
-                              disabled={(isPackageInactive && !isAdmin)}
-                              onClick={() => setSeparateVehicleQtys(prev => ({ ...prev, [opt.id]: (prev[opt.id] || 0) + 1 }))}
-                              className="h-8 w-8 rounded-lg border border-[#1a6b7a] text-[#1a6b7a] flex items-center justify-center font-black text-base transition-all hover:bg-[#1a6b7a] hover:text-white"
+                              disabled={isPackageInactive || qty >= maxQty || isDisabledForThis}
+                              onClick={() => setSeparateVehicleQtys(prev => ({ ...prev, [opt.id]: Math.min(maxQty, (prev[opt.id] || 0) + 1) }))}
+                              className={`h-8 w-8 rounded-lg border flex items-center justify-center font-black text-base transition-all ${qty >= maxQty || isDisabledForThis ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-[#1a6b7a] text-[#1a6b7a] hover:bg-[#1a6b7a] hover:text-white'}`}
                             >+</button>
                           </div>
                         </div>
-                        {qty > 0 && (
-                          <div className="mt-2 flex justify-between items-center text-[10px] font-bold border-t border-[#1a6b7a]/20 pt-1.5">
-                            <span className="text-slate-500">{qty} × ₹{formatINR(fixedPrice)}</span>
-                            <span className="text-[#1a6b7a]">+₹{formatINR(lineTotal)}</span>
+                        {qty > 0 && !isDisabledForThis && (
+                          <div className="mt-2 pt-2 border-t border-[#1a6b7a]/10 flex justify-between items-center">
+                            <span className="text-[10px] font-black uppercase text-[#1a6b7a]/70 tracking-wider">Subtotal</span>
+                            <span className="text-xs font-black text-[#1a6b7a]">+₹{formatINR(lineTotal)}</span>
                           </div>
                         )}
                       </div>
