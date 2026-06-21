@@ -28,11 +28,9 @@ function AnalyticsInner() {
     ? awIdInput.split(',').map((id) => id.trim()).filter(Boolean)
     : [];
 
-  if (!gaId) return null;
-
   return (
     <>
-      <GoogleAnalytics gaId={gaId} />
+      {gaId && <GoogleAnalytics gaId={gaId} />}
       {awIds.length > 0 && (
         <>
           <Script

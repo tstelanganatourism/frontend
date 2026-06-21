@@ -57,6 +57,14 @@ export default function PaymentStatusPage() {
         });
         setLoading(false);
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+        
+        // Fire Google Ads Conversion Event
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'conversion', {
+              'send_to': 'AW-18250568283/_guECIjIkcIcENukxv5D',
+              'transaction_id': statusData.booking_id
+          });
+        }
       } else if (statusData.status === 'pending') {
         setResult({
           status: 'pending',
