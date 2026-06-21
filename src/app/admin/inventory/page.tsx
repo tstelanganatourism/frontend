@@ -1856,9 +1856,9 @@ export default function AdminInventoryPage() {
           transportOptions={activeTab === 'transport' ? transportOptions : undefined}
           entityName={
             activeTab === 'packages' 
-              ? `${selectedPackage?.title} - ${variants.find(v => v.id === selectedVariantId)?.title}`
+              ? `${selectedPackage?.title} - ${variants.find((v: any) => v.id === selectedVariantId)?.title}`
               : activeTab === 'rooms'
-              ? `${selectedRoom?.lodge_name} - ${roomVariants.find(v => v.id === selectedRoomVariantId)?.variant_name}`
+              ? `${selectedRoom?.lodge_name} - ${roomVariants.find((v: any) => v.id === selectedRoomVariantId)?.variant_name}`
               : selectedPackage?.title
           }
         />
