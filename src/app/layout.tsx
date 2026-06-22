@@ -9,6 +9,7 @@ import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { Toaster } from 'sonner';
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
 import PhoneCollectionModal from '@/components/ui/PhoneCollectionModal';
+import PwaRegistrar from '@/components/providers/PwaRegistrar';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap' });
@@ -207,6 +208,7 @@ export default function RootLayout({
           </AuthProvider>
         </QueryProvider>
         <AnalyticsProvider />
+        <PwaRegistrar />
       </body>
     </html>
   );
