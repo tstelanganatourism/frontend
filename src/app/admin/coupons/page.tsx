@@ -199,20 +199,32 @@ export default function AdminCouponsPage() {
                           <>
                             {coupon.applicable_package_ids && coupon.applicable_package_ids.length > 0 && (
                               <div className="flex flex-wrap gap-1">
-                                {coupon.applicable_package_ids.map((id: number) => (
-                                  <span key={`pkg-${id}`} className="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-1.5 py-0.5 rounded border border-indigo-100 max-w-[120px] truncate" title={packageMap[id]}>
-                                    📦 {packageMap[id] || `Pkg ${id}`}
+                                {coupon.applicable_package_ids.includes(-1) ? (
+                                  <span className="text-[10px] bg-[#5ac4d7]/10 text-[#0f3d56] font-bold px-1.5 py-0.5 rounded border border-[#5ac4d7]/20 max-w-[120px] truncate" title="All Packages">
+                                    📦 All Packages
                                   </span>
-                                ))}
+                                ) : (
+                                  coupon.applicable_package_ids.map((id: number) => (
+                                    <span key={`pkg-${id}`} className="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-1.5 py-0.5 rounded border border-indigo-100 max-w-[120px] truncate" title={packageMap[id]}>
+                                      📦 {packageMap[id] || `Pkg ${id}`}
+                                    </span>
+                                  ))
+                                )}
                               </div>
                             )}
                             {coupon.applicable_room_ids && coupon.applicable_room_ids.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {coupon.applicable_room_ids.map((id: number) => (
-                                  <span key={`rm-${id}`} className="text-[10px] bg-orange-50 text-orange-600 font-bold px-1.5 py-0.5 rounded border border-orange-100 max-w-[120px] truncate" title={roomMap[id]}>
-                                    🏨 {roomMap[id] || `Rm ${id}`}
+                                {coupon.applicable_room_ids.includes(-1) ? (
+                                  <span className="text-[10px] bg-[#5ac4d7]/10 text-[#0f3d56] font-bold px-1.5 py-0.5 rounded border border-[#5ac4d7]/20 max-w-[120px] truncate" title="All Rooms">
+                                    🏨 All Rooms
                                   </span>
-                                ))}
+                                ) : (
+                                  coupon.applicable_room_ids.map((id: number) => (
+                                    <span key={`rm-${id}`} className="text-[10px] bg-orange-50 text-orange-600 font-bold px-1.5 py-0.5 rounded border border-orange-100 max-w-[120px] truncate" title={roomMap[id]}>
+                                      🏨 {roomMap[id] || `Rm ${id}`}
+                                    </span>
+                                  ))
+                                )}
                               </div>
                             )}
                           </>
@@ -220,24 +232,33 @@ export default function AdminCouponsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-500">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className={`h-3.5 w-3.5 ${isExpired ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`} />
-                        <span className="text-xs flex items-center gap-1.5 flex-wrap">
-                          {coupon.valid_from || coupon.valid_until ? (
-                            <>
-                              <span className={isExpired ? 'text-rose-600 line-through opacity-70 font-semibold' : ''}>
-                                {formatDate(coupon.valid_from)} - {formatDate(coupon.valid_until)}
-                              </span>
-                              {isExpired && (
-                                <span className="inline-flex text-[9px] bg-rose-100 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-black uppercase tracking-wider scale-95 origin-left">
-                                  Expired
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className={`h-3.5 w-3.5 ${isExpired ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`} />
+                          <span className="text-xs flex items-center gap-1.5 flex-wrap">
+                            {coupon.valid_from || coupon.valid_until ? (
+                              <>
+                                <span className={isExpired ? 'text-rose-600 line-through opacity-70 font-semibold' : ''}>
+                                  {formatDate(coupon.valid_from)} - {formatDate(coupon.valid_until)}
                                 </span>
-                              )}
-                            </>
-                          ) : (
-                            'Always Valid'
-                          )}
-                        </span>
+                                {isExpired && (
+                                  <span className="inline-flex text-[9px] bg-rose-100 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-black uppercase tracking-wider scale-95 origin-left">
+                                    Expired
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              'Always Valid'
+                            )}
+                          </span>
+                        </div>
+                        {coupon.is_weekend_only && (
+                          <div className="flex items-center">
+                            <span className="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-1.5 py-0.5 rounded font-black uppercase tracking-wider shadow-sm">
+                              Weekends Only
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 font-bold text-slate-700">

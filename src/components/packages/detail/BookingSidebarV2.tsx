@@ -786,7 +786,8 @@ export const BookingSidebarV2 = ({
           target_type: 'PACKAGE',
           target_id: packageId,
           booking_amount: prices.rawSubtotal,
-          ticket_count: adults + children
+          ticket_count: adults + children,
+          travel_date: selectedDate ? selectedDate : null
         });
 
         if (!isMounted) return;
@@ -848,7 +849,8 @@ export const BookingSidebarV2 = ({
         target_type: 'PACKAGE',
         target_id: packageId,
         booking_amount: prices.rawSubtotal,
-        ticket_count: adults + children
+        ticket_count: adults + children,
+        travel_date: selectedDate ? selectedDate : null
       });
 
       if (response.data.valid) {

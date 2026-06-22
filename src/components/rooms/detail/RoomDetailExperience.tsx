@@ -662,7 +662,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         booking_amount: rawSubtotal,
         target_type: 'ROOM',
         target_id: room.id,
-        ticket_count: guests
+        ticket_count: guests,
+        travel_date: arrivalDate
       });
       
       if (res.data.valid) {

@@ -35,6 +35,8 @@ export default function AdminCouponCreatePage() {
   const [validFrom, setValidFrom] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [isWeekendOnly, setIsWeekendOnly] = useState(false);
+  const [targetMode, setTargetMode] = useState<'GLOBAL' | 'PACKAGES_ONLY' | 'ROOMS_ONLY' | 'CUSTOM'>('GLOBAL');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -55,6 +57,23 @@ export default function AdminCouponCreatePage() {
 
     setIsSaving(true);
     try {
+      let finalPackages: number[] = [];
+      let finalRooms: number[] = [];
+
+      if (targetMode === 'GLOBAL') {
+        finalPackages = [];
+        finalRooms = [];
+      } else if (targetMode === 'PACKAGES_ONLY') {
+        finalPackages = [-1];
+        finalRooms = [];
+      } else if (targetMode === 'ROOMS_ONLY') {
+        finalPackages = [];
+        finalRooms = [-1];
+      } else if (targetMode === 'CUSTOM') {
+        finalPackages = applicablePackageIds.map(Number);
+        finalRooms = applicableRoomIds.map(Number);
+      }
+
       const payload = {
         code: code.toUpperCase().trim(),
         discount_type: discountType,
@@ -63,11 +82,12 @@ export default function AdminCouponCreatePage() {
         max_discount_amount: discountType === 'PERCENTAGE' && maxDiscountAmount ? Number(maxDiscountAmount) : null,
         min_tickets: minTickets ? Number(minTickets) : null,
         usage_limit: usageLimit ? Number(usageLimit) : null,
-        applicable_package_ids: applicablePackageIds.map(Number),
-        applicable_room_ids: applicableRoomIds.map(Number),
+        applicable_package_ids: finalPackages,
+        applicable_room_ids: finalRooms,
         valid_from: validFrom ? new Date(validFrom).toISOString() : null,
         valid_until: validUntil ? new Date(validUntil).toISOString() : null,
-        is_active: isActive
+        is_active: isActive,
+        is_weekend_only: isWeekendOnly
       };
 
       await createCoupon(payload);
@@ -259,28 +279,55 @@ export default function AdminCouponCreatePage() {
             </div>
           </div>
           
-          <div className="grid gap-6 sm:grid-cols-2 pt-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Restrict to specific packages (Optional)</label>
-              <PremiumMultiSelect
-                options={packages.map(p => ({ value: p.id.toString(), label: p.title }))}
-                value={applicablePackageIds}
-                onChange={setApplicablePackageIds}
-                placeholder="All Packages (Global)"
-              />
+          <div className="pt-4 border-t border-slate-100">
+            <h3 className="text-sm font-bold text-slate-800 mb-4">Target Application Mode</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              {[
+                { id: 'GLOBAL', label: 'Global (All)' },
+                { id: 'PACKAGES_ONLY', label: 'Packages Only' },
+                { id: 'ROOMS_ONLY', label: 'Rooms Only' },
+                { id: 'CUSTOM', label: 'Custom Target' }
+              ].map(mode => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => setTargetMode(mode.id as any)}
+                  className={`py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                    targetMode === mode.id 
+                      ? 'border-[#5ac4d7] bg-[#5ac4d7]/10 text-[#0f3d56]' 
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Restrict to specific rooms (Optional)</label>
-              <PremiumMultiSelect
-                options={rooms.map(r => ({ value: r.id.toString(), label: r.lodge_name }))}
-                value={applicableRoomIds}
-                onChange={setApplicableRoomIds}
-                placeholder="All Rooms (Global)"
-              />
-            </div>
+
+            {targetMode === 'CUSTOM' && (
+              <div className="grid gap-6 sm:grid-cols-2 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Restrict to specific packages</label>
+                  <PremiumMultiSelect
+                    options={packages.map(p => ({ value: p.id.toString(), label: p.title }))}
+                    value={applicablePackageIds}
+                    onChange={setApplicablePackageIds}
+                    placeholder="Select Packages..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Restrict to specific rooms</label>
+                  <PremiumMultiSelect
+                    options={rooms.map(r => ({ value: r.id.toString(), label: r.lodge_name }))}
+                    value={applicableRoomIds}
+                    onChange={setApplicableRoomIds}
+                    placeholder="Select Rooms..."
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2 border-t border-slate-100 pt-6">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status Active</label>
               <div className="flex items-center gap-4 h-[54px]">
@@ -299,6 +346,27 @@ export default function AdminCouponCreatePage() {
                 </button>
                 <span className="text-xs font-black uppercase tracking-wider text-slate-600">
                   {isActive ? 'Active Campaign' : 'Paused / Inactive'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Weekend Only Validity</label>
+              <div className="flex items-center gap-4 h-[54px]">
+                <button
+                  type="button"
+                  onClick={() => setIsWeekendOnly(!isWeekendOnly)}
+                  className={`flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full p-1 transition-colors duration-300 focus:outline-none ${
+                    isWeekendOnly ? 'bg-purple-500' : 'bg-slate-300'
+                  }`}
+                >
+                  <div
+                    className={`h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ${
+                      isWeekendOnly ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-600">
+                  {isWeekendOnly ? 'Weekends Only (Sat/Sun)' : 'Valid Any Day'}
                 </span>
               </div>
             </div>

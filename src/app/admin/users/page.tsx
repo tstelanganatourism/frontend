@@ -105,8 +105,8 @@ export default function AdminUsersPage() {
     try {
       await updateUser(editUserForm.id, {
         full_name: editUserForm.full_name.trim(),
-        email: editUserForm.email.trim() || undefined,
-        phone_number: editUserForm.phone_number.trim() || undefined
+        email: editUserForm.email.trim(),
+        phone_number: editUserForm.phone_number.trim()
       });
       toast.success('User profile updated successfully');
       setIsEditModalOpen(false);
