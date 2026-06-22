@@ -48,6 +48,7 @@ type PackageDetail = {
   canonical_url?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
+  is_active: boolean;
   tags: string[];
   starting_price?: number | null;
   has_transport?: boolean;
@@ -401,6 +402,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
             refreshmentStudentPrice={pkg.refreshment_student_price}
             minPassengers={pkg.min_passengers}
             isStudentPackage={pkg.is_student_package}
+            isActive={pkg.is_active}
           />
         </aside>
 
@@ -421,6 +423,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         refreshmentStudentPrice={pkg.refreshment_student_price}
         minPassengers={pkg.min_passengers}
         isStudentPackage={pkg.is_student_package}
+        isActive={pkg.is_active}
       />
 
       <CouponPopup targetType="PACKAGE" targetId={pkg.id} />

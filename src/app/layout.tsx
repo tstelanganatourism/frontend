@@ -10,6 +10,7 @@ import { Toaster } from 'sonner';
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
 import PhoneCollectionModal from '@/components/ui/PhoneCollectionModal';
 import PwaRegistrar from '@/components/providers/PwaRegistrar';
+import InstallPromptModal from '@/components/ui/InstallPromptModal';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap' });
@@ -209,6 +210,7 @@ export default function RootLayout({
         </QueryProvider>
         <AnalyticsProvider />
         <PwaRegistrar />
+        <InstallPromptModal />
       </body>
     </html>
   );

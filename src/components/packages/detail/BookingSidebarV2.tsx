@@ -56,6 +56,7 @@ interface BookingSidebarV2Props {
   refreshmentStudentPrice?: number | string | null;
   minPassengers?: number;
   isStudentPackage?: boolean;
+  isActive?: boolean;
 }
 
 function todayIST(): Date {
@@ -107,6 +108,7 @@ export const BookingSidebarV2 = ({
   refreshmentStudentPrice,
   minPassengers = 1,
   isStudentPackage = false,
+  isActive = true,
 }: BookingSidebarV2Props) => {
   const { isAuthenticated, user } = useAuthStore();
   const isSpecialUser = useMemo(() => {
@@ -527,10 +529,11 @@ export const BookingSidebarV2 = ({
     return validVariants.find((v) => v.id === selectedVariantId) ?? validVariants[0];
   }, [validVariants, selectedVariantId]);
 
-  const isPackageInactive = !publicLoading && !publicAvailability;
+  const isPackageInactive = !publicLoading && (!publicAvailability || !isActive);
 
   const availabilityState = useMemo(() => {
     if (publicLoading) return { kind: 'loading' as const, message: 'Checking seats...' };
+    if (!isActive) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
     if (isPackageInactive && !isAdmin) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
     if (!selectedDate) return { kind: 'idle' as const, message: 'Select date to check availability' };
     if (isAdmin) {
@@ -548,7 +551,7 @@ export const BookingSidebarV2 = ({
       return { kind: 'unpublished' as const, message: 'Seats not published yet. Call to confirm.' };
     }
     return { kind: 'open' as const, message: `${selectedSlot.available_seats} seats available` };
-  }, [publicLoading, isPackageInactive, selectedDate, selectedSlot, isAdmin]);
+  }, [publicLoading, isPackageInactive, isActive, selectedDate, selectedSlot, isAdmin]);
 
 
   const isWeekendSelected = useMemo(() => {
@@ -986,6 +989,7 @@ export const BookingSidebarV2 = ({
   const ctaText = useMemo(() => {
     if (isProcessingCheckout) return 'Processing...';
     if (isSuspended) return 'Booking Suspended';
+    if (!isActive) return 'Bookings Suspended';
     if (isPackageInactive && !isAdmin) return 'Bookings Closed / Inactive';
     if (validVariants.length === 0) return 'Fare updating';
     if (!isAuthenticated) return 'Login to Book';
@@ -996,7 +1000,7 @@ export const BookingSidebarV2 = ({
     if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Unavailable';
     if (availabilityState.kind === 'open') return 'Book Now';
     return 'Call to confirm availability';
-  }, [isProcessingCheckout, isSuspended, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, availabilityState.kind]);
+  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, availabilityState.kind]);
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal
   useEffect(() => {
@@ -1017,7 +1021,7 @@ export const BookingSidebarV2 = ({
   }, [selectedDate, availabilityState.kind, availabilityState.message, isAdmin]);
 
   const handleBookingClick = (e: React.MouseEvent) => {
-    if (isPackageInactive && !isAdmin) return;
+    if ((isPackageInactive && !isAdmin) || !isActive) return;
     if (!isAuthenticated) {
       e.preventDefault();
       setShowLoginPrompt(true);
@@ -1216,7 +1220,7 @@ export const BookingSidebarV2 = ({
 
       // Check availability if we have it for this month
       let dayStatus = 'none'; // none, available, soldout
-      let isDisabled = isPast;
+      let isDisabled = isPast || !isActive;
 
       if (isAdmin) {
         dayStatus = 'available';
@@ -1396,11 +1400,11 @@ export const BookingSidebarV2 = ({
         <div className="relative space-y-3 p-0 lg:p-5 lg:pr-6 lg:pb-5">
 
           {/* Active Booking Inactive Warning Banner */}
-          {isPackageInactive && (
+          {(isPackageInactive || !isActive) && (
             <div className="rounded-xl border border-rose-100 bg-rose-50/70 p-3.5 text-xs text-rose-600 font-bold flex items-start gap-2.5">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <div>
-                <p className="font-black">Online Bookings Suspended</p>
+                <p className="font-black">{!isActive ? 'Bookings Suspended' : 'Online Bookings Suspended'}</p>
                 <p className="text-slate-500 font-bold text-[11px] mt-0.5 leading-relaxed">
                   This tour experience is currently closed or inactive. You cannot configure tickets or submit new online bookings.
                 </p>
@@ -1414,10 +1418,10 @@ export const BookingSidebarV2 = ({
               <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Package Type</label>
               <button
                 type="button"
-                disabled={(isPackageInactive && !isAdmin) || validVariants.length === 0}
+                disabled={(!isActive || (isPackageInactive && !isAdmin)) || validVariants.length === 0}
                 onClick={() => { setVariantMenuOpen(!variantMenuOpen); setDateMenuOpen(false); }}
                 className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-bold shadow-sm transition-all outline-none cursor-pointer ${
-                  (isPackageInactive && !isAdmin) || validVariants.length === 0
+                  (!isActive || (isPackageInactive && !isAdmin)) || validVariants.length === 0
                     ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                     : variantMenuOpen
                     ? 'border-[#1a6b7a] bg-white ring-2 ring-[#1a6b7a]/15 shadow-md shadow-[#1a6b7a]/5 text-slate-900 font-extrabold'
@@ -1474,10 +1478,10 @@ export const BookingSidebarV2 = ({
               <label className="mb-1 block text-xs font-black uppercase tracking-wider text-slate-400">Travel date</label>
               <button
                 type="button"
-                disabled={(isPackageInactive && !isAdmin) || validVariants.length === 0}
+                disabled={(!isActive || (isPackageInactive && !isAdmin)) || validVariants.length === 0}
                 onClick={() => { setDateMenuOpen(!dateMenuOpen); setVariantMenuOpen(false); }}
                 className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-bold shadow-sm transition-all outline-none cursor-pointer ${
-                  (isPackageInactive && !isAdmin) || validVariants.length === 0
+                  (!isActive || (isPackageInactive && !isAdmin)) || validVariants.length === 0
                     ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                     : dateMenuOpen
                     ? 'border-[#1a6b7a] bg-white ring-2 ring-[#1a6b7a]/15 shadow-md shadow-[#1a6b7a]/5 text-slate-900 font-extrabold'
@@ -1520,17 +1524,17 @@ export const BookingSidebarV2 = ({
               <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50/30 px-3 py-1">
                 <button
                   type="button"
-                  disabled={(isPackageInactive && !isAdmin)}
+                  disabled={!isActive || (isPackageInactive && !isAdmin)}
                   onClick={() => setAdults(p => Math.max(1, p - 1))}
                   className={`h-9 w-9 rounded-lg font-black text-lg transition flex items-center justify-center cursor-pointer ${
-                    (isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-[#b45309] hover:bg-amber-100'
+                    !isActive || (isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-[#b45309] hover:bg-amber-100'
                   }`}
                 >
                   -
                 </button>
                 <input
                   type="number"
-                  disabled={(isPackageInactive && !isAdmin)}
+                  disabled={!isActive || (isPackageInactive && !isAdmin)}
                   value={adults || ''}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
@@ -1553,10 +1557,10 @@ export const BookingSidebarV2 = ({
                 />
                 <button
                   type="button"
-                  disabled={(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
+                  disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
                   onClick={() => setAdults(p => p + 1)}
                   className={`h-9 w-9 rounded-lg font-black text-lg transition flex items-center justify-center cursor-pointer ${
-                    (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))
+                    !isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))
                       ? 'text-slate-300 cursor-not-allowed'
                       : 'text-[#b45309] hover:bg-amber-100'
                   }`}
@@ -1570,17 +1574,17 @@ export const BookingSidebarV2 = ({
               <div>
                 <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Adults (11+)</label>
                 <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
-                  <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
+                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                   <span className="text-sm font-semibold">{adults}</span>
-                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Children (4-10)</label>
                 <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
-                  <button type="button" disabled={(isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
+                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                   <span className="text-sm font-semibold">{children}</span>
-                  <button type="button" disabled={(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${(isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
                 </div>
               </div>
             </div>
@@ -1599,7 +1603,7 @@ export const BookingSidebarV2 = ({
                 {sharedOptions.length > 0 && (
                   <button
                     type="button"
-                    disabled={(isPackageInactive && !isAdmin)}
+                    disabled={!isActive || (isPackageInactive && !isAdmin)}
                     onClick={() => { setSelectedTransportMode('SHARED'); setSeparateVehicleQtys({}); if (!selectedSharedOptionId && sharedOptions.length > 0) setSelectedSharedOptionId(sharedOptions[0].id); }}
                     className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                       selectedTransportMode === 'SHARED' 
@@ -1613,7 +1617,7 @@ export const BookingSidebarV2 = ({
                 {separateOptions.length > 0 && (
                   <button
                     type="button"
-                    disabled={(isPackageInactive && !isAdmin)}
+                    disabled={!isActive || (isPackageInactive && !isAdmin)}
                     onClick={() => { setSelectedTransportMode('SEPARATE'); setSelectedSharedOptionId(null); }}
                     className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                       selectedTransportMode === 'SEPARATE' 
@@ -1655,7 +1659,7 @@ export const BookingSidebarV2 = ({
                           name="sharedTransport"
                           checked={isSelected}
                           onChange={() => { if (!isDisabledForThis) setSelectedSharedOptionId(opt.id); }}
-                          disabled={(isPackageInactive && !isAdmin) || isDisabledForThis}
+                          disabled={!isActive || (isPackageInactive && !isAdmin) || isDisabledForThis}
                           className="mt-1 text-[#1a6b7a] focus:ring-[#1a6b7a] shrink-0"
                         />
                         <div className="flex-1 min-w-0">
@@ -1727,14 +1731,14 @@ export const BookingSidebarV2 = ({
                           <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               type="button"
-                              disabled={isPackageInactive || qty <= 0}
+                              disabled={!isActive || isPackageInactive || qty <= 0}
                               onClick={() => setSeparateVehicleQtys(prev => ({ ...prev, [opt.id]: Math.max(0, (prev[opt.id] || 0) - 1) }))}
                               className={`h-8 w-8 rounded-lg border flex items-center justify-center font-black text-base transition-all ${qty <= 0 ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-[#1a6b7a] text-[#1a6b7a] hover:bg-[#1a6b7a] hover:text-white'}`}
                             >−</button>
                             <span className={`w-6 text-center text-sm font-black ${qty > 0 ? 'text-[#1a6b7a]' : 'text-slate-400'}`}>{qty}</span>
                             <button
                               type="button"
-                              disabled={isPackageInactive || qty >= maxQty || isDisabledForThis}
+                              disabled={!isActive || isPackageInactive || qty >= maxQty || isDisabledForThis}
                               onClick={() => setSeparateVehicleQtys(prev => ({ ...prev, [opt.id]: Math.min(maxQty, (prev[opt.id] || 0) + 1) }))}
                               className={`h-8 w-8 rounded-lg border flex items-center justify-center font-black text-base transition-all ${qty >= maxQty || isDisabledForThis ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-[#1a6b7a] text-[#1a6b7a] hover:bg-[#1a6b7a] hover:text-white'}`}
                             >+</button>
@@ -1787,7 +1791,7 @@ export const BookingSidebarV2 = ({
                   type="checkbox" 
                   checked={includeRefreshments}
                   onChange={(e) => setIncludeRefreshments(e.target.checked)}
-                  disabled={(isPackageInactive && !isAdmin)}
+                  disabled={!isActive || (isPackageInactive && !isAdmin)}
                   className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4"
                 />
                 <div className="flex-1">
@@ -1811,7 +1815,7 @@ export const BookingSidebarV2 = ({
                 type="text"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                disabled={isPackageInactive || validatingCoupon || appliedCoupon !== null}
+                disabled={!isActive || isPackageInactive || validatingCoupon || appliedCoupon !== null}
                 placeholder="Enter promo code"
                 className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-bold uppercase transition focus:border-[#1a6b7a] focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 h-10"
               />
@@ -1819,7 +1823,7 @@ export const BookingSidebarV2 = ({
                 <button
                   type="button"
                   onClick={handleRemoveCoupon}
-                  disabled={isPackageInactive || validatingCoupon}
+                  disabled={!isActive || isPackageInactive || validatingCoupon}
                   className="shrink-0 rounded-lg bg-rose-50 px-4 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100 disabled:opacity-50 h-10 uppercase tracking-wider"
                 >
                   Remove
@@ -1828,7 +1832,7 @@ export const BookingSidebarV2 = ({
                 <button
                   type="button"
                   onClick={handleApplyCoupon}
-                  disabled={isPackageInactive || validatingCoupon || !couponCode.trim()}
+                  disabled={!isActive || isPackageInactive || validatingCoupon || !couponCode.trim()}
                   className="shrink-0 rounded-lg bg-slate-900 px-5 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center min-w-[80px] h-10 uppercase tracking-wider"
                 >
                   {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
@@ -2077,16 +2081,16 @@ export const BookingSidebarV2 = ({
 
           {/* CTA */}
           <button
-            disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
+            disabled={!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
             onClick={handleBookingClick}
-            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
+            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
                 ? 'bg-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-[#1a6b7a] hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-md'
               }`}
           >
             {isProcessingCheckout ? (
               <Loader2 className="h-5 w-5 animate-spin" />
-            ) : ctaText}
+            ) : !isActive ? 'BOOKINGS SUSPENDED' : ctaText}
           </button>
 
           {brochurePdfUrl && (

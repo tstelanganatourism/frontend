@@ -61,10 +61,10 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
       setApplicableRoomIds(currentCoupon.applicable_room_ids ? currentCoupon.applicable_room_ids.map(String) : []);
       
       if (currentCoupon.valid_from) {
-        setValidFrom(new Date(currentCoupon.valid_from).toISOString().slice(0, 16));
+        setValidFrom(new Date(currentCoupon.valid_from).toISOString().slice(0, 10));
       }
       if (currentCoupon.valid_until) {
-        setValidUntil(new Date(currentCoupon.valid_until).toISOString().slice(0, 16));
+        setValidUntil(new Date(currentCoupon.valid_until).toISOString().slice(0, 10));
       }
       setMinTickets(currentCoupon.min_tickets ? String(currentCoupon.min_tickets) : '');
       setIsActive(currentCoupon.is_active !== false);

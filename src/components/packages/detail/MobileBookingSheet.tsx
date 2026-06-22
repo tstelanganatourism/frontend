@@ -51,6 +51,7 @@ interface MobileBookingSheetProps {
   refreshmentStudentPrice?: number | string | null;
   minPassengers?: number;
   isStudentPackage?: boolean;
+  isActive?: boolean;
 }
 
 export const MobileBookingSheet = ({ 
@@ -65,12 +66,13 @@ export const MobileBookingSheet = ({
   refreshmentAdultPrice,
   refreshmentChildPrice,
   refreshmentStudentPrice,
-  minPassengers,
+  minPassengers = 1,
   isStudentPackage = false,
+  isActive = true,
 }: MobileBookingSheetProps) => {
   const { publicAvailability, publicLoading } = useInventoryStore();
   const { user } = useAuthStore();
-  const isPackageInactive = !publicLoading && !publicAvailability;
+  const isPackageInactive = !publicLoading && (!publicAvailability || !isActive);
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
   const isSpecialUser = React.useMemo(() => {
@@ -140,12 +142,12 @@ export const MobileBookingSheet = ({
         </div>
 
         {/* Right Side: Bottom Sheet Launcher */}
-        {isPackageInactive ? (
+        {isPackageInactive || !isActive ? (
           <button
             disabled
-            className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-slate-400 px-6 text-xs font-black uppercase tracking-[0.14em] text-white cursor-not-allowed shadow-none"
+            className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-rose-500 px-6 text-xs font-black uppercase tracking-[0.14em] text-white cursor-not-allowed shadow-none"
           >
-            Closed
+            {isPackageInactive ? 'Closed' : 'Bookings Suspended'}
           </button>
         ) : isSuspended ? (
           <button
@@ -189,6 +191,7 @@ export const MobileBookingSheet = ({
                   refreshmentStudentPrice={refreshmentStudentPrice}
                   minPassengers={minPassengers}
                   isStudentPackage={isStudentPackage}
+                  isActive={isActive}
                 />
               </div>
             </SheetContent>
