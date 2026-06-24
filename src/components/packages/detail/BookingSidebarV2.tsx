@@ -414,16 +414,30 @@ export const BookingSidebarV2 = ({
       }
     };
 
+    const handleBulkRefresh = (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.package_id === packageId) {
+          const { fetchPublicAvailability } = useInventoryStore.getState();
+          fetchPublicAvailability(packageSlug, currentMonthStr, true);
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse bulk refresh payload', err);
+      }
+    };
+
     sse.addEventListener('INVENTORY_UPDATE', handleUpdate);
     sse.addEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
     sse.addEventListener('QUOTA_UPDATE', handleQuotaUpdate);
     sse.addEventListener('TRANSPORT_UPDATE', handleTransportUpdate);
+    sse.addEventListener('BULK_REFRESH', handleBulkRefresh);
 
     return () => {
       sse.removeEventListener('INVENTORY_UPDATE', handleUpdate);
       sse.removeEventListener('ENTITY_STATUS_UPDATE', handleEntityUpdate);
       sse.removeEventListener('QUOTA_UPDATE', handleQuotaUpdate);
       sse.removeEventListener('TRANSPORT_UPDATE', handleTransportUpdate);
+      sse.removeEventListener('BULK_REFRESH', handleBulkRefresh);
       sse.close();
     };
   }, [packageId, packageSlug, currentMonthStr]);

@@ -221,7 +221,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     try {
       const res = await apiClient.get<InventoryRow[]>(
         `/api/v1/admin/inventory/packages/${variantId}/calendar`,
-        { params: { month } }
+        { params: { month, t: Date.now() } }
       );
       set({ adminRows: res.data, isLoading: false });
     } catch (err: any) {
@@ -296,7 +296,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     try {
       const res = await apiClient.get<RoomInventoryRow[]>(
         `/api/v1/admin/inventory/rooms/${roomVariantId}/calendar`,
-        { params: { month } }
+        { params: { month, t: Date.now() } }
       );
       set({ roomAdminRows: res.data, roomIsLoading: false });
     } catch (err: any) {
@@ -371,7 +371,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     try {
       const res = await apiClient.get<TransportInventoryCalendarResponse>(
         `/api/v1/admin/inventory/transport/${packageId}/calendar`,
-        { params: { month } }
+        { params: { month, t: Date.now() } }
       );
       set({
         transportOptions: res.data.options || [],

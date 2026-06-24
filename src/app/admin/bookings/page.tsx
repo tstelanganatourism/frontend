@@ -323,6 +323,7 @@ export default function AdminBookingsPage() {
               placeholder="To Date"
               min={startDate}
               allowPast={true}
+              align="right"
             />
           </div>
         </div>

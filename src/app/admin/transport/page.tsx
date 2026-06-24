@@ -715,6 +715,7 @@ export default function TransportPlanningPage() {
                 onChange={setEndDate}
                 min={startDate}
                 allowPast={true}
+                align="right"
               />
             </div>
           )}

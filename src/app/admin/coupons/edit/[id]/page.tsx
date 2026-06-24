@@ -356,6 +356,7 @@ export default function AdminCouponEditPage({ params }: EditPageProps) {
                 onChange={setValidUntil}
                 placeholder="End Date"
                 allowPast={true}
+                align="right"
               />
             </div>
           </div>

@@ -371,7 +371,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [detailedAvailability, setDetailedAvailability] = useState<Record<string, Record<number, Record<string, number>>>>({}); // date -> variant_id -> slotKey -> available_rooms
   const [roomAvailLoading, setRoomAvailLoading] = useState(false);
 
+  const loadedMonthsRef = useRef<Set<string>>(new Set());
+
   const fetchRoomAvailability = async (monthStr: string, force = false) => {
+    loadedMonthsRef.current.add(monthStr);
     // Skip if already fetched for this month and we are not forcing a refetch
     if (!force && roomAvailability[monthStr] !== undefined) return;
     setRoomAvailLoading(true);
@@ -441,6 +444,21 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     // Use relative URL — routed through Next.js rewrite proxy to backend
     // This respects CSP connect-src 'self' and works in any environment
     const es = new ReconnectingEventSource(`/api/v1/stream/rooms/${room.id}`);
+
+    const handleBulkRefresh = (e: any) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.room_id === room.id) {
+          Array.from(loadedMonthsRef.current).forEach(mStr => {
+            fetchRoomAvailabilityRef.current(mStr, true);
+          });
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse room bulk refresh payload', err);
+      }
+    };
+
+    es.addEventListener('BULK_REFRESH', handleBulkRefresh);
 
     es.addEventListener('INVENTORY_UPDATE', (e: any) => {
       try {
@@ -520,6 +538,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     });
 
     return () => {
+      es.removeEventListener('BULK_REFRESH', handleBulkRefresh);
       es.close();
     };
   }, [room.id]);

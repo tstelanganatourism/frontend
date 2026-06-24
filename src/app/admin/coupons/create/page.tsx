@@ -275,6 +275,7 @@ export default function AdminCouponCreatePage() {
                 onChange={setValidUntil}
                 placeholder="End Date"
                 allowPast={true}
+                align="right"
               />
             </div>
           </div>

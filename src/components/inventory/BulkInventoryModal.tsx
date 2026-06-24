@@ -96,7 +96,7 @@ export function BulkInventoryModal({
             </div>
             <div className="space-y-2 relative z-40">
               <Label>To Date</Label>
-              <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} />
+              <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} align="right" />
             </div>
           </div>
           
