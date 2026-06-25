@@ -603,7 +603,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 <label key={opt.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedSharedOptId === opt.id ? 'border-[#1a6b7a] bg-[#1a6b7a]/5' : 'border-slate-200 bg-white hover:border-[#1a6b7a]/40'}`}>
                   <input type="radio" name="adminSharedTransport" checked={selectedSharedOptId === opt.id} onChange={() => setSelectedSharedOptId(opt.id)} className="text-[#1a6b7a]" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-slate-800 truncate">{opt.title} {opt.capacity ? `(${opt.capacity} Seater)` : ''}</div>
+                    <div className="text-xs font-bold text-slate-800 truncate">{opt.title} {opt.capacity ? `(${opt.capacity} Seats)` : ''}</div>
                     {isStudentPackage ? (
                       <div className="text-[10px] text-[#1a6b7a] font-semibold mt-0.5">₹{opt.student_price}/student</div>
                     ) : (

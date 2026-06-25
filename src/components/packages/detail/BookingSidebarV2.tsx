@@ -1697,7 +1697,7 @@ export const BookingSidebarV2 = ({
                         />
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug">
-                            {opt.title}{opt.capacity ? ` · ${opt.capacity} Seater` : ''}
+                            {opt.title}{opt.capacity ? ` · ${opt.capacity} Seats` : ''}
                           </div>
                           {hasInventory && !isClosed && seatsLeft > 0 && seatsLeft >= totalPax && (
                             <div className="text-[10px] font-bold text-[#b45309] mt-0.5">Only {seatsLeft} seats left</div>

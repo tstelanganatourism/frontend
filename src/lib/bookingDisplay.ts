@@ -58,7 +58,7 @@ export function getBaseFareExcludingAddons(
 
 export function describeTransport(item: TransportSelection, adultCount?: number, childCount?: number, studentCount?: number) {
   const quantity = Number(item.quantity || 1);
-  const capacity = item.capacity ? ` (${item.capacity} Seater)` : '';
+  const capacity = item.capacity ? ` (${item.capacity} Seats)` : '';
   
   let paxLabel = '';
   if (studentCount !== undefined && studentCount > 0) {
