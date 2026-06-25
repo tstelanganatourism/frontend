@@ -37,7 +37,7 @@ type RoomDetail = {
 
 const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/rooms/${slug}`, { next: { revalidate: 30, tags: ['stays', `stay:${slug}`] } });
+    const res = await apiFetch(`/api/v1/rooms/${slug}`, { next: { revalidate: 43200, tags: ['stays', `stay:${slug}`] } });
     if (!res.ok) return null;
     return res.json();
   } catch {

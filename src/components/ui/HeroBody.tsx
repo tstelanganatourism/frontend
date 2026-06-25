@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api';
 export default async function HeroBody() {
   let apiSlides = [];
   try {
-    const res = await apiFetch('/api/v1/carousel', { next: { revalidate: 60, tags: ['carousel'] } });
+    const res = await apiFetch('/api/v1/carousel', { next: { revalidate: 43200, tags: ['carousel', 'settings'] } });
     if (res.ok) {
       apiSlides = await res.json();
     }

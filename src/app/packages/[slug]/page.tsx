@@ -88,7 +88,7 @@ const SITE_ORIGIN = 'https://www.tsboattourism.org';
 
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 30, tags: ['packages', `package:${slug}`] } });
+    const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 43200, tags: ['packages', `package:${slug}`] } });
     if (!res.ok) return null;
     return res.json();
   } catch {

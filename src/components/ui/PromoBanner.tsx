@@ -6,7 +6,7 @@ import { Promotion } from '@/hooks/usePromotions';
 export default async function PromoBanner() {
   try {
     const res = await apiFetch('/api/v1/promotions/active', {
-      next: { revalidate: 60 } // Cache for 60 seconds
+      next: { revalidate: 43200, tags: ['settings'] }
     });
     
     if (!res.ok) return null;
