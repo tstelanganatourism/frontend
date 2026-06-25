@@ -531,12 +531,26 @@ export const BookingSidebarV2 = ({
     setCurrentMonthStr(`${y}-${String(m + 1).padStart(2, '0')}`);
   };
 
+  const tomorrowDateStr = useMemo(() => {
+    const tomorrow = new Date(todayIST().getTime() + 86400000);
+    return toYYYYMMDD(tomorrow);
+  }, []);
+
+  const tomorrowSlot = useMemo<PublicDateAvailability | null>(() => {
+    if (!publicAvailability || selectedVariantId === null) return null;
+    return publicAvailability.dates.find(
+      (d) => d.date === tomorrowDateStr && d.variant_id === selectedVariantId
+    ) ?? null;
+  }, [tomorrowDateStr, selectedVariantId, publicAvailability]);
+
   const selectedSlot = useMemo<PublicDateAvailability | null>(() => {
     if (!selectedDate || !publicAvailability || selectedVariantId === null) return null;
     return publicAvailability.dates.find(
       (d) => d.date === selectedDate && d.variant_id === selectedVariantId
     ) ?? null;
   }, [selectedDate, selectedVariantId, publicAvailability]);
+
+  const displaySlot = selectedSlot || tomorrowSlot;
 
   const selectedVariant = useMemo(() => {
     if (selectedVariantId === null) return validVariants[0];
@@ -549,23 +563,33 @@ export const BookingSidebarV2 = ({
     if (publicLoading) return { kind: 'loading' as const, message: 'Checking seats...' };
     if (!isActive) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
     if (isPackageInactive && !isAdmin) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
-    if (!selectedDate) return { kind: 'idle' as const, message: 'Select date to check availability' };
-    if (isAdmin) {
-      if (selectedSlot) {
-        return { kind: 'open' as const, message: `Public: ${selectedSlot.available_seats} seats (Admin: Unlimited)` };
-      } else {
-        return { kind: 'open' as const, message: 'Unlimited Seats (Admin Bypass)' };
+    
+    const slot = selectedSlot || tomorrowSlot;
+    const isFallback = !selectedDate;
+    const dateLabel = isFallback ? 'for tomorrow' : '';
+
+    if (isAdmin && isFallback && !slot) {
+      return { kind: 'open' as const, message: 'Unlimited Seats (Admin Bypass)' };
+    }
+    if (!slot) {
+      if (isFallback) {
+        return { kind: 'idle' as const, message: 'Select date to check availability' };
       }
+      return { kind: 'unpublished' as const, message: 'Schedule not opened yet. Call to confirm.' };
     }
-    if (!selectedSlot) return { kind: 'unpublished' as const, message: 'Schedule not opened yet. Call to confirm.' };
-    if (selectedSlot.status === 'CLOSED') return { kind: 'closed' as const, message: 'Date closed for booking' };
-    if (selectedSlot.status === 'SOLD_OUT') return { kind: 'sold_out' as const, message: 'Sold out' };
-    if (selectedSlot.status === 'NO_INVENTORY') return { kind: 'unpublished' as const, message: 'Schedule not opened yet. Call to confirm.' };
-    if (Number(selectedSlot.available_seats || 0) <= 0) {
-      return { kind: 'unpublished' as const, message: 'Seats not published yet. Call to confirm.' };
+
+    if (slot.status === 'CLOSED') return { kind: 'closed' as const, message: `Date closed for booking ${dateLabel}`.trim() };
+    if (slot.status === 'SOLD_OUT') return { kind: 'sold_out' as const, message: `Sold out ${dateLabel}`.trim() };
+    if (slot.status === 'NO_INVENTORY') return { kind: 'unpublished' as const, message: `Schedule not opened yet ${dateLabel}`.trim() };
+    if (Number(slot.available_seats || 0) <= 0) {
+      return { kind: 'unpublished' as const, message: `Seats not published yet ${dateLabel}`.trim() };
     }
-    return { kind: 'open' as const, message: `${selectedSlot.available_seats} seats available` };
-  }, [publicLoading, isPackageInactive, isActive, selectedDate, selectedSlot, isAdmin]);
+
+    if (isAdmin) {
+      return { kind: 'open' as const, message: `Public: ${slot.available_seats} seats ${dateLabel} (Admin: Unlimited)`.trim() };
+    }
+    return { kind: 'open' as const, message: `${slot.available_seats} seats available ${dateLabel}`.trim() };
+  }, [publicLoading, isPackageInactive, isActive, selectedDate, selectedSlot, tomorrowSlot, isAdmin]);
 
 
   const isWeekendSelected = useMemo(() => {
@@ -954,12 +978,12 @@ export const BookingSidebarV2 = ({
 
   // Validate that selected separate vehicles have enough capacity
   const transportAvailMap = useMemo(() => {
-    if (!selectedSlot?.transport_availability) return {};
-    return selectedSlot.transport_availability.reduce((acc, curr) => {
+    if (!displaySlot?.transport_availability) return {};
+    return displaySlot.transport_availability.reduce((acc, curr) => {
       acc[curr.option_id] = curr;
       return acc;
     }, {} as Record<number, any>);
-  }, [selectedSlot]);
+  }, [displaySlot]);
 
   const sharedCapacityOk = useMemo(() => {
     if (selectedTransportMode !== 'SHARED' || !selectedSharedOptionId) return true;
@@ -1534,7 +1558,7 @@ export const BookingSidebarV2 = ({
           </div>
 
           {/* Live Availability Status */}
-          {selectedDate && (
+          {(selectedDate || (!selectedDate && tomorrowSlot)) && (
             <div className="text-xs">
               {availabilityState.kind === 'loading' ? (
                 <div className="flex items-center gap-2 text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /> {availabilityState.message}</div>
@@ -1676,9 +1700,9 @@ export const BookingSidebarV2 = ({
                     const extraCost = isStudentPackage ? (adults * tStudentUi) : ((adults * tAdultUi) + (children * tChildUi));
                     const isSelected = selectedSharedOptionId === opt.id;
                     
-                    const isClosed = optAvail?.is_closed;
-                    const seatsLeft = optAvail?.remaining ?? 0;
-                    const hasInventory = Boolean(optAvail);
+                    const hasInventory = Boolean(optAvail) || !selectedDate;
+                    const isClosed = optAvail ? optAvail.is_closed : false;
+                    const seatsLeft = optAvail ? optAvail.remaining : (opt.capacity ?? 99);
                     const totalPax = adults + children;
                     const isDisabledForThis = (!hasInventory || isClosed || seatsLeft <= 0 || seatsLeft < totalPax);
 
@@ -1736,9 +1760,9 @@ export const BookingSidebarV2 = ({
                     const fixedPrice = positiveNumber(isWeekendSelected && opt.weekend_fixed_price ? opt.weekend_fixed_price : opt.fixed_price) + pOverride;
                     const lineTotal = qty * fixedPrice;
 
-                    const isClosed = optAvail?.is_closed;
-                    const vehiclesLeft = optAvail?.remaining ?? 0;
-                    const hasInventory = Boolean(optAvail);
+                    const hasInventory = Boolean(optAvail) || !selectedDate;
+                    const isClosed = optAvail ? optAvail.is_closed : false;
+                    const vehiclesLeft = optAvail ? optAvail.remaining : 5;
                     const isDisabledForThis = (!hasInventory || isClosed || vehiclesLeft <= 0);
                     const maxQty = vehiclesLeft;
 
