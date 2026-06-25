@@ -156,15 +156,6 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       const newMin = Number(pkg.min_passengers) || 1;
       setMinPassengers(newMin);
       
-      if (isStudentPkg) {
-        if (studentCount < newMin) {
-          setStudentCount(newMin);
-        }
-      } else {
-        if (adultCount + childCount < newMin) {
-          setAdultCount(Math.max(1, newMin - childCount));
-        }
-      }
       // Reset transport when package changes
       setTransportMode('NONE');
       setSelectedSharedOptId(null);
@@ -237,7 +228,6 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     if (targetType === 'room' && !roomVariantId) return false;
     if (!separateCapacityOk) return false;
     if (targetType === 'package' && !hasTransportSelection) return false;
-    if (targetType === 'package' && (isStudentPackage ? studentCount : (adultCount + childCount)) < minPassengers) return false;
 
     if (passengerMode === 'quick') {
       const nameOk = quickPassenger.full_name.trim() !== '';
@@ -745,15 +735,6 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
               onChange={(e) => setCustomerEmail(e.target.value)}
               className="w-full sm:w-2/3 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
             />
-            {/* Min Passengers Warning */}
-            {targetType === 'package' && minPassengers > 1 && (isStudentPackage ? studentCount : (adultCount + childCount)) < minPassengers && (
-              <div className="flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 p-3">
-                <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
-                <p className="text-xs font-bold text-rose-700 leading-relaxed">
-                  This package requires a minimum of <span className="font-black">{minPassengers} {isStudentPackage ? 'students' : 'passengers'}</span> per booking. Add more to proceed.
-                </p>
-              </div>
-            )}
           </div>
           <div className="space-y-4">
             <div className="flex items-center gap-2">

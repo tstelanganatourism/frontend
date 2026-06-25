@@ -1010,8 +1010,8 @@ export const BookingSidebarV2 = ({
     (!isAdmin && isPackageInactive) ||
     validVariants.length === 0 ||
     !selectedDate ||
-    !separateCapacityOk ||
-    !sharedCapacityOk ||
+    (!isAdmin && !separateCapacityOk) ||
+    (!isAdmin && !sharedCapacityOk) ||
     !hasTransportSelection ||
     (!isAdmin && availabilityState.kind !== 'open');
 
@@ -1573,7 +1573,7 @@ export const BookingSidebarV2 = ({
                     const val = parseInt(e.target.value, 10);
                     if (!isNaN(val)) {
                       const minVal = minPassengers || 1;
-                      const maxVal = (Boolean(selectedDate) && availabilityState.kind === 'open')
+                      const maxVal = (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open')
                         ? Number(selectedSlot?.available_seats || 9999)
                         : 9999;
                       setAdults(Math.min(maxVal, Math.max(0, val)));
@@ -1590,10 +1590,10 @@ export const BookingSidebarV2 = ({
                 />
                 <button
                   type="button"
-                  disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
+                  disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
                   onClick={() => setAdults(p => p + 1)}
                   className={`h-9 w-9 rounded-lg font-black text-lg transition flex items-center justify-center cursor-pointer ${
-                    !isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))
+                    !isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))
                       ? 'text-slate-300 cursor-not-allowed'
                       : 'text-[#b45309] hover:bg-amber-100'
                   }`}
@@ -1609,7 +1609,7 @@ export const BookingSidebarV2 = ({
                 <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
                   <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                   <span className="text-sm font-semibold">{adults}</span>
-                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
                 </div>
               </div>
               <div>
@@ -1617,7 +1617,7 @@ export const BookingSidebarV2 = ({
                 <div className="flex items-center justify-between rounded-lg border border-slate-300 bg-white px-2 py-0.5">
                   <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>-</button>
                   <span className="text-sm font-semibold">{children}</span>
-                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
+                  <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className={`h-8 w-8 rounded font-bold transition ${!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats)) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`}>+</button>
                 </div>
               </div>
             </div>
@@ -2050,7 +2050,7 @@ export const BookingSidebarV2 = ({
           </div>
 
           {/* Min Passengers Warning */}
-          {minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers && (
+          {minPassengers > 1 && !isAdmin && (isStudentPackage ? adults : adults + children) < minPassengers && (
             <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2.5">
               <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
               <p className="text-xs font-bold text-rose-700 leading-relaxed">
@@ -2114,9 +2114,9 @@ export const BookingSidebarV2 = ({
 
           {/* CTA */}
           <button
-            disabled={!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
+            disabled={!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
             onClick={handleBookingClick}
-            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
+            className={`mt-5 hidden lg:flex w-full rounded-lg py-3.5 px-5 font-black text-white shadow-md transition-all text-sm uppercase tracking-wider h-12 items-center justify-center ${!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
                 ? 'bg-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-[#1a6b7a] hover:-translate-y-0.5 hover:bg-[#13505c] hover:shadow-md'
               }`}
@@ -2162,17 +2162,17 @@ export const BookingSidebarV2 = ({
         </div>
 
         <button
-          disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
+          disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)}
           onClick={handleBookingClick}
           className={`flex-1 rounded-xl h-11 px-4 font-black text-white text-xs uppercase tracking-wider transition-all flex items-center justify-center ${
-            isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
+            isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers)
               ? 'bg-slate-400 cursor-not-allowed shadow-none'
               : 'bg-[#1a6b7a] active:scale-95 shadow-md shadow-[#1a6b7a]/10'
           }`}
         >
           {isProcessingCheckout ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers) ? (isStudentPackage ? `Min ${minPassengers} students` : `Min ${minPassengers} pax`) : ctaText}
+          ) : (!isAdmin && minPassengers > 1 && (isStudentPackage ? adults : adults + children) < minPassengers) ? (isStudentPackage ? `Min ${minPassengers} students` : `Min ${minPassengers} pax`) : ctaText}
         </button>
       </div>
 

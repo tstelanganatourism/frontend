@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
 
-const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15206.499265526056!2d80.88424!3d17.66792!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9d062f4c079%3A0x59e5318d95327bde!2sAP%20TOURISM%20PAPIKONDALU!5e0!3m2!1sen!2sin!4v1780377741415!5m2!1sen!2sin';
+const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.6249326203515!2d80.8842764!3d17.6679145!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9430aa06acf%3A0xc16caef81e0d09c9!2sTelangana%20Boat%20Tourism!5e0!3m2!1sen!2sin!4v1781946656779!5m2!1sen!2sin';
 
 const socialLinks = [
   { label: 'Facebook', href: '#', icon: <FacebookIcon /> },
@@ -124,9 +124,9 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
           {/* Map */}
           <div className="min-w-0 overflow-hidden rounded-xl border border-white/12 bg-white/[0.04] p-2 shadow-[0_14px_40px_rgba(0,0,0,0.12)] footer-col:col-span-2 footer-nav:col-span-1">
             <div className="mb-2 flex items-center justify-between gap-3 px-1.5">
-              <h3 className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">AP Tourism Papikondalu</h3>
+              <h3 className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Telangana Boat Tourism</h3>
               <a
-                href="https://www.google.com/maps/place/AP+TOURISM+PAPIKONDALU"
+                href="https://www.google.com/maps/place/Telangana+Boat+Tourism/@17.6679145,80.8842764,15z"
                 target="_blank"
                 rel="noreferrer"
                 className="shrink-0 text-[11px] font-bold text-amber-400 transition-colors hover:text-white"
@@ -141,7 +141,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
             >
               {mapLoaded ? (
                 <iframe
-                  title="AP Tourism Papikondalu map"
+                  title="Telangana Boat Tourism map"
                   src={MAP_EMBED_URL}
                   className="h-full w-full"
                   style={{ border: 0 }}
