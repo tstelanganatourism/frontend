@@ -990,6 +990,18 @@ export const BookingSidebarV2 = ({
     return totalCapacity >= totalPax;
   }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children, transportAvailMap]);
 
+  const hasTransportSelection = useMemo(() => {
+    if (!hasTransport || transportOptions.length === 0) return true;
+    if (selectedTransportMode === 'SHARED') {
+      return selectedSharedOptionId !== null;
+    }
+    if (selectedTransportMode === 'SEPARATE') {
+      const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
+      return totalVehicles > 0;
+    }
+    return false;
+  }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys]);
+
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
   const isBookingDisabled =
@@ -1000,6 +1012,7 @@ export const BookingSidebarV2 = ({
     !selectedDate ||
     !separateCapacityOk ||
     !sharedCapacityOk ||
+    !hasTransportSelection ||
     (!isAdmin && availabilityState.kind !== 'open');
 
   const ctaText = useMemo(() => {
@@ -1012,11 +1025,15 @@ export const BookingSidebarV2 = ({
     if (!selectedDate) return 'Select a date';
     if (!separateCapacityOk) return '⚠ Not enough vehicles/capacity';
     if (!sharedCapacityOk) return '⚠ Not enough transport seats';
+    if (hasTransport && transportOptions.length > 0 && !hasTransportSelection) {
+      if (selectedTransportMode === 'SEPARATE') return '⚠ Select at least 1 vehicle';
+      return '⚠ Select a transport option';
+    }
     if (isAdmin) return 'Book Now (Admin)';
     if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Unavailable';
     if (availabilityState.kind === 'open') return 'Book Now';
     return 'Call to confirm availability';
-  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, availabilityState.kind]);
+  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind]);
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal
   useEffect(() => {

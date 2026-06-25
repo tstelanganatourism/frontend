@@ -219,11 +219,24 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     return totalCapacity >= totalPax;
   }, [transportMode, separateVehicleQtys, separateOpts, adultCount, childCount, studentCount, isStudentPackage]);
 
+  const hasTransportSelection = useMemo(() => {
+    if (targetType !== 'package' || !packageHasTransport || packageTransportOptions.length === 0) return true;
+    if (transportMode === 'SHARED') {
+      return selectedSharedOptId !== null;
+    }
+    if (transportMode === 'SEPARATE') {
+      const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
+      return totalVehicles > 0;
+    }
+    return false;
+  }, [targetType, packageHasTransport, packageTransportOptions, transportMode, selectedSharedOptId, separateVehicleQtys]);
+
   const canSubmit = () => {
     if (!travelDate) return false;
     if (targetType === 'package' && !variantId) return false;
     if (targetType === 'room' && !roomVariantId) return false;
     if (!separateCapacityOk) return false;
+    if (targetType === 'package' && !hasTransportSelection) return false;
     if (targetType === 'package' && (isStudentPackage ? studentCount : (adultCount + childCount)) < minPassengers) return false;
 
     if (passengerMode === 'quick') {
