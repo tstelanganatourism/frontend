@@ -17,48 +17,87 @@ export default function InstallPromptModal() {
     
     setIsStandalone(isStandaloneMode);
 
-    if (isStandaloneMode || localStorage.getItem('pwa-prompt-dismissed') === 'true') {
+    const params = new URLSearchParams(window.location.search);
+    const forceShow = params.get('force-pwa') === 'true';
+
+    // Dismissed check (expires after 3 days)
+    const dismissedTime = localStorage.getItem('pwa-prompt-dismissed-time');
+    const hasOldDismissed = localStorage.getItem('pwa-prompt-dismissed') === 'true';
+    let isCurrentlyDismissed = false;
+
+    if (dismissedTime) {
+      const parsedTime = parseInt(dismissedTime, 10);
+      if (!isNaN(parsedTime) && (Date.now() - parsedTime < 3 * 24 * 60 * 60 * 1000)) {
+        isCurrentlyDismissed = true;
+      }
+    } else if (hasOldDismissed) {
+      isCurrentlyDismissed = true;
+    }
+
+    if (isStandaloneMode || (isCurrentlyDismissed && !forceShow)) {
       return;
     }
 
-    // Detect iOS
+    // Detect iOS (including iPadOS 13+)
     const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent) || 
+                        (window.navigator.maxTouchPoints > 0 && /macintosh/.test(userAgent));
     setIsIOS(isIosDevice);
 
     if (isIosDevice) {
-      // Show immediately on iOS if not dismissed
-      const timer = setTimeout(() => setShowPrompt(true), 3000);
+      // Show immediately on iOS if not dismissed (or if forced)
+      const timer = setTimeout(() => setShowPrompt(true), 2500);
       return () => clearTimeout(timer);
     }
 
-    // Android / Chrome
+    // Android / Chrome: check if prompt is already captured by global listener
+    const globalPrompt = (window as any).deferredPrompt;
+    if (globalPrompt) {
+      setDeferredPrompt(globalPrompt);
+      setShowPrompt(true);
+    }
+
+    // Handlers for beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      (window as any).deferredPrompt = e;
       setShowPrompt(true);
     };
 
+    const handleCustomPromptEvent = () => {
+      const p = (window as any).deferredPrompt;
+      if (p) {
+        setDeferredPrompt(p);
+        setShowPrompt(true);
+      }
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('deferredpromptavailable', handleCustomPromptEvent);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('deferredpromptavailable', handleCustomPromptEvent);
     };
   }, []);
 
   const handleDismiss = () => {
     setShowPrompt(false);
+    localStorage.setItem('pwa-prompt-dismissed-time', Date.now().toString());
     localStorage.setItem('pwa-prompt-dismissed', 'true');
   };
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
+    if (promptEvent) {
+      promptEvent.prompt();
+      const { outcome } = await promptEvent.userChoice;
       if (outcome === 'accepted') {
         setShowPrompt(false);
       }
       setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
     }
   };
 
@@ -87,9 +126,9 @@ export default function InstallPromptModal() {
             {isIOS ? (
               <div className="text-xs text-slate-600 font-medium space-y-2">
                 <p>Install Telangana Boat Tourism for a faster, better experience.</p>
-                <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex items-center gap-2">
-                  <span className="flex items-center gap-1">1. Tap <Share className="h-3.5 w-3.5 text-blue-500" /></span>
-                  <span className="flex items-center gap-1">2. Tap <PlusSquare className="h-3.5 w-3.5 text-slate-700" /> <b>Add to Home Screen</b></span>
+                <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-col gap-1.5">
+                  <span className="flex items-center gap-1.5">1. Tap the Share button <Share className="h-3.5 w-3.5 text-blue-500 inline" /></span>
+                  <span className="flex items-center gap-1.5">2. Scroll down & select <b>Add to Home Screen</b> <PlusSquare className="h-3.5 w-3.5 text-slate-700 inline" /></span>
                 </div>
               </div>
             ) : (
