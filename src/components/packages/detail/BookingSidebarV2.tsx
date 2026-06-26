@@ -568,13 +568,16 @@ export const BookingSidebarV2 = ({
     const isFallback = !selectedDate;
     const dateLabel = isFallback ? 'for tomorrow' : '';
 
-    if (isAdmin && isFallback && !slot) {
-      return { kind: 'open' as const, message: 'Unlimited Seats (Admin Bypass)' };
-    }
-    if (!slot) {
-      if (isFallback) {
-        return { kind: 'idle' as const, message: 'Select date to check availability' };
+    // If no date is selected, simply show as "Available" to encourage users to interact
+    // instead of showing "Sold Out" based on tomorrow's status.
+    if (isFallback) {
+      if (isAdmin) {
+        return { kind: 'open' as const, message: 'Unlimited Seats (Admin Bypass)' };
       }
+      return { kind: 'open' as const, message: 'Available - Select a date' };
+    }
+
+    if (!slot) {
       return { kind: 'unpublished' as const, message: 'Schedule not opened yet. Call to confirm.' };
     }
 
