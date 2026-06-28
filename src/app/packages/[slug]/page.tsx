@@ -117,7 +117,7 @@ function getSeoDescription(pkg: PackageDetail) {
   const location = pkg.place || pkg.region || 'Bhadrachalam and Papikondalu';
   const duration = pkg.duration ? ` ${pkg.duration}` : '';
   return cleanText(
-    `Book ${pkg.title}${duration} with Telangana Boat Tourism. Official Papikondalu boat tour package booking from ${location}, with itinerary, pricing, boarding details, and support.`,
+    `Book ${pkg.title}${duration} with Telangana Boat Tourism. Papikondalu boat tour package booking from ${location}, with itinerary, pricing, boarding details, and support.`,
     160
   );
 }
@@ -128,7 +128,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!pkg) return { title: 'Package Not Found' };
 
   const description = getSeoDescription(pkg);
-  const title = pkg.meta_title || `${pkg.title} - Official Tour Package Booking`;
+  const title = pkg.meta_title || `${pkg.title} - Tour Package Booking Partner`;
   const canonical = canonicalForPackage(pkg);
   const image = absUrl(pkg.og_image_url || pkg.cover_image_url);
 

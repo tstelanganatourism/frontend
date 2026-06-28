@@ -37,7 +37,7 @@ const bottomTags = [
 ];
 
 const trustItems = [
-  { icon: ShieldCheck, label: 'Official Tourism Partner', sub: 'Telangana & Andhra Pradesh' },
+  { icon: ShieldCheck, label: 'Authorized Booking Agent', sub: 'Telangana & Andhra Pradesh' },
   { icon: BadgeCheck, label: 'Government Approved', sub: 'Safe & Trusted' },
   { icon: Headphones, label: '24/7 Booking Support', sub: 'Quick & Reliable' },
   { icon: Globe2, label: 'Secure Payments', sub: 'Secure & Encrypted' },
@@ -392,7 +392,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
               <span className="truncate">
                 {isDefault
-                  ? 'Official Pappikondalu & Bhadrachalam Booking'
+                  ? 'Pappikondalu & Bhadrachalam Tour Bookings'
                   : isRoom
                     ? 'Verified Riverside Stay'
                     : isBoatRideSlide

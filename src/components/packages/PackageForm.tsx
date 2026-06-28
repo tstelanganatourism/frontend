@@ -201,7 +201,7 @@ export default function PackageForm({
       const locationLabel = cleanPlace || 'Bhadrachalam and Papikondalu';
 
       // 1. Auto-generate Meta Title
-      const expectedTitle = cleanTitle ? `${cleanTitle} - Official Tour Package Booking` : '';
+      const expectedTitle = cleanTitle ? `${cleanTitle} - Tour Package Booking Partner` : '';
       if (!metaTitle || metaTitle === lastGeneratedMetaTitleRef.current) {
         setMetaTitle(expectedTitle);
         lastGeneratedMetaTitleRef.current = expectedTitle;
@@ -210,7 +210,7 @@ export default function PackageForm({
       // 2. Auto-generate Meta Description
       const durationText = cleanDur ? ` ${cleanDur}` : '';
       const expectedDesc = cleanTitle
-        ? `Book ${cleanTitle}${durationText} with Telangana Boat Tourism. Official Papikondalu boat tour package booking from ${locationLabel}, with itinerary, pricing, boarding details, and support.`
+        ? `Book ${cleanTitle}${durationText} with Telangana Boat Tourism. Papikondalu boat tour package booking agent from ${locationLabel}, with itinerary, pricing, boarding details, and support.`
         : '';
       if (!metaDescription || metaDescription === lastGeneratedMetaDescRef.current) {
         setMetaDescription(expectedDesc);

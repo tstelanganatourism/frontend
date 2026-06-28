@@ -182,7 +182,7 @@ export default function AboutPage() {
                     <ShieldCheck className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <div className="text-white font-bold">Official Booking Office</div>
+                    <div className="text-white font-bold">Authorized Booking Office</div>
                     <div className="text-white/50 text-sm">Central Booking Office, Bhadrachalam</div>
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export default function AboutPage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <span className="text-[var(--color-brand-teal)] font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Official Credentials</span>
+            <span className="text-[var(--color-brand-teal)] font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Agency Credentials</span>
             <h2 className="text-4xl font-bold text-[var(--color-brand-river)] mb-4">Government Registered & Licensed</h2>
             <p className="text-slate-500 max-w-2xl mx-auto">
               Telangana Boat Tourism is officially registered under the Telangana Shops &amp; Establishments Act, 1988 with a valid Boat Tourism Licence issued by the Government of Telangana Labour Department.
@@ -226,7 +226,7 @@ export default function AboutPage() {
                     <ShieldCheck className="h-5 w-5 text-[var(--color-brand-teal)]" />
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Official Registration</p>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Government Registration</p>
                     <h3 className="text-xl font-black text-[var(--color-brand-river)]">Boat Tourism Licence</h3>
                   </div>
                   </div>

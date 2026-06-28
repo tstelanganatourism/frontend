@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/api';
 
 export const metadata = {
   title: "Papikondalu Boat Rides & Godavari River Cruises",
-  description: "Book official government-approved boat rides, luxury cruises, and day tours through the scenic Papikondalu hills on the Godavari River. Safe and family-friendly.",
+  description: "Book government-approved boat rides, luxury cruises, and day tours through the scenic Papikondalu hills on the Godavari River. Safe and family-friendly.",
   keywords: ["Papikondalu Boat Rides", "Godavari Cruises", "Papi Hills Boat Booking", "Bhadrachalam Boating", "Rajahmundry Boat Trips"]
 };
 
