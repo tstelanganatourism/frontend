@@ -148,7 +148,7 @@ export default function AboutPage() {
                 <div className="space-y-4 pt-12">
                   <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10 text-center">
                     <ShieldCheck className="h-10 w-10 text-[var(--color-brand-teal)] mx-auto mb-4" />
-                    <div className="text-white font-bold text-sm">Govt. Verified</div>
+                    <div className="text-white font-bold text-sm">Govt. Registered</div>
                   </div>
                   <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/10 text-center">
                     <Award className="h-10 w-10 text-[var(--color-brand-sand)] mx-auto mb-4" />
@@ -256,7 +256,7 @@ export default function AboutPage() {
                     <Award className="h-6 w-6 text-[var(--color-brand-sand)]" />
                   </span>
                   <div>
-                    <h4 className="mb-1 text-base font-black">Digitally Verified by Telangana Government</h4>
+                    <h4 className="mb-1 text-base font-black">Official Telangana Labour Department Registration</h4>
                     <p className="text-sm leading-6 text-white/75">
                       This certificate is digitally signed and can be verified at{' '}
                       <a

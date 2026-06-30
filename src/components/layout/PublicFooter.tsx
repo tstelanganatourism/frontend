@@ -167,8 +167,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
         <div className="mt-3 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-4 text-center sm:flex-row sm:pr-20 sm:text-left md:pr-24">
           <p suppressHydrationWarning className="text-center text-[10px] text-slate-100 sm:text-left">
             © {new Date().getFullYear()} Telangana Boat Tourism. All rights reserved.
-            <span className="block mt-1 text-slate-300">Telangana Boat Tourism is a trade name of NALLA SRILATHA.</span>
-            <span className="block mt-1 text-slate-400 text-[9px] leading-relaxed">We are an independent private travel booking agency. We are not affiliated with, operated by, or associated with the Government of Telangana, the Telangana State Tourism Development Corporation (TSTDC), the Andhra Pradesh Tourism Development Corporation (APTDC), or any government authority.</span>
+            <span className="block mt-1 text-slate-300">Telangana Boat Tourism is a registered business operated by NALLA SAIBABU and NALLA SRILATHA.</span>
           </p>
           <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
             Made with <Heart className="mx-0.5 h-3 w-3 fill-red-500 text-red-500" /> by <a href="https://wa.me/918886154275" target="_blank" rel="noreferrer" className="font-bold text-white transition-colors hover:text-[var(--color-brand-teal)]">Satvik</a>
