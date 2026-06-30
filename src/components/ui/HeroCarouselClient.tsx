@@ -802,76 +802,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          {/* ── Premium indicator bar ── */}
-          <div className="absolute bottom-28 left-1/2 z-50 -translate-x-1/2 md:bottom-24">
-            <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-black/50 px-3 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl">
 
-              {/* Mobile prev arrow */}
-              <button
-                type="button"
-                onClick={goPrev}
-                aria-label="Previous slide"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 active:scale-90 sm:hidden"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-
-              {/* Dots */}
-              <div className="flex items-center gap-2">
-                {slides.map((_, idx) => {
-                  const isActive = idx === activeIndex;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => goTo(idx)}
-                      aria-label={`Go to slide ${idx + 1}`}
-                      aria-current={isActive ? 'true' : undefined}
-                      className="relative flex h-8 items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 rounded-full"
-                      style={{ width: isActive ? '2.75rem' : '1rem' }}
-                    >
-                      {/* Track bg */}
-                      <span
-                        className={`relative block h-[5px] w-full overflow-hidden rounded-full transition-all duration-500 ease-out ${
-                          isActive ? 'bg-white/20' : 'bg-white/25 hover:bg-white/45'
-                        }`}
-                      >
-                        {/* Fill bar — new key on every slide change so animation always restarts from 0 */}
-                        {isActive && (
-                          <span
-                            key={progressKey}
-                            className="absolute inset-y-0 left-0 rounded-full bg-amber-300"
-                            style={{
-                              width: '100%',
-                              transformOrigin: 'left center',
-                              animation: isPaused
-                                ? 'none'
-                                : 'carousel-progress 5s linear forwards',
-                            }}
-                          />
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Mobile next arrow */}
-              <button
-                type="button"
-                onClick={goNext}
-                aria-label="Next slide"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 active:scale-90 sm:hidden"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-
-              {/* Slide counter */}
-              <span className="ml-1 hidden min-w-[2.5rem] text-center text-[11px] font-bold tabular-nums text-white/70 sm:block">
-                {String(activeIndex + 1).padStart(2, '0')}&thinsp;/&thinsp;{String(slides.length).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
 
           {/* Slide type label badge */}
           {!isDefault && (
