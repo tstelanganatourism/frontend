@@ -48,36 +48,13 @@ const nextConfig: NextConfig = {
           headers: [
             { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
           ],
-        },
-        // ISR page routes: browser must always revalidate (max-age=0) so a
-        // reload after deployment never serves stale HTML. The CDN layer
-        // (Vercel / Cloudflare) caches for 60s via s-maxage, and
-        // stale-while-revalidate lets the CDN serve the old page instantly
-        // while regenerating in the background.
-        {
-          source: '/packages/:path*',
-          headers: [
-            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
-          ],
-        },
-        {
-          source: '/stays/:path*',
-          headers: [
-            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
-          ],
-        },
-        {
-          source: '/boat-rides/:path*',
-          headers: [
-            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
-          ],
-        },
-        {
-          source: '/sightseeing/:path*',
-          headers: [
-            { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=59' },
-          ],
         }
+        // Note: ISR page routes are NOT overridden here.
+        // Next.js native `export const revalidate = 43200` (12h) on each page
+        // controls the Vercel Data Cache. On-demand revalidation via /api/revalidate
+        // is triggered by the admin dashboard for instant updates.
+        // Custom 60s s-maxage overrides were removed because they caused excessive
+        // ISR Writes (forced regeneration every 60s) burning through free tier limits.
       );
     }
 
