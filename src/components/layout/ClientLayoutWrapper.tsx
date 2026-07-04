@@ -54,7 +54,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       </main>
       <PublicFooter isDashboard={pathname?.startsWith('/dashboard')} />
       {showMobileNav && <MobileBottomNav isStacked={showStickyBar} />}
-      <WhatsAppFAB hiddenOnMobile={showStickyBar} />
+      {!isBookingPage && <WhatsAppFAB hiddenOnMobile={showStickyBar} />}
       {showStickyBar && <StickyConversionBar />}
     </>
   );
