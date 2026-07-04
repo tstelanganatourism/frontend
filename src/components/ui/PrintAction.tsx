@@ -1,19 +1,6 @@
 'use client';
-import { useEffect } from 'react';
 
 export default function PrintAction({ showClose = false }: { showClose?: boolean }) {
-  useEffect(() => {
-    // Detect if we are already in a print preview (or iframe) to prevent infinite loops
-    const isPrintMedia = window.matchMedia && window.matchMedia('print').matches;
-    if (isPrintMedia) return;
-    
-    // Automatically open the print/save as PDF dialog when the page loads
-    const timer = setTimeout(() => {
-      window.print();
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 1000, display: 'flex', gap: '10px' }} className="no-print">
       {showClose && (
