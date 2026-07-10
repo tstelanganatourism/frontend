@@ -17,9 +17,31 @@ import { BookingSidebarV2 } from '@/components/packages/detail/BookingSidebarV2'
 import { MobileBookingSheet } from '@/components/packages/detail/MobileBookingSheet';
 import CouponPopup from '@/components/ui/CouponPopup';
 
-// ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
-export const revalidate = 43200; // 12 hours — admin can bust via /api/revalidate?tag=packages
+// ISR: revalidate every 12 hours OR instantly when admin triggers /api/revalidate
+export const revalidate = 43200;
+// dynamicParams=true means new slugs added after build are still rendered on-demand
 export const dynamicParams = true;
+
+/**
+ * Pre-build all published package pages at compile time.
+ * Without this, the first visitor to any package URL waits for a full SSR round-trip
+ * to the backend, resulting in 3–8 second TTFB on cold starts.
+ * With generateStaticParams, Next.js compiles and caches all pages at build time.
+ */
+export async function generateStaticParams() {
+  try {
+    const res = await apiFetch('/api/v1/packages?size=200&page=1', { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items: Array<{ slug: string }> = data?.items ?? [];
+    return items
+      .filter((p) => typeof p.slug === 'string' && p.slug.length > 0)
+      .map((p) => ({ slug: p.slug }));
+  } catch {
+    // Backend unreachable at build time — pages will still be rendered on-demand
+    return [];
+  }
+}
 
 
 type Variant = { 

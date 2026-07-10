@@ -14,7 +14,9 @@ import InstallPromptModal from '@/components/ui/InstallPromptModal';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap' });
-const notoUrdu = Noto_Nastaliq_Urdu({ subsets: ["arabic"], variable: "--font-urdu", weight: ['400', '700'], display: 'swap' });
+// Urdu Nastaliq is a heavy font used only for 2 navbar strings.
+// preload:false stops it from blocking FCP for all pages globally.
+const notoUrdu = Noto_Nastaliq_Urdu({ subsets: ["arabic"], variable: "--font-urdu", weight: ['400', '700'], display: 'swap', preload: false });
 const notoTelugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-telugu", weight: ['400', '500', '600', '700'], display: 'swap' });
 
 export const metadata: Metadata = {

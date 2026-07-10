@@ -4,9 +4,27 @@ import { apiFetch } from '@/lib/api';
 import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperience';
 import CouponPopup from '@/components/ui/CouponPopup';
 
-// ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
-export const revalidate = 43200; // 12 hours — admin can bust via /api/revalidate?tag=stays
+// ISR: revalidate every 12 hours OR instantly when admin triggers /api/revalidate
+export const revalidate = 43200;
 export const dynamicParams = true;
+
+/**
+ * Pre-build all published room/stay pages at compile time.
+ * Without this, the first visitor to any stay URL waits for a full SSR round-trip.
+ */
+export async function generateStaticParams() {
+  try {
+    const res = await apiFetch('/api/v1/rooms?size=200&page=1', { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items: Array<{ slug: string }> = data?.items ?? [];
+    return items
+      .filter((r) => typeof r.slug === 'string' && r.slug.length > 0)
+      .map((r) => ({ slug: r.slug }));
+  } catch {
+    return [];
+  }
+}
 
 
 type RoomVariant = { id: number; variant_name: string; weekday_price: number; weekend_price: number; capacity_per_room?: number };

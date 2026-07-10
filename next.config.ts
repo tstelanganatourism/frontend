@@ -14,8 +14,14 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   images: {
-    unoptimized: true,
-    qualities: [25, 50, 65, 75, 80, 90, 100],
+    // unoptimized was previously `true` — this caused the browser to download
+    // raw source images (1–5 MB each), resulting in a 12.2s LCP on mobile.
+    // `sharp` is now installed. Next.js will serve compressed WebP/AVIF images.
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 86400, // cache optimized images for 1 day
+    qualities: [65, 75, 80, 90],
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
       { protocol: 'http', hostname: '127.0.0.1', pathname: '/**' },
