@@ -322,7 +322,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
 
   return (
     <section
-      className="relative isolate flex h-[calc(100svh_-_7.3125rem)] flex-col overflow-hidden text-white lg:h-[calc(100svh_-_8.45rem)]"
+      className="sticky top-0 w-full overflow-hidden bg-slate-950 relative isolate flex h-[100svh] flex-col text-white"
       onMouseEnter={() => {
         if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
           setIsPaused(true);
@@ -802,8 +802,6 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
             <ChevronRight className="h-5 w-5" />
           </button>
 
-
-
           {/* Slide type label badge */}
           {!isDefault && (
             <div className="absolute bottom-28 right-4 z-30 md:right-8 md:bottom-24 hidden sm:block">
@@ -815,28 +813,6 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
           )}
         </>
       )}
-
-      {/* ─── Trust Bar ────────────────────────────────────────────────── */}
-      <div className="relative z-10 mx-auto mt-auto hidden w-full max-w-[92rem] px-4 pb-4 sm:px-6 md:block lg:px-10">
-        <div className="grid gap-3 rounded-2xl border border-white/20 bg-white/92 p-3 text-slate-950 shadow-[0_18px_55px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-center lg:p-4">
-          {trustItems.map(({ icon: Icon, label, sub }) => (
-            <div key={label} className="flex items-center gap-3 px-1 py-1">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-200 text-[var(--color-brand-river)]">
-                <Icon className="h-6 w-6" strokeWidth={1.8} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-black leading-5 text-slate-900">{label}</p>
-                <p className="text-sm font-semibold leading-5 text-slate-600">{sub}</p>
-              </div>
-            </div>
-          ))}
-          <div className="hidden items-center justify-end gap-4 border-l border-slate-200 pl-5 lg:flex">
-            <Image src="/aptdc-logo.svg" alt="APTDC" width={52} height={52} className="rounded-full bg-white p-1" />
-            <span className="h-10 w-px bg-slate-300" />
-            <Image src="/telangana-tourism-logo.svg" alt="Telangana Tourism" width={52} height={52} className="rounded-full bg-white p-1" />
-          </div>
-        </div>
-      </div>
 
       {/* ─── CSS for carousel progress animation ────────────────────────── */}
       <style>{`

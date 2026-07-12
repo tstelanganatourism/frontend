@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, User, Home, Ship, BedDouble, Camera, Image as ImageIcon, Info, LogOut, LayoutDashboard, ChevronDown, Settings, FileText, CalendarDays, ClipboardList } from 'lucide-react';
+import { Menu, X, User, Home, Ship, BedDouble, Camera, Image as ImageIcon, Info, LogOut, LayoutDashboard, ChevronDown, Settings, FileText, CalendarDays, ClipboardList, Star } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { logout } from '@/services/authService';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -86,8 +86,8 @@ export default function PublicNavbar() {
     return activeMap;
   }, [pathname]);
 
-  const primaryLinks = React.useMemo(() => navLinks.slice(0, 4), []);
-  const secondaryLinks = React.useMemo(() => navLinks.slice(4), []);
+  const primaryLinks = React.useMemo(() => navLinks.slice(0, 3), []);
+  const secondaryLinks = React.useMemo(() => navLinks.slice(3), []);
   const isSecondaryActive = React.useMemo(() => secondaryLinks.some(link => activeLinks[link.name]), [activeLinks, secondaryLinks]);
 
   const handleNavigate = () => {
@@ -194,9 +194,17 @@ export default function PublicNavbar() {
                 })}
 
                 {/* Secondary Links: Render directly only on 2xl screens (1536px+) */}
+                {/* Secondary Links: Render directly when there is space, based on viewport breakpoints */}
                 {secondaryLinks.map((link, index) => {
                   const actualIndex = primaryLinks.length + index;
                   const isActive = activeLinks[link.name];
+
+                  // Progressive display breakpoints to prevent overlap
+                  let responsiveClass = "min-[1850px]:inline-flex";
+                  if (link.name === 'Accommodation') responsiveClass = "min-[1550px]:inline-flex";
+                  else if (link.name === 'Brochures') responsiveClass = "min-[1650px]:inline-flex";
+                  else if (link.name === 'Gallery') responsiveClass = "min-[1750px]:inline-flex";
+
                   return (
                     <Link
                       key={link.name}
@@ -205,7 +213,7 @@ export default function PublicNavbar() {
                       onMouseEnter={() => setHoveredIndex(actualIndex)}
                       onMouseLeave={() => setHoveredIndex(null)}
                       aria-current={isActive ? 'page' : undefined}
-                      className="relative hidden h-9 items-center justify-center rounded-full min-[1600px]:inline-flex min-[1600px]:px-3.5 min-[1600px]:text-[13px] font-extrabold transition-colors duration-200"
+                      className={`relative hidden h-9 items-center justify-center rounded-full ${responsiveClass} nav:px-1.5 nav:text-[10px] xl:px-2.5 xl:text-[11.5px] 2xl:px-3.5 2xl:text-[13px] font-extrabold transition-colors duration-200`}
                       style={{ color: isActive ? '#ffffff' : 'var(--color-brand-river)' }}
                     >
                       {isActive && (
@@ -235,8 +243,8 @@ export default function PublicNavbar() {
                   );
                 })}
 
-                {/* 'More' dropdown for secondary links: visible on screens below 1600px */}
-                <div className="relative inline-flex min-[1600px]:hidden" ref={moreRef}>
+                {/* 'More' dropdown for secondary links: visible on screens below 1850px */}
+                <div className="relative inline-flex min-[1850px]:hidden" ref={moreRef}>
                   <button
                     onClick={() => setMoreOpen(!moreOpen)}
                     onMouseEnter={() => setHoveredIndex(99)}
@@ -280,12 +288,19 @@ export default function PublicNavbar() {
                       >
                         {secondaryLinks.map((link) => {
                           const isLinkActive = activeLinks[link.name];
+
+                          // Hide dropdown item dynamically when it becomes visible in the main navbar
+                          let dropdownHiddenClass = "min-[1850px]:hidden";
+                          if (link.name === 'Accommodation') dropdownHiddenClass = "min-[1550px]:hidden";
+                          else if (link.name === 'Brochures') dropdownHiddenClass = "min-[1650px]:hidden";
+                          else if (link.name === 'Gallery') dropdownHiddenClass = "min-[1750px]:hidden";
+
                           return (
                             <Link
                               key={link.name}
                               href={link.href}
                               onClick={() => { setMoreOpen(false); handleNavigate(); }}
-                              className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-extrabold transition-colors ${
+                              className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-extrabold transition-colors ${dropdownHiddenClass} ${
                                 isLinkActive 
                                   ? 'bg-slate-50 text-[var(--color-brand-teal)]' 
                                   : 'text-slate-700 hover:bg-slate-50 hover:text-[var(--color-brand-teal)]'
@@ -475,6 +490,27 @@ export default function PublicNavbar() {
                 </Link>
               )}
               </div>
+              
+              {/* Write a Review Button */}
+              <a
+                href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
+                target="_blank"
+                rel="noreferrer"
+                className="hidden items-center gap-1 rounded-full border border-amber-200 bg-amber-50/40 px-2.5 py-1.5 text-[10.5px] font-bold text-amber-800 transition-all hover:bg-amber-100 hover:border-amber-300 hover:shadow-sm active:scale-[0.98] nav:inline-flex xl:px-3"
+              >
+                <span className="text-amber-500 leading-none">★</span> Write a Review
+              </a>
+
+              {/* Mobile Write a Review Button (Golden Star) */}
+              <a
+                href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
+                target="_blank"
+                rel="noreferrer"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-amber-250 bg-amber-50 text-amber-500 shadow-sm transition-all hover:bg-amber-100 active:scale-95 nav:hidden select-none"
+                aria-label="Write a Google Review"
+              >
+                <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+              </a>
 
               {/* Live Booking Count */}
               <LiveBookingCount />
@@ -599,6 +635,17 @@ export default function PublicNavbar() {
                       </Link>
                     );
                   })}
+
+                  {/* Google Reviews Mobile CTA */}
+                  <a
+                    href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-amber-250 bg-amber-55/40 px-4 py-2.5 text-xs font-extrabold text-amber-800 transition-all hover:bg-amber-100/70 active:scale-[0.99] select-none"
+                  >
+                    <span className="text-amber-500 text-xs tracking-wider">★★★★★</span>
+                    Write a Review on Google
+                  </a>
 
                   {/* Auth Actions in Mobile Drawer */}
                   <div className="col-span-2 mt-1 border-t border-slate-100 pt-3">

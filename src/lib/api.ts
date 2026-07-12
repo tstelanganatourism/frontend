@@ -74,6 +74,12 @@ export function processQueue(error: unknown, token: string | null = null) {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    // CRITICAL: Do not attempt token refresh or request queueing on the server (SSR).
+    // This prevents global variable pollution, hanging requests, and server crashes.
+    if (typeof window === 'undefined') {
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // Only intercept 401s that haven't been retried yet

@@ -6,6 +6,7 @@ import { ArrowRight, Camera, Compass, Mountain, Quote, Sparkles, Waves } from 'l
 import PackageCard from '@/components/ui/PackageCard';
 import RoomCard from '@/components/ui/RoomCard';
 import HeroBody from '@/components/ui/HeroBody';
+import TrustBar from '@/components/ui/TrustBar';
 import { ShimmerGrid } from '@/components/ui/SkeletonLoader';
 import { apiFetch } from '@/lib/api';
 
@@ -184,12 +185,10 @@ export default function HomePage() {
     <div className="flex w-full flex-col overflow-x-clip bg-[#f7f4ed]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ─── Cinematic Hero Section ─────────────────────────────────────── */}
-      <section className="sticky top-0 w-full overflow-hidden bg-slate-950 h-[calc(100svh_-_7.3125rem)] lg:h-[calc(100svh_-_8.45rem)]">
-        {/* HeroBody manages its own background images & carousel */}
-        <HeroBody />
-      </section>
+      <HeroBody />
 
       <div className="home-page-opener relative z-20 bg-[#f7f4ed]">
+        <TrustBar />
         {/* Featured Packages */}
         <section className="relative py-14 md:py-24">
           <div className="pointer-events-none absolute left-0 top-20 h-72 w-72 rounded-full bg-[#bdebf1]/35 blur-3xl" />

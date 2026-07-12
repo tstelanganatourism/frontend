@@ -160,7 +160,8 @@ export default function RootLayout({
                 },
                 "sameAs": [
                   "https://www.facebook.com/papikondalutourism",
-                  "https://www.instagram.com/papikondalutourism"
+                  "https://www.instagram.com/ap_ts_boat_tourism/",
+                  "https://youtube.com/@telanganaboattourism?si=V1bDCkIJD0mE7lXq"
                 ],
                 "hasOfferCatalog": {
                   "@type": "OfferCatalog",

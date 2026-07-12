@@ -85,8 +85,28 @@ export default function ContactPage() {
           })}
         </div>
 
+        {/* Google Reviews Banner */}
+        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/50 p-6 shadow-sm md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold text-amber-900 flex items-center gap-2">
+              Share Your Experience ★★★★★
+            </h3>
+            <p className="text-amber-800 text-sm">
+              Loved your Godavari river cruise or bamboo hut stay? Leave us a Google review to help others discover us!
+            </p>
+          </div>
+          <a
+            href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 hover:bg-amber-600 px-5 py-3 text-sm font-bold text-white transition-colors duration-200 shadow-sm"
+          >
+            Write a Google Review
+          </a>
+        </div>
+
         {/* GSTIN & Office Registration Info */}
-        <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
           <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
             <div className="space-y-2">
               <h3 className="text-xl font-black text-[var(--color-brand-river)]">Official Tax Registrations</h3>

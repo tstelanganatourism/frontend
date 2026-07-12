@@ -9,8 +9,8 @@ const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d380
 
 const socialLinks = [
   { label: 'Facebook', href: '#', icon: <FacebookIcon /> },
-  { label: 'Instagram', href: '#', icon: <InstagramIcon /> },
-  { label: 'YouTube', href: '#', icon: <YouTubeIcon /> },
+  { label: 'Instagram', href: 'https://www.instagram.com/ap_ts_boat_tourism/', icon: <InstagramIcon /> },
+  { label: 'YouTube', href: 'https://youtube.com/@telanganaboattourism?si=V1bDCkIJD0mE7lXq', icon: <YouTubeIcon /> },
   { label: 'WhatsApp', href: 'https://wa.me/919542069573', icon: <WhatsAppIcon /> },
 ];
 
@@ -78,6 +78,16 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                 <li><Link href="/sightseeing" className="text-[12px] text-slate-200 transition-colors hover:text-white">Sightseeing</Link></li>
                 <li><Link href="/stays" className="text-[12px] text-slate-200 transition-colors hover:text-white">Accommodations</Link></li>
                 <li><Link href="/contact" className="text-[12px] text-slate-200 transition-colors hover:text-white font-semibold">Contact Us</Link></li>
+                <li>
+                  <a 
+                    href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="text-[12px] text-amber-400 font-bold transition-colors hover:text-amber-300"
+                  >
+                    Write a Review ★★★★★
+                  </a>
+                </li>
               </ul>
             </div>
 
