@@ -501,15 +501,16 @@ export default function PublicNavbar() {
                 <span className="text-amber-500 leading-none">★</span> Write a Review
               </a>
 
-              {/* Mobile Write a Review Button (Golden Star) */}
+              {/* Mobile Write a Review Button (Minimal) */}
               <a
                 href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
                 target="_blank"
                 rel="noreferrer"
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-amber-250 bg-amber-50 text-amber-500 shadow-sm transition-all hover:bg-amber-100 active:scale-95 nav:hidden select-none"
+                className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-95 nav:hidden ml-1 sm:ml-2"
                 aria-label="Write a Google Review"
               >
-                <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                <Star className="h-3.5 w-3.5 text-slate-400" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wide">Review</span>
               </a>
 
               {/* Live Booking Count */}
