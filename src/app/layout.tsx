@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, Noto_Nastaliq_Urdu, Noto_Sans_Telugu } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import TopLoader from '@/components/layout/TopLoader';
 import QueryProvider from '@/components/providers/QueryProvider';
@@ -13,11 +13,7 @@ import PwaRegistrar from '@/components/providers/PwaRegistrar';
 import InstallPromptModal from '@/components/ui/InstallPromptModal';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap' });
-// Urdu Nastaliq is a heavy font used only for 2 navbar strings.
-// preload:false stops it from blocking FCP for all pages globally.
-const notoUrdu = Noto_Nastaliq_Urdu({ subsets: ["arabic"], variable: "--font-urdu", weight: ['400', '700'], display: 'swap', preload: false });
-const notoTelugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-telugu", weight: ['400', '500', '600', '700'], display: 'swap' });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap', preload: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tsboattourism.org"),
@@ -211,7 +207,7 @@ export default function RootLayout({
           }}
         ></script>
       </head>
-      <body className={`${inter.variable} ${outfit.variable} ${notoUrdu.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
         <TopLoader />
         <QueryProvider>
           <AuthProvider>

@@ -168,9 +168,14 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
   const isTransitioningRef = useRef(false);
   const activeIndexRef = useRef(0);
   const touchStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const goTo = useCallback((index: number) => {
     if (isTransitioningRef.current) return;
@@ -349,10 +354,11 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
     >
       {/* ─── Background Images (all preloaded, cross-fade on active) ─── */}
       {slides.map((slide, idx) => {
-        // Virtualize DOM slides: only render active, next, and previous slides to prevent memory/rendering lag
-        const isRendered = idx === activeIndex || 
+        // Virtualize DOM slides: only render active slide on initial paint to save bandwidth; load next/prev slides after hydration
+        const isRendered = idx === activeIndex || (isMounted && (
                            idx === (activeIndex + 1) % slides.length || 
-                           idx === (activeIndex - 1 + slides.length) % slides.length;
+                           idx === (activeIndex - 1 + slides.length) % slides.length
+                        ));
         if (!isRendered) return null;
 
         const imgSrc = slide.cover_image_url || '/home/godavari-hero-banner.jpg';
@@ -368,9 +374,9 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
               fill
               priority={idx === 0}
               fetchPriority={idx === 0 ? 'high' : 'low'}
-              sizes="(max-width: 640px) 100vw, 100vw"
+              sizes="(max-width: 480px) 380px, (max-width: 640px) 480px, 100vw"
               className="object-cover object-center"
-              quality={80}
+              quality={70}
             />
           </div>
         );
