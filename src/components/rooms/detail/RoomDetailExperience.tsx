@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/authStore';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { apiClient } from '@/lib/api';
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
+import { reportBookNowConversion } from '@/components/providers/AnalyticsProvider';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 
 import { toast } from 'sonner';
@@ -729,6 +730,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       toast.error("Please select arrival and departure dates.");
       return;
     }
+
+    // Trigger Google Ads conversion event
+    reportBookNowConversion();
+
     setShowPassengerModal(true);
   };
 

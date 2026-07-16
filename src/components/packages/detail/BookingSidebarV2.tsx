@@ -10,6 +10,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import BusWarningModal from '@/components/ui/BusWarningModal';
 import { apiClient } from '@/lib/api';
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
+import { reportBookNowConversion } from '@/components/providers/AnalyticsProvider';
 
 import { toast } from 'sonner';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
@@ -1087,6 +1088,10 @@ export const BookingSidebarV2 = ({
       setShowLoginPrompt(true);
       return;
     }
+    
+    // Trigger Google Ads conversion event
+    reportBookNowConversion();
+
     if (is25SeaterSelected) {
       setShowBusWarningModal(true);
     } else {

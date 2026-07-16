@@ -66,3 +66,14 @@ export const trackEvent = (eventName: string, params: Record<string, any> = {}) 
     window.gtag('event', eventName, params);
   }
 };
+
+// Google Ads conversion tracking for 'Book Now' click
+export const reportBookNowConversion = () => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'conversion', {
+      'send_to': 'AW-18250568283/WfmRCPuLpdEcENukxv5D',
+      'value': 1.0,
+      'currency': 'INR'
+    });
+  }
+};
