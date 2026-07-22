@@ -2,7 +2,7 @@
 
 import React, { useTransition } from 'react';
 import Image from 'next/image';
-import { Anchor, Camera, Search, Sparkles } from 'lucide-react';
+import { Anchor, Camera, Search, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
 import PackageFilters from '@/components/packages/PackageFilters';
 import PackageListPagination from '@/components/packages/PackageListPagination';
@@ -58,13 +58,11 @@ export default function PackagesList({
   const pathnameHook = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  const [liveData, setLiveData] = React.useState<{ query: string; data: PackageData } | undefined>(undefined);
+  const [allPackages, setAllPackages] = React.useState<PackageItem[]>(data?.items || []);
   const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
-  const isInitialMount = React.useRef(true);
-  const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
+  
   const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
-  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Sync search input with URL parameter 'q'
   React.useEffect(() => {
@@ -74,92 +72,130 @@ export default function PackagesList({
     }
   }, [currentBrowserSearch]);
 
-  // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
-  // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
-  // route to remain perfectly static. Instead, we use a simple window location check in useEffect.
+  // Initial fetch of complete packages dataset (size=100) to ensure full offline client-side search
   React.useEffect(() => {
-    const fetchLive = async () => {
+    let isMounted = true;
+    const fetchAllPackages = async () => {
       try {
-        const currentSearch = window.location.search;
-        const queryParams = new URLSearchParams(currentSearch);
-        queryParams.delete('tags');
-
-        // If there are no query parameters, and we are not forcing a specific type,
-        // we can just use the server-provided SSG data without an extra network call.
-        if (queryParams.toString() === '' && !isBoatRide && !isSightseeing) {
-          return;
-        }
-
-        if (isBoatRide) {
-          queryParams.set('type', 'TOUR');
-        } else if (isSightseeing) {
-          queryParams.set('type', 'TRIP');
-        }
-        queryParams.set('size', '20');
-
-        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-        
         setIsFetching(true);
-        try {
-          const res = await fetch(`/api/v1/packages${query}`);
-          if (res.ok) {
-            const json = await res.json();
-            setLiveData({ query: currentSearch, data: json });
+        const res = await fetch('/api/v1/packages?size=100');
+        if (res.ok && isMounted) {
+          const json = await res.json();
+          if (json.items && json.items.length > 0) {
+            setAllPackages(json.items);
           }
-        } finally {
-          setIsFetching(false);
         }
       } catch (err) {
-        console.error("Failed to fetch live sync storefront packages:", err);
-        setIsFetching(false);
+        console.error("Failed to fetch full packages for client-side search:", err);
+      } finally {
+        if (isMounted) setIsFetching(false);
       }
     };
 
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      const currentSearch = window.location.search;
-      if (currentSearch) {
-        previousSearchStr.current = currentSearch;
-        fetchLive();
+    fetchAllPackages();
+    return () => { isMounted = false; };
+  }, []);
+
+  // INSTANT Client-Side Search & Filter Engine
+  const filteredItems = React.useMemo(() => {
+    if (!allPackages || allPackages.length === 0) return [];
+
+    const params = typeof window !== 'undefined' ? new URLSearchParams(currentBrowserSearch) : new URLSearchParams();
+    const query = searchVal.trim().toLowerCase() || params.get('q')?.trim().toLowerCase() || '';
+    const isFeatured = params.get('is_featured') === 'true';
+    const region = params.get('region');
+    const destination = params.get('destination');
+    const category = params.get('category') || (isBoatRide ? 'BOAT' : isSightseeing ? 'SIGHTSEEING' : null);
+    const sort = params.get('sort');
+
+    let list = [...allPackages];
+
+    // 1. Filter by page type route
+    if (isBoatRide) {
+      list = list.filter((item) => item.type === 'TOUR' || item.type?.includes('BOAT') || item.title?.toLowerCase().includes('cruise') || item.title?.toLowerCase().includes('boat'));
+    } else if (isSightseeing) {
+      list = list.filter((item) => item.type === 'TRIP' || item.type?.includes('SIGHTSEEING') || item.title?.toLowerCase().includes('sightseeing') || item.title?.toLowerCase().includes('temple'));
+    }
+
+    // 2. Filter by search query (instant matching across title, place, region, type, slug, tags)
+    if (query) {
+      const queryWords = query.split(/\s+/);
+      list = list.filter((item) => {
+        const textToSearch = [
+          item.title,
+          item.slug,
+          item.place,
+          item.region,
+          item.type,
+          ...(item.tags || [])
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return queryWords.every((word) => textToSearch.includes(word));
+      });
+    }
+
+    // 3. Filter by Must Experience (featured toggle)
+    if (isFeatured) {
+      list = list.filter((item) => item.is_featured);
+    }
+
+    // 4. Filter by Region (TS / AP)
+    if (region) {
+      list = list.filter((item) => item.region?.toUpperCase() === region.toUpperCase());
+    }
+
+    // 5. Filter by Destination / Place
+    if (destination) {
+      list = list.filter((item) => 
+        item.place?.toLowerCase() === destination.toLowerCase() || 
+        item.title?.toLowerCase().includes(destination.toLowerCase())
+      );
+    }
+
+    // 6. Filter by Category / Type
+    if (category) {
+      const catUpper = category.toUpperCase();
+      if (catUpper === 'BOAT') {
+        list = list.filter((item) => item.type === 'TOUR' || item.title?.toLowerCase().includes('cruise') || item.title?.toLowerCase().includes('boat'));
+      } else if (catUpper === 'SIGHTSEEING') {
+        list = list.filter((item) => item.type === 'TRIP' || item.title?.toLowerCase().includes('sightseeing') || item.title?.toLowerCase().includes('temple'));
       }
-      return;
     }
 
-    const currentSearch = window.location.search;
-    if (currentSearch !== previousSearchStr.current) {
-      previousSearchStr.current = currentSearch;
-      fetchLive();
+    // 7. Sort
+    if (sort === 'price_asc') {
+      list.sort((a, b) => (Number(a.starting_price) || 0) - (Number(b.starting_price) || 0));
+    } else if (sort === 'price_desc') {
+      list.sort((a, b) => (Number(b.starting_price) || 0) - (Number(a.starting_price) || 0));
+    } else if (sort === 'rating_desc') {
+      list.sort((a, b) => (Number(b.is_featured ? 5 : 4) - Number(a.is_featured ? 5 : 4)));
     }
-  }, [pathname, isBoatRide, isSightseeing, searchParams]);
 
-  const activeData = liveData?.query === currentBrowserSearch ? liveData.data : data;
+    return list;
+  }, [allPackages, searchVal, currentBrowserSearch, isBoatRide, isSightseeing]);
 
-  const filteredItems = activeData ? activeData.items : [];
+  const activeData = { items: filteredItems, total: filteredItems.length, size: filteredItems.length };
 
   const handleSearchChange = (val: string) => {
     setSearchVal(val);
     
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const cleanVal = val.trim();
-        if (cleanVal) {
-          params.set('q', cleanVal);
-        } else {
-          params.delete('q');
-        }
-        params.delete('page'); // Reset to page 1 on new search query
-        
-        const query = params.toString();
-        startTransition(() => {
-          router.replace(query ? `${pathnameHook}?${query}` : pathnameHook, { scroll: false });
-        });
+    // Instant background URL sync without network re-fetches
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cleanVal = val.trim();
+      if (cleanVal) {
+        params.set('q', cleanVal);
+      } else {
+        params.delete('q');
       }
-    }, 400);
+      params.delete('page');
+      
+      const query = params.toString();
+      window.history.replaceState(null, '', query ? `${pathnameHook}?${query}` : pathnameHook);
+    }
   };
 
   const badgeText = isBoatRide
@@ -168,20 +204,8 @@ export default function PackagesList({
       ? 'Scenic Pilgrimage Journeys'
       : 'All-in-One Tours & Sightseeing';
 
-  const headingText = isBoatRide
-    ? 'Explore River Journeys'
-    : isSightseeing
-      ? 'Heritage & Temple Tours'
-      : 'Tours & Sightseeing';
-
-  const headingPrimary = isBoatRide ? 'Premium' : isSightseeing ? 'Cultural' : 'Tours';
-  const headingSecondary = isBoatRide ? 'Boat Rides' : isSightseeing ? 'Sightseeing' : 'Sightseeing';
-
-  const headingAccent = isBoatRide
-    ? 'Godavari River Cruises'
-    : isSightseeing
-      ? 'Temple & Nature Trips'
-      : 'Curated Travel Experiences';
+  const headingPrimary = isBoatRide ? 'Godavari' : isSightseeing ? 'Heritage & Temple' : 'Tours &';
+  const headingSecondary = isBoatRide ? 'Cruises & Rides' : isSightseeing ? 'Sightseeing Tours' : 'Sightseeings';
 
   const descriptionText = isBoatRide
     ? 'Book scenic Godavari cruise packages through Papikondalu hills with verified reporting, family-friendly planning, and clear local support.'
@@ -195,131 +219,184 @@ export default function PackagesList({
     ? '/images/boat-rides-banner-2026.webp'
     : isSightseeing
       ? '/images/sightseeing-banner-2026.webp'
-      : 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg';
+      : '/images/packages_hero_bg.png';
 
-  const HeroIcon = isBoatRide ? Anchor : Camera;
   const heroImagePosition = isBoatRide ? 'center 58%' : isSightseeing ? 'center 54%' : 'center';
 
   return (
-    <div className="bg-[#f6f3ec]">
-      {/* Dynamic SEO Hero Banner */}
-      <div className="relative min-h-[23rem] overflow-hidden bg-[#071f2f] pb-12 pt-24 sm:min-h-[28rem] sm:pb-16 sm:pt-32">
+    <div className="min-h-screen bg-slate-50/50">
+      {/* Unique State-of-the-Art Hero Canvas */}
+      <div className="relative overflow-hidden bg-slate-950 pb-16 pt-24 sm:pb-20 sm:pt-32">
+        {/* Ambient Glow Effects */}
+        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
+        <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl" />
+        
+        {/* Rich Photography Background Image */}
         <Image
           src={backgroundImage}
-          alt={`${headingText} banner`}
+          alt="Tourism Canvas Background"
           fill
           sizes="100vw"
-          className="object-cover"
+          className="object-cover opacity-60"
           style={{ objectPosition: heroImagePosition }}
           priority
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,18,30,0.92)_0%,rgba(3,18,30,0.74)_42%,rgba(3,18,30,0.22)_72%,rgba(3,18,30,0.08)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,18,30,0.18)_0%,rgba(3,18,30,0.08)_42%,rgba(3,18,30,0.62)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#f6f3ec] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-slate-900/40" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent" />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex min-h-[15rem] flex-col justify-end gap-8 md:min-h-[18rem] md:flex-row md:items-end md:justify-between">
-            <div className="max-w-3xl text-white">
-              <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/45 bg-slate-950/34 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_10px_28px_rgba(0,0,0,0.2)] backdrop-blur-md sm:px-4">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" />
+        <div className="relative z-10 mx-auto max-w-[98rem] px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
+            
+            {/* Left Content */}
+            <div className="lg:col-span-7">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-teal-300 backdrop-blur-md shadow-xs">
+                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
                 {badgeText}
               </div>
-              <h1 className="mb-4 flex items-start gap-3 text-[2.8rem] font-black leading-[0.95] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.38)] sm:gap-4 sm:text-6xl lg:text-7xl">
-                <HeroIcon className="mt-1 h-9 w-9 shrink-0 text-amber-300 sm:h-11 sm:w-11" strokeWidth={1.8} />
-                <span>
-                  <span className="block text-amber-300">{headingPrimary}</span>
-                  <span className="block">{headingSecondary}</span>
-                </span>
+
+              <h1 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
+                <span className="block text-teal-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">{headingPrimary}</span>
+                <span className="block text-white drop-shadow-sm">{headingSecondary}</span>
               </h1>
-              <div className="mb-4 flex max-w-md items-center gap-3 text-amber-300/90">
-                <span className="h-px flex-1 bg-current/70" />
-                <span className="text-xs font-black uppercase tracking-[0.24em]">{headingAccent}</span>
-                <span className="h-px flex-1 bg-current/70" />
-              </div>
-              <p className="max-w-2xl text-base font-semibold leading-7 text-white/86 sm:text-lg">
+
+              <p className="mb-6 max-w-2xl text-sm font-medium leading-relaxed text-slate-300 sm:text-base">
                 {descriptionText}
               </p>
-            </div>
 
-            <div>
-              <div className="relative w-full md:w-96">
-                <input
-                  type="text"
-                  value={searchVal}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="Search experiences..."
-                  className="w-full bg-white/10 border border-white/20 backdrop-blur-md rounded-full py-3 px-6 pl-12 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] transition-all"
-                />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50" />
+              {/* Quick Feature Badges */}
+              <div className="flex flex-wrap gap-3 text-[11px] font-bold text-slate-300">
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  ✨ Instant Confirmation
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  🛡️ Verified Local Support
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  🚢 Safe River Cruises
+                </span>
               </div>
             </div>
+
+            {/* Right Interactive Card Panel */}
+            <div className="lg:col-span-5">
+              <div className="rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-teal-400/40">
+                <h3 className="mb-2 text-md font-bold text-white flex items-center gap-2">
+                  <Search className="h-4 w-4 text-teal-400" />
+                  Find Your Ideal Experience
+                </h3>
+                <p className="mb-4 text-xs text-slate-300">Search by title, location, or tour highlights</p>
+
+                <div className="relative mb-4">
+                  <input
+                    type="text"
+                    value={searchVal}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Search e.g. Papikondalu, Kolluru, Bhadrachalam..."
+                    className="w-full bg-slate-950/70 border border-slate-700/80 backdrop-blur-md rounded-xl py-3 px-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-inner"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-slate-300">
+                  <span className="text-slate-400">Popular:</span>
+                  <button onClick={() => handleSearchChange('Papikondalu')} className="hover:text-teal-300 underline cursor-pointer">Papikondalu</button>
+                  <button onClick={() => handleSearchChange('Kolluru')} className="hover:text-teal-300 underline cursor-pointer">Kolluru Huts</button>
+                  <button onClick={() => handleSearchChange('Sirivaka')} className="hover:text-teal-300 underline cursor-pointer">Sirivaka Resorts</button>
+                  <button onClick={() => handleSearchChange('Bogatha')} className="hover:text-teal-300 underline cursor-pointer">Bogatha Falls</button>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 pb-8 sm:px-6 lg:px-8 lg:pb-16">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-          <aside className="hidden lg:col-span-1 lg:block">
+      {/* Main Content Area */}
+      <div className="mx-auto max-w-[98rem] px-4 py-8 pb-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          
+          {/* Desktop Sidebar Filters */}
+          <aside className="hidden lg:block lg:col-span-3 xl:col-span-3">
             <PackageFilters />
           </aside>
 
-          <div className="lg:col-span-3">
+          {/* Packages Listing Area */}
+          <div className="lg:col-span-9 xl:col-span-9">
             {!activeData ? (
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-20 text-center shadow-sm">
-                <h3 className="mb-2 text-xl font-black text-[var(--color-brand-river)]">Failed to load</h3>
-                <p className="mx-auto mb-8 max-w-sm text-sm text-slate-500">Please try again later.</p>
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-xs">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+                  <AlertCircle className="h-6 w-6" />
+                </div>
+                <h3 className="mb-1 text-md font-bold text-slate-800">Failed to load packages</h3>
+                <p className="mx-auto mb-6 max-w-xs text-xs text-slate-500 leading-normal">
+                  There was a connection issue. Please try refreshing or checking back shortly.
+                </p>
+                <button
+                  onClick={() => router.refresh()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-600 transition-colors"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Reload Page
+                </button>
               </div>
             ) : (
               <div className="transition-opacity duration-200">
-                <div className="mb-6 flex items-center justify-between lg:mb-8">
-                  <p className="max-w-[calc(100%-8rem)] text-sm font-medium leading-5 text-slate-500 sm:max-w-none">
-                    We found <span className="font-bold text-[var(--color-brand-river)]">{activeData.total || 0}</span> amazing {resultLabel}
+                {/* Result header */}
+                <div className="mb-6 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-500">
+                    We found <span className="font-bold text-teal-600">{activeData.total || 0}</span> matching {resultLabel}
                   </p>
                   <MobileFilterSheet />
                 </div>
 
                 {isFetching ? (
-                  <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="flex h-[400px] flex-col overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-sm">
-                        <div className="h-48 w-full animate-pulse bg-slate-100" />
-                        <div className="flex flex-1 flex-col p-5">
-                          <div className="mb-3 h-4 w-1/3 animate-pulse rounded bg-slate-100" />
-                          <div className="mb-4 h-8 w-3/4 animate-pulse rounded bg-slate-100" />
-                          <div className="mb-4 flex gap-2">
-                            <div className="h-4 w-4 animate-pulse rounded-full bg-slate-100" />
-                            <div className="h-4 w-1/4 animate-pulse rounded bg-slate-100" />
-                          </div>
-                          <div className="mt-auto grid grid-cols-2 gap-3">
-                            <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
-                            <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
-                          </div>
+                  /* Premium Skeleton Loader */
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="flex h-[360px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
+                        <div className="h-40 w-full animate-pulse bg-slate-100" />
+                        <div className="flex flex-1 flex-col p-4">
+                          <div className="mb-2 h-3 w-1/4 animate-pulse rounded bg-slate-100" />
+                          <div className="mb-3 h-5 w-3/4 animate-pulse rounded bg-slate-100" />
+                          <div className="mb-4 h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+                          <div className="mt-auto h-9 w-full animate-pulse rounded-xl bg-slate-100" />
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : filteredItems.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredItems.map((pkg, index) => (
-                      <PackageCard key={pkg.id} pkg={pkg} priority={index < 4} />
+                      <PackageCard key={pkg.id} pkg={pkg} priority={index < 6} />
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-20 text-center shadow-sm">
-                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50">
-                      <Search className="h-10 w-10 text-slate-300" />
+                  /* Empty state */
+                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-xs">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                      <Search className="h-6 w-6" />
                     </div>
-                    <h3 className="mb-2 text-xl font-black text-[var(--color-brand-river)]">No experiences found</h3>
-                    <p className="mx-auto mb-8 max-w-sm text-sm text-slate-500 font-semibold leading-relaxed">
-                      We could not find any tourism options matching your filters. Try clearing your filters or search query.
+                    <h3 className="mb-1.5 text-md font-bold text-slate-800">No experiences found</h3>
+                    <p className="mx-auto mb-6 max-w-xs text-xs text-slate-500 font-medium leading-relaxed">
+                      We couldn't find any tour packages matching your search filters. Try resetting your choices or using different keywords.
                     </p>
-                    <Link href={pathname} className="text-sm font-black text-[var(--color-brand-teal)] hover:underline">
-                      Clear all filters
-                    </Link>
+                    <button
+                      onClick={() => {
+                        startTransition(() => {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          router.replace(pathnameHook, { scroll: true });
+                        });
+                      }}
+                      className="text-xs font-black text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+                    >
+                      Clear all active filters
+                    </button>
                   </div>
                 )}
 
-                <PackageListPagination total={activeData.total} size={activeData.size} />
+                {/* Pagination */}
+                <div className="mt-8">
+                  <PackageListPagination total={activeData.total} size={activeData.size} />
+                </div>
               </div>
             )}
           </div>

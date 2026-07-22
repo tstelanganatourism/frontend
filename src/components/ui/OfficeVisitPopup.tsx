@@ -14,7 +14,7 @@ interface OfficeVisitPopupProps {
   secret?: string | null;
 }
 
-const OFFICE_ADDRESS = 'DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111';
+const OFFICE_ADDRESS = 'Om Shanti satram, Kalyana mandapam road, near SBI ATM, Bhadrachalam, Telangana 507111';
 const GOOGLE_MAPS_URL = 'https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb';
 
 export function OfficeVisitPopup({

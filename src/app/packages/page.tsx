@@ -2,9 +2,9 @@ import PackagesList from './PackagesList';
 import { apiFetch } from '@/lib/api';
 
 export const metadata = {
-  title: "All Telangana Boat Tourism Packages & Boat Rides",
-  description: "Browse all curated boat rides, scenic pilgrimage tours, and local sightseeing packages in the Bhadrachalam and Papikondalu regions.",
-  keywords: ["Papikondalu Packages", "Bhadrachalam Tours", "Boat Rides", "Sightseeing Packages"],
+  title: "All Packages | TS Boat Tourism — Papikondalu, Bhadrachalam & Godavari Tours",
+  description: "Browse all curated boat tours, scenic pilgrimage packages, and riverside stays in the Bhadrachalam and Papikondalu regions. Book online with TS Boat Tourism.",
+  keywords: ["Papikondalu Packages", "Bhadrachalam Tours", "Godavari Boat Rides", "Papikondalu tour packages", "TS Boat Tourism"],
   alternates: { canonical: '/packages' }
 };
 

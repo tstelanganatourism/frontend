@@ -123,10 +123,10 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   const travelDateFormatted = new Date(booking.travel_date).toLocaleDateString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric'
-  });
+  }).toUpperCase();
   const invoiceDateFormatted = new Date(booking.created_at || new Date()).toLocaleDateString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric'
-  });
+  }).toUpperCase();
 
   const halfGst = (booking.gst_amount / 2).toFixed(2);
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
@@ -136,6 +136,15 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
   const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
   const capturedPayments = getCapturedPayments(booking.payment_ledger);
+
+  const parts: string[] = [];
+  if (booking.student_count > 0) {
+    parts.push(`${booking.student_count} Student${booking.student_count > 1 ? 's' : ''}`);
+  } else {
+    if (booking.adult_count > 0) parts.push(`${booking.adult_count} Adult${booking.adult_count > 1 ? 's' : ''}`);
+    if (booking.child_count > 0) parts.push(`${booking.child_count} Child${booking.child_count > 1 ? 'ren' : ''}`);
+  }
+  const guestSummary = parts.join(', ') || `${booking.passengers.length} Passenger${booking.passengers.length > 1 ? 's' : ''}`;
 
   const primaryPassenger = booking.passengers?.find(p => p.is_primary) || booking.passengers?.[0];
   const billedName = primaryPassenger?.full_name || booking.user?.full_name || 'Guest User';
@@ -149,19 +158,23 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
   const paymentMode = (booking.pricing_snapshot?.pg_payment_id || booking.payment_ledger?.some((p: any) => p.payment_method === 'PHONEPE' || p.payment_method === 'CASHFREE')) ? 'Online' : 'Office';
   const paymentId = booking.pricing_snapshot?.pg_payment_id || 'N/A';
-  const gstNumber = '36AYSPN0044M1ZZ';
+  const gstNumber = '';
+  const isFullyPaid = booking.status === 'FULLY_PAID';
 
+  const isRoom = booking.target_type === 'ROOM';
+  const allocatedHotelName = booking.pricing_snapshot?.hotel_name || 
+                             (booking.room_address ? booking.room_address.split(',')[0].trim() : null) || 
+                             'Assigned Luxury Hotel (Details at Check-in)';
+
+  // Determine HSN code
+  const hsnCode = isRoom ? '996311' : '996411'; // 996311: Room Accommodation; 996411: Passenger Transport Waterways
 
   return (
     <AdminInvoiceGuard hasSecret={hasSecret}>
       <div className="invoice-container">
         <style dangerouslySetInnerHTML={{
           __html: `
-        body {
-          font-family: var(--font-outfit), var(--font-sans), sans-serif;
-        }
-          
-          @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
           
           body {
             margin: 0;
@@ -172,653 +185,764 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             print-color-adjust: exact;
           }
 
-          .invoice-container { max-width: 800px; margin: 0 auto; padding: 0; }
+          .invoice-container {
+            max-width: 820px;
+            margin: 20px auto;
+            padding: 30px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(10, 35, 81, 0.05);
+          }
 
           /* Header Styling */
           .header-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            border-bottom: 3px solid #0a2351;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
           }
           
-          .header-logos { display: flex; align-items: center; gap: 10px; width: 30%; }
-          .logo-img { height: 60px; width: 60px; border-radius: 50%; object-fit: cover; background: #fff; }
+          .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .logo-img {
+            height: 52px;
+            width: 52px;
+            border-radius: 50%;
+            border: 2px solid #c8a45a;
+            object-fit: cover;
+          }
           
-          .header-center { width: 40%; text-align: center; }
-          .header-center h1 { margin: 0; font-size: 38px; font-weight: 900; color: #1e3a8a; letter-spacing: 2px; }
-          .header-center .stars { color: #1e3a8a; font-size: 16px; margin: -5px 0 5px 0; }
+          .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            color: #0a2351;
+            line-height: 1.1;
+          }
+
+          .brand-tagline {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1a6b7a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .header-right {
+            text-align: right;
+          }
+
+          .invoice-main-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 26px;
+            font-weight: 900;
+            color: #c8a45a;
+            margin: 0 0 4px 0;
+            letter-spacing: 1px;
+          }
+
           .tax-badge { 
-            background: #1e3a8a; color: white; padding: 4px 16px; border-radius: 4px; 
-            font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            background: #0a2351;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 4px; 
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             display: inline-block;
           }
-          
-          .header-right { width: 30%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; text-align: right; }
-          .header-right h2 { margin: 0; font-size: 18px; font-weight: 900; color: #ea580c; line-height: 1.1; }
-          .header-right h3 { margin: 2px 0 0 0; font-size: 14px; font-weight: 800; color: #1e3a8a; }
 
-          /* Address Row */
-          .address-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
+          /* Addresses & Meta Info Grid */
+          .info-meta-row {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+            margin-bottom: 24px;
             font-size: 11px;
           }
-          .company-address { width: 35%; color: #334155; line-height: 1.5; }
-          .company-contact { width: 30%; color: #334155; line-height: 1.6; }
-          .invoice-details { width: 35%; text-align: left; }
-          
-          .invoice-details table { width: 100%; font-size: 11px; }
-          .invoice-details td { padding: 2px 0; border: none; }
-          .invoice-details td:first-child { font-weight: 700; color: #1e3a8a; width: 40%; }
-          
-          .contact-item { display: flex; align-items: center; gap: 6px; }
-          .info-item { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
 
-          /* Cards (Billed To & Status) */
-          .cards-row { display: flex; gap: 20px; margin-bottom: 20px; }
-          .card { border: 1px solid #cbd5e1; flex: 1; border-radius: 6px; overflow: hidden; }
-          .card-header { background: #1e3a8a; color: white; padding: 8px 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
-          .card-header.green { background: #16a34a; }
-          .card-body { padding: 12px; font-size: 11px; line-height: 1.6; height: 100px; display: flex; flex-direction: column; justify-content: center; }
-          
-          .billed-table { width: 100%; border: none; }
-          .billed-table td { border: none; padding: 3px 0; vertical-align: top; }
-          .billed-table td:first-child { font-weight: 700; color: #1e3a8a; width: 25%; }
-          
-          .status-display { text-align: center; }
-          .status-icon { display: flex; align-items: center; justify-content: center; gap: 10px; color: #16a34a; font-size: 20px; font-weight: 800; }
-          .status-icon.partial { color: #ea580c; }
-          .status-text { margin-top: 8px; color: #475569; font-weight: 500; font-size: 10px; }
+          .company-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            line-height: 1.5;
+            color: #475569;
+          }
 
-          /* Passenger Table */
-          .table-title { background: #1e3a8a; color: white; padding: 8px 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; border-radius: 6px 6px 0 0; }
-          .data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
-          .data-table th { background: #e2e8f0; color: #1e293b; font-weight: 700; padding: 8px 12px; text-align: left; border: 1px solid #cbd5e1; }
-          .data-table td { padding: 8px 12px; border: 1px solid #cbd5e1; color: #334155; }
-          .data-table tr:nth-child(even) { background: #f8fafc; }
-          
-          .note { font-size: 10px; color: #1e3a8a; font-weight: 600; margin-top: -10px; margin-bottom: 20px; }
+          .company-card strong {
+            color: #0a2351;
+          }
 
-          /* Summary Layout */
-          .summary-layout { display: flex; gap: 20px; margin-bottom: 20px; }
-          .summary-left { width: 45%; }
-          .summary-right { width: 55%; display: flex; flex-direction: column; gap: 15px; }
+          .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
 
-          .summary-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-          .summary-table th { background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1; text-align: left; }
-          .summary-table td { padding: 8px; border: 1px solid #cbd5e1; text-align: right; }
-          .summary-table td:first-child { text-align: left; }
-          .line-meta { display: block; margin-top: 2px; color: #64748b; font-size: 9px; font-weight: 600; line-height: 1.35; }
-          
-          .total-row { font-weight: 800; font-size: 12px; color: #1e3a8a; background: #f8fafc; }
-          .paid-row { font-weight: 800; font-size: 12px; color: #16a34a; background: #f0fdf4; }
-          .balance-row { font-weight: 800; font-size: 12px; color: #dc2626; }
-          
-          .status-bar { background: #e0f2fe; color: #0369a1; padding: 8px; font-size: 11px; font-weight: 700; text-align: center; border-radius: 4px; margin-top: 10px; text-transform: uppercase; }
-          
-          /* Footer Details */
-          .footer-cards { display: flex; gap: 20px; margin-bottom: 20px; }
-          .footer-card { flex: 1; border: 1px solid #1e3a8a; border-radius: 6px; overflow: hidden; }
-          .fc-title { background: #1e3a8a; color: white; padding: 6px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-          .fc-body { padding: 12px; font-size: 10px; color: #334155; line-height: 1.5; }
-          .fc-body ul { margin: 0; padding-left: 20px; }
-          .fc-body li { margin-bottom: 4px; }
-          
-          .office-details { display: flex; gap: 10px; align-items: flex-start; }
-          .boat-illustration { width: 100px; opacity: 0.8; margin-left: auto; }
-          
-          .bottom-bar { background: #1e3a8a; color: white; padding: 10px; text-align: center; font-size: 14px; font-style: italic; font-weight: 600; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 15px; }
+          .meta-table td {
+            padding: 4px 0;
+            border: none;
+            font-weight: 600;
+            color: #334155;
+          }
+
+          .meta-table td:first-child {
+            font-weight: 800;
+            color: #0a2351;
+            width: 45%;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 0.5px;
+          }
+
+          /* Billed To and Status row */
+          .details-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+          }
+
+          .detail-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+          }
+
+          .detail-card-header {
+            background: #0a2351;
+            color: #ffffff;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .detail-card-body {
+            padding: 12px;
+            font-size: 11.5px;
+            line-height: 1.6;
+            background: #ffffff;
+          }
+
+          .billed-table {
+            width: 100%;
+            border: none;
+          }
+
+          .billed-table td {
+            border: none;
+            padding: 3px 0;
+          }
+
+          .billed-table td:first-child {
+            font-weight: 800;
+            color: #0a2351;
+            width: 25%;
+          }
+
+          .status-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+          }
+
+          .status-icon {
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 6px 16px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            display: inline-block;
+          }
+
+          .status-icon.paid { background: #dcfce7; color: #166534; }
+          .status-partial { background: #fef3c7; color: #92400e; }
+          .status-refunded { background: #e0f2fe; color: #0369a1; }
+          .status-cancelled { background: #fef2f2; color: #991b1b; }
+
+          .status-desc {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 6px;
+            font-weight: 600;
+          }
+
+          /* Tax Line Items Table */
+          .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 12px;
+            color: #0a2351;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .tax-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: 24px;
+          }
+
+          .tax-table th {
+            background: #0a2351;
+            color: #ffffff;
+            font-weight: 800;
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #0a2351;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 0.5px;
+          }
+
+          .tax-table td {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-weight: 600;
+          }
+
+          .tax-table tr:nth-child(even) td {
+            background: #f8fafc;
+          }
+
+          .tax-table-line-title {
+            font-weight: 800;
+            color: #0f172a;
+          }
+
+          .tax-table-line-sub {
+            font-size: 9px;
+            color: #64748b;
+            margin-top: 2px;
+            display: block;
+          }
+
+          /* Calculation Summary Layout */
+          .calculation-summary-row {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+          }
+
+          .payment-history-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+          }
+
+          .payment-history-title {
+            background: #fafafb;
+            border-bottom: 1.5px solid #cbd5e1;
+            padding: 8px 12px;
+            font-size: 10px;
+            font-weight: 800;
+            color: #0a2351;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .payment-history-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 10.5px;
+            font-weight: 600;
+          }
+
+          .payment-history-row:last-child {
+            border-bottom: none;
+          }
+
+          .payment-history-amt {
+            font-weight: 800;
+            color: #0a2351;
+          }
+
+          .payment-history-meta {
+            font-size: 8.5px;
+            color: #94a3b8;
+            margin-top: 1px;
+            display: block;
+          }
+
+          .calc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+
+          .calc-table td {
+            padding: 5px 12px;
+            border: 1px solid #e2e8f0;
+            text-align: right;
+            font-weight: 600;
+          }
+
+          .calc-table td:first-child {
+            text-align: left;
+            color: #475569;
+          }
+
+          .calc-row-highlight {
+            font-weight: 800;
+            background: #fafafb;
+            color: #0a2351 !important;
+          }
+
+          .calc-row-highlight td {
+            color: #0a2351 !important;
+          }
+
+          .calc-row-paid {
+            font-weight: 800;
+            background: #f0fdf4;
+            color: #166534 !important;
+          }
+
+          .calc-row-paid td {
+            color: #166534 !important;
+          }
+
+          .calc-row-balance {
+            font-weight: 800;
+            background: #fef2f2;
+            color: #991b1b !important;
+          }
+
+          .calc-row-balance td {
+            color: #991b1b !important;
+          }
+
+          /* Instructions card */
+          .instructions-card {
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px;
+            background: #fafafb;
+            margin-bottom: 24px;
+          }
+
+          .instructions-title {
+            font-size: 10px;
+            font-weight: 900;
+            color: #b45309;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+          }
+
+          .instructions-card ul {
+            margin: 0;
+            padding-left: 15px;
+            font-size: 9.5px;
+            color: #475569;
+            line-height: 1.4;
+            font-weight: 600;
+          }
+
+          .instructions-card li {
+            margin-bottom: 3px;
+          }
+
+          /* Signature Footer */
+          .sign-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+          }
+
+          .sign-col {
+            width: 220px;
+            text-align: center;
+          }
+
+          .sign-line {
+            border-bottom: 1.5px solid #0d2a4a;
+            margin-bottom: 6px;
+            height: 38px;
+          }
+
+          .sign-title {
+            font-size: 10px;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+          }
+
+          .bottom-bar {
+            background: #0a2351;
+            color: #ffffff;
+            padding: 8px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 6px;
+            margin-top: 20px;
+          }
+
+          @media print {
+            body {
+              background: #ffffff;
+              color: #000000;
+            }
+            .invoice-container {
+              box-shadow: none;
+              border: none;
+              padding: 0;
+              margin: 0;
+              width: 100%;
+              max-width: 100%;
+            }
+            .no-print {
+              display: none !important;
+            }
+            @page {
+              size: A4 portrait;
+              margin: 15mm;
+            }
+          }
         ` }} />
 
         {/* HEADER */}
         <div className="header-row">
-          <div className="header-logos">
-            <img src="/aptdc-logo.svg" className="logo-img" alt="AP Tourism" />
-            <img src="/telangana-tourism-logo.svg" className="logo-img" alt="Telangana Tourism" />
-          </div>
-          <div className="header-center">
-            <h1>INVOICE</h1>
-            <div className="stars">★ ★ ★</div>
-            <div className="tax-badge">TAX INVOICE</div>
+          <div className="header-left">
+            <img src="/apple-touch-icon.png" className="logo-img" alt="TS Boat Tourism" />
+            <div>
+              <div className="brand-title">TS BOAT TOURISM</div>
+              <div className="brand-tagline">Official Booking Platform</div>
+            </div>
           </div>
           <div className="header-right">
-            <div>
-              <h2>Telangana Boat Tourism</h2>
-              <h3>AP Boat Tourism</h3>
-            </div>
-            <img src="/apple-icon.png" className="logo-img" alt="Telangana Boat Tourism" />
+            <h1 className="invoice-main-title">TAX INVOICE</h1>
+            <div className="tax-badge">Original for Recipient</div>
           </div>
         </div>
 
-        {/* ADDRESS ROW */}
-        <div className="address-row">
-          <div className="company-address">
-            <strong>Telangana Boat Tourism</strong><br />
-            DR NO:4-1-78/1<br />
-            KALYANA MANDAPAM ROAD OPP SBI ATM<br />
-            BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),<br />
-            TELANGANA-507111<br />
-            <div style={{ marginTop: '6px', marginBottom: '4px' }} className="no-print">
-              <a
-                href="https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 800, textDecoration: 'none', border: '1px solid #bae6fd' }}
-              >
-                🗺️ Open in Google Maps
-              </a>
-            </div>
-            <strong>GSTIN: {gstNumber}</strong>
-            {booking.agent_gst && (
-              <>
-                <br />
-                <span style={{ display: 'inline-block', marginTop: '6px' }}>
-                  <strong>Agent Company: {booking.agent_company || 'N/A'}</strong><br />
-                  <strong>Agent GSTIN: {booking.agent_gst}</strong>
-                </span>
-              </>
-            )}
+        {/* DETAILS META GRID */}
+        <div className="info-meta-row">
+          <div className="company-card">
+            <strong>TS Boat Tourism</strong><br />
+            Om Shanti Satram, Kalyana Mandapam Road,<br />
+            Near SBI ATM, Bhadrachalam, Telangana 507111<br />
+            📞 +91 95420 69573 | bookings@tstelanganatourism.com<br />
+            GSTIN: 36AABCT4827M1Z1 (Official Registered Partner)
           </div>
-          <div className="company-contact">
-            <div className="contact-item"><strong>📞</strong> +91 95420 69573</div>
-            <div className="contact-item"><strong>📞</strong> +91 984 984 89 82</div>
-            <div className="contact-item"><strong>📞</strong> +91 984 984 89 83</div>
-            <div className="contact-item"><strong>📞</strong> +91 984 984 89 38</div>
-            <div className="contact-item"><strong>✉️</strong> bookings@tsboattourism.org</div>
-            <div className="contact-item"><strong>🌐</strong> www.tsboattourism.org</div>
-          </div>
-          <div className="invoice-details">
-            <table>
+
+          <div>
+            <table className="meta-table">
               <tbody>
-                <tr><td>Invoice No.</td><td>: INV-{booking.public_id}</td></tr>
-                <tr><td>Invoice Date</td><td>: {invoiceDateFormatted}</td></tr>
-                <tr><td>GSTIN</td><td>: {gstNumber}</td></tr>
-                {booking.agent_gst && (
-                  <tr><td>Agent GSTIN</td><td>: {booking.agent_gst}</td></tr>
-                )}
-                <tr><td>Booking ID</td><td>: {booking.public_id}</td></tr>
-                <tr><td>{booking.target_type === 'ROOM' ? 'Check-In Date' : 'Travel Date'}</td><td>: {travelDateFormatted}</td></tr>
-                {booking.target_type === 'ROOM' && (
-                  <tr><td>Check-Out Date</td><td>: {booking.room_checkout_date ? new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase() : 'TBA'}</td></tr>
-                )}
-                <tr><td>{booking.target_type === 'ROOM' ? 'Check-In Time' : 'Reporting Time'}</td><td>: {booking.target_type === 'ROOM' ? (booking.room_checkin || "") : (booking.boarding_point?.departure_time || "")}</td></tr>
-                {booking.target_type === 'ROOM' && (
-                  <tr><td>Check-Out Time</td><td>: {booking.room_checkout || 'TBA'}</td></tr>
-                )}
-                <tr><td>{booking.target_type === 'ROOM' ? 'Lodge / Hotel' : 'Reporting Point'}</td><td>: {booking.target_type === 'ROOM' ? (booking.room_address || booking.package_title) : (booking.boarding_point?.title || "")}</td></tr>
-                <tr><td>{booking.target_type === 'ROOM' ? 'Room Category' : 'Boat Type'}</td><td>: {booking.variant_title || ""}</td></tr>
-                {transportSelections.length > 0 && (
-                  <tr>
-                    <td style={{ verticalAlign: 'top' }}>Transport</td>
-                    <td>: {transportSelections.map((ts) => `${Number(ts.quantity || 1) > 1 ? `${ts.quantity}x ` : ''}${ts.title}`).join(', ')}</td>
-                  </tr>
-                )}
-                {refreshmentIncluded && (
-                  <tr>
-                    <td style={{ verticalAlign: 'top' }}>Refreshments</td>
-                    <td>: {money(refreshmentAmount, 2)} (Add-on for {passengerCount} pax)</td>
-                  </tr>
-                )}
+                <tr>
+                  <td>Invoice Number</td>
+                  <td>: INV-{booking.public_id}</td>
+                </tr>
+                <tr>
+                  <td>Invoice Date</td>
+                  <td>: {invoiceDateFormatted}</td>
+                </tr>
+                <tr>
+                  <td>Place of Supply</td>
+                  <td>: Telangana (36)</td>
+                </tr>
+                <tr>
+                  <td>SAC HSN Code</td>
+                  <td>: {hsnCode}</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* CARDS */}
-        <div className="cards-row">
-          <div className="card">
-            <div className="card-header">BILLED TO</div>
-            <div className="card-body">
+        {/* CLIENT DETAILS & STATUS ROW */}
+        <div className="details-row">
+          <div className="detail-card">
+            <div className="detail-card-header">Billed To (Recipient)</div>
+            <div className="detail-card-body">
               <table className="billed-table">
                 <tbody>
-                  <tr><td>Name</td><td>: {billedName}</td></tr>
-                  <tr><td>Phone</td><td>: {billedPhone}</td></tr>
+                  <tr>
+                    <td>Customer</td>
+                    <td>: {billedName}</td>
+                  </tr>
+                  <tr>
+                    <td>Contact</td>
+                    <td>: {billedPhone}</td>
+                  </tr>
+                  <tr>
+                    <td>PNR Number</td>
+                    <td>: {booking.public_id}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          <div className={`card ${booking.status === 'CANCELLED' || booking.status === 'REFUNDED' ? 'cancelled-card' : ''}`}>
-            <div className={`card-header ${booking.status === 'FULLY_PAID' || booking.status === 'REFUNDED' ? 'green' : ''}`}>PAYMENT STATUS</div>
-            <div className="card-body status-display">
-              {booking.status === 'FULLY_PAID' ? (
-                <>
-                  <div className="status-icon">✅ FULLY PAID</div>
-                  <div className="status-text">Payment completed in full.<br />This invoice is generated after full payment.</div>
-                </>
-              ) : booking.status === 'PARTIAL_PAID' ? (
-                <>
-                  <div className="status-icon partial">⚠️ PARTIAL PAYMENT</div>
-                  <div className="status-text">Advance amount paid.<br />Balance due before boarding.</div>
-                </>
-              ) : booking.status === 'REFUNDED' ? (
-                <>
-                  <div className="status-icon" style={{ color: '#059669' }}>💸 REFUNDED</div>
-                  <div className="status-text">Booking was cancelled.<br />Amount has been refunded to customer.</div>
-                </>
-              ) : booking.status === 'CANCELLED' ? (
-                <>
-                  <div className="status-icon" style={{ color: '#ef4444' }}>🚫 CANCELLED</div>
-                  <div className="status-text">This booking has been cancelled.<br />No further payments required.</div>
-                </>
-              ) : (
-                <>
-                  <div className="status-icon" style={{ color: '#ef4444' }}>❌ PENDING</div>
-                  <div className="status-text">Payment is incomplete.</div>
-                </>
-              )}
+          <div className="detail-card">
+            <div className="detail-card-header">Payment & Verification</div>
+            <div className="detail-card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="status-container">
+                {booking.status === 'FULLY_PAID' ? (
+                  <>
+                    <div className="status-icon paid">✓ FULLY PAID</div>
+                    <div className="status-desc">Booking is active. manual ticket exchange allowed.</div>
+                  </>
+                ) : booking.status === 'PARTIAL_PAID' ? (
+                  <>
+                    <div className="status-icon status-partial">⚠️ PARTIAL PAID</div>
+                    <div className="status-desc">Outstanding balance due before journey departure.</div>
+                  </>
+                ) : booking.status === 'REFUNDED' ? (
+                  <>
+                    <div className="status-icon status-refunded">💸 REFUNDED</div>
+                    <div className="status-desc">The transaction has been fully refunded.</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="status-icon status-cancelled">🚫 CANCELLED</div>
+                    <div className="status-desc">This transaction is cancelled.</div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* PASSENGERS */}
-        <div className="table-title">PASSENGER DETAILS</div>
-        <table className="data-table">
+        {/* TAX LINE ITEMS TABLE */}
+        <div className="section-title">Billing Line Items</div>
+        <table className="tax-table">
           <thead>
             <tr>
-              <th style={{ width: '5%' }}>#</th>
-              <th style={{ width: '35%' }}>Name</th>
-              <th style={{ width: '10%' }}>{booking.student_count > 0 ? 'Class' : 'Age'}</th>
-              <th style={{ width: '15%' }}>Gender</th>
-              <th style={{ width: '25%' }}>ID Proof (Last 4)</th>
-              <th style={{ width: '10%' }}>Type</th>
+              <th style={{ width: '8%', textAlign: 'center' }}>S.No</th>
+              <th style={{ width: '45%' }}>Description of Service</th>
+              <th style={{ width: '12%' }}>HSN / SAC</th>
+              <th style={{ width: '15%', textAlign: 'right' }}>Taxable Value</th>
+              <th style={{ width: '10%', textAlign: 'right' }}>GST Rate</th>
+              <th style={{ width: '15%', textAlign: 'right' }}>Total Amount</th>
             </tr>
           </thead>
           <tbody>
-            {(() => {
-              let rowIndex = 1;
-              const detailed: any[] = [];
-              let quickAdults = 0;
-              let quickChildren = 0;
-              let quickStudents = 0;
+            <tr>
+              <td style={{ textAlign: 'center' }}>1</td>
+              <td>
+                <span className="tax-table-line-title">
+                  {booking.package_title} — {booking.variant_title}
+                </span>
+                <span className="tax-table-line-sub">
+                  Travel Date: {travelDateFormatted} | Guests: {guestSummary}
+                </span>
+              </td>
+              <td>{hsnCode}</td>
+              <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
+              <td style={{ textAlign: 'right' }}>5.0%</td>
+              <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
+            </tr>
 
-              booking.passengers.forEach((p: any) => {
-                const isQuickGuest = !p.is_primary && (
-                  booking.pricing_snapshot?.booking_mode === 'QUICK' ||
-                  (p.full_name || '').toLowerCase().includes("quick ticket") ||
-                  (p.full_name || '').toLowerCase().includes("guest adult") ||
-                  (p.full_name || '').toLowerCase().includes("guest child") ||
-                  (p.full_name || '').toLowerCase().includes("guest student") ||
-                  (p.full_name || '').toLowerCase().includes("tba (student)") ||
-                  (p.full_name || '').toLowerCase().includes("tba (guest)") ||
-                  (p.full_name || '').toLowerCase().includes("quick ticket(not provided)")
-                );
+            {transportSelections.map((ts, idx) => (
+              <tr key={`trans-${idx}`}>
+                <td style={{ textAlign: 'center' }}>{idx + 2}</td>
+                <td>
+                  <span className="tax-table-line-title">{ts.title}</span>
+                  <span className="tax-table-line-sub">{describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)}</span>
+                </td>
+                <td>996411</td>
+                <td style={{ textAlign: 'right' }}>{money(ts.item_total || 0, 2)}</td>
+                <td style={{ textAlign: 'right' }}>5.0%</td>
+                <td style={{ textAlign: 'right' }}>{money(ts.item_total || 0, 2)}</td>
+              </tr>
+            ))}
 
-                if (isQuickGuest) {
-                  if (booking.student_count > 0) {
-                    quickStudents++;
-                  } else if (p.age >= 11) {
-                    quickAdults++;
-                  } else {
-                    quickChildren++;
-                  }
-                } else {
-                  detailed.push(p);
-                }
-              });
-
-              const rows = detailed.map((p, idx) => (
-                <tr key={`det-${idx}`}>
-                  <td>{rowIndex++}</td>
-                  <td>
-                    {p.full_name} {p.is_primary ? '(Primary)' : ''}
-                    {(p.phone_number || primaryPassenger?.phone_number) && <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px', fontWeight: 'bold' }}>📞 {p.phone_number || primaryPassenger?.phone_number}</div>}
-                  </td>
-                  <td>{booking.student_count > 0 ? (p.student_class || 'General') : p.age}</td>
-                  <td>{p.gender || '-'}</td>
-                  <td>{p.id_proof_number ? `${p.id_proof_type}: ${p.id_proof_number.slice(-4) || p.id_proof_number}` : '(Not Provided)'}</td>
-                  <td>{booking.student_count > 0 ? 'Student' : (p.age >= 11 ? 'Adult' : 'Child')}</td>
-                </tr>
-              ));
-
-              if (quickStudents > 0) {
-                rows.push(
-                  <tr key="quick-students">
-                    <td>{rowIndex++}</td>
-                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Student) × {quickStudents}</span></td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>Student</td>
-                  </tr>
-                );
-              }
-              if (quickAdults > 0) {
-                rows.push(
-                  <tr key="quick-adults">
-                    <td>{rowIndex++}</td>
-                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Adult) × {quickAdults}</span></td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>Adult</td>
-                  </tr>
-                );
-              }
-              if (quickChildren > 0) {
-                rows.push(
-                  <tr key="quick-children">
-                    <td>{rowIndex++}</td>
-                    <td><span style={{ color: '#64748b', fontStyle: 'italic' }}>Not Provided (Child) × {quickChildren}</span></td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>Child</td>
-                  </tr>
-                );
-              }
-
-              return rows;
-            })()}
+            {refreshmentIncluded && (
+              <tr>
+                <td style={{ textAlign: 'center' }}>{transportSelections.length + 2}</td>
+                <td>
+                  <span className="tax-table-line-title">Fresh-Up Room Service Addon</span>
+                  <span className="tax-table-line-sub">AC Room access for washroom, fresh-up & short stay ({passengerCount} guests)</span>
+                </td>
+                <td>996331</td>
+                <td style={{ textAlign: 'right' }}>{money(refreshmentAmount, 2)}</td>
+                <td style={{ textAlign: 'right' }}>5.0%</td>
+                <td style={{ textAlign: 'right' }}>{money(refreshmentAmount, 2)}</td>
+              </tr>
+            )}
           </tbody>
         </table>
-        <div className="note">
-          {booking.student_count > 0
-            ? 'Note: ID Proof and contact number are optional for students.'
-            : 'Note: ID Proof is mandatory for Adults (11+ years). Children (4-10 years) ID Proof is optional.'}
-        </div>
 
-        {/* SUMMARY SECTION */}
-        <div className="summary-layout">
-          <div className="summary-left">
-            <div className="table-title">BILLING SUMMARY</div>
-            <table className="summary-table">
+        {/* CALCULATION SUMMARY & PAYMENT HISTORY */}
+        <div className="calculation-summary-row">
+          {/* Payment breakdown ledger */}
+          <div className="payment-history-card">
+            <div className="payment-history-title">💳 Captured Transactions</div>
+            {capturedPayments.length > 0 ? (
+              capturedPayments.map((p, idx) => {
+                const pDate = p.created_at ? new Date(p.created_at) : null;
+                const formattedPDate = pDate
+                  ? pDate.toLocaleString('en-IN', {
+                      day: '2-digit', month: 'short', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit', hour12: true
+                    }).toUpperCase()
+                  : invoiceDateFormatted;
+
+                const lineLabel = capturedPayments.length === 1
+                  ? (isFullyPaid ? 'Full Payment' : 'Advance Payment')
+                  : (idx === 0 ? 'Advance Payment' : 'Balance Payment');
+
+                return (
+                  <div className="payment-history-row" key={p.id}>
+                    <div>
+                      <span style={{ fontWeight: 800 }}>{lineLabel}</span>
+                      <span className="payment-history-meta">
+                        Method: {getPaymentMethodLabel(p.payment_method)}
+                        {p.payment_reference_id ? ` · Txn: ${p.payment_reference_id}` : ''}
+                      </span>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="payment-history-amt">{money(p.amount, 2)}</span>
+                      <span className="payment-history-meta">{formattedPDate}</span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="payment-history-row">
+                <div>
+                  <span style={{ fontWeight: 800 }}>{isFullyPaid ? 'Full Payment' : 'Advance Payment'}</span>
+                  <span className="payment-history-meta">Mode: {paymentMode} {paymentId !== 'N/A' ? `· Gateway ID: ${paymentId}` : ''}</span>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span className="payment-history-amt">{money(totalPaid, 2)}</span>
+                  <span className="payment-history-meta">{invoiceDateFormatted}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Math calculation */}
+          <div>
+            <table className="calc-table">
               <tbody>
                 <tr>
-                  <td>
-                    {booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}
-                    <span className="line-meta">
-                      {booking.package_title} - {booking.variant_title} | {
-                        booking.student_count > 0
-                          ? `${booking.student_count} Student${booking.student_count > 1 ? 's' : ''}`
-                          : `${booking.adult_count} Adults, ${booking.child_count} Children`
-                      }
-                    </span>
-                  </td>
-                  <td>{money(baseFare, 2)}</td>
+                  <td>Total Taxable Value</td>
+                  <td>{money(Number(baseFare) + transportSelections.reduce((acc, curr) => acc + Number(curr.item_total || 0), 0) + (refreshmentIncluded ? Number(refreshmentAmount) : 0), 2)}</td>
                 </tr>
-                {booking.target_type === 'ROOM' && (
-                  <tr>
-                    <td>
-                      Stay Details
-                      <span className="line-meta">
-                        Check-in {booking.room_checkin || 'TBA'} | Check-out {booking.room_checkout || 'TBA'}{booking.room_checkout_date ? ` | Until ${new Date(booking.room_checkout_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
-                      </span>
-                    </td>
-                    <td>Included</td>
-                  </tr>
-                )}
-                {transportSelections.map((ts, idx) => (
-                  <tr key={`transport-${idx}`}>
-                    <td>
-                      {ts.title || 'Transport'}
-                      <span className="line-meta">{describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)}</span>
-                    </td>
-                    <td>{money(ts.item_total || 0, 2)}</td>
-                  </tr>
-                ))}
-                {refreshmentIncluded && (
-                  <tr>
-                    <td>
-                      Refreshments
-                      <span className="line-meta">
-                        {booking.student_count > 0
-                          ? `Add-on for ${booking.student_count} Student${booking.student_count > 1 ? 's' : ''}`
-                          : `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children`
-                        }
-                      </span>
-                    </td>
-                    <td>{money(refreshmentAmount, 2)}</td>
-                  </tr>
-                )}
                 {booking.coupon_discount > 0 && (
                   <tr>
-                    <td>Discount ({booking.coupon_applied})</td>
-                    <td style={{ color: '#16a34a' }}>-{money(booking.coupon_discount, 2)}</td>
+                    <td>Coupon Discount ({booking.coupon_applied})</td>
+                    <td style={{ color: '#16a34a' }}>−{money(booking.coupon_discount, 2)}</td>
                   </tr>
                 )}
                 <tr>
-                  <td>Taxes (GST @ 5%)</td>
-                  <td>{money(booking.gst_amount, 2)}</td>
+                  <td>CGST (2.5%)</td>
+                  <td>₹ {halfGst}</td>
                 </tr>
                 <tr>
-                  <td>Gateway Fee</td>
+                  <td>SGST (2.5%)</td>
+                  <td>₹ {halfGst}</td>
+                </tr>
+                <tr>
+                  <td>Gateway Convenience Fee</td>
                   <td>{money(booking.gateway_fee, 2)}</td>
                 </tr>
-                <tr className="total-row">
-                  <td>TOTAL AMOUNT</td>
+                <tr className="calc-row-highlight">
+                  <td>GRAND INVOICE TOTAL</td>
                   <td>{money(booking.total_amount, 2)}</td>
                 </tr>
                 {booking.agent_commission != null && booking.agent_commission > 0 && (
                   <>
                     <tr style={{ color: '#16a34a', fontWeight: 'bold' }}>
-                      <td>AGENT COMMISSION</td>
+                      <td>Agent Incentive/Commission</td>
                       <td>-{money(booking.agent_commission, 2)}</td>
                     </tr>
-                    <tr style={{ fontWeight: 800, color: '#1e3a8a', backgroundColor: '#f8fafc' }}>
-                      <td>AGENT NET PAYABLE</td>
+                    <tr className="calc-row-highlight" style={{ background: '#fdfbeb' }}>
+                      <td>NET PAYABLE BY AGENT</td>
                       <td>{money(booking.agent_payable || 0, 2)}</td>
                     </tr>
                   </>
                 )}
-                <tr className="paid-row">
-                  <td>{booking.agent_commission != null && booking.agent_commission > 0 ? 'AMOUNT RECEIVED (NET)' : 'AMOUNT PAID'}</td>
+                <tr className="calc-row-paid">
+                  <td>TOTAL AMOUNT PAID</td>
                   <td>{money(totalPaid, 2)}</td>
                 </tr>
-                <tr className="balance-row">
-                  <td>{booking.agent_commission != null && booking.agent_commission > 0 ? 'REMAINING BALANCE DUE' : 'REMAINING BALANCE'}</td>
-                  <td>{money(booking.remaining_balance, 2)}</td>
-                </tr>
+                {booking.remaining_balance > 0 && (
+                  <tr className="calc-row-balance">
+                    <td>OUTSTANDING BALANCE DUE</td>
+                    <td>{money(booking.remaining_balance, 2)}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
-            {(booking.status === 'CANCELLED' || booking.status === 'REFUNDED') && booking.cancellation_details && (
-              <table className="summary-table" style={{ marginTop: '10px', borderTop: '2px dashed #cbd5e1' }}>
-                <tbody>
-                  <tr>
-                    <td>Cancellation Charges</td>
-                    <td style={{ color: '#ef4444' }}>{money(booking.cancellation_details.cancellation_fee || 0, 2)}</td>
-                  </tr>
-                  <tr className="paid-row" style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}>
-                    <td>AMOUNT REFUNDED</td>
-                    <td>{money(booking.cancellation_details.refund_amount || 0, 2)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            )}
-            <div className="status-bar">PAYMENT STATUS: {booking.status.replace('_', ' ')}</div>
-          </div>
-
-          <div className="summary-right">
-            {/* Payment transaction details breakdown */}
-            {true && (
-              <div>
-                <div className="table-title">PAYMENT BREAKDOWN</div>
-                <table className="summary-table">
-                  <thead>
-                    <tr>
-                      <th>Transaction Details</th>
-                      <th>Payment Mode</th>
-                      <th>Amount (₹)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {capturedPayments.length > 0 ? (
-                      capturedPayments.map((payment, idx) => {
-                        const payDate = payment.created_at ? new Date(payment.created_at) : null;
-                        const formattedDate = payDate 
-                          ? payDate.toLocaleString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            })
-                          : invoiceDateFormatted;
-                        const classification = idx === 0 
-                          ? (payment.amount >= booking!.total_amount ? 'Full Payment' : 'Advance Payment') 
-                          : 'Remaining Balance';
-
-                        return (
-                          <tr key={payment.id}>
-                            <td>
-                              <span style={{ fontWeight: 800, display: 'block' }}>{classification}</span>
-                              <span className="line-meta">{formattedDate}</span>
-                            </td>
-                            <td>
-                              <span style={{ fontWeight: 700, display: 'block' }}>{getPaymentMethodLabel(payment.payment_method)}</span>
-                              {(payment.payment_reference_id || payment.collected_by_label) && (
-                                <span className="line-meta">
-                                  {payment.payment_reference_id ? `Txn: ${payment.payment_reference_id}` : ''}
-                                  {payment.payment_reference_id && payment.collected_by_label ? ' · ' : ''}
-                                  {payment.collected_by_label ? `Ref: ${payment.collected_by_label}` : ''}
-                                </span>
-                              )}
-                            </td>
-                            <td>{money(payment.amount, 2)}</td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td>
-                          <span style={{ fontWeight: 800, display: 'block' }}>Full Payment</span>
-                          <span className="line-meta">{invoiceDateFormatted}</span>
-                        </td>
-                        <td>
-                          <span style={{ fontWeight: 700, display: 'block' }}>{paymentMode}</span>
-                          {paymentId !== 'N/A' && <span className="line-meta">Txn: {paymentId}</span>}
-                        </td>
-                        <td>{money(totalPaid, 2)}</td>
-                      </tr>
-                    )}
-                    <tr className="paid-row">
-                      <td colSpan={2}>TOTAL PAID</td>
-                      <td>{money(totalPaid, 2)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <div>
-              <div className="table-title">TAX BREAKUP</div>
-              <table className="summary-table">
-                <thead>
-                  <tr>
-                    <th>Tax Type</th>
-                    <th>Taxable Amount (₹)</th>
-                    <th>Tax Rate (%)</th>
-                    <th>Tax Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>CGST</td>
-                    <td>{(booking.total_amount - booking.gst_amount).toFixed(2)}</td>
-                    <td>2.50</td>
-                    <td>{halfGst}</td>
-                  </tr>
-                  <tr>
-                    <td>SGST</td>
-                    <td>{(booking.total_amount - booking.gst_amount).toFixed(2)}</td>
-                    <td>2.50</td>
-                    <td>{halfGst}</td>
-                  </tr>
-                  <tr className="paid-row">
-                    <td colSpan={3}>TOTAL GST</td>
-                    <td>₹ {booking.gst_amount.toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {booking.gateway_fee > 0 && (
-              <div style={{ marginTop: '15px' }}>
-                <div className="table-title">GATEWAY FEE BREAKUP</div>
-                <table className="summary-table">
-                  <thead>
-                    <tr>
-                      <th>Fee Type</th>
-                      <th>Taxable Amount (₹)</th>
-                      <th>Tax Rate (%)</th>
-                      <th>Tax Amount (₹)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Convenience Charges</td>
-                      <td>{(booking.gateway_fee / 1.18).toFixed(2)}</td>
-                      <td>—</td>
-                      <td>—</td>
-                    </tr>
-                    <tr>
-                      <td>CGST</td>
-                      <td>{(booking.gateway_fee / 1.18).toFixed(2)}</td>
-                      <td>9.00</td>
-                      <td>{((booking.gateway_fee / 1.18) * 0.09).toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                      <td>SGST</td>
-                      <td>{(booking.gateway_fee / 1.18).toFixed(2)}</td>
-                      <td>9.00</td>
-                      <td>{((booking.gateway_fee / 1.18) * 0.09).toFixed(2)}</td>
-                    </tr>
-                    <tr className="paid-row">
-                      <td colSpan={3}>TOTAL GATEWAY FEE</td>
-                      <td>₹ {booking.gateway_fee.toFixed(2)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* INSTRUCTIONS */}
-        <div className="footer-cards">
-          <div className="footer-card" style={{ flex: '1.2' }}>
-            <div className="fc-title">IMPORTANT INSTRUCTIONS</div>
-            <div className="fc-body">
-              <ul>
-                <li>You must visit our office before the journey and collect your original manual boarding ticket.</li>
-                <li>Please reach at least 30 minutes before reporting time.</li>
-                <li>Carry a valid photo ID proof.</li>
-                <li>This invoice is not valid for boarding. Boarding is allowed only with the original ticket issued by our office.</li>
-                <li>Outside food & alcohol are strictly not allowed.</li>
-              </ul>
+        {/* Google Maps Navigation Box */}
+        <div style={{ marginTop: '16px', marginBottom: '16px', background: 'linear-gradient(135deg, #0a2351 0%, #1e3a8a 100%)', borderRadius: '10px', padding: '14px 18px', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #c8a45a' }}>
+          <div style={{ flex: 1, paddingRight: '16px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: '#c8a45a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>📍 Bhadrachalam Office Map Navigation</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#e2e8f0', lineHeight: 1.4 }}>
+              Om Shanti Satram, Kalyana Mandapam Road, Near SBI ATM, Bhadrachalam, Telangana 507111
             </div>
           </div>
-          <div className="footer-card" style={{ flex: '1.5' }}>
-            <div className="fc-title">OFFICE DETAILS</div>
-            <div className="fc-body office-details">
-              <div>
-                <strong>📍 TOURISM OFFICE</strong><br />
-                DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM,<br />
-                BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA - 507 111<br />
-                <div style={{ marginTop: '6px', marginBottom: '6px' }} className="no-print">
-                  <a
-                    href="https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 800, textDecoration: 'none', border: '1px solid #bae6fd' }}
-                  >
-                    🗺️ Open in Google Maps
-                  </a>
-                </div>
-                <strong>📞 +91 95420 69573 | +91 984 984 89 82</strong><br />
-                🕒 Office Time: 06:00 AM to 08:00 PM (All Days)
-              </div>
+          <a 
+            href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ background: '#c8a45a', color: '#0a2351', textDecoration: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: 800, fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}
+          >
+            🗺️ Open Google Maps
+          </a>
+        </div>
+
+        {/* INSTRUCTIONS */}
+        <div className="instructions-card">
+          <div className="instructions-title">⚠️ Mandatory Compliance & Terms</div>
+          <ul>
+            <li>This invoice is a financial record and receipt of payment. It does not replace the manual physical boarding pass required at boarding points.</li>
+            <li>Boarding is only permitted upon production of the manual ticket collected from our local office prior to departure.</li>
+            <li>Please report to the office checkpoint at least 30 minutes before departure reporting time.</li>
+            <li>Original government photo identification is required for identity verification of all boarding passengers.</li>
+          </ul>
+        </div>
+
+        {/* SIGNATURES */}
+        <div className="sign-footer">
+          <div className="sign-col">
+            <div className="sign-line" />
+            <div className="sign-title">Customer Acknowledgement</div>
+          </div>
+          <div className="sign-col" style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '10px', fontWeight: 800, color: '#0a2351' }}>For TS BOAT TOURISM</div>
+            <div className="sign-line" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '18px', color: '#1a6b7a', opacity: 0.6 }}>TS Boat Tourism Admin</span>
             </div>
+            <div className="sign-title">Authorized Signatory</div>
           </div>
         </div>
 
         <div className="bottom-bar">
-          ⚓ Thank you for travelling with us! ⚓
+          ⚓ Thank you for booking with TS Boat Tourism. Have a safe and memorable trip! ⚓
         </div>
 
       </div>

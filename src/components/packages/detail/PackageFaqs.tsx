@@ -25,19 +25,19 @@ export const PackageFaqs = ({ faqs }: PackageFaqsProps) => {
   return (
     <section id="faqs" className="scroll-mt-[170px]">
       <div className="mb-8">
-        <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-[#1a6b7a]">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-[#0d6e75]">
           <HelpCircle className="h-3.5 w-3.5" />
           Guided Answers
         </span>
-        <h2 className="mt-3 text-3xl font-black text-[#0f3d56] tracking-tight md:text-4xl">
+        <h2 className="mt-3 text-2xl font-black text-slate-900 tracking-tight md:text-3xl">
           Frequently Answered Questions
         </h2>
-        <p className="mt-2 text-slate-500 font-semibold text-sm">
+        <p className="mt-2 text-slate-500 font-semibold text-xs">
           Everything you need to know about the logistics, food, kids policies, and river regulations.
         </p>
       </div>
 
-      <div className="mx-auto max-w-4xl rounded-2xl border border-[#dfe8e2]/60 bg-white p-6 md:p-8 shadow-[0_8px_28px_rgba(15,61,86,0.03)]">
+      <div className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
         <div className="divide-y divide-slate-100">
           {faqs.map((faq) => {
             const isOpen = openId === faq.id;
@@ -48,15 +48,15 @@ export const PackageFaqs = ({ faqs }: PackageFaqsProps) => {
                   onClick={() => toggleFaq(faq.id)}
                   className="flex w-full cursor-pointer items-center justify-between gap-4 text-left focus:outline-none"
                 >
-                  <span className="text-base font-black leading-7 text-[#0f3d56] transition-colors hover:text-[#1a6b7a]">
+                  <span className="text-sm font-black leading-relaxed text-slate-900 transition-colors hover:text-[#0d6e75]">
                     {faq.question}
                   </span>
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all ${
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all ${
                     isOpen
-                      ? 'rotate-180 border-[#1a6b7a] bg-[#1a6b7a] text-white shadow-md'
-                      : 'border-[#cde5df] bg-[#eaf8f5] text-[#0f3d56] hover:bg-[#d9f0eb]'
+                      ? 'rotate-180 border-[#0d6e75] bg-[#0d6e75] text-white shadow-xs'
+                      : 'border-[#0d6e75]/25 bg-[#0d6e75]/5 text-[#0d6e75] hover:bg-[#0d6e75]/10'
                   }`}>
-                    <ChevronDown className="h-5 w-5 stroke-[2.5]" />
+                    <ChevronDown className="h-4.5 w-4.5 stroke-[2.5]" />
                   </div>
                 </button>
 
@@ -66,10 +66,10 @@ export const PackageFaqs = ({ faqs }: PackageFaqsProps) => {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      transition={{ duration: 0.2, ease: 'easeInOut' }}
                       className="overflow-hidden"
                     >
-                      <p className="mt-4 text-sm font-semibold leading-8 text-slate-500 max-w-3xl">
+                      <p className="mt-3 text-xs font-semibold leading-relaxed text-slate-500 max-w-3xl">
                         {faq.answer}
                       </p>
                     </motion.div>

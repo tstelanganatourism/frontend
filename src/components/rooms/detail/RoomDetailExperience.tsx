@@ -16,6 +16,7 @@ import { reportBookNowConversion } from '@/components/providers/AnalyticsProvide
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 
 import { toast } from 'sonner';
+import { RoomHero } from './RoomHero';
 import {
   Sheet, SheetClose, SheetContent, SheetDescription,
   SheetHeader, SheetTitle, SheetTrigger
@@ -81,6 +82,8 @@ export type RoomDetailViewModel = {
   highlights: Array<{ id: number; title: string; icon?: string | null; sort_order: number }>;
   faqs: RoomFAQ[];
   policies: RoomPolicy[];
+  advance_payment_type?: string | null;
+  advance_payment_value?: number | null;
 };
 
 interface RoomDetailExperienceProps {
@@ -915,17 +918,18 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     return getStayPriceDetails(arrivalDate, departureDate, weekday, weekend);
   }, [arrivalDate, departureDate, selectedVariant, room.starting_price]);
 
+  const isWeekend = useMemo(() => {
+    if (!arrivalDate) return false;
+    const date = new Date(`${arrivalDate}T00:00:00`);
+    const day = date.getDay();
+    return day === 6 || day === 0;
+  }, [arrivalDate]);
+
   const price = useMemo(() => {
-    let isWeekend = false;
-    if (arrivalDate) {
-      const date = new Date(`${arrivalDate}T00:00:00`);
-      const day = date.getDay();
-      isWeekend = day === 6 || day === 0;
-    }
     const weekday = Number(selectedVariant?.weekday_price || room.starting_price || 0);
     const weekend = Number(selectedVariant?.weekend_price || selectedVariant?.weekday_price || room.starting_price || 0);
     return isWeekend ? weekend : weekday;
-  }, [arrivalDate, selectedVariant, room.starting_price]);
+  }, [isWeekend, selectedVariant, room.starting_price]);
 
   const prices = useMemo(() => {
     const baseFare = stayDetails.totalPrice * roomsCount;
@@ -1035,107 +1039,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   });
 
   return (
-    <main className="bg-[#f5faf9] pb-20 text-[#102231] lg:pb-0">
-      <section className="relative overflow-hidden bg-[#062d3c]">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,#062d3c_0%,#0c7b78_58%,#f4b44e_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(255,255,255,0.22),transparent_26%),linear-gradient(180deg,rgba(3,24,35,0.08),rgba(3,24,35,0.7))]" />
-
-        <div className="relative mx-auto max-w-[1600px] px-4 pb-10 pt-5 sm:px-6 lg:px-12">
-          <div className="mb-5 flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-white/70">
-            <Link href="/" className="transition hover:text-white">Home</Link>
-            <ChevronRight className="h-3.5 w-3.5" />
-            <Link href="/stays" className="transition hover:text-white">Stays</Link>
-            <ChevronRight className="h-3.5 w-3.5" />
-            <span className="truncate text-white">{room.lodge_name}</span>
-          </div>
-
-          <div className="grid min-w-0 items-end gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-            <div className="w-full min-w-0 text-white">
-              <Link href="/stays" className="mb-5 inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-black text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/18">
-                <ArrowLeft className="h-4 w-4" />
-                Stays
-              </Link>
-
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-black backdrop-blur">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-200" />
-                  Verified stay
-                </span>
-                {room.is_featured ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-black backdrop-blur">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-200" />
-                    Featured property
-                  </span>
-                ) : null}
-              </div>
-
-              <h1 className="text-3xl font-black leading-tight tracking-normal text-white sm:text-4xl lg:text-5xl break-words">
-                {room.lodge_name.replace(/\s*\(/g, ' (')}
-              </h1>
-              <p className="mt-4 text-sm font-medium leading-7 text-white/85 sm:text-base line-clamp-4">
-                {room.description
-                  ? (() => { const plain = stripHtml(room.description); return plain.length > 210 ? `${plain.slice(0, 207)}...` : plain; })()
-                  : 'A verified stay with room categories, facilities, location, and reservation details shown clearly before booking.'}
-              </p>
-
-              <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
-                <HeroFact icon={IndianRupee} label="Starts from" value={price ? money(price) : money(room.starting_price)} />
-                <HeroFact icon={BedDouble} label="Categories" value={`${validVariants.length || 1} option${validVariants.length === 1 ? '' : 's'}`} />
-                <HeroFact icon={Clock} label="Check-in" value={cleanTime(room.slot_start)} />
-                <HeroFact className="col-span-2 sm:col-span-1" icon={MapPin} label="Location" value={room.address || 'Bhadrachalam'} />
-              </div>
-            </div>
-
-            <div className="min-w-0 rounded-xl border border-white/18 bg-white p-2 shadow-2xl shadow-slate-950/18">
-              <div className="relative">
-                <div className="relative overflow-hidden rounded-lg bg-slate-950">
-                  <div className="relative aspect-[4/3] w-full sm:min-h-[300px] sm:aspect-[16/10] lg:min-h-[470px]">
-                    <div className="absolute inset-0 bg-slate-900/40" />
-                    <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill priority className="object-cover transition-transform duration-500 hover:scale-[1.015]" sizes="(max-width: 1024px) 100vw, 1200px" quality={85} />
-                    <button type="button" onClick={() => setLightboxOpen(true)} className="absolute inset-0 z-10" aria-label="Open stay photos" />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent p-3 sm:p-4">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/92 px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm">
-                        <Camera className="h-3.5 w-3.5" />
-                        {slides.length} Photo{slides.length === 1 ? '' : 's'}
-                      </span>
-                      <span className="hidden rounded-full bg-slate-950/65 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/10 sm:inline-flex">
-                        {room.total_rooms ? `${room.total_rooms} rooms` : 'Managed stay'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {slides.length > 1 ? (
-                  <>
-                    <button type="button" onClick={() => moveSlide('left')} className="absolute left-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition hover:scale-105" aria-label="Previous photo">
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button type="button" onClick={() => moveSlide('right')} className="absolute right-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition hover:scale-105" aria-label="Next photo">
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  </>
-                ) : null}
-              </div>
-
-
-              {slides.length > 1 ? (
-                <div className="mt-2 grid grid-cols-4 gap-1.5 min-[480px]:gap-2 min-[480px]:grid-cols-5">
-                  {slides.slice(0, 5).map((slide, index) => (
-                    <button key={slide.id || index} type="button" onClick={() => setActiveSlide(index)} className={`relative aspect-[4/3] overflow-hidden rounded-md border transition ${index === activeSlide ? 'border-[#1a6b7a] ring-2 ring-[#1a6b7a]/20' : 'border-slate-200 opacity-75 hover:opacity-100'}`} aria-label={`Show photo ${index + 1}`}>
-                      <Image src={slide.image_url || fallbackImage} alt={slide.alt_text || `Stay photo ${index + 1}`} fill sizes="120px" className="object-cover" />
-                      {index === 4 && slides.length > 5 ? <span className="absolute inset-0 flex items-center justify-center bg-slate-950/65 text-xs font-black text-white">+{slides.length - 5}</span> : null}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-[#f4faf9] px-3 py-2 text-xs font-bold text-[#0f3d56]">
-                  <BadgeCheck className="h-4 w-4 text-[#1a6b7a]" />
-                  More photos may be shared by the reservations team.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+    <main className="bg-[#fafaf7] pb-20 text-slate-900 lg:pb-0">
+      <RoomHero
+        lodgeName={room.lodge_name}
+        coverImage={room.cover_image_url}
+        address={room.address}
+        isFeatured={room.is_featured}
+        startingPrice={price ? price : room.starting_price}
+        totalRooms={room.total_rooms ?? undefined}
+      />
 
       <RoomSectionNav />
 
@@ -1149,13 +1061,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             </div>
           </Section>
 
-          {facilities.length ? (
+           {facilities.length ? (
             <Section title="Facilities" eyebrow="From admin">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {facilities.map((facility) => (
-                  <div key={facility} className="flex min-h-16 items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
-                    <Wifi className="h-4 w-4 shrink-0 text-[#0f8d7d]" />
-                    <span className="text-sm font-black text-slate-800">{facility}</span>
+                  <div key={facility} className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-3xs transition hover:-translate-y-0.5">
+                    <Wifi className="h-4 w-4 shrink-0 text-[#0d6e75]" />
+                    <span className="text-xs font-black text-slate-805">{facility}</span>
                   </div>
                 ))}
               </div>
@@ -1168,13 +1080,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 {validVariants.map((variant) => {
                   const active = selectedVariant?.id === variant.id;
                   return (
-                    <button key={variant.id} type="button" onClick={() => setSelectedVariantId(variant.id)} className={`grid gap-5 rounded-lg border p-5 text-left shadow-sm transition duration-300 md:grid-cols-[1fr_auto] md:items-center ${active ? 'border-[#0f8d7d] bg-white shadow-[0_22px_70px_rgba(15,141,125,0.12)]' : 'border-slate-200 bg-white/80 hover:-translate-y-0.5 hover:bg-white hover:shadow-lg'}`}>
+                    <button key={variant.id} type="button" onClick={() => setSelectedVariantId(variant.id)} className={`grid gap-5 rounded-2xl border p-5 text-left shadow-sm transition duration-300 md:grid-cols-[1fr_auto] md:items-center ${active ? 'border-[#0d6e75] bg-white shadow-md ring-2 ring-[#0d6e75]/10' : 'border-slate-200 bg-white/80 hover:-translate-y-0.5 hover:bg-white hover:shadow-lg'}`}>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-xl font-black text-[#102231]">{variant.variant_name}</h3>
-                          {variant.capacity_per_room ? <span className="rounded-full bg-[#edf8f6] px-3 py-1 text-xs font-black text-[#0f766e]">{variant.capacity_per_room} guests/room</span> : null}
+                          <h3 className="text-lg font-black text-slate-900">{variant.variant_name}</h3>
+                          {variant.capacity_per_room ? <span className="rounded-full bg-[#0d6e75]/10 px-3 py-1 text-xs font-black text-[#0d6e75]">{variant.capacity_per_room} guests/room</span> : null}
                         </div>
-                        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Select this category to update your reservation estimate.</p>
+                        <p className="mt-2 text-xs font-semibold leading-relaxed text-slate-500">Select this category to update your reservation estimate.</p>
                       </div>
                       <div className="flex gap-8 md:text-right">
                         <PriceBlock label="Weekday" value={variant.weekday_price} highlight />
@@ -1218,10 +1130,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <Section id="timings" title="Stay Timings" eyebrow="Booking slots">
               <div className="grid gap-4 sm:grid-cols-2">
                 {slots.map((slot, index) => (
-                  <div key={`${slot.title}-${index}`} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                    <Clock className="h-5 w-5 text-[#0f8d7d]" />
-                    <h3 className="mt-4 text-base font-black text-[#102231]">{slot.title || 'Stay slot'}</h3>
-                    <p className="mt-2 text-sm font-bold text-slate-500">{cleanTime(slot.slot_start)} to {cleanTime(slot.slot_end)}</p>
+                  <div key={`${slot.title}-${index}`} className="rounded-xl border border-slate-200 bg-white p-5 shadow-3xs">
+                    <Clock className="h-5 w-5 text-[#0d6e75]" />
+                    <h3 className="mt-4 text-sm font-black text-slate-900">{slot.title || 'Stay slot'}</h3>
+                    <p className="mt-2 text-xs font-semibold text-slate-500">{cleanTime(slot.slot_start)} to {cleanTime(slot.slot_end)}</p>
                   </div>
                 ))}
               </div>
@@ -1232,12 +1144,12 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <Section id="faqs" title="Stay FAQs" eyebrow="Before booking">
               <div className="grid gap-3">
                 {room.faqs.map((faq) => (
-                  <details key={faq.id} className="group rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-black text-[#102231]">
+                  <details key={faq.id} className="group rounded-xl border border-slate-200 bg-white p-5 shadow-3xs">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xs font-black text-slate-900 focus:outline-none">
                       <span>{faq.question}</span>
-                      <HelpCircle className="h-5 w-5 shrink-0 text-[#0f8d7d]" />
+                      <HelpCircle className="h-4.5 w-4.5 shrink-0 text-[#0d6e75]" />
                     </summary>
-                    <p className="mt-4 text-sm font-semibold leading-7 text-slate-600">{faq.answer}</p>
+                    <p className="mt-4 text-xs font-semibold leading-relaxed text-slate-550">{faq.answer}</p>
                   </details>
                 ))}
               </div>
@@ -1248,10 +1160,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <Section id="policies" title="Policies" eyebrow="Terms">
               <div className="grid gap-4 md:grid-cols-2">
                 {room.policies.map((policy) => (
-                  <div key={policy.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#0f8d7d]">{formatPolicyType(policy.type)}</p>
-                    <h3 className="mt-3 text-base font-black text-[#102231]">{policy.title}</h3>
-                    <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">{policy.description}</p>
+                  <div key={policy.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-3xs">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#0d6e75]">{formatPolicyType(policy.type)}</p>
+                    <h3 className="mt-3 text-xs font-black text-slate-900">{policy.title}</h3>
+                    <p className="mt-3 text-xs font-semibold leading-relaxed text-slate-550">{policy.description}</p>
                   </div>
                 ))}
               </div>
@@ -1269,7 +1181,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       setActiveSlide(index);
                       setLightboxOpen(true);
                     }}
-                    className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.03] hover:shadow-lg hover:border-[#0f8d7d]/30"
+                    className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.02] hover:shadow-md hover:border-[#0d6e75]/30"
                     aria-label={`View photo ${index + 1}`}
                   >
                     <Image src={getHdImageUrl(slide.image_url || fallbackImage)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" quality={85} />
@@ -1280,25 +1192,25 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           ) : null}
         </div>
         <aside className="hidden lg:block lg:pt-1">
-          <div className="sticky top-[140px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_45px_120px_rgba(16,34,49,0.13)] max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+          <div className="sticky top-[140px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
 
-            {/* Dark header */}
-            <div className="bg-[#0f3d56] px-5 py-4 text-white rounded-t-2xl">
-              <h2 className="text-base font-black tracking-wide">Reserve your stay</h2>
+            {/* Redesigned Premium Header */}
+            <div className="bg-[#0d6e75] px-5 py-4 text-white rounded-t-2xl">
+              <h2 className="text-xs font-black uppercase tracking-widest text-[#e5dac5]">Reserve stay</h2>
               <div className="mt-1 text-2xl font-black tracking-tight">
                 {stayDetails.nightsCount > 0 
                   ? money(Math.round(stayDetails.totalPrice / stayDetails.nightsCount)) 
-                  : money(price)} <span className="text-xs font-semibold text-white/70">/ night{stayDetails.nightsCount > 0 && stayDetails.totalPrice !== price * stayDetails.nightsCount ? ' avg' : ''}</span>
+                  : money(price)} <span className="text-[10px] font-bold uppercase tracking-wider text-[#e5dac5]/80">/ night{stayDetails.nightsCount > 0 && stayDetails.totalPrice !== price * stayDetails.nightsCount ? ' avg' : ''}</span>
               </div>
             </div>
 
-            <div className="p-5 space-y-3">
+            <div className="p-5 space-y-4 bg-white">
               {isLodgeInactive && (
-                <div className="rounded-xl border border-rose-100 bg-rose-50/70 p-3 text-xs text-rose-600 font-bold flex items-start gap-2">
+                <div className="rounded-xl border border-rose-100 bg-rose-500/5 p-3 text-xs text-rose-650 font-bold flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-black">Online Bookings Suspended</p>
-                    <p className="text-slate-500 font-bold text-[11px] mt-0.5 leading-relaxed">
+                    <p className="text-slate-500 font-semibold text-[10px] mt-0.5 leading-relaxed">
                       This stay / lodge is currently closed or inactive.
                     </p>
                   </div>
@@ -1348,59 +1260,98 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 </div>
               </div>
 
+              {/* Visual Category Cards */}
               {validVariants.length ? (
-                <PremiumSelect
-                  label="Stay Category"
-                  value={selectedVariantId}
-                  disabled={isLodgeInactive}
-                  onChange={(value) => setSelectedVariantId(Number(value))}
-                  options={validVariants.map((variant) => ({ value: variant.id, label: variant.variant_name }))}
-                  placeholder="Select stay category"
-                />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Stay Category</p>
+                  <div className="grid gap-2">
+                    {validVariants.map((variant) => {
+                      const isSel = selectedVariantId === variant.id;
+                      return (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          disabled={isLodgeInactive}
+                          onClick={() => setSelectedVariantId(variant.id)}
+                          className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
+                            isSel
+                              ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-slate-900 ring-2 ring-[#0d6e75]/10'
+                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div>
+                            <p className="text-xs font-black">{variant.variant_name}</p>
+                            {variant.capacity_per_room && (
+                              <p className="text-[9px] font-bold text-slate-400">{variant.capacity_per_room} guests/room</p>
+                            )}
+                          </div>
+                          <p className="text-xs font-black text-[#0d6e75]">
+                            {money(isWeekend ? variant.weekend_price : variant.weekday_price)}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : null}
 
+              {/* Visual Timing slots */}
               {slots.length > 0 ? (
-                <PremiumSelect
-                  label="Check-in/out Timing"
-                  value={selectedSlotIndex}
-                  disabled={isLodgeInactive}
-                  onChange={(value) => {
-                    const newIndex = Number(value);
-                    setSelectedSlotIndex(newIndex);
-                    if (arrivalDate && departureDate) {
-                      const newSlot = slots[newIndex] || slots[0];
-                      const sStart = newSlot?.slot_start || "";
-                      const sEnd = newSlot?.slot_end || "";
-                      const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
-                      if (isOvernight && departureDate <= arrivalDate) {
-                        const nextDay = new Date(arrivalDate);
-                        nextDay.setDate(nextDay.getDate() + 1);
-                        setDepartureDate(toLocalDateString(nextDay));
-                      } else if (!isOvernight && departureDate > arrivalDate) {
-                        setDepartureDate(arrivalDate);
-                      }
-                    }
-                  }}
-                  options={slots.map((slot, index) => ({ value: index, label: `${slot.title} (${cleanTime(slot.slot_start)} - ${cleanTime(slot.slot_end)})` }))}
-                  placeholder="Select timing slot"
-                />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Check-in/out Timing</p>
+                  <div className="flex flex-wrap gap-2">
+                    {slots.map((slot, index) => {
+                      const isSel = selectedSlotIndex === index;
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          disabled={isLodgeInactive}
+                          onClick={() => {
+                            setSelectedSlotIndex(index);
+                            if (arrivalDate && departureDate) {
+                              const sStart = slot?.slot_start || "";
+                              const sEnd = slot?.slot_end || "";
+                              const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
+                              if (isOvernight && departureDate <= arrivalDate) {
+                                const nextDay = new Date(arrivalDate);
+                                nextDay.setDate(nextDay.getDate() + 1);
+                                setDepartureDate(toLocalDateString(nextDay));
+                              } else if (!isOvernight && departureDate > arrivalDate) {
+                                setDepartureDate(arrivalDate);
+                              }
+                            }
+                          }}
+                          className={`rounded-lg border px-3 py-2 text-left transition-all ${
+                            isSel
+                              ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75] ring-2 ring-[#0d6e75]/10'
+                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          <p className="text-[10px] font-black">{slot.title}</p>
+                          <p className="text-[9px] font-bold text-slate-450 mt-0.5">{cleanTime(slot.slot_start)} - {cleanTime(slot.slot_end)}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : null}
 
               {/* Guests */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Guests</p>
                 <div className={`flex items-center justify-between rounded-lg border px-3 py-1 ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
-                  <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0f8d7d]'}`} aria-label="Decrease guests">
+                  <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0d6e75]'}`} aria-label="Decrease guests">
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="text-sm font-black">{guests} {guests === 1 ? 'Adult' : 'Adults'}</span>
-                  <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
+                  <span className="text-xs font-black">{guests} {guests === 1 ? 'Adult' : 'Adults'}</span>
+                  <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0d6e75]'}`} aria-label="Increase guests">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
                 <div className="flex justify-between items-center mt-1">
-                  {selectedVariant?.capacity_per_room ? <p className="text-[10px] font-bold text-slate-400">{selectedVariant.capacity_per_room} guests/room capacity</p> : <div />}
-                  <p className={`text-[10px] font-bold ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0f8d7d]'}`}>
+                  {selectedVariant?.capacity_per_room ? <p className="text-[10px] font-semibold text-slate-400">{selectedVariant.capacity_per_room} guests/room capacity</p> : <div />}
+                  <p className={`text-[10px] font-bold ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0d6e75]'}`}>
                     {arrivalDate && maxAvailableRooms === 0
                       ? 'No rooms available — select different dates'
                       : `Requires ${roomsCount} room${roomsCount !== 1 ? 's' : ''}${arrivalDate ? ` (${maxAvailableRooms} available)` : ''}`
@@ -1419,13 +1370,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       disabled={validatingCoupon || !!appliedCoupon}
-                      className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#1a6b7a] focus:bg-white disabled:opacity-60"
+                      className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#0d6e75] focus:bg-white disabled:opacity-60"
                     />
                     {appliedCoupon ? (
                       <button
                         type="button"
                         onClick={handleRemoveCoupon}
-                        className="flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-100"
+                        className="flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-650 transition hover:bg-red-100"
                       >
                         Remove
                       </button>
@@ -1440,7 +1391,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     )}
                   </div>
                   {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
-                  {couponSuccess && <p className="text-[10px] font-bold text-[#16a34a]">{couponSuccess}</p>}
+                  {couponSuccess && <p className="text-[10px] font-bold text-green-600">{couponSuccess}</p>}
                 </form>
               </div>
 
@@ -1451,22 +1402,22 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               ) : (
                 <>
                   {/* Pricing Details & Advance Payment Card */}
-                  <div className="rounded-2xl border border-[#dfe8e2]/85 bg-slate-50/70 p-4 space-y-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
-                <div className="space-y-2 text-xs text-slate-500">
+                  <div className="rounded-2xl border border-slate-250 bg-[#fafaf7] p-4 space-y-3">
+                <div className="space-y-2 text-xs text-slate-500 font-semibold">
                   <div className="flex items-center justify-between">
-                    <span>Base Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
-                    <span className="font-bold text-slate-800">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
+                    <span>Base Room Fare <span className="text-[10px] text-slate-450 font-medium">({nights || 1}N, {roomsCount}R)</span></span>
+                    <span className="font-extrabold text-slate-900">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
                   </div>
                   {stayDetails.weekendSurchargeTotal > 0 && (
                     <div className="flex items-center justify-between text-amber-600">
                       <span>Weekend Surcharge</span>
-                      <span className="font-bold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
+                      <span className="font-extrabold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
                     </div>
                   )}
                   {appliedCoupon && (
                     <div className="flex items-center justify-between text-[#16a34a] font-bold">
                       <span>Coupon Discount</span>
-                      <span className="font-bold">- {money(appliedCoupon.discount_amount)}</span>
+                      <span className="font-extrabold">- {money(appliedCoupon.discount_amount)}</span>
                     </div>
                   )}
                   {nights > 0 && selectedVariant && arrivalDate && departureDate && stayDetails.breakdown.some(d => d.isWeekend) ? (
@@ -1475,16 +1426,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     </div>
                   ) : null}
                   <div className="flex justify-between items-center">
-                    <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
-                    <span className="font-bold text-slate-800">{money(prices.gst)}</span>
+                    <span>GST <span className="text-[10px] text-slate-450 font-medium">(5%)</span></span>
+                    <span className="font-extrabold text-slate-900">{money(prices.gst)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
-                    <span className="font-bold text-slate-800">{money(prices.gatewayFee)}</span>
+                    <span>Gateway Fee <span className="text-[10px] text-slate-455 font-medium">(1%)</span></span>
+                    <span className="font-extrabold text-slate-900">{money(prices.gatewayFee)}</span>
                   </div>
                   {isAgent ? (
                     <>
-                      <div className="flex justify-between items-center border-t border-slate-200/60 pt-2 mt-1.5 text-xs font-bold text-slate-600">
+                      <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-xs font-bold text-slate-650">
                         <span>Tourist Total Bill</span>
                         <span>{money(prices.grandTotal)}</span>
                       </div>
@@ -1494,20 +1445,39 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       </div>
                       <div className="flex justify-between items-center border-t border-slate-300 pt-2 mt-1.5 text-sm font-black text-slate-900">
                         <span>Net Payable to Portal</span>
-                        <span className="text-[#0f8d7d] text-lg">{money(prices.agentPayable)}</span>
+                        <span className="text-[#0d6e75] text-lg">{money(prices.agentPayable)}</span>
                       </div>
                     </>
                   ) : (
-                    <div className="flex justify-between items-center border-t border-slate-200/60 pt-2 mt-1.5 text-sm font-black text-slate-900">
-                      <span>Total</span>
-                      <span className="text-[#0f8d7d] text-lg">{money(prices.grandTotal || price * roomsCount)}</span>
+                    <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-sm font-black text-slate-950">
+                      <span>Total Price</span>
+                      <span className="text-[#0d6e75] text-lg font-black">{money(prices.grandTotal || price * roomsCount)}</span>
                     </div>
                   )}
                 </div>
 
                 {arrivalDate && departureDate && (() => {
                   const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
-                  const minPayable = Math.ceil(finalTotal * 0.50);
+                  
+                  const advType = room.advance_payment_type || 'FULL_PAYMENT';
+                  const advVal = room.advance_payment_value || 0;
+
+                  let minPayable = finalTotal;
+                  let optionLabel = '';
+                  let noticeText = '';
+
+                  if (advType === 'PERCENTAGE') {
+                    const pct = advVal || 50;
+                    minPayable = Math.ceil(finalTotal * (pct / 100));
+                    optionLabel = `${pct}% Adv`;
+                    noticeText = `No cancellation — ${pct}% advance secures your room. Balance payable before check-in.`;
+                  } else if (advType === 'FIXED_AMOUNT') {
+                    const fixedAmt = advVal || 500;
+                    minPayable = Math.min(finalTotal, fixedAmt * roomsCount);
+                    optionLabel = `₹${fixedAmt.toLocaleString('en-IN')} Adv`;
+                    noticeText = `No cancellation — ₹${fixedAmt.toLocaleString('en-IN')} per room advance secures your room. Balance payable before check-in.`;
+                  }
+
                   const parsedCustom = parseInt(customPayAmount, 10);
                   const effectivePay = isNaN(parsedCustom) || customPayAmount === ''
                     ? finalTotal
@@ -1515,124 +1485,82 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   const isPartial = effectivePay < finalTotal;
                   return (
                     <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
-                      {/* No cancellation notice */}
-                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
-                        <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
-                        <p className="text-[10px] font-bold text-amber-700 leading-4">No cancellation — 50% advance secures your room. Balance payable before check-in.</p>
-                      </div>
-
-                      {/* Toggle + amount row */}
-                      <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                        <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setCustomPayAmount('')}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
-                          >
-                            Full
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
-                          >
-                            50% Adv
-                          </button>
-                        </div>
-
-                        {customPayAmount !== '' ? (
-                          <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0f8d7d]/40 rounded-lg px-2 py-1 shadow-sm">
-                            <span className="text-xs font-black text-slate-400">₹</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={customPayAmount}
-                              onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                              onBlur={() => {
-                                const v = parseInt(customPayAmount, 10);
-                                if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                                else if (v >= finalTotal) setCustomPayAmount('');
-                                else setCustomPayAmount(String(v));
-                              }}
-                              className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
-                              placeholder={String(minPayable)}
-                            />
-                            <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
+                      {advType !== 'FULL_PAYMENT' ? (
+                        <>
+                          {/* No cancellation notice */}
+                          <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
+                            <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-[10px] font-bold text-amber-700 leading-4">{noticeText}</p>
                           </div>
-                        ) : (
-                          <div className="flex-1 text-right shrink-0">
-                            <span className="text-xs font-black text-[#0f8d7d]">₹{finalTotal.toLocaleString('en-IN')}</span>
-                            <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
-                          </div>
-                        )}
-                      </div>
 
-                      {isPartial && (
-                        <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
-                          <span>Balance due later</span>
-                          <span className="font-black text-slate-600">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
+                          {/* Toggle + amount row */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                            <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setCustomPayAmount('')}
+                                className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
+                              >
+                                Full
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                                className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
+                              >
+                                {optionLabel}
+                              </button>
+                            </div>
+
+                            {customPayAmount !== '' ? (
+                              <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0d6e75]/40 rounded-lg px-2 py-1 shadow-sm">
+                                <span className="text-xs font-black text-slate-400">₹</span>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={customPayAmount}
+                                  onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                  onBlur={() => {
+                                    const v = parseInt(customPayAmount, 10);
+                                    if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
+                                    else if (v >= finalTotal) setCustomPayAmount('');
+                                    else setCustomPayAmount(String(v));
+                                  }}
+                                  className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
+                                  placeholder={String(minPayable)}
+                                />
+                                <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
+                              </div>
+                            ) : (
+                              <div className="flex-1 text-right shrink-0">
+                                <span className="text-xs font-black text-[#0d6e75]">₹{finalTotal.toLocaleString('en-IN')}</span>
+                                <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {isPartial && (
+                            <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
+                              <span>Balance due later</span>
+                              <span className="font-black text-slate-600">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
+                            </div>
+                          )}
+                          {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
+                            <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{minPayable.toLocaleString('en-IN')}</p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-start gap-2 rounded-lg bg-emerald-50/50 border border-emerald-100 px-2.5 py-2">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <p className="text-[10px] font-bold text-slate-600 leading-4">Full payment is required to confirm this stay booking.</p>
                         </div>
-                      )}
-                      {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
-                        <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{minPayable.toLocaleString('en-IN')} (50%)</p>
                       )}
                     </div>
                   );
                 })()}
               </div>
 
-                  {/* Payment Gateway Selector */}
-                  {!isAdmin && isAuthenticated && (
-                    <div className="mt-4 mb-3 space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Pay Via</label>
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <button
-                          id="gateway-phonepe"
-                          type="button"
-                          onClick={() => setSelectedGateway('PHONEPE')}
-                          className={`relative flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                            selectedGateway === 'PHONEPE'
-                              ? 'border-[#5f259f] bg-[#5f259f]/5 shadow-md shadow-[#5f259f]/10 scale-[1.02]'
-                              : 'border-slate-200 bg-white hover:border-[#5f259f]/40'
-                          }`}
-                        >
-                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#5f259f] text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-[#5f259f]/20">Recommended</span>
-                          <div className="flex items-center gap-1.5">
-                            <div className="bg-[#5f259f] p-0.5 rounded-full flex items-center justify-center shrink-0">
-                              <svg fill="#ffffff" role="img" viewBox="0 0 24 24" className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10.206 9.941h2.949v4.692c-.402.201-.938.268-1.34.268-1.072 0-1.609-.536-1.609-1.743V9.941zm13.47 4.816c-1.523 6.449-7.985 10.442-14.433 8.919C2.794 22.154-1.199 15.691.324 9.243 1.847 2.794 8.309-1.199 14.757.324c6.449 1.523 10.442 7.985 8.919 14.433zm-6.231-5.888a.887.887 0 0 0-.871-.871h-1.609l-3.686-4.222c-.335-.402-.871-.536-1.407-.402l-1.274.401c-.201.067-.268.335-.134.469l4.021 3.82H6.386c-.201 0-.335.134-.335.335v.67c0 .469.402.871.871.871h.938v3.217c0 2.413 1.273 3.82 3.418 3.82.67 0 1.206-.067 1.877-.335v2.145c0 .603.469 1.072 1.072 1.072h.938a.432.432 0 0 0 .402-.402V9.874h1.542c.201 0 .335-.134.335-.335v-.67z"/>
-                              </svg>
-                            </div>
-                            <span className="font-sans font-black text-xs text-[#5f259f] tracking-tight">PhonePe</span>
-                          </div>
-                          <span className="text-[8px] font-bold text-slate-400">UPI · Cards · NetBanking</span>
-                        </button>
-                        <button
-                          id="gateway-cashfree"
-                          type="button"
-                          onClick={() => setSelectedGateway('CASHFREE')}
-                          className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                            selectedGateway === 'CASHFREE'
-                              ? 'border-[#180e4b] bg-[#180e4b]/5 shadow-md shadow-[#180e4b]/10 scale-[1.02]'
-                              : 'border-slate-200 bg-white hover:border-[#180e4b]/40'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <svg viewBox="0 0 16 16" className="h-5 w-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
-                              <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
-                              <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
-                              <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
-                            </svg>
-                            <span className="font-sans font-black text-xs text-[#180e4b] tracking-tight">
-                              Cashfree <span className="font-normal text-[#180e4b]/80">Payments</span>
-                            </span>
-                          </div>
-                          <span className="text-[8px] font-bold text-slate-400">UPI · Cards · All Methods</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
+
 
                   {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
                     <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
@@ -1643,7 +1571,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       Not Enough Rooms
                     </div>
                   ) : (
-                    <button onClick={handleBookingClick} disabled={isProcessingCheckout} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] h-11 flex items-center justify-center disabled:opacity-60">
+                    <button onClick={handleBookingClick} disabled={isProcessingCheckout} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0d6e75] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b5c62] h-11 flex items-center justify-center disabled:opacity-60">
                       {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve Now'}
                     </button>
                   )}
@@ -1669,18 +1597,18 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           ) : (
             <Sheet>
               <SheetTrigger asChild>
-                <button type="button" className="flex h-12 shrink-0 items-center justify-center rounded-full bg-[#0f8d7d] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95">
+                <button type="button" className="flex h-12 shrink-0 items-center justify-center rounded-full bg-[#0d6e75] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95">
                   Reserve Now
                 </button>
               </SheetTrigger>
               <SheetContent
                 side="bottom"
-                className="!h-[92dvh] flex flex-col rounded-t-[24px] border-t border-[#dfe8e2]/60 bg-white px-4 pb-0 pt-6 overflow-hidden"
+                className="!h-[92dvh] flex flex-col rounded-t-[24px] border-t border-slate-200 bg-white px-4 pb-0 pt-6 overflow-hidden"
                 showCloseButton
               >
                 <SheetHeader className="mb-4 text-left shrink-0">
-                  <SheetTitle className="text-xl font-black text-[#0f3d56] flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-[#0f8d7d]" />
+                  <SheetTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-[#0d6e75]" />
                     Configure your stay
                   </SheetTitle>
                   <SheetDescription className="text-xs font-bold text-slate-400">
@@ -1728,58 +1656,97 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     </div>
                   </div>
 
+                  {/* Visual Stay Category Cards */}
                   {validVariants.length ? (
-                    <PremiumSelect
-                      label="Stay Category"
-                      value={selectedVariantId}
-                      disabled={isLodgeInactive}
-                      onChange={(value) => setSelectedVariantId(Number(value))}
-                      options={validVariants.map((variant) => ({ value: variant.id, label: variant.variant_name }))}
-                      placeholder="Select stay category"
-                    />
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Stay Category</p>
+                      <div className="grid gap-2">
+                        {validVariants.map((variant) => {
+                          const isSel = selectedVariantId === variant.id;
+                          return (
+                            <button
+                              key={variant.id}
+                              type="button"
+                              disabled={isLodgeInactive}
+                              onClick={() => setSelectedVariantId(variant.id)}
+                              className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
+                                isSel
+                                  ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-slate-900 ring-2 ring-[#0d6e75]/10'
+                                  : 'border-slate-200 bg-white text-slate-650 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div>
+                                <p className="text-xs font-black">{variant.variant_name}</p>
+                                {variant.capacity_per_room && (
+                                  <p className="text-[9px] font-bold text-slate-400">{variant.capacity_per_room} guests/room</p>
+                                )}
+                              </div>
+                              <p className="text-xs font-black text-[#0d6e75]">
+                                {money(isWeekend ? variant.weekend_price : variant.weekday_price)}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   ) : null}
 
+                  {/* Visual Timing Slots */}
                   {slots.length > 0 ? (
-                    <PremiumSelect
-                      label="Check-in/out Timing"
-                      value={selectedSlotIndex}
-                      disabled={isLodgeInactive}
-                      onChange={(value) => {
-                        const newIndex = Number(value);
-                        setSelectedSlotIndex(newIndex);
-                        if (arrivalDate && departureDate) {
-                          const newSlot = slots[newIndex] || slots[0];
-                          const sStart = newSlot?.slot_start || "";
-                          const sEnd = newSlot?.slot_end || "";
-                          const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
-                          if (isOvernight && departureDate <= arrivalDate) {
-                            const nextDay = new Date(arrivalDate);
-                            nextDay.setDate(nextDay.getDate() + 1);
-                            setDepartureDate(toLocalDateString(nextDay));
-                          } else if (!isOvernight && departureDate > arrivalDate) {
-                            setDepartureDate(arrivalDate);
-                          }
-                        }
-                      }}
-                      options={slots.map((slot, index) => ({ value: index, label: `${slot.title} (${cleanTime(slot.slot_start)} - ${cleanTime(slot.slot_end)})` }))}
-                      placeholder="Select timing slot"
-                    />
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Check-in/out Timing</p>
+                      <div className="flex flex-wrap gap-2">
+                        {slots.map((slot, index) => {
+                          const isSel = selectedSlotIndex === index;
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              disabled={isLodgeInactive}
+                              onClick={() => {
+                                setSelectedSlotIndex(index);
+                                if (arrivalDate && departureDate) {
+                                  const sStart = slot?.slot_start || "";
+                                  const sEnd = slot?.slot_end || "";
+                                  const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
+                                  if (isOvernight && departureDate <= arrivalDate) {
+                                    const nextDay = new Date(arrivalDate);
+                                    nextDay.setDate(nextDay.getDate() + 1);
+                                    setDepartureDate(toLocalDateString(nextDay));
+                                  } else if (!isOvernight && departureDate > arrivalDate) {
+                                    setDepartureDate(arrivalDate);
+                                  }
+                                }
+                              }}
+                              className={`rounded-lg border px-3 py-2 text-left transition-all ${
+                                isSel
+                                  ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75] ring-2 ring-[#0d6e75]/10'
+                                  : 'border-slate-200 bg-white text-slate-650 hover:bg-slate-50'
+                              }`}
+                            >
+                              <p className="text-[10px] font-black">{slot.title}</p>
+                              <p className="text-[9px] font-bold text-slate-450 mt-0.5">{cleanTime(slot.slot_start)} - {cleanTime(slot.slot_end)}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   ) : null}
 
                   <div>
                     <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Guests</p>
                     <div className={`flex min-h-14 items-center justify-between rounded-lg border px-4 ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
-                      <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Decrease guests">
+                      <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0d6e75] hover:text-[#0d6e75]'}`} aria-label="Decrease guests">
                         <Minus className="h-4 w-4" />
                       </button>
                       <span className="text-sm font-black">{guests} {guests === 1 ? 'Guest' : 'Guests'}</span>
-                      <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0f8d7d] hover:text-[#0f8d7d]'}`} aria-label="Increase guests">
+                      <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0d6e75] hover:text-[#0d6e75]'}`} aria-label="Increase guests">
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
                     <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       {selectedVariant?.capacity_per_room ? <p className="text-xs font-bold text-slate-400">Selected category capacity: {selectedVariant.capacity_per_room} guests per room.</p> : null}
-                      <p className={`text-xs font-black ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0f8d7d]'}`}>
+                      <p className={`text-xs font-black ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0d6e75]'}`}>
                         {arrivalDate && maxAvailableRooms === 0
                           ? 'No rooms available — select different dates'
                           : `Requires ${roomsCount} room${roomsCount !== 1 ? 's' : ''}${arrivalDate ? ` (${maxAvailableRooms} available)` : ''}`
@@ -1798,13 +1765,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                           disabled={validatingCoupon || !!appliedCoupon}
-                          className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#1a6b7a] focus:bg-white disabled:opacity-60"
+                          className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#0d6e75] focus:bg-white disabled:opacity-60"
                         />
                         {appliedCoupon ? (
                           <button
                             type="button"
                             onClick={handleRemoveCoupon}
-                            className="flex items-center justify-center rounded-lg bg-red-50 px-4 py-2 text-sm font-black text-red-600 transition hover:bg-red-100"
+                            className="flex items-center justify-center rounded-lg bg-red-50 px-4 py-2 text-sm font-black text-red-655 transition hover:bg-red-100"
                           >
                             Remove
                           </button>
@@ -1819,26 +1786,26 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         )}
                       </div>
                       {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
-                      {couponSuccess && <p className="text-[10px] font-bold text-[#16a34a]">{couponSuccess}</p>}
+                      {couponSuccess && <p className="text-[10px] font-bold text-green-600">{couponSuccess}</p>}
                     </form>
 
                     {/* Pricing Details & Advance Payment Card */}
-                    <div className="rounded-2xl border border-[#dfe8e2]/85 bg-slate-50/70 p-4 space-y-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
-                      <div className="space-y-2 text-xs text-slate-500">
+                    <div className="rounded-2xl border border-slate-250 bg-[#fafaf7] p-4 space-y-3">
+                      <div className="space-y-2 text-xs text-slate-500 font-semibold">
                         <div className="flex justify-between items-center">
-                          <span>Base Room Fare <span className="text-[10px] text-slate-400">({nights || 1}N, {roomsCount}R)</span></span>
-                          <span className="font-bold text-slate-800">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
+                          <span>Base Room Fare <span className="text-[10px] text-slate-450 font-medium">({nights || 1}N, {roomsCount}R)</span></span>
+                          <span className="font-extrabold text-slate-900">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
                         </div>
                         {stayDetails.weekendSurchargeTotal > 0 && (
                           <div className="flex justify-between items-center text-amber-600">
                             <span>Weekend Surcharge</span>
-                            <span className="font-bold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
+                            <span className="font-extrabold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
                           </div>
                         )}
                         {appliedCoupon && (
                           <div className="flex items-center justify-between text-[#16a34a] font-bold">
                             <span>Coupon Discount</span>
-                            <span className="font-bold">- {money(appliedCoupon.discount_amount)}</span>
+                            <span className="font-extrabold">- {money(appliedCoupon.discount_amount)}</span>
                           </div>
                         )}
                         {nights > 0 && selectedVariant && arrivalDate && departureDate && stayDetails.breakdown.some(d => d.isWeekend) ? (
@@ -1847,16 +1814,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                           </div>
                         ) : null}
                         <div className="flex justify-between items-center">
-                          <span>GST <span className="text-[10px] text-slate-400">(5%)</span></span>
-                          <span className="font-bold text-slate-800">{money(prices.gst)}</span>
+                          <span>GST <span className="text-[10px] text-slate-450 font-medium">(5%)</span></span>
+                          <span className="font-extrabold text-slate-900">{money(prices.gst)}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
-                          <span className="font-bold text-slate-800">{money(prices.gatewayFee)}</span>
+                          <span>Gateway Fee <span className="text-[10px] text-slate-450 font-medium">(1%)</span></span>
+                          <span className="font-extrabold text-slate-900">{money(prices.gatewayFee)}</span>
                         </div>
                         {isAgent ? (
                           <>
-                            <div className="flex justify-between items-center border-t border-slate-200/60 pt-2 mt-1.5 text-xs font-bold text-slate-600">
+                            <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-xs font-bold text-slate-650">
                               <span>Tourist Total Bill</span>
                               <span>{money(prices.grandTotal)}</span>
                             </div>
@@ -1866,13 +1833,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                             </div>
                             <div className="flex justify-between items-center border-t border-slate-300 pt-2 mt-1.5 text-sm font-black text-slate-900">
                               <span>Net Payable to Portal</span>
-                              <span className="text-[#0f8d7d] text-lg">{money(prices.agentPayable)}</span>
+                              <span className="text-[#0d6e75] text-lg">{money(prices.agentPayable)}</span>
                             </div>
                           </>
                         ) : (
-                          <div className="flex justify-between items-center border-t border-slate-200/60 pt-2 mt-1.5 text-sm font-black text-slate-900">
-                            <span>Total</span>
-                            <span className="text-[#0f8d7d] text-lg">{money(prices.grandTotal || price * roomsCount)}</span>
+                          <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-sm font-black text-slate-950">
+                            <span>Total Price</span>
+                            <span className="text-[#0d6e75] text-lg font-black">{money(prices.grandTotal || price * roomsCount)}</span>
                           </div>
                         )}
                       </div>
@@ -1888,7 +1855,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         return (
                           <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
                             {/* No cancellation notice */}
-                            <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
+                            <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-250 px-2.5 py-2">
                               <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
                               <p className="text-[10px] font-bold text-amber-700 leading-4">No cancellation — 50% advance secures your room. Balance payable before check-in.</p>
                             </div>
@@ -1899,21 +1866,21 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                                 <button
                                   type="button"
                                   onClick={() => setCustomPayAmount('')}
-                                  className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
+                                  className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
                                 >
                                   Full
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                                  className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0f8d7d] text-white shadow-sm' : 'text-slate-500'}`}
+                                  className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
                                 >
                                   50% Adv
                                 </button>
                               </div>
 
                               {customPayAmount !== '' ? (
-                                <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0f8d7d]/40 rounded-lg px-2 py-1 shadow-sm">
+                                <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0d6e75]/40 rounded-lg px-2 py-1 shadow-sm">
                                   <span className="text-xs font-black text-slate-400">₹</span>
                                   <input
                                     type="text"
@@ -1933,7 +1900,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                                 </div>
                               ) : (
                                 <div className="flex-1 text-right shrink-0">
-                                  <span className="text-xs font-black text-[#0f8d7d]">₹{finalTotal.toLocaleString('en-IN')}</span>
+                                  <span className="text-xs font-black text-[#0d6e75]">₹{finalTotal.toLocaleString('en-IN')}</span>
                                   <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
                                 </div>
                               )}
@@ -1953,57 +1920,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       })()}
                     </div>
 
-                    {/* Payment Gateway Selector */}
-                    {!isAdmin && isAuthenticated && (
-                      <div className="mt-4 mb-3 space-y-2">
-                        <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Pay Via</label>
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <button
-                            id="gateway-mobile-phonepe"
-                            type="button"
-                            onClick={() => setSelectedGateway('PHONEPE')}
-                            className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                              selectedGateway === 'PHONEPE'
-                                ? 'border-[#5f259f] bg-[#5f259f]/5 shadow-md shadow-[#5f259f]/10 scale-[1.02]'
-                                : 'border-slate-200 bg-white hover:border-[#5f259f]/40'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5">
-                              <div className="bg-[#5f259f] p-0.5 rounded-full flex items-center justify-center shrink-0">
-                                <svg fill="#ffffff" role="img" viewBox="0 0 24 24" className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M10.206 9.941h2.949v4.692c-.402.201-.938.268-1.34.268-1.072 0-1.609-.536-1.609-1.743V9.941zm13.47 4.816c-1.523 6.449-7.985 10.442-14.433 8.919C2.794 22.154-1.199 15.691.324 9.243 1.847 2.794 8.309-1.199 14.757.324c6.449 1.523 10.442 7.985 8.919 14.433zm-6.231-5.888a.887.887 0 0 0-.871-.871h-1.609l-3.686-4.222c-.335-.402-.871-.536-1.407-.402l-1.274.401c-.201.067-.268.335-.134.469l4.021 3.82H6.386c-.201 0-.335.134-.335.335v.67c0 .469.402.871.871.871h.938v3.217c0 2.413 1.273 3.82 3.418 3.82.67 0 1.206-.067 1.877-.335v2.145c0 .603.469 1.072 1.072 1.072h.938a.432.432 0 0 0 .402-.402V9.874h1.542c.201 0 .335-.134.335-.335v-.67z"/>
-                                </svg>
-                              </div>
-                              <span className="font-sans font-black text-xs text-[#5f259f] tracking-tight">PhonePe</span>
-                            </div>
-                            <span className="text-[8px] font-bold text-slate-400">UPI · Cards</span>
-                          </button>
-                          <button
-                            id="gateway-mobile-cashfree"
-                            type="button"
-                            onClick={() => setSelectedGateway('CASHFREE')}
-                            className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                              selectedGateway === 'CASHFREE'
-                                ? 'border-[#180e4b] bg-[#180e4b]/5 shadow-md shadow-[#180e4b]/10 scale-[1.02]'
-                                : 'border-slate-200 bg-white hover:border-[#180e4b]/40'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5">
-                              <svg viewBox="0 0 16 16" className="h-5 w-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
-                                <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
-                                <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
-                                <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
-                              </svg>
-                              <span className="font-sans font-black text-xs text-[#180e4b] tracking-tight">
-                                Cashfree <span className="font-normal text-[#180e4b]/80">Payments</span>
-                              </span>
-                            </div>
-                            <span className="text-[8px] font-bold text-slate-400">UPI · Cards · All Methods</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
+
 
                     {/* Mobile CTA — same checkout flow as desktop */}
                     {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
@@ -2022,7 +1939,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       <button
                         onClick={handleBookingClick}
                         disabled={isProcessingCheckout || isLodgeInactive}
-                        className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0f8d7d] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b7469] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0d6e75] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b5c62] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}
                       </button>
@@ -2102,8 +2019,8 @@ const HeroFact = ({ icon: Icon, label, value, className = '' }: { icon: typeof C
 
 const Section = ({ id, eyebrow, title, children }: { id?: string; eyebrow: string; title: string; children: ReactNode }) => (
   <section id={id} className="scroll-mt-[160px]">
-    <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">{eyebrow}</p>
-    <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">{title}</h2>
+    <p className="text-xs font-black uppercase tracking-wider text-[#0d6e75]">{eyebrow}</p>
+    <h2 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">{title}</h2>
     <div className="mt-5">{children}</div>
   </section>
 );
@@ -2168,7 +2085,7 @@ const RoomSectionNav = () => {
                 onClick={() => scrollToSection(item.id)}
                 type="button"
                 className={`flex min-h-10 items-center gap-2 rounded-full px-4 py-2 text-sm font-black transition-all whitespace-nowrap
-                  ${isActive ? 'bg-[#0f3d56] text-white shadow-md shadow-[#0f3d56]/15' : 'bg-slate-100 text-slate-600 hover:bg-[#e9f6f4] hover:text-[#0f3d56]'}`}
+                  ${isActive ? 'bg-[#0d6e75] text-[#e5dac5] shadow-sm' : 'bg-slate-100 text-slate-650 hover:bg-[#e9f6f4] hover:text-[#0d6e75]'}`}
               >
                 {Icon && <Icon className="h-4 w-4" />}
                 {item.label}
@@ -2182,17 +2099,17 @@ const RoomSectionNav = () => {
 };
 
 const InfoTile = ({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) => (
-  <div className="min-h-32 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-    <Icon className="h-5 w-5 text-[#0f8d7d]" />
-    <p className="mt-4 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
-    <p className="mt-2 text-sm font-black leading-6 text-[#102231]">{value}</p>
+  <div className="min-h-28 rounded-xl border border-slate-200 bg-white p-5 shadow-3xs">
+    <Icon className="h-4.5 w-4.5 text-[#0d6e75]" />
+    <p className="mt-3.5 text-[9px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+    <p className="mt-1.5 text-xs font-black leading-relaxed text-slate-905">{value}</p>
   </div>
 );
 
 const PriceBlock = ({ label, value, highlight = false }: { label: string; value: number; highlight?: boolean }) => (
   <div>
-    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
-    <p className={`mt-1 text-2xl font-black ${highlight ? 'text-[#0f8d7d]' : 'text-[#102231]'}`}>{money(value)}</p>
+    <p className="text-[9px] font-black uppercase tracking-wider text-slate-450">{label}</p>
+    <p className={`mt-0.5 text-xl font-black ${highlight ? 'text-[#0d6e75]' : 'text-slate-950'}`}>{money(value)}</p>
   </div>
 );
 
@@ -2337,8 +2254,8 @@ const CustomDatePicker = ({
             ${isDisabled
               ? 'text-slate-200 cursor-not-allowed line-through bg-slate-50/30'
               : isSelected
-                ? 'bg-[#0f8d7d] text-white shadow-md'
-                : 'text-[#102231] hover:bg-[#f4faf9] hover:text-[#0f8d7d] cursor-pointer'
+                ? 'bg-[#0d6e75] text-white shadow-md'
+                : 'text-slate-800 hover:bg-[#0d6e75]/5 hover:text-[#0d6e75] cursor-pointer'
             }
           `}
         >
@@ -2361,14 +2278,14 @@ const CustomDatePicker = ({
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full text-left rounded-lg border px-3.5 py-2.5 shadow-inner transition-all ${disabled
             ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-85 text-slate-400'
-            : 'bg-white border-slate-200 cursor-pointer hover:border-slate-350 focus:border-[#0f8d7d] focus:outline-none'
+            : 'bg-white border-slate-200 cursor-pointer hover:border-slate-350 focus:border-[#0d6e75] focus:outline-none'
           }`}
       >
         <span className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-          <CalendarDays className="h-4 w-4 text-[#0f8d7d]" />
+          <CalendarDays className="h-4 w-4 text-[#0d6e75]" />
           {label}
         </span>
-        <div className="mt-1 text-sm font-black">
+        <div className="mt-1 text-sm font-black text-slate-850">
           {formattedDate}
         </div>
       </button>
@@ -2379,7 +2296,7 @@ const CustomDatePicker = ({
             <button
               type="button"
               onClick={prevMonth}
-              className="p-1.5 hover:bg-[#f4faf9] rounded-lg text-slate-400 hover:text-[#0f8d7d] transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+              className="p-1.5 hover:bg-[#0d6e75]/5 rounded-lg text-slate-400 hover:text-[#0d6e75] transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-450"
               disabled={(() => {
                 const minD = min ? new Date(min) : new Date();
                 return calYear < minD.getFullYear() || (calYear === minD.getFullYear() && calMonth <= minD.getMonth());
@@ -2387,13 +2304,13 @@ const CustomDatePicker = ({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <div className="text-xs font-black text-[#102231] uppercase tracking-wider">
+            <div className="text-xs font-black text-slate-800 uppercase tracking-wider">
               {monthNames[calMonth]} {calYear}
             </div>
             <button
               type="button"
               onClick={nextMonth}
-              className="p-1.5 hover:bg-[#f4faf9] rounded-lg text-slate-400 hover:text-[#0f8d7d] transition-all"
+              className="p-1.5 hover:bg-[#0d6e75]/5 rounded-lg text-slate-400 hover:text-[#0d6e75] transition-all"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

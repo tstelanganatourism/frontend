@@ -5,7 +5,7 @@ import { Phone, MessageCircle, MapPin } from 'lucide-react';
 import { trackEvent } from '@/components/providers/AnalyticsProvider';
 
 export default function StickyConversionBar() {
-  const whatsappMessage = 'Hello Telangana Boat Tourism, I would like help with booking or enquiring about boat rides, sightseeing packages, rooms, or travel services.';
+  const whatsappMessage = 'Hello TS Boat Tourism, I would like help with booking or enquiring about boat tour packages and travel services.';
   const whatsappUrl = `https://wa.me/919542069573?text=${encodeURIComponent(whatsappMessage)}`;
 
   const handleWhatsApp = () => {

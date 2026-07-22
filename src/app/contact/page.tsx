@@ -1,10 +1,11 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { Mail, Phone, MapPin, ShieldCheck, Scale, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, ShieldCheck, Clock, Star, Landmark } from 'lucide-react';
+import PublicPageHeader from '@/components/layout/PublicPageHeader';
 
 export const metadata: Metadata = {
-  title: 'Contact Us | Telangana Boat Tourism',
-  description: 'Reach out to Telangana Boat Tourism support desk. Find address, phone, email, and GSTIN details.',
+  title: 'Contact Us | TS Boat Tourism',
+  description: 'Reach out to TS Boat Tourism support desk. Find address, phone, email, and GSTIN details.',
   alternates: { canonical: '/contact' },
 };
 
@@ -19,116 +20,127 @@ const CONTACT_CHANNELS = [
       '+91 98498 48983',
       '+91 98498 48938'
     ],
-    tone: 'bg-emerald-50 text-emerald-700'
+    color: 'from-[#1598a1] to-[#0f7279]'
   },
   {
     icon: Mail,
     title: 'Email Correspondence',
     desc: 'Send us your inquiries, custom group bookings or cancellation requests.',
     details: [
-      'bookings@tsboattourism.org'
+      'bookings@tstelanganatourism.com'
     ],
-    tone: 'bg-sky-50 text-sky-700'
+    color: 'from-[#0f6f78] to-[#0f3d56]'
   },
   {
     icon: MapPin,
     title: 'Central Booking Office',
     desc: 'Visit our ticketing counter in Bhadrachalam.',
     details: [
-      'DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111'
+      'Om Shanti satram, Kalyana mandapam road, near SBI ATM, Bhadrachalam, Telangana 507111'
     ],
-    tone: 'bg-amber-50 text-amber-700'
+    color: 'from-[#1598a1] to-[#0f6f78]'
   }
 ];
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-[#f7faf9]">
-      <section className="relative overflow-hidden bg-[var(--color-brand-river)] px-4 py-20 text-white sm:px-6 md:py-28 lg:px-8">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(229,218,197,0.13),transparent_42%),radial-gradient(circle_at_72%_18%,rgba(255,255,255,0.12),transparent_28%)]" />
-        <div className="relative mx-auto max-w-5xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[var(--color-brand-sand)] backdrop-blur">
-            <ShieldCheck className="h-4 w-4" />
-            Support Center
-          </span>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            Contact Us
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/72 md:text-lg">
-            We are here to help you plan your Godavari river cruise and stays.
-          </p>
-        </div>
-      </section>
+    <div className="bg-[#eaf7f6] selection:bg-teal-100 selection:text-teal-900">
+      <PublicPageHeader
+        eyebrow="Support Center"
+        title="Contact Us"
+        description="Call, email, or visit our Bhadrachalam booking office for Papikondalu cruises, stays, and package support."
+        icon={ShieldCheck}
+      />
 
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-20 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-10 lg:px-8">
+        
+        {/* Contact Cards Grid */}
         <div className="grid gap-8 md:grid-cols-3">
           {CONTACT_CHANNELS.map((channel, idx) => {
             const Icon = channel.icon;
             return (
-              <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className={`grid h-12 w-12 place-items-center rounded-xl mb-4 ${channel.tone}`}>
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <h2 className="text-xl font-bold text-[var(--color-brand-river)] mb-2">{channel.title}</h2>
-                  <p className="text-slate-500 text-xs mb-4">{channel.desc}</p>
-                </div>
-                <div className="space-y-1.5 mt-auto">
-                  {channel.details.map((detail, dIdx) => (
-                    <div key={dIdx} className="text-sm font-black text-slate-700 select-all leading-normal">
-                      {detail}
-                    </div>
-                  ))}
+              <div 
+                key={idx} 
+                className="group relative overflow-hidden rounded-md bg-white p-7 shadow-[0_4px_25px_rgba(15,61,86,0.04)] border border-slate-100 transition-all duration-300 hover:shadow-[0_12px_40px_rgba(15,61,86,0.08)] hover:-translate-y-1"
+              >
+                <div className="absolute top-0 left-0 w-2 h-full bg-[#1598a1] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="flex flex-col h-full justify-between">
+                  <div>
+                    <span className={`grid h-14 w-14 place-items-center rounded-md mb-6 bg-gradient-to-br ${channel.color} text-white shadow-md shadow-slate-900/10`}>
+                      <Icon className="h-7 w-7" />
+                    </span>
+                    <h2 className="text-xl font-bold text-[#1e468a] mb-3 tracking-tight">{channel.title}</h2>
+                    <p className="text-slate-500 text-sm leading-relaxed mb-6">{channel.desc}</p>
+                  </div>
+                  <div className="space-y-2 mt-auto border-t border-slate-100 pt-5">
+                    {channel.details.map((detail, dIdx) => (
+                      <div key={dIdx} className="text-base font-extrabold text-slate-800 select-all leading-normal tracking-wide">
+                        {detail}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Google Reviews Banner */}
-        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/50 p-6 shadow-sm md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-1">
-            <h3 className="text-xl font-bold text-amber-900 flex items-center gap-2">
-              Share Your Experience ★★★★★
-            </h3>
-            <p className="text-amber-800 text-sm">
-              Loved your Godavari river cruise or bamboo hut stay? Leave us a Google review to help others discover us!
-            </p>
+        {/* Google Reviews Banner (Ultra Premium Redesign) */}
+        <div className="mt-8 rounded-md bg-gradient-to-r from-[#0f6f78] to-[#1598a1] p-7 sm:p-10 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full pointer-events-none" />
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 relative z-10">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-5 w-5 fill-[#8eecee] text-[#8eecee]" />
+                ))}
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
+                Loved your journey with us?
+              </h3>
+              <p className="text-slate-200 text-sm sm:text-base max-w-2xl leading-relaxed">
+                Your feedback matters! Leave a review on Google to share your experience with other travelers looking for Godavari cruise packages and Kolluru stay reservations.
+              </p>
+            </div>
+            <a
+              href="https://g.page/r/CcdqZmyXuAhxEAI/review"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex shrink-0 items-center justify-center rounded-md bg-white px-7 py-4 text-sm font-black text-[#0f3d56] transition-all hover:-translate-y-0.5 hover:bg-[#e9f7f7] shadow-md uppercase tracking-wider"
+            >
+              Write Google Review
+            </a>
           </div>
-          <a
-            href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 hover:bg-amber-600 px-5 py-3 text-sm font-bold text-white transition-colors duration-200 shadow-sm"
-          >
-            Write a Google Review
-          </a>
         </div>
 
-        {/* GSTIN & Office Registration Info */}
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-          <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
-            <div className="space-y-2">
-              <h3 className="text-xl font-black text-[var(--color-brand-river)]">Official Tax Registrations</h3>
-              <p className="text-slate-500 text-sm">
-                Telangana Boat Tourism is a trade name of NALLA SRILATHA, registered under the Goods and Services Tax (GST) Act, Government of India.
+        {/* Official Shop License Info (Premium Redesign) */}
+        <div className="mt-8 rounded-md bg-white p-7 shadow-[0_4px_25px_rgba(15,61,86,0.04)] border border-slate-100 sm:p-10">
+          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Landmark className="h-6 w-6 text-[#1598a1]" />
+                <h3 className="text-xl font-bold text-[#1e468a] tracking-tight">Official Shop Registration</h3>
+              </div>
+              <p className="text-slate-500 text-base leading-relaxed">
+                TS Boat Tourism (officially registered as TELANGANA BOAT TOURISM) is operated by NALLA SAI BABU, registered under the Telangana Shops &amp; Establishments Act, 1988.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
-                <span className="inline-flex items-center gap-2 rounded-lg bg-indigo-50 border border-indigo-150 px-3 py-1.5 text-xs font-black text-indigo-700">
-                  <ShieldCheck className="h-4 w-4" />
-                  GSTIN: 36AYSPN0044M1ZZ (Telangana State · NALLA SRILATHA)
+                <span className="inline-flex items-center gap-2 rounded-md bg-[#e9f7f7] border border-[#1598a1]/20 px-4 py-2.5 text-xs font-black text-[#0f3d56]">
+                  <ShieldCheck className="h-4 w-4 text-[#1598a1]" />
+                  Registration No: SEA/KMM/ALO/BC/09998/2016
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-150 px-3 py-1.5 text-xs font-black text-slate-600">
+                <span className="inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-150 px-4 py-2.5 text-xs font-black text-slate-600">
                   <Clock className="h-4 w-4" />
                   Reporting time: 7:00 AM - 7:30 AM
                 </span>
               </div>
             </div>
-            <div className="text-xs font-bold text-slate-400">
-              For disputes, Bhadrachalam jurisdiction applies.
+            <div className="text-xs font-bold text-slate-400 lg:border-l lg:border-slate-100 lg:pl-8 max-w-[200px]">
+              For any disputes or claims, Bhadrachalam court jurisdiction applies exclusively.
             </div>
           </div>
         </div>
+
       </section>
     </div>
   );

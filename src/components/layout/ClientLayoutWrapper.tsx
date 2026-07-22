@@ -54,7 +54,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       </Suspense>
       <main
         suppressHydrationWarning
-        className={`w-full relative md:pb-0 ${
+        className={`w-full flex-1 relative md:pb-0 ${
           showStickyBar
             ? 'pb-[72px]'          // booking page: space for sticky CTA only
             : showMobileNav
@@ -67,7 +67,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
       <PublicFooter isDashboard={isDashboardPage} />
       {showMobileNav && <MobileBottomNav isStacked={false} />}
       {!isBookingPage && <WhatsAppFAB hiddenOnMobile={showStickyBar} />}
-      {showStickyBar && <StickyConversionBar />}
+      {!isBookingPage && <StickyConversionBar />}
     </>
   );
 }

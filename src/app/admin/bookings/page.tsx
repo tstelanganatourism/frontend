@@ -301,7 +301,7 @@ export default function AdminBookingsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by Booking ID or customer name…"
+            placeholder="Search by PNR Number or customer name…"
             className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm font-semibold outline-none focus:border-[#5ac4d7] focus:ring-2 focus:ring-[#5ac4d7]/15 transition-all"
           />
         </div>
@@ -382,7 +382,7 @@ export default function AdminBookingsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70">
-                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Booking ID</th>
+                <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">PNR NUMBER</th>
                 <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 hidden md:table-cell">Customer</th>
                 <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 hidden lg:table-cell">Package / Room</th>
                 <th className="px-5 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Travel Date</th>
@@ -435,7 +435,7 @@ export default function AdminBookingsPage() {
                     }}
                     className="hover:bg-slate-50/60 transition-colors group cursor-pointer"
                   >
-                    {/* Booking ID */}
+                    {/* PNR Number */}
                     <td className="px-5 py-4">
                       <p className="font-bold text-slate-800 font-mono text-xs tracking-wide">{b.public_id}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">{formatDate(b.created_at)}</p>

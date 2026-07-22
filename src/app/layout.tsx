@@ -16,14 +16,14 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swa
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap', preload: false });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.tsboattourism.org"),
-  applicationName: "Telangana & AP Boat Tourism",
+  metadataBase: new URL("https://www.tstelanganatourism.com"),
+  applicationName: "TS Boat Tourism",
   manifest: "/manifest.webmanifest",
   title: {
-    default: "Telangana & AP Boat Tourism | Best Papikondalu Tours, Bhadrachalam & Rajahmundry Travels",
-    template: "%s | Telangana & AP Boat Tourism"
+    default: "TS Boat Tourism | Best Papikondalu Tours, Bhadrachalam & Godavari River Packages",
+    template: "%s | TS Boat Tourism"
   },
-  description: "Book trusted Papikondalu boat tours, AP & Telangana boat tourism packages, Rajahmundry river cruises, Bhadrachalam stays, and Kolluru bamboo huts online.",
+  description: "Book trusted Papikondalu boat tours, Bhadrachalam pilgrimage packages, Godavari river cruises, and Kolluru bamboo hut stays online with TS Boat Tourism.",
   icons: {
     icon: [
       { url: "/icon-192x192.png?v=4", sizes: "192x192", type: "image/png" },
@@ -33,21 +33,21 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png?v=4", sizes: "512x512", type: "image/png" },
     ],
   },
-  keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "Telangana Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays", "bhadrachalam tourism", "telangana tourism", "andhra tourism", "boat rides", "AP tourism boat booking bhadrachalam", "AP tourism papikondalu tour packages", "Telangana tourism boat booking", "papikondalu tourism boat tickets", "bhadrachalam to papikondalu boat ride", "papikondalu packages from hyderabad", "papikondalu boating online booking", "kolluru bamboo huts booking", "bhadrachalam temple rooms booking", "bhadrachalam godavari boating list", "rajahmundry to papikondalu boat price", "papikondalu packages from vizag", "papikondalu packages from vijayawada", "ap tourism boat ride cost", "boat rides near me", "tourism boats in telangana andhra"],
-  authors: [{ name: "TSTG Boat Tourism" }],
+  keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "TS Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays", "bhadrachalam tourism", "telangana tourism", "boat rides", "AP tourism boat booking bhadrachalam", "AP tourism papikondalu tour packages", "Telangana tourism boat booking", "papikondalu tourism boat tickets", "bhadrachalam to papikondalu boat ride", "papikondalu packages from hyderabad", "papikondalu boating online booking", "kolluru bamboo huts booking", "bhadrachalam temple rooms booking", "bhadrachalam godavari boating list", "rajahmundry to papikondalu boat price", "papikondalu packages from vizag", "papikondalu packages from vijayawada", "ap tourism boat ride cost", "boat rides near me", "tourism boats in telangana"],
+  authors: [{ name: "TS Boat Tourism" }],
   creator: "Satvik",
   appleWebApp: {
     capable: true,
-    title: "Telangana Boat Tourism",
+    title: "TS Boat Tourism",
     statusBarStyle: "default",
   },
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://www.tsboattourism.org",
-    title: "Telangana Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
+    url: "https://www.tstelanganatourism.com",
+    title: "TS Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
     description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
-    siteName: "Telangana Boat Tourism",
+    siteName: "TS Boat Tourism",
     images: [{
       url: "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg",
       width: 1200,
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Telangana Boat Tourism | Best Bhadrachalam Tours",
+    title: "TS Boat Tourism | Best Bhadrachalam Tours",
     description: "Your premium gateway to the Godavari river, Papikondalu hills and Bhadrachalam travel packages.",
     images: ["https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg"],
   },
@@ -124,17 +124,17 @@ export default function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "TravelAgency",
-                "name": "Telangana Boat Tourism",
+                "name": "TS Boat Tourism",
                 "alternateName": "TS Boat Tourism",
-                "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org",
-                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org"}/logo.png?v=3`,
+                "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com",
+                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
                 "image": "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg",
                 "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 95420 69573",
-                "email": "bookings@tsboattourism.org",
+                "email": "bookings@tstelanganatourism.com",
                 "address": {
                   "@type": "PostalAddress",
-                  "streetAddress": "DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM",
+                  "streetAddress": "Om Shanti satram, Kalyana mandapam road, near SBI ATM",
                   "addressLocality": "Bhadrachalam",
                   "addressRegion": "Telangana",
                   "postalCode": "507111",
@@ -190,10 +190,10 @@ export default function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "ContactPage",
-                "url": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tsboattourism.org"}/about`,
+                "url": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/about`,
                 "mainEntity": {
                   "@type": "Organization",
-                  "name": "Telangana Boat Tourism Support",
+                  "name": "TS Boat Tourism Support",
                   "contactPoint": {
                     "@type": "ContactPoint",
                     "telephone": "+91 9542069573",

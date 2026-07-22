@@ -81,29 +81,50 @@ export default function GalleryPage() {
 
   return (
     <div className="bg-[#F9F9F7]">
-      {/* Premium Hero Header */}
-      <div className="relative h-[45vh] min-h-[320px] w-full flex items-center justify-center overflow-hidden">
+      {/* Unique State-of-the-Art Hero Canvas */}
+      <div className="relative overflow-hidden bg-slate-950 pb-16 pt-24 sm:pb-20 sm:pt-32">
+        {/* Ambient Glow Effects */}
+        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-purple-500/10 blur-3xl" />
+        
+        {/* Rich Photography Background Image */}
         <Image
-          src="https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779433086/50a543e0-c479-4770-aeff-c6148fc985cb.png"
+          src="/images/gallery_hero_bg.png"
           alt="Gallery Hero"
           fill
-          className="object-cover scale-105"
+          className="object-cover opacity-60"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-brand-river)]/80 via-[var(--color-brand-river)]/60 to-[var(--color-brand-river)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/60 to-slate-950/90" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 py-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-[9px] font-bold tracking-[0.2em] uppercase mb-4 animate-in slide-in-from-bottom duration-700">
-            <Camera className="h-3.5 w-3.5 text-[var(--color-brand-teal)]" />
-            Visual Archive
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-indigo-300 backdrop-blur-md shadow-xs">
+            <Camera className="h-3.5 w-3.5 text-amber-300" />
+            Visual Photography Archive
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 tracking-tight animate-in slide-in-from-bottom duration-1000 delay-100">
-            The <span className="text-[var(--color-brand-sand)]">Gallery</span>
+
+          <h1 className="mb-4 text-4xl font-black tracking-tight text-white sm:text-6xl leading-[1.1]">
+            <span className="block text-indigo-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">Godavari Landscapes & Moments</span>
+            <span className="block text-white drop-shadow-sm">The Gallery</span>
           </h1>
-          <p className="text-white/70 text-base max-w-xl mx-auto animate-in slide-in-from-bottom duration-1000 delay-200">
-            Immerse yourself in the breathtaking landscapes of the Godavari.
-            Every photo tells a story of tranquility and adventure.
+
+          <p className="mb-6 max-w-xl mx-auto text-sm font-medium leading-relaxed text-slate-300 sm:text-base">
+            Immerse yourself in the breathtaking landscapes of the Godavari. Every photo tells a story of tranquility, nature, and river adventure.
           </p>
+
+          {/* Quick Stats Badges */}
+          <div className="flex flex-wrap justify-center gap-3 text-[11px] font-bold text-slate-300">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3.5 py-1.5 backdrop-blur-xs">
+              📷 40+ HD Photos
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3.5 py-1.5 backdrop-blur-xs">
+              🌄 Papikondalu & Maredumilli
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3.5 py-1.5 backdrop-blur-xs">
+              🛥️ Authentic Cruises
+            </span>
+          </div>
         </div>
       </div>
 

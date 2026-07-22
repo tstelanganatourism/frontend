@@ -658,7 +658,7 @@ export default function HeroCarouselClient({ apiSlides = [] }: { apiSlides?: Api
                           {activeSlide.has_refreshments && activeSlide.refreshment_student_price && (
                             <div className="flex items-center justify-between border-b border-white/10 pb-3">
                               <div>
-                                <p className="text-xs font-bold text-white/70">Refreshments (Optional)</p>
+                                <p className="text-xs font-bold text-white/70">Fresh-Up (Optional)</p>
                                 {/* <p className="text-[10px] text-white/50">Veg lunch, breakfast, snacks</p> */}
                               </div>
                               <div className="text-right">

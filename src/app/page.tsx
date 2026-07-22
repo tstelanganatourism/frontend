@@ -2,86 +2,194 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { ArrowRight, Camera, Compass, Mountain, Quote, Sparkles, Waves } from 'lucide-react';
+import {
+  ArrowRight,
+  BedDouble,
+  CheckCircle2,
+  Landmark,
+  Phone,
+  ShieldCheck,
+  Ship,
+  Sparkles,
+  Waves,
+} from 'lucide-react';
 import PackageCard from '@/components/ui/PackageCard';
 import RoomCard from '@/components/ui/RoomCard';
-import HeroBody from '@/components/ui/HeroBody';
-import TrustBar from '@/components/ui/TrustBar';
+import GoogleReviewsCarousel from '@/components/ui/GoogleReviewsCarousel';
 import { ShimmerGrid } from '@/components/ui/SkeletonLoader';
 import { apiFetch } from '@/lib/api';
 
 export const metadata: Metadata = {
-  title: 'AP & Telangana Boat Tourism | Best Papikondalu Tours, Bhadrachalam & Rajahmundry Travels',
+  title: 'TS Boat Tourism | Papikondalu Tours, Bhadrachalam & Godavari River Packages',
   description:
-    'Book trusted Papikondalu boat tours, AP & Telangana boat tourism packages, Rajahmundry river cruises, Bhadrachalam stays, and Kolluru bamboo huts online.',
+    'Book Papikondalu boat tours, Bhadrachalam temple packages, Godavari river cruises, and Kolluru bamboo hut stays with TS Boat Tourism.',
   alternates: { canonical: '/' },
   keywords: [
-    'best Papikondalu tours',
-    'best Papikondalu travels',
+    'TS Boat Tourism',
     'Papikondalu boat booking',
-    'Bhadrachalam tours',
-    'best tours in TS Bhadrachalam',
+    'Bhadrachalam temple packages',
     'Godavari river cruise',
-    'Telangana Boat Tourism',
-    'AP tourism boat booking bhadrachalam',
-    'AP tourism papikondalu tour packages',
-    'Telangana tourism boat booking',
-    'papikondalu tourism boat tickets',
-    'bhadrachalam to papikondalu boat ride',
-    'papikondalu packages from hyderabad',
-    'papikondalu boating online booking',
-    'kolluru bamboo huts booking',
-    'bhadrachalam temple rooms booking',
-    'bhadrachalam godavari boating list',
-    'rajahmundry to papikondalu boat price',
-    'papikondalu packages from vizag',
-    'papikondalu packages from vijayawada',
-    'ap tourism boat ride cost',
-    'boat rides near me',
-    'tourism boats in telangana andhra'
+    'Papikondalu packages from Hyderabad',
+    'Bhadrachalam to Papikondalu boat ride',
+    'Kolluru bamboo huts booking',
+    'boat rides Telangana',
   ],
 };
 
-
-const DESTINATION_HIGHLIGHTS = [
+const HERO_PACKAGES = [
   {
-    title: 'Godavari River Cruise',
-    copy: 'Slow water, green folds of Papikondalu and a route designed for families, pilgrims and first-time travellers.',
+    title: 'Papikondalu Boat Cruise',
+    desc: 'Godavari river journey through hill valleys with meals and boarding guidance.',
+    href: '/packages?place=papikondalu',
     image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431926/papikondalu-3_jg6thw.png',
+    meta: 'Same day and 2D options',
+    icon: Ship,
+  },
+  {
+    title: 'Bhadrachalam Temple + Boat',
+    desc: 'Plan Sri Rama darshan with transport, river timing support and family packages.',
+    href: '/packages?place=bhadrachalam',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432477/temple_0ciG4xn9_202402271449110_bck96x.jpg',
+    meta: 'Pilgrimage friendly',
+    icon: Landmark,
+  },
+  {
+    title: 'Kolluru Riverside Stay',
+    desc: 'Bamboo hut stays, nature views and relaxed overnight Godavari experiences.',
+    href: '/packages?place=kolluru',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg',
+    meta: '2 days / 1 night',
     icon: Waves,
   },
+];
+
+const EXPERIENCE_INFO = [
   {
-    title: 'Bhadrachalam Darshan',
-    copy: 'Temple-first itineraries with clean pickup planning, local timing support and room options close to the journey.',
+    title: 'Boat Experience',
+    desc: 'Scenic Godavari sailing, Papikondalu hill views, clean boarding guidance, meal-inclusive options and AC / Non-AC choices.',
+    image: '/home/hero-boat.jpg',
+    points: ['Papikondalu valley route', 'Family seating options', 'Meals and timing support'],
+  },
+  {
+    title: 'Bhadrachalam Temple Experience',
+    desc: 'Plan Sri Sita Ramachandra Swamy temple darshan with a smooth travel route, nearby stays and Godavari river extensions.',
     image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432477/temple_0ciG4xn9_202402271449110_bck96x.jpg',
-    icon: Sparkles,
+    points: ['Temple-first itinerary', 'Pilgrim group support', 'Stay and transport add-ons'],
+  },
+];
+
+const TRUST_ITEMS = [
+  { value: '20+', label: 'Years of Service' },
+  { value: '1L+', label: 'Happy Travellers' },
+  { value: '10,000+', label: 'Bookings Served' },
+  { value: '100%', label: 'Secure Payments' },
+];
+
+const GOOGLE_REVIEW_URL = 'https://share.google/QH1HqWMDXerEUGu3N';
+const GOOGLE_WRITE_REVIEW_URL = 'https://g.page/r/CckJDR74rmzBEAI/review';
+
+const GOOGLE_REVIEWS = [
+  {
+    text: 'One of the best boat journey. Each and every one has to be ride this journey their life atleast.thanks ts boat tourism',
+    name: 'Bhanu Kumar',
+    time: '3 months ago',
+    rating: 5,
   },
   {
-    title: 'Papikondalu Nature Escape',
-    copy: 'Hill views, bamboo stay extensions and camera-ready river stretches curated into simple package choices.',
+    text: 'One of the best boat journey. Thanks TS Boat Tourism. I have small suggestion for boat tourism team, kindly update on website daily how many boats are travelled by every day.',
+    name: 'I Am Hari',
+    time: 'a year ago',
+    rating: 5,
+  },
+  {
+    text: 'Papikodal boating very good experience.boatig so excited.ts boat tourism services good.',
+    name: 'Bagula Srinivas',
+    time: 'a year ago',
+    rating: 5,
+  },
+  {
+    text: 'Ts boat tourism papikondalu good service food',
+    name: 'Akkineni Srikanth',
+    time: 'a year ago',
+    rating: 5,
+  },
+  {
+    text: 'This responsibility office in boarding office number One',
+    name: 'guguloth bhima',
+    time: '3 months ago',
+    rating: 5,
+  },
+  {
+    text: 'Its was soo good, i enjoyed thoroughly, booking, food, transport and boating everything super',
+    name: 'Raghu Lee',
+    time: '8 months ago',
+    rating: 5,
+  },
+  {
+    text: 'Best friend journey Papikondalu',
+    name: 'Chinnapareddy 5081',
+    time: 'a year ago',
+    rating: 5,
+  },
+];
+
+const FALLBACK_PACKAGES = [
+  {
+    title: 'Papikondalu Day Cruise',
+    desc: 'Godavari boat ride with scenic valley views, meals and guided boarding support.',
+    price: 'From ₹1,250',
+    href: '/packages?place=papikondalu',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431926/papikondalu-3_jg6thw.png',
+  },
+  {
+    title: 'Bhadrachalam Darshan Package',
+    desc: 'Temple-focused travel plan with river experience and family-friendly timing.',
+    price: 'Best value',
+    href: '/packages?place=bhadrachalam',
+    image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432477/temple_0ciG4xn9_202402271449110_bck96x.jpg',
+  },
+  {
+    title: 'Kolluru Bamboo Hut Stay',
+    desc: 'Overnight riverside stay with boat journey options and nature escape planning.',
+    price: '2D / 1N',
+    href: '/packages?place=kolluru',
     image: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg',
-    icon: Mountain,
   },
 ];
 
-const TESTIMONIALS = [
-  'The boat journey felt calm, organised and genuinely memorable for our family.',
-  'Booking support was quick, reporting time was clear, and the Bhadrachalam plan was easy to follow.',
-  'The rooms and cruise package felt thoughtfully matched for a weekend trip.',
-];
-
-const SIGHTSEEING_FALLBACKS = [
+const FALLBACK_ROOMS = [
   {
-    title: 'Bhadrachalam Temple Trail',
-    copy: 'Plan a calm darshan day with local timing support, nearby stops and clean route guidance.',
+    id: 1,
+    slug: 'bhadrachalam-riverside-lodge',
+    lodge_name: 'Bhadrachalam Temple View Lodge',
+    cover_image_url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg',
+    is_featured: true,
+    starting_price: 1800,
+    starting_weekend_price: 2200,
+    address: 'Near Temple Road, Bhadrachalam',
+    facilities: ['A/C', 'Wi-Fi', 'Hot Water', 'Room Service'],
   },
   {
-    title: 'Papikondalu View Points',
-    copy: 'Camera-ready river bends, green hill corridors and short scenic pauses around the Godavari route.',
+    id: 2,
+    slug: 'kolluru-river-huts',
+    lodge_name: 'Kolluru Bamboo River Huts',
+    cover_image_url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431926/papikondalu-3_jg6thw.png',
+    is_featured: true,
+    starting_price: 2500,
+    starting_weekend_price: 3000,
+    address: 'Kolluru Sandbanks, Papikondalu',
+    facilities: ['Meals Included', 'River View', 'Hot Water'],
   },
   {
-    title: 'Local Culture Stops',
-    copy: 'Add heritage, food and family-friendly visit points without making the day feel rushed.',
+    id: 3,
+    slug: 'rajahmundry-deluxe-stay',
+    lodge_name: 'Godavari View Deluxe Stay',
+    cover_image_url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432477/temple_0ciG4xn9_202402271449110_bck96x.jpg',
+    is_featured: true,
+    starting_price: 1500,
+    starting_weekend_price: 1800,
+    address: 'Rajahmundry Pushkar Ghat Road',
+    facilities: ['A/C', 'Car Parking', 'Wi-Fi'],
   },
 ];
 
@@ -112,13 +220,14 @@ type FeaturedPackage = {
   }>;
 };
 
-type FeaturedRoom = {
+type RoomItem = {
   id: number;
   slug: string;
   lodge_name: string;
   cover_image_url: string | null;
   is_featured: boolean;
-  starting_price: number | null;
+  starting_price: number | null | string;
+  starting_weekend_price?: number | null | string;
   address: string | null;
   facilities: string[];
 };
@@ -126,13 +235,13 @@ type FeaturedRoom = {
 async function fetchFeaturedPackages() {
   try {
     const res = await apiFetch('/api/v1/packages?is_featured=true&size=3', {
-      next: { revalidate: 43200, tags: ['packages'] }  // 12 hours — admin can bust via /api/revalidate
+      next: { revalidate: 43200, tags: ['packages'] },
     });
     if (!res.ok) throw new Error('Failed to fetch packages');
     const data = await res.json();
     return data.items as FeaturedPackage[];
   } catch (err) {
-    console.error("Backend Server is unreachable or failed:", err);
+    console.error('Backend unreachable:', err);
     return null;
   }
 }
@@ -140,277 +249,347 @@ async function fetchFeaturedPackages() {
 async function fetchFeaturedRooms() {
   try {
     const res = await apiFetch('/api/v1/rooms?is_featured=true&size=3', {
-      next: { revalidate: 43200, tags: ['stays'] }   // 12 hours — admin can bust via /api/revalidate
+      next: { revalidate: 43200, tags: ['rooms'] },
     });
     if (!res.ok) throw new Error('Failed to fetch rooms');
     const data = await res.json();
-    return data.items as FeaturedRoom[];
+    return data.items as RoomItem[];
   } catch (err) {
-    console.error("Backend Server is unreachable or failed:", err);
+    console.error('Backend unreachable for rooms:', err);
     return null;
   }
 }
 
-async function fetchFeaturedSightseeing() {
+async function fetchHeroPackages() {
   try {
-    const res = await apiFetch('/api/v1/packages?type=TRIP&is_featured=true&size=3', {
-      next: { revalidate: 43200, tags: ['packages'] }  // 12 hours — admin can bust via /api/revalidate
+    const res = await apiFetch('/api/v1/packages?size=15', {
+      next: { revalidate: 43200, tags: ['packages'] },
     });
-    if (!res.ok) throw new Error('Failed to fetch sightseeing packages');
+    if (!res.ok) throw new Error('Failed to fetch packages');
     const data = await res.json();
     return data.items as FeaturedPackage[];
   } catch (err) {
-    console.error("Backend Server is unreachable or failed:", err);
+    console.error('Backend unreachable:', err);
     return null;
   }
 }
 
-export default function HomePage() {
+export default async function HomePage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'TravelAgency',
-    name: 'Telangana Boat Tourism',
-    description: 'Book trusted Papikondalu boat tours, Godavari river cruises, Kolluru bamboo huts and Bhadrachalam travel packages.',
-    url: 'https://www.tsboattourism.org',
-    logo: 'https://res.cloudinary.com/dpdab3e97/image/upload/v1778912203/slider4_rikfsq.jpg',
+    name: 'TS Boat Tourism',
+    description: 'Book Papikondalu boat tours, Bhadrachalam temple trips, Godavari cruises and Kolluru stays.',
+    url: 'https://www.tstelanganatourism.com',
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Bhadrachalam',
       addressRegion: 'Telangana',
-      addressCountry: 'IN'
-    }
+      addressCountry: 'IN',
+    },
   };
 
+  const packages = await fetchHeroPackages();
+  const displayPackages = (packages && packages.length > 0)
+    ? packages.map(pkg => ({
+        title: pkg.title,
+        desc: pkg.duration || (pkg.type === 'TOUR' ? '1 Day (Same Day)' : '2 Days / 1 Night'),
+        href: `/packages/${pkg.slug}`,
+        image: pkg.cover_image_url || 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431926/papikondalu-3_jg6thw.png',
+        meta: pkg.type === 'TOUR' ? 'Boat Tour' : pkg.type === 'STAY' ? 'River Stay' : 'Sightseeing',
+      }))
+    : HERO_PACKAGES;
+
   return (
-    <div className="flex w-full flex-col overflow-x-clip bg-[#f7f4ed]">
+    <main className="w-full overflow-x-clip bg-[#f6faf8] text-[#0f2f3d]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      {/* ─── Cinematic Hero Section ─────────────────────────────────────── */}
-      <HeroBody />
 
-      <div className="home-page-opener relative z-20 bg-[#f7f4ed]">
-        <TrustBar />
-        {/* Featured Packages */}
-        <section className="relative py-14 md:py-24">
-          <div className="pointer-events-none absolute left-0 top-20 h-72 w-72 rounded-full bg-[#bdebf1]/35 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-10 right-0 h-80 w-80 rounded-full bg-[#f1d58a]/28 blur-3xl" />
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-end mb-10">
-              <div>
-                <span className="text-[var(--color-brand-teal)] font-bold tracking-wider uppercase text-sm mb-2 block">Top Rated</span>
-                <h2 className="text-3xl md:text-5xl font-black text-[var(--color-brand-river)]">Featured River Experiences</h2>
-              </div>
-              <Link href="/boat-rides" prefetch={false} className="hidden sm:flex items-center gap-1 text-[var(--color-brand-teal)] font-medium hover:gap-2 transition-all">
-                View All <ArrowRight className="h-4 w-4" />
+      <section className="relative isolate overflow-hidden bg-[#eaf7f6]">
+        <Image
+          src="/home/godavari-hero-banner.jpg"
+          alt="Godavari boat experience in Papikondalu"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,28,36,0.88)_0%,rgba(6,55,63,0.68)_48%,rgba(232,247,247,0.24)_100%)]" />
+
+        <div className="relative z-10 mx-auto grid min-h-[calc(100dvh-92px)] lg:h-[calc(100dvh-92px)] w-full max-w-[1800px] items-center gap-8 px-4 py-4 lg:py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,460px)] lg:px-8 xl:px-12">
+          <div className="max-w-4xl py-4 text-white lg:py-6">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-[#35c6ca]/45 bg-[#1598a1]/18 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#a7f3f4] backdrop-blur-md sm:text-xs">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Since 2004 · Papikondalu &amp; Bhadrachalam river cruises
+            </div>
+
+            <h1 className="max-w-4xl text-3xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-[2.75rem] xl:text-[3.5rem] 2xl:text-[4.2rem]">
+              TS Boat Tourism river cruises for Papikondalu and Bhadrachalam.
+            </h1>
+
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
+              TS BOAT TOURISM is a pioneer in providing tourism and travel services to highly popular tourist destinations in and around Rajahmundry. Started in the year 2004, we have been providing services to Papikondalu and Bhadrachalam by River Cruises.
+            </p>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/packages"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#1598a1] px-7 text-sm font-black text-white shadow-[0_18px_45px_rgba(21,152,161,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[#117f87] sm:text-base"
+              >
+                View Packages <ArrowRight className="h-4 w-4" />
               </Link>
+              <a
+                href="tel:+919542069573"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/28 bg-white/12 px-7 text-sm font-black text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 sm:text-base"
+              >
+                <Phone className="h-4 w-4" /> Talk to Booking Team
+              </a>
             </div>
 
-            <Suspense fallback={<ShimmerGrid count={3} />}>
-              <FeaturedPackages />
-            </Suspense>
-
-            <div className="mt-8 text-center sm:hidden">
-              <Link href="/boat-rides" prefetch={false} className="inline-flex items-center gap-2 bg-white border border-border px-6 py-3 rounded-full font-medium text-[var(--color-brand-river)]">
-                View All Experience Packages <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="relative bg-[var(--color-brand-river)] py-14 text-white md:py-24">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(90,196,215,0.24),transparent_34%),radial-gradient(circle_at_80%_10%,rgba(229,218,197,0.22),transparent_30%)]" />
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-10 max-w-3xl">
-              <span className="mb-2 block text-sm font-bold uppercase tracking-wider text-[var(--color-brand-sand)]">Destination Highlights</span>
-              <h2 className="text-3xl font-black md:text-5xl">A journey that moves from river calm to temple light.</h2>
-            </div>
-            <div className="grid gap-5 md:grid-cols-3">
-              {DESTINATION_HIGHLIGHTS.map((item, index) => {
-                const Icon = item.icon;
-                return (
-                  <article key={item.title} className={`group relative min-h-[25rem] overflow-hidden rounded-[1.75rem] ${index === 1 ? 'md:translate-y-8' : ''}`}>
-                    <Image src={item.image} alt={item.title} fill loading="lazy" sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.82))]" />
-                    <div className="absolute inset-x-0 bottom-0 p-6">
-                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/15 backdrop-blur-md">
-                        <Icon className="h-5 w-5 text-[var(--color-brand-sand)]" />
-                      </div>
-                      <h3 className="text-2xl font-black">{item.title}</h3>
-                      <p className="mt-3 text-sm leading-6 text-white/78">{item.copy}</p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden bg-[#f4f8f6] py-16 md:py-28">
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.94)_0%,rgba(240,249,247,0.9)_44%,rgba(255,248,235,0.78)_100%)]" />
-          <div className="absolute inset-0 opacity-[0.45] [background-image:linear-gradient(rgba(15,61,86,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(15,61,86,0.045)_1px,transparent_1px)] [background-size:48px_48px]" />
-          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#f59e0b_0%,#1697a6_42%,#0f3d56_100%)]" />
-          <div className="relative mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:px-8">
-            <div>
-              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#9bdde4] bg-white/80 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#116a75] shadow-[0_10px_30px_rgba(15,61,86,0.08)] backdrop-blur">
-                <Camera className="h-4 w-4 text-[#0e8795]" />
-                Scenic Sightseeing
-              </span>
-              <h2 className="max-w-2xl text-4xl font-black leading-[0.98] text-[var(--color-brand-river)] md:text-6xl">
-                Temple visits, hill views and local trails planned beautifully.
-              </h2>
-              <p className="mt-6 max-w-xl text-base font-semibold leading-8 text-slate-600 md:text-lg">
-                Add a guided sightseeing day around Bhadrachalam and Papikondalu with photo stops, pilgrimage timing and easy family-friendly routes.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-2.5">
-                {['Temple Trails', 'Photo Stops', 'Local Guidance'].map((tag, index) => (
-                  <span key={tag} className="inline-flex items-center gap-2 rounded-full border border-[#bde6df] bg-white/75 px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#116a75] shadow-sm backdrop-blur">
-                    <span className={`h-2 w-2 rounded-full ${index === 1 ? 'bg-amber-400' : index === 2 ? 'bg-[#0f3d56]' : 'bg-[#1697a6]'}`} />
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <Link href="/sightseeing" prefetch={false} className="group mt-9 inline-flex items-center gap-3 rounded-full bg-[var(--color-brand-river)] px-6 py-3.5 text-sm font-black text-white shadow-[0_22px_48px_rgba(15,61,86,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#154652] hover:shadow-[0_28px_62px_rgba(15,61,86,0.3)]">
-                Explore Sightseeing
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-white/14 transition-transform group-hover:translate-x-0.5">
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              </Link>
-            </div>
-
-            <div className="relative">
-              <div className="absolute -inset-3 rounded-[2.2rem] border border-white/70 bg-white/45 shadow-[0_28px_90px_rgba(15,61,86,0.12)]" />
-              <div className="relative min-h-[22rem] overflow-hidden rounded-[1.75rem] border border-white/80 shadow-[0_34px_90px_rgba(15,61,86,0.2)] md:min-h-[30rem]">
-                <Image src="/images/sightseeing-banner-2026.webp" alt="Scenic sightseeing around Bhadrachalam and Papikondalu" fill loading="lazy" sizes="(max-width: 1024px) 100vw, 54vw" className="object-cover transition-transform duration-700 hover:scale-105" />
-                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,28,0.78)_0%,rgba(5,18,28,0.22)_48%,rgba(5,18,28,0.04)_100%)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,22,34,0.05),rgba(4,22,34,0.62))]" />
-                <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                  Premium Local Routes
+            <div className="mt-6 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-md border border-white/18 bg-white/18 sm:grid-cols-4">
+              {TRUST_ITEMS.map((item) => (
+                <div key={item.label} className="bg-[#06333c]/66 p-3 backdrop-blur">
+                  <p className="text-xl font-black text-[#8eecee] sm:text-2xl">{item.value}</p>
+                  <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/58">{item.label}</p>
                 </div>
-                <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/25 bg-slate-950/34 p-4 text-white shadow-[0_22px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:left-6 sm:right-auto sm:max-w-sm sm:p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">Curated day trips</p>
-                  <p className="mt-2 text-2xl font-black leading-tight">Scenic Sightseeing Tours</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-white/84">Best for temple visits, viewpoints and short local experiences.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Suspense fallback={<ShimmerGrid count={3} />}>
-              <FeaturedSightseeing />
-            </Suspense>
-          </div>
-        </section>
-
-        {/* Featured Rooms */}
-        <section className="relative py-14 md:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-end mb-10">
-              <div>
-                <span className="text-[var(--color-brand-green)] font-bold tracking-wider uppercase text-sm mb-2 block">Where to Stay</span>
-                <h2 className="text-3xl md:text-5xl font-black text-[var(--color-brand-river)]">Verified Riverside Stays</h2>
-              </div>
-              <Link href="/stays" prefetch={false} className="hidden sm:flex items-center gap-1 text-[var(--color-brand-teal)] font-medium hover:gap-2 transition-all">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <Suspense fallback={<ShimmerGrid count={3} />}>
-              <FeaturedRooms />
-            </Suspense>
-          </div>
-        </section>
-
-        <section className="bg-white py-14 pb-28 md:py-20">
-          <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 md:grid-cols-[0.8fr_1.2fr] lg:px-8">
-            <div>
-              <span className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[var(--color-brand-teal)]">
-                <Compass className="h-4 w-4" />
-                Traveller Notes
-              </span>
-              <h2 className="text-3xl font-black text-[var(--color-brand-river)] md:text-5xl">Stories from quiet water, full days and better stays.</h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {TESTIMONIALS.map((text) => (
-                <figure key={text} className="rounded-[1.35rem] border border-[#e7eee9] bg-[#f8fbfa] p-5 shadow-[0_14px_40px_rgba(15,61,86,0.08)]">
-                  <Quote className="mb-5 h-6 w-6 text-[var(--color-brand-teal)]" />
-                  <blockquote className="text-sm font-semibold leading-6 text-[var(--color-brand-river)]">{text}</blockquote>
-                </figure>
               ))}
             </div>
           </div>
-        </section>
-      </div>
 
-    </div>
+          <div className="pb-6 lg:pb-0">
+            <div className="rounded-xl border border-white/10 bg-white p-4 shadow-[0_24px_70px_rgba(15,61,86,0.16)]">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-1 pb-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#1598a1]">Start Here</p>
+                  <h2 className="mt-0.5 text-lg font-black text-[#0f2f3d]">Find your package</h2>
+                </div>
+                <span className="grid h-9 w-9 place-items-center rounded-md bg-[#eef8f8] text-[#1598a1]">
+                  <Ship className="h-4 w-4" />
+                </span>
+              </div>
+
+              <div className="relative h-[256px] overflow-hidden mt-3 [mask-image:linear-gradient(to_bottom,transparent_0%,black_8%,black_92%,transparent_100%)]">
+                <div 
+                  className="marquee-container animate-marquee-vertical flex flex-col gap-2.5"
+                  style={{ animationDuration: `${displayPackages.length * 6.5}s` }}
+                >
+                  {/* First iteration */}
+                  {displayPackages.map((item, idx) => (
+                    <Link key={`hero-pkg-${idx}`} href={item.href} className="group grid grid-cols-[4.5rem_minmax(0,1fr)_1.25rem] items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-2 pr-3 transition-all hover:scale-[1.01] hover:border-[#1598a1] hover:bg-[#f6fbfb] shadow-sm">
+                      <span className="relative h-14 w-18 shrink-0 overflow-hidden rounded-md bg-slate-100">
+                        <Image src={item.image} alt={item.title} fill sizes="80px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                      </span>
+                      <span className="min-w-0 pr-1">
+                        <span className="mb-0.5 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.12em] text-[#1598a1]">
+                          <Ship className="h-3 w-3 shrink-0" />
+                          {item.meta}
+                        </span>
+                        <span className="block text-xs font-black leading-4 text-[#0f2f3d] line-clamp-1">{item.title}</span>
+                        <span className="mt-0.5 line-clamp-1 block text-[10px] font-semibold leading-3 text-slate-500">{item.desc}</span>
+                      </span>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-[#1598a1]" />
+                    </Link>
+                  ))}
+                  
+                  {/* Second iteration for seamless looping */}
+                  {displayPackages.map((item, idx) => (
+                    <Link key={`hero-pkg-loop-${idx}`} href={item.href} className="group grid grid-cols-[4.5rem_minmax(0,1fr)_1.25rem] items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-2 pr-3 transition-all hover:scale-[1.01] hover:border-[#1598a1] hover:bg-[#f6fbfb] shadow-sm" aria-hidden="true">
+                      <span className="relative h-14 w-18 shrink-0 overflow-hidden rounded-md bg-slate-100">
+                        <Image src={item.image} alt={item.title} fill sizes="80px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                      </span>
+                      <span className="min-w-0 pr-1">
+                        <span className="mb-0.5 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.12em] text-[#1598a1]">
+                          <Ship className="h-3 w-3 shrink-0" />
+                          {item.meta}
+                        </span>
+                        <span className="block text-xs font-black leading-4 text-[#0f2f3d] line-clamp-1">{item.title}</span>
+                        <span className="mt-0.5 line-clamp-1 block text-[10px] font-semibold leading-3 text-slate-500">{item.desc}</span>
+                      </span>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-[#1598a1]" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <Link href="/packages" className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#0f3d56] px-4 text-sm font-black text-white transition-colors hover:bg-[#15506a]">
+                Browse All Packages <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-10 md:py-16">
+        <div className="mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-12">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1598a1]">Packages and experiences</p>
+              <h2 className="mt-2 max-w-3xl text-3xl font-black leading-tight text-[#0f2f3d] md:text-5xl">Boat rides, temple plans and river stays in one clean booking flow.</h2>
+            </div>
+            <Link href="/packages" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#1598a1] px-5 text-sm font-black text-white transition-colors hover:bg-[#117f87]">
+              Browse Packages <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            {EXPERIENCE_INFO.map((item) => (
+              <article key={item.title} className="grid overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,61,86,0.06)] md:grid-cols-[42%_1fr]">
+                <div className="relative min-h-[18rem] md:min-h-full">
+                  <Image src={item.image} alt={item.title} fill sizes="(max-width: 1024px) 100vw, 42vw" className="object-cover" />
+                </div>
+                <div className="p-6 md:p-8">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[#1598a1]">Experience Guide</p>
+                  <h2 className="mt-2 text-2xl font-black text-[#0f2f3d] md:text-3xl">{item.title}</h2>
+                  <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">{item.desc}</p>
+                  <div className="mt-5 grid gap-3">
+                    {item.points.map((point) => (
+                      <div key={point} className="flex items-center gap-3 text-sm font-black text-[#0f2f3d]">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-[#1598a1]" />
+                        {point}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Split Section: Featured Packages (Left) & Featured Stays/Rooms (Right) */}
+      <section className="bg-[#0f3d56] py-12 text-white md:py-20">
+        <div className="mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-12">
+          
+          <div className="mb-10 text-center max-w-3xl mx-auto">
+            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-[#8eecee] backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              Handpicked Destinations &amp; Stays
+            </span>
+            <h2 className="mt-3 text-3xl font-black md:text-5xl tracking-tight">
+              Top Tour Packages &amp; Riverside Accommodations
+            </h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-white/70 sm:text-base">
+              Choose from our popular Godavari river cruise packages or book comfortable hotel rooms and riverside bamboo huts.
+            </p>
+          </div>
+
+          <Suspense fallback={<ShimmerGrid count={6} />}>
+            <FeaturedPackagesAndRooms />
+          </Suspense>
+
+        </div>
+      </section>
+
+      <GoogleReviewsCarousel
+        reviews={GOOGLE_REVIEWS}
+        profileUrl={GOOGLE_REVIEW_URL}
+        writeReviewUrl={GOOGLE_WRITE_REVIEW_URL}
+      />
+
+      <section className="bg-white py-10 md:py-16">
+        <div className="mx-auto grid max-w-[1800px] gap-6 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:px-8 xl:px-12">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1598a1]">Need help choosing?</p>
+            <h2 className="mt-2 max-w-3xl text-3xl font-black leading-tight text-[#0f2f3d] md:text-5xl">Call us before you book. We will help you pick the right package.</h2>
+            <p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-slate-600 md:text-base">
+              Tell us your travel date, family size, pickup needs and temple plan. We will guide you to the best available boat or package.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[28rem]">
+            <a href="tel:+919542069573" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-md bg-[#1598a1] px-6 text-sm font-black text-white transition-colors hover:bg-[#117f87]">
+              <Phone className="h-4 w-4" />
+              Call Now
+            </a>
+            <a href="https://wa.me/919542069573" target="_blank" rel="noreferrer" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-6 text-sm font-black text-[#0f3d56] transition-colors hover:bg-[#eef8f8]">
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 
-async function FeaturedPackages() {
-  const packages = await fetchFeaturedPackages();
-  return packages ? (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-      {packages.map((pkg, index) => (
-        <PackageCard key={pkg.id} pkg={pkg} priority={index < 4} />
-      ))}
-    </div>
-  ) : (
-    <ShimmerGrid count={3} />
-  );
-}
+async function FeaturedPackagesAndRooms() {
+  const [packages, rooms] = await Promise.all([
+    fetchFeaturedPackages(),
+    fetchFeaturedRooms(),
+  ]);
 
-async function FeaturedRooms() {
-  const rooms = await fetchFeaturedRooms();
-  return rooms ? (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-      {rooms.map((room, index) => (
-        <RoomCard key={room.id} room={room} variant="grid" priority={index < 4} />
-      ))}
-    </div>
-  ) : (
-    <ShimmerGrid count={3} />
-  );
-}
-
-async function FeaturedSightseeing() {
-  const packages = await fetchFeaturedSightseeing();
-
-  if (packages && packages.length > 0) {
-    return (
-      <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
-        {packages.map((pkg, index) => (
-          <PackageCard key={pkg.id} pkg={pkg} priority={index < 4} />
-        ))}
-      </div>
-    );
-  }
+  const displayPkgs = (packages && packages.length > 0) ? packages.slice(0, 3) : null;
+  const displayRooms = (rooms && rooms.length > 0) ? rooms.slice(0, 3) : FALLBACK_ROOMS;
 
   return (
-    <div className="grid gap-5 md:grid-cols-3">
-      {SIGHTSEEING_FALLBACKS.map((item, index) => (
-        <Link
-          key={item.title}
-          href="/sightseeing"
-          prefetch={false}
-          className="group relative overflow-hidden rounded-[1.35rem] border border-white/80 bg-white/78 p-5 shadow-[0_18px_55px_rgba(15,61,86,0.1)] backdrop-blur transition-all hover:-translate-y-1 hover:border-[#9bdde4] hover:shadow-[0_26px_70px_rgba(15,61,86,0.16)]"
-        >
-          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#f59e0b,#1697a6,#0f3d56)] opacity-80" />
-          <div className="mb-5 flex items-center justify-between">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e8fbfa] text-[#116a75] shadow-[0_12px_30px_rgba(22,151,166,0.12)] transition-colors group-hover:bg-[var(--color-brand-river)] group-hover:text-white">
-              <Camera className="h-5 w-5" />
-            </div>
-            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-300 transition-colors group-hover:text-amber-500">
-              0{index + 1}
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-12">
+      {/* LEFT COLUMN: Featured Tour Packages (3 Items) */}
+      <div className="flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm sm:p-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#1598a1] text-white">
+              <Ship className="h-5 w-5" />
             </span>
+            <div>
+              <h3 className="text-xl font-black text-white">Featured Packages</h3>
+              <p className="text-xs font-semibold text-[#8eecee]">Top 3 Godavari Tour Packages</p>
+            </div>
           </div>
-          <h3 className="text-lg font-black text-[var(--color-brand-river)]">{item.title}</h3>
-          <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.copy}</p>
-          <div className="mt-5 flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-[#116a75]">
-            View Route
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+          <Link
+            href="/packages"
+            className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-[#8eecee] transition-colors hover:text-white"
+          >
+            View All ({packages?.length || 3}) <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {displayPkgs ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {displayPkgs.map((pkg, index) => (
+              <PackageCard key={pkg.id} pkg={pkg} priority={index < 2} />
+            ))}
           </div>
-        </Link>
-      ))}
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {FALLBACK_PACKAGES.map((pkg) => (
+              <Link key={pkg.title} href={pkg.href} className="group overflow-hidden rounded-md bg-white text-[#0f2f3d] shadow-lg transition-all hover:-translate-y-1">
+                <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+                  <Image src={pkg.image} alt={pkg.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                </div>
+                <div className="p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#1598a1]">{pkg.price}</p>
+                  <h4 className="mt-1 text-base font-black text-slate-900 line-clamp-1">{pkg.title}</h4>
+                  <p className="mt-1 text-xs text-slate-500 line-clamp-2">{pkg.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* RIGHT COLUMN: Featured Rooms & Accommodations (3 Items) */}
+      <div className="flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm sm:p-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#b45309] text-white">
+              <BedDouble className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-xl font-black text-white">Hotels &amp; Bamboo Stays</h3>
+              <p className="text-xs font-semibold text-amber-300">Top 3 Accommodations</p>
+            </div>
+          </div>
+          <Link
+            href="/rooms"
+            className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-amber-300 transition-colors hover:text-white"
+          >
+            View All Rooms <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          {displayRooms.map((room, index) => (
+            <RoomCard key={room.id} room={room} variant="grid" priority={index < 2} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+

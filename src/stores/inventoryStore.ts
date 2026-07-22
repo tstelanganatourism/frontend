@@ -37,6 +37,9 @@ export interface RoomInventoryRow {
   booked_rooms: number;
   available_rooms: number;
   is_closed: boolean;
+  hotel_name?: string | null;
+  hotel_address?: string | null;
+  hotel_map_url?: string | null;
 }
 
 export interface RoomGenerateRequest {
@@ -48,12 +51,21 @@ export interface RoomGenerateRequest {
     slot_start: string;
     slot_end: string;
     total_rooms: number;
+    hotel_name?: string | null;
+    hotel_address?: string | null;
+    hotel_map_url?: string | null;
   }>;
+  hotel_name?: string | null;
+  hotel_address?: string | null;
+  hotel_map_url?: string | null;
 }
 
 export interface RoomUpdateRequest {
   total_rooms?: number;
   is_closed?: boolean;
+  hotel_name?: string | null;
+  hotel_address?: string | null;
+  hotel_map_url?: string | null;
 }
 
 // ─── Transport inventory types ────────────────────────────────────────────────

@@ -104,7 +104,7 @@ export default function InstallPromptModal() {
   if (!showPrompt || isStandalone) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-10 fade-in duration-500 sm:bottom-4 sm:left-auto sm:right-4 sm:w-[380px]">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-10 fade-in duration-500 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[380px]">
       <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 p-5">
         <button
           onClick={handleDismiss}
@@ -125,7 +125,7 @@ export default function InstallPromptModal() {
             
             {isIOS ? (
               <div className="text-xs text-slate-600 font-medium space-y-2">
-                <p>Install Telangana Boat Tourism for a faster, better experience.</p>
+                <p>Install TS Boat Tourism for a faster, better experience.</p>
                 <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-col gap-1.5">
                   <span className="flex items-center gap-1.5">1. Tap the Share button <Share className="h-3.5 w-3.5 text-blue-500 inline" /></span>
                   <span className="flex items-center gap-1.5">2. Scroll down & select <b>Add to Home Screen</b> <PlusSquare className="h-3.5 w-3.5 text-slate-700 inline" /></span>
@@ -134,7 +134,7 @@ export default function InstallPromptModal() {
             ) : (
               <>
                 <p className="text-xs text-slate-500 font-medium mb-3">
-                  Install Telangana Boat Tourism for offline access, faster booking, and exclusive updates.
+                  Install TS Boat Tourism for offline access, faster booking, and exclusive updates.
                 </p>
                 <button
                   onClick={handleInstallClick}

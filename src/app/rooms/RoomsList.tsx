@@ -40,13 +40,10 @@ export default function RoomsList({
   const pathnameHook = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  const [liveData, setLiveData] = React.useState<{ query: string; data: RoomData } | undefined>(undefined);
+  const [allRooms, setAllRooms] = React.useState<RoomItem[]>(data?.items || []);
   const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
-  const isInitialMount = React.useRef(true);
-  const previousSearchStr = React.useRef(typeof window !== 'undefined' ? window.location.search : '');
   const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
-  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Sync search input with URL parameter 'q'
   React.useEffect(() => {
@@ -56,143 +53,176 @@ export default function RoomsList({
     }
   }, [currentBrowserSearch]);
 
-  // To avoid Next.js dynamic bail-out during build when reading searchParams directly,
-  // we do not use the useSearchParams hook outside of a Suspense boundary if we want the 
-  // route to remain perfectly static. Instead, we use a simple window location check in useEffect.
+  // Initial fetch of complete rooms dataset (size=100) for instant offline client-side search
   React.useEffect(() => {
-    const fetchLive = async () => {
+    let isMounted = true;
+    const fetchAllRooms = async () => {
       try {
-        const currentSearch = window.location.search;
-        const queryParams = new URLSearchParams(currentSearch);
-        
-        // If there are no query parameters, we can just use the server-provided SSG data 
-        // without an extra network call.
-        if (queryParams.toString() === '') {
-          return;
-        }
-
-        queryParams.set('size', '6');
-        const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
         setIsFetching(true);
-        try {
-          const res = await fetch(`/api/v1/rooms${queryStr}`);
-          if (res.ok) {
-            const json = await res.json();
-            setLiveData({ query: currentSearch, data: json });
+        const res = await fetch('/api/v1/rooms?size=100');
+        if (res.ok && isMounted) {
+          const json = await res.json();
+          if (json.items && json.items.length > 0) {
+            setAllRooms(json.items);
           }
-        } finally {
-          setIsFetching(false);
         }
       } catch (err) {
-        console.error("Failed to fetch live sync storefront stays:", err);
-        setIsFetching(false);
+        console.error("Failed to fetch full rooms for client-side search:", err);
+      } finally {
+        if (isMounted) setIsFetching(false);
       }
     };
-    
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      const currentSearch = window.location.search;
-      if (currentSearch) {
-        previousSearchStr.current = currentSearch;
-        fetchLive();
-      }
-      return;
+
+    fetchAllRooms();
+    return () => { isMounted = false; };
+  }, []);
+
+  // INSTANT Client-Side Search & Filter Engine
+  const filteredItems = React.useMemo(() => {
+    if (!allRooms || allRooms.length === 0) return [];
+
+    const params = typeof window !== 'undefined' ? new URLSearchParams(currentBrowserSearch) : new URLSearchParams();
+    const query = searchVal.trim().toLowerCase() || params.get('q')?.trim().toLowerCase() || '';
+    const isFeatured = params.get('is_featured') === 'true';
+    const facilitiesFilter = params.getAll('facilities');
+
+    let list = [...allRooms];
+
+    // 1. Filter by search query (instant matching across lodge_name, address, slug, facilities)
+    if (query) {
+      const queryWords = query.split(/\s+/);
+      list = list.filter((item) => {
+        const textToSearch = [
+          item.lodge_name,
+          item.slug,
+          item.address,
+          ...(item.facilities || [])
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return queryWords.every((word) => textToSearch.includes(word));
+      });
     }
 
-    const currentSearch = window.location.search;
-    if (currentSearch !== previousSearchStr.current) {
-      previousSearchStr.current = currentSearch;
-      fetchLive();
+    // 2. Filter by Must Experience (featured toggle)
+    if (isFeatured) {
+      list = list.filter((item) => item.is_featured);
     }
-  }, [searchParams]);
 
-  const activeData = liveData?.query === currentBrowserSearch ? liveData.data : data;
+    // 3. Filter by Facilities
+    if (facilitiesFilter && facilitiesFilter.length > 0) {
+      list = list.filter((item) =>
+        facilitiesFilter.every((fac) =>
+          (item.facilities || []).some((itemFac) => itemFac.toLowerCase().includes(fac.toLowerCase()))
+        )
+      );
+    }
 
-  const filteredItems = activeData ? activeData.items : [];
+    return list;
+  }, [allRooms, searchVal, currentBrowserSearch]);
+
+  const activeData = { items: filteredItems, total: filteredItems.length, size: filteredItems.length };
 
   const handleSearchChange = (val: string) => {
     setSearchVal(val);
     
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const cleanVal = val.trim();
-        if (cleanVal) {
-          params.set('q', cleanVal);
-        } else {
-          params.delete('q');
-        }
-        params.delete('page'); // Reset to page 1 on new search query
-        
-        const query = params.toString();
-        startTransition(() => {
-          router.replace(query ? `${pathnameHook}?${query}` : pathnameHook, { scroll: false });
-        });
+    // Instant background URL sync without network re-fetches
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cleanVal = val.trim();
+      if (cleanVal) {
+        params.set('q', cleanVal);
+      } else {
+        params.delete('q');
       }
-    }, 400);
+      params.delete('page');
+      
+      const query = params.toString();
+      window.history.replaceState(null, '', query ? `${pathnameHook}?${query}` : pathnameHook);
+    }
   };
 
   return (
     <div className="bg-[#f4f6ef]">
-      {/* Premium Hero Banner */}
-      <div className="relative min-h-[23rem] overflow-hidden bg-[#0c2b24] pb-12 pt-24 sm:min-h-[28rem] sm:pb-16 sm:pt-32">
+      {/* Unique State-of-the-Art Hero Canvas */}
+      <div className="relative overflow-hidden bg-slate-950 pb-16 pt-24 sm:pb-20 sm:pt-32">
+        {/* Ambient Glow Effects */}
+        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl" />
+        
+        {/* Rich Photography Background Image */}
         <Image
-          src="/images/stays-banner-2026.webp"
+          src="/images/stays_hero_bg.png"
           alt="Riverside stays and accommodation banner"
           fill
           sizes="100vw"
-          className="object-cover"
-          style={{ objectPosition: 'center 56%' }}
+          className="object-cover opacity-65"
           priority
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,24,20,0.92)_0%,rgba(5,24,20,0.72)_42%,rgba(5,24,20,0.18)_72%,rgba(5,24,20,0.04)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,24,20,0.14)_0%,rgba(5,24,20,0.06)_42%,rgba(5,24,20,0.58)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#f4f6ef] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-emerald-950/40" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex min-h-[15rem] flex-col justify-end gap-8 md:min-h-[18rem] md:flex-row md:items-end md:justify-between">
-            <div className="max-w-3xl text-white">
-              <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-amber-300/45 bg-slate-950/34 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_10px_28px_rgba(0,0,0,0.2)] backdrop-blur-md sm:px-4">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" />
+          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
+            
+            {/* Left Content */}
+            <div className="lg:col-span-7">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-300 backdrop-blur-md shadow-xs">
+                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
                 Verified Riverside Lodging
               </div>
-              <h1 className="mb-4 flex items-start gap-3 text-[2.8rem] font-black leading-[0.95] tracking-tight text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.38)] sm:gap-4 sm:text-6xl lg:text-7xl">
-                <BedDouble className="mt-1 h-9 w-9 shrink-0 text-amber-300 sm:h-11 sm:w-11" strokeWidth={1.8} />
-                <span>
-                  <span className="block text-amber-300">Riverside</span>
-                  <span className="block">Stays</span>
-                </span>
+
+              <h1 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
+                <span className="block text-emerald-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">Bamboo Huts & Resorts</span>
+                <span className="block text-white drop-shadow-sm">Riverside Stays</span>
               </h1>
-              <div className="mb-4 flex max-w-md items-center gap-3 text-amber-300/90">
-                <span className="h-px flex-1 bg-current/70" />
-                <span className="text-xs font-black uppercase tracking-[0.24em]">Bamboo Huts & Verified Rooms</span>
-                <span className="h-px flex-1 bg-current/70" />
+
+              {/* Quick Feature Badges */}
+              <div className="flex flex-wrap gap-3 text-[11px] font-bold text-slate-300">
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  🛖 Authentic Bamboo Huts
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  🌊 Riverfront Views
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  🔥 Campfire Facilities
+                </span>
               </div>
-              <p className="max-w-2xl text-base font-semibold leading-7 text-white/86 sm:text-lg">
-                Book cozy riverside cottages, bamboo-style stays, and comfortable pilgrim rooms around Bhadrachalam and Kolluru with verified booking support.
-              </p>
             </div>
 
-            <div>
-              <div className="relative w-full md:w-96">
-                <input 
-                  type="text" 
-                  value={searchVal}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="Search by hotel or area..." 
-                  className="w-full bg-white/10 border border-white/20 backdrop-blur-md rounded-full py-3 px-6 pl-12 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-teal)] transition-all"
-                />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50" />
+            {/* Right Interactive Search Panel */}
+            <div className="lg:col-span-5">
+              <div className="rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-emerald-400/40">
+                <h3 className="mb-2 text-md font-bold text-white flex items-center gap-2">
+                  <BedDouble className="h-4 w-4 text-emerald-400" />
+                  Find Accommodations
+                </h3>
+                <p className="mb-4 text-xs text-slate-300">Search by lodge name, location, or facility</p>
+
+                <div className="relative mb-4">
+                  <input
+                    type="text"
+                    value={searchVal}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Search e.g. Kolluru, Sirivaka, Bhadrachalam..."
+                    className="w-full bg-slate-950/70 border border-slate-700/80 backdrop-blur-md rounded-xl py-3 px-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all shadow-inner"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-slate-300">
+                  <span className="text-slate-400">Featured:</span>
+                  <button onClick={() => handleSearchChange('Kolluru')} className="hover:text-emerald-300 underline cursor-pointer">Kolluru Bamboo Huts</button>
+                  <button onClick={() => handleSearchChange('Sirivaka')} className="hover:text-emerald-300 underline cursor-pointer">Sirivaka Eco Resorts</button>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
-
       <div className="mx-auto max-w-7xl px-4 py-8 pb-8 sm:px-6 lg:px-8 lg:pb-16">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           <aside className="hidden lg:col-span-1 lg:block">

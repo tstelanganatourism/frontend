@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import ClientLayout from './ClientLayout';
 
 export const metadata: Metadata = {
-  title: 'Admin Portal | Telangana Boat Tourism',
+  title: 'Admin Portal | TS Boat Tourism',
   robots: { index: false, follow: false },
 };
 

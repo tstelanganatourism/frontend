@@ -113,62 +113,62 @@ export const PackagePolicies = ({ policies, primaryBoarding }: PackagePoliciesPr
 
   return (
     <section id="policies" className="scroll-mt-[170px] mb-12">
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#1a6b7a]">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-[#0d6e75]">
           <ShieldAlert className="h-3.5 w-3.5" />
           Booking Rules
         </span>
-        <h2 className="mt-2 text-3xl font-black text-[#0f3d56] tracking-tight mb-2 md:text-4xl">
+        <h2 className="mt-3 text-2xl font-black text-slate-900 tracking-tight mb-2 md:text-3xl">
           Terms & Conditions
         </h2>
-        <p className="mb-6 border-b border-slate-100 pb-4 text-sm font-medium text-slate-500">
-          Operator rules, cancellation guidance, identity checks, and safe travel instructions.
+        <p className="mb-6 border-b border-slate-100 pb-4 text-xs font-semibold text-slate-500">
+          Operator regulations, cancellation guidelines, identity checks, and safe travel instructions.
         </p>
 
       {!policies.length ? (
-        <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium leading-6 text-blue-900">
-          Standard tourism terms are shown because package-specific policies are not published yet.
+        <div className="mb-5 rounded-xl border border-blue-150 bg-blue-500/5 px-4 py-3 text-xs font-semibold leading-relaxed text-[#0d6e75]">
+          Standard association guidelines are shown because package-specific terms are not published yet.
         </div>
       ) : null}
 
         <div className="grid gap-4 md:grid-cols-2">
           {visiblePolicies.map((policy, index) => {
-          const colors = getPolicyColorClass(policy.type);
-          return (
-            <motion.div
-              key={policy.id}
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className={`rounded-lg border ${colors.bg} p-5 flex flex-col justify-between h-full`}
-            >
-              <div>
-                <div className="flex items-center gap-3.5 mb-5">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${colors.iconBg}`}>
-                    {getPolicyIcon(policy.type)}
+            const colors = getPolicyColorClass(policy.type);
+            return (
+              <motion.div
+                key={policy.id}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className={`rounded-xl border border-slate-200 bg-white p-5 flex flex-col justify-between h-full hover:border-[#0d6e75]/35 transition-colors`}
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0d6e75]/10 text-[#0d6e75]`}>
+                      {getPolicyIcon(policy.type)}
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        {policy.type}
+                      </span>
+                      <h3 className="text-xs font-black leading-relaxed text-slate-900 mt-0.5">
+                        {policy.title}
+                      </h3>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
-                      {policy.type}
-                    </span>
-                    <h3 className="text-base font-black leading-6 text-slate-900 mt-0.5">
-                      {policy.title}
-                    </h3>
-                  </div>
+
+                  <p className="text-xs font-semibold leading-relaxed text-slate-500">
+                    {policy.description}
+                  </p>
                 </div>
 
-                <p className="text-sm font-semibold leading-relaxed text-slate-500">
-                  {policy.description}
-                </p>
-              </div>
-
-              <div className="mt-6 border-t border-slate-100 pt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
-                <span>Rule Code: TSTG-POL-{String(index + 1).padStart(2, '0')}</span>
-                <span className="text-[#1a6b7a]">Enforced</span>
-              </div>
-            </motion.div>
-          );
+                <div className="mt-5 border-t border-slate-100 pt-3.5 flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
+                  <span>Code: TSTG-POL-{String(index + 1).padStart(2, '0')}</span>
+                  <span className="text-[#0d6e75]">Official Policy</span>
+                </div>
+              </motion.div>
+            );
           })}
           
           {/* Empty Space filler: Google Maps Embed */}
@@ -178,7 +178,7 @@ export const PackagePolicies = ({ policies, primaryBoarding }: PackagePoliciesPr
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="rounded-lg border border-slate-200 overflow-hidden h-[300px] shadow-sm relative group"
+              className="rounded-xl border border-slate-200 overflow-hidden h-[260px] shadow-3xs relative group"
             >
               <iframe
                 title="Location Map"
@@ -188,9 +188,9 @@ export const PackagePolicies = ({ policies, primaryBoarding }: PackagePoliciesPr
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
-              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-md shadow-sm border border-slate-100 flex items-center gap-2">
+              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-md border border-slate-200 flex items-center gap-1.5 shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Location Map</span>
+                <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">Boarding Location</span>
               </div>
             </motion.div>
           )}

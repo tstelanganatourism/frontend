@@ -32,7 +32,11 @@ import {
   ChevronRight,
   Check,
   CheckCircle,
-  XCircle
+  XCircle,
+  UtensilsCrossed,
+  Clock,
+  Leaf,
+  DollarSign
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -109,12 +113,21 @@ export default function PackageForm({
   const [hasRefreshments, setHasRefreshments] = useState(false);
   const [refreshmentAdultPrice, setRefreshmentAdultPrice] = useState<number | ''>('');
   const [refreshmentChildPrice, setRefreshmentChildPrice] = useState<number | ''>('');
+  const [refreshmentsMinPassengers, setRefreshmentsMinPassengers] = useState<number>(1);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [status, setStatus] = useState('DRAFT');
+  const [advancePaymentType, setAdvancePaymentType] = useState('FULL_PAYMENT');
+  const [advancePaymentValue, setAdvancePaymentValue] = useState(0);
   const [minPassengers, setMinPassengers] = useState<number>(1);
   const [isStudentPackage, setIsStudentPackage] = useState(false);
   const [refreshmentStudentPrice, setRefreshmentStudentPrice] = useState<number | ''>('');
+
+  // Food Option pricing states
+  const [hasFoodOption, setHasFoodOption] = useState(false);
+  const [foodAdultPrice, setFoodAdultPrice] = useState<number | ''>('');
+  const [foodChildPrice, setFoodChildPrice] = useState<number | ''>('');
+  const [foodStudentPrice, setFoodStudentPrice] = useState<number | ''>('');
 
   // Brochure (R2 integration & backend PDF generation)
   const [brochurePdfUrl, setBrochurePdfUrl] = useState('');
@@ -145,6 +158,8 @@ export default function PackageForm({
   const [faqs, setFaqs] = useState<any[]>([]);
   const [policies, setPolicies] = useState<any[]>([]);
   const [transportOptions, setTransportOptions] = useState<any[]>([]);
+  const [meals, setMeals] = useState<any[]>([]);
+  const [extras, setExtras] = useState<any[]>([]);
 
   useEffect(() => {
     if (initialData) {
@@ -161,12 +176,20 @@ export default function PackageForm({
       setHasRefreshments(initialData.has_refreshments || false);
       setRefreshmentAdultPrice(initialData.refreshment_adult_price ?? '');
       setRefreshmentChildPrice(initialData.refreshment_child_price ?? '');
+      setRefreshmentsMinPassengers(initialData.refreshments_min_passengers ?? 1);
       setIsFeatured(initialData.is_featured || false);
       setIsActive(initialData.is_active !== false);
       setStatus(initialData.status || 'DRAFT');
+      setAdvancePaymentType(initialData.advance_payment_type || 'FULL_PAYMENT');
+      setAdvancePaymentValue(initialData.advance_payment_value || 0);
       setMinPassengers(initialData.min_passengers ?? 1);
       setIsStudentPackage(initialData.is_student_package || false);
       setRefreshmentStudentPrice(initialData.refreshment_student_price ?? '');
+
+      setHasFoodOption(initialData.has_food_option || false);
+      setFoodAdultPrice(initialData.food_adult_price ?? '');
+      setFoodChildPrice(initialData.food_child_price ?? '');
+      setFoodStudentPrice(initialData.food_student_price ?? '');
 
       setMetaTitle(initialData.meta_title || '');
       setMetaDescription(initialData.meta_description || '');
@@ -184,6 +207,8 @@ export default function PackageForm({
       setFaqs(initialData.faqs || []);
       setPolicies(initialData.policies || []);
       setTransportOptions(initialData.transport_options || []);
+      setMeals(initialData.meals || []);
+      setExtras(initialData.extras || []);
     }
   }, [initialData]);
 
@@ -194,11 +219,10 @@ export default function PackageForm({
   const lastGeneratedOgImgRef = useRef('');
 
   useEffect(() => {
-    if (!initialData) {
-      const cleanTitle = title.trim();
-      const cleanPlace = place.trim();
-      const cleanDur = duration.trim();
-      const locationLabel = cleanPlace || 'Bhadrachalam and Papikondalu';
+    const cleanTitle = title.trim();
+    const cleanPlace = place.trim();
+    const cleanDur = duration.trim();
+    const locationLabel = cleanPlace || 'Bhadrachalam and Papikondalu';
 
       // 1. Auto-generate Meta Title
       const expectedTitle = cleanTitle ? `${cleanTitle} - Tour Package Booking Partner` : '';
@@ -210,7 +234,7 @@ export default function PackageForm({
       // 2. Auto-generate Meta Description
       const durationText = cleanDur ? ` ${cleanDur}` : '';
       const expectedDesc = cleanTitle
-        ? `Book ${cleanTitle}${durationText} with Telangana Boat Tourism. Papikondalu boat tour package booking agent from ${locationLabel}, with itinerary, pricing, boarding details, and support.`
+        ? `Book ${cleanTitle}${durationText} with TS Boat Tourism. Papikondalu boat tour package booking agent from ${locationLabel}, with itinerary, pricing, boarding details, and support.`
         : '';
       if (!metaDescription || metaDescription === lastGeneratedMetaDescRef.current) {
         setMetaDescription(expectedDesc);
@@ -220,19 +244,17 @@ export default function PackageForm({
       // 3. Auto-generate Canonical URL
       const computedSlug = slug.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const expectedCanonical = computedSlug 
-        ? `https://www.tsboattourism.org/packages/${computedSlug}`
+        ? `https://www.tstelanganatourism.com/packages/${computedSlug}`
         : '';
       if (!canonicalUrl || canonicalUrl === lastGeneratedCanonicalRef.current) {
         setCanonicalUrl(expectedCanonical);
         lastGeneratedCanonicalRef.current = expectedCanonical;
       }
 
-      // 4. Auto-generate OG Image from Cover Image
       if (!ogImageUrl || ogImageUrl === lastGeneratedOgImgRef.current) {
         setOgImageUrl(coverImageUrl);
         lastGeneratedOgImgRef.current = coverImageUrl;
       }
-    }
   }, [title, place, duration, slug, coverImageUrl, initialData, metaTitle, metaDescription, canonicalUrl, ogImageUrl]);
 
 
@@ -316,19 +338,22 @@ export default function PackageForm({
   }, [brochureValidation?.status]);
 
   const handleGenerateBrochure = async () => {
-    if (!initialData?.id) return;
-
-    // Inline confirmation check to bypass browser popup blockers
-    if (activeBrochureUrl && !showRegenConfirm && !shouldRegenerateOnSave) {
-      setShowRegenConfirm(true);
-      // Auto-reset the confirmation state after 3.5 seconds
-      setTimeout(() => setShowRegenConfirm(false), 3500);
+    if (!initialData?.id) {
+      toast.error('Please save the package first before generating a brochure.');
       return;
     }
 
-    setShowRegenConfirm(false);
-    setShouldRegenerateOnSave(true);
-    toast.success('Brochure queued for generation. It will be generated when you click Save Changes.');
+    try {
+      setIsGeneratingBrochure(true);
+      toast.info('Generating PDF brochure in background...');
+      await apiClient.post(`/api/v1/admin/packages/${initialData.id}/regenerate-brochure`);
+      await checkBrochureValidation();
+    } catch (err: any) {
+      console.error('Failed to trigger brochure regeneration', err);
+      toast.error(err?.response?.data?.detail?.message || 'Failed to start brochure generation');
+    } finally {
+      setIsGeneratingBrochure(false);
+    }
   };
 
   const openBrochurePdf = async (urlTarget: string) => {
@@ -532,6 +557,30 @@ export default function PackageForm({
     setPolicies(prev => prev.filter((_, idx) => idx !== index).map((item, idx) => ({ ...item, sort_order: idx + 1 })));
   };
 
+  // Meals management
+  const MEAL_TYPES = [
+    { value: 'BREAKFAST', label: 'Breakfast', emoji: '🌅' },
+    { value: 'LUNCH',     label: 'Lunch',     emoji: '🍽️' },
+    { value: 'DINNER',    label: 'Dinner',    emoji: '🌙' },
+    { value: 'SNACKS',    label: 'Snacks',    emoji: '🥪' },
+  ];
+  const addMeal = () => {
+    setMeals(prev => [
+      ...prev,
+      { meal_type: 'LUNCH', name: '', serving_time: '', description: '', cost_per_person: 0, is_vegetarian: true, day_number: null, sort_order: prev.length + 1 }
+    ]);
+  };
+  const updateMeal = (index: number, key: string, value: any) => {
+    setMeals(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [key]: value };
+      return updated;
+    });
+  };
+  const removeMeal = (index: number) => {
+    setMeals(prev => prev.filter((_, idx) => idx !== index).map((item, idx) => ({ ...item, sort_order: idx + 1 })));
+  };
+
   const getPayload = () => {
     return {
       title,
@@ -546,13 +595,22 @@ export default function PackageForm({
       order_priority: Number(orderPriority),
       has_transport: hasTransport,
       has_refreshments: hasRefreshments,
-    is_student_package: isStudentPackage,
+      is_student_package: isStudentPackage,
       refreshment_adult_price: !isStudentPackage && hasRefreshments && refreshmentAdultPrice !== '' ? Number(refreshmentAdultPrice) : null,
       refreshment_child_price: !isStudentPackage && hasRefreshments && refreshmentChildPrice !== '' ? Number(refreshmentChildPrice) : null,
       refreshment_student_price: isStudentPackage && hasRefreshments && refreshmentStudentPrice !== '' ? Number(refreshmentStudentPrice) : null,
+      refreshments_min_passengers: hasRefreshments ? Number(refreshmentsMinPassengers) : 1,
+
+      has_food_option: hasFoodOption,
+      food_adult_price: !isStudentPackage && hasFoodOption && foodAdultPrice !== '' ? Number(foodAdultPrice) : null,
+      food_child_price: !isStudentPackage && hasFoodOption && foodChildPrice !== '' ? Number(foodChildPrice) : null,
+      food_student_price: isStudentPackage && hasFoodOption && foodStudentPrice !== '' ? Number(foodStudentPrice) : null,
+
       is_featured: isFeatured,
       is_active: isActive,
-      status,
+      status: status,
+      advance_payment_type: advancePaymentType,
+      advance_payment_value: Number(advancePaymentValue),
       min_passengers: Number(minPassengers) || 1,
       meta_title: metaTitle || null,
       meta_description: metaDescription || null,
@@ -587,7 +645,21 @@ export default function PackageForm({
       exclusions: exclusions.map((e, idx) => ({ ...e, sort_order: idx + 1 })),
       boarding_points: boardingPoints.map((b, idx) => ({ ...b, sort_order: idx + 1 })),
       faqs: faqs.map((f, idx) => ({ ...f, sort_order: idx + 1 })),
-      policies: policies.map((p, idx) => ({ ...p, sort_order: idx + 1 }))
+      policies: policies.map((p, idx) => ({ ...p, sort_order: idx + 1 })),
+      meals: meals.map((m, idx) => ({
+        ...m,
+        cost_per_person: Number(m.cost_per_person || 0),
+        day_number: m.day_number ? Number(m.day_number) : null,
+        sort_order: idx + 1
+      })),
+      extras: extras.map((ex, idx) => ({
+        ...ex,
+        adult_price: ex.adult_price ? Number(ex.adult_price) : null,
+        child_price: ex.child_price ? Number(ex.child_price) : null,
+        student_price: ex.student_price ? Number(ex.student_price) : null,
+        min_passengers: Number(ex.min_passengers || 1),
+        sort_order: idx + 1
+      }))
     };
   };
 
@@ -629,6 +701,7 @@ export default function PackageForm({
     { id: 'itinerary', label: 'Itinerary', icon: Compass },
     { id: 'highlights', label: 'Highlights', icon: Sparkles },
     { id: 'inclusions', label: 'Inclusions & Boarding', icon: ListPlus },
+    { id: 'meals', label: 'Food & Meals', icon: UtensilsCrossed },
     { id: 'faqs', label: 'FAQs & Policies', icon: ShieldCheck },
     { id: 'seo', label: 'SEO Metadata', icon: Globe },
   ];
@@ -993,6 +1066,41 @@ export default function PackageForm({
               </label>
             </div>
 
+            {/* Advance Payment Settings */}
+            <div className="pt-6 border-t border-slate-100">
+              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4">Advance Payment Settings</h4>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <PremiumSelect
+                    label="Advance Payment Type"
+                    value={advancePaymentType}
+                    options={[
+                      { value: 'FULL_PAYMENT', label: 'Full Payment (100%)' },
+                      { value: 'PERCENTAGE', label: 'Percentage of Total' },
+                      { value: 'FIXED_AMOUNT', label: 'Fixed Amount for Total Booking' }
+                    ]}
+                    onChange={setAdvancePaymentType}
+                  />
+                </div>
+                {advancePaymentType !== 'FULL_PAYMENT' && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      {advancePaymentType === 'PERCENTAGE' ? 'Advance Percentage (%) *' : 'Advance Amount for Total Booking (₹) *'}
+                    </label>
+                    <input
+                      type="number"
+                      value={advancePaymentValue}
+                      onChange={(e) => setAdvancePaymentValue(Number(e.target.value))}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#5ac4d7] focus:ring-2 focus:ring-[#5ac4d7]/20 transition-all font-semibold text-slate-800 shadow-sm"
+                      min={0}
+                      max={advancePaymentType === 'PERCENTAGE' ? 100 : 999999}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="pt-4 border-t border-slate-100 grid gap-4 sm:grid-cols-3">
               {/* Transport Toggle */}
               <label className="flex items-center gap-3 cursor-pointer group bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-xl border border-indigo-200/60 hover:border-indigo-400/50 transition-all">
@@ -1046,16 +1154,28 @@ export default function PackageForm({
                 {hasRefreshments && (
                   <div className="grid grid-cols-2 gap-3 mt-2 pl-8">
                     {isStudentPackage ? (
-                      <div className="col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Student Refreshment Price (₹ per student)</label>
-                        <input
-                          type="number"
-                          value={refreshmentStudentPrice}
-                          onChange={(e) => setRefreshmentStudentPrice(e.target.value ? Number(e.target.value) : '')}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
-                          min={0}
-                        />
-                      </div>
+                      <>
+                        <div className="col-span-2 sm:col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Student Refreshment Price (₹ per student)</label>
+                          <input
+                            type="number"
+                            value={refreshmentStudentPrice}
+                            onChange={(e) => setRefreshmentStudentPrice(e.target.value ? Number(e.target.value) : '')}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                            min={0}
+                          />
+                        </div>
+                        <div className="col-span-2 sm:col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Min Passengers for Refreshment</label>
+                          <input
+                            type="number"
+                            value={refreshmentsMinPassengers}
+                            onChange={(e) => setRefreshmentsMinPassengers(Math.max(1, e.target.value ? Number(e.target.value) : 1))}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                            min={1}
+                          />
+                        </div>
+                      </>
                     ) : (
                       <>
                         <div>
@@ -1078,8 +1198,208 @@ export default function PackageForm({
                             min={0}
                           />
                         </div>
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Min Passengers for Refreshment</label>
+                          <input
+                            type="number"
+                            value={refreshmentsMinPassengers}
+                            onChange={(e) => setRefreshmentsMinPassengers(Math.max(1, e.target.value ? Number(e.target.value) : 1))}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                            min={1}
+                          />
+                        </div>
                       </>
                     )}
+                  </div>
+                )}
+              </div>
+
+              {/* Food Option Toggle */}
+              <div className="flex flex-col gap-3 group bg-gradient-to-br from-teal-50 to-blue-50 p-4 rounded-xl border border-teal-200/60 hover:border-teal-400/50 transition-all">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasFoodOption}
+                    onChange={(e) => setHasFoodOption(e.target.checked)}
+                    className="h-5 w-5 rounded border-slate-300 text-teal-500 focus:ring-teal-400"
+                  />
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800">Has Food / Meals Option</span>
+                    <span className="block text-xs font-medium text-slate-500 mt-0.5">Enable if optional food/meals package is offered</span>
+                  </div>
+                </label>
+                {hasFoodOption && (
+                  <div className="grid grid-cols-2 gap-3 mt-2 pl-8">
+                    {isStudentPackage ? (
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Student Food Package Cost (₹ per student)</label>
+                        <input
+                          type="number"
+                          value={foodStudentPrice}
+                          onChange={(e) => setFoodStudentPrice(e.target.value ? Number(e.target.value) : '')}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 font-bold text-teal-700"
+                          min={0}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Adult Food Package Cost (₹)</label>
+                          <input
+                            type="number"
+                            value={foodAdultPrice}
+                            onChange={(e) => setFoodAdultPrice(e.target.value ? Number(e.target.value) : '')}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 font-bold text-teal-700"
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Child Food Package Cost (₹)</label>
+                          <input
+                            type="number"
+                            value={foodChildPrice}
+                            onChange={(e) => setFoodChildPrice(e.target.value ? Number(e.target.value) : '')}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 font-bold text-teal-700"
+                            min={0}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic Custom Package Extras (e.g., Rajahmundry Drop, Special Transport, etc.) */}
+              <div className="flex flex-col gap-3 group bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/60 hover:border-amber-400/50 transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800">Custom Package Extras & Add-ons</span>
+                    <span className="block text-xs font-medium text-slate-500 mt-0.5">Add optional custom extras (e.g. Rajahmundry Dropping ₹100, Special Guide, etc.)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setExtras(prev => [...prev, { title: '', description: '', adult_price: '', child_price: '', student_price: '', min_passengers: 1 }])}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-600 transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Extra Option
+                  </button>
+                </div>
+
+                {extras.length > 0 && (
+                  <div className="space-y-3 mt-2">
+                    {extras.map((item, idx) => (
+                      <div key={idx} className="bg-white p-3.5 rounded-lg border border-amber-200 shadow-2xs space-y-3 relative group/item">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Extra Title (e.g., "Rajahmundry Dropping Extra")</label>
+                              <input
+                                type="text"
+                                value={item.title || ''}
+                                onChange={(e) => {
+                                  const updated = [...extras];
+                                  updated[idx].title = e.target.value;
+                                  setExtras(updated);
+                                }}
+                                placeholder="e.g. Rajahmundry Dropping / Railway Station Drop"
+                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 focus:bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Description / Notes (Optional)</label>
+                              <textarea
+                                rows={2}
+                                value={item.description || ''}
+                                onChange={(e) => {
+                                  const updated = [...extras];
+                                  updated[idx].description = e.target.value;
+                                  setExtras(updated);
+                                }}
+                                placeholder="e.g. 6.30 PM Reaches Pattiseema revu. 7.00 PM to 8 PM By road journey to Rajahmundry Railway Station."
+                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-amber-500 focus:bg-white"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setExtras(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-md transition-colors"
+                            title="Delete Extra"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {/* Prices row */}
+                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                          {isStudentPackage ? (
+                            <div className="col-span-3">
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Student Price (₹)</label>
+                              <input
+                                type="number"
+                                value={item.student_price ?? ''}
+                                onChange={(e) => {
+                                  const updated = [...extras];
+                                  updated[idx].student_price = e.target.value ? Number(e.target.value) : '';
+                                  setExtras(updated);
+                                }}
+                                placeholder="e.g. 100"
+                                className="w-full rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-bold text-amber-700 outline-none focus:border-amber-500"
+                                min={0}
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Adult Price (₹)</label>
+                                <input
+                                  type="number"
+                                  value={item.adult_price ?? ''}
+                                  onChange={(e) => {
+                                    const updated = [...extras];
+                                    updated[idx].adult_price = e.target.value ? Number(e.target.value) : '';
+                                    setExtras(updated);
+                                  }}
+                                  placeholder="e.g. 100"
+                                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-bold text-amber-700 outline-none focus:border-amber-500"
+                                  min={0}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Child Price (₹)</label>
+                                <input
+                                  type="number"
+                                  value={item.child_price ?? ''}
+                                  onChange={(e) => {
+                                    const updated = [...extras];
+                                    updated[idx].child_price = e.target.value ? Number(e.target.value) : '';
+                                    setExtras(updated);
+                                  }}
+                                  placeholder="e.g. 100"
+                                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-bold text-amber-700 outline-none focus:border-amber-500"
+                                  min={0}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Min Pax</label>
+                                <input
+                                  type="number"
+                                  value={item.min_passengers ?? 1}
+                                  onChange={(e) => {
+                                    const updated = [...extras];
+                                    updated[idx].min_passengers = Math.max(1, Number(e.target.value) || 1);
+                                    setExtras(updated);
+                                  }}
+                                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 outline-none focus:border-amber-500 text-center"
+                                  min={1}
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1788,6 +2108,154 @@ export default function PackageForm({
           </div>
         )}
 
+        {/* Tab 6.5: Food & Meals */}
+        {activeTab === 'meals' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-base font-black text-[#0f3d56] uppercase tracking-wider flex items-center gap-2">
+                  <UtensilsCrossed className="h-5 w-5 text-[#5ac4d7]" />
+                  Food & Meals Options
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">Configure food items included or offered as add-ons in this package.</p>
+              </div>
+              <button
+                type="button"
+                onClick={addMeal}
+                className="flex items-center gap-2 rounded-xl bg-[#0f3d56] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1a4f6d] shadow-sm transition-all"
+              >
+                <Plus className="h-4 w-4" /> Add Meal Option
+              </button>
+            </div>
+
+            <div className="grid gap-6">
+              {meals.length === 0 ? (
+                <div className="text-center py-16 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                  <UtensilsCrossed className="h-10 w-10 mx-auto mb-3 opacity-40 text-[#5ac4d7]" />
+                  <p className="text-sm font-bold">No meals or food options added yet.</p>
+                  <p className="text-xs text-slate-500 mt-1">Click the button above to add breakfast, lunch, or dinner items.</p>
+                </div>
+              ) : (
+                meals.map((item, index) => (
+                  <div
+                    key={index}
+                    className="p-5 sm:p-6 bg-slate-50/50 border border-slate-200/80 rounded-2xl sm:rounded-3xl shadow-sm hover:border-[#5ac4d7]/40 transition-all space-y-4 relative"
+                  >
+                    {/* Top Row with Header and Delete Button */}
+                    <div className="flex items-center justify-between gap-4 border-b border-slate-150 pb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">
+                          {MEAL_TYPES.find(m => m.value === item.meal_type)?.emoji || '🍽️'}
+                        </span>
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-600">
+                          Meal #{index + 1}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeMeal(index)}
+                        className="p-2 text-slate-400 hover:text-red-500 bg-white border border-slate-250 rounded-xl shadow-sm hover:border-red-200 transition-all"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Inputs Grid */}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {/* Meal Type Select */}
+                      <div className="sm:col-span-1">
+                        <PremiumSelect
+                          label="Meal Type *"
+                          value={item.meal_type}
+                          options={[
+                            { value: 'BREAKFAST', label: '🌅 Breakfast' },
+                            { value: 'LUNCH',     label: '🍽️ Lunch' },
+                            { value: 'DINNER',    label: '🌙 Dinner' },
+                            { value: 'SNACKS',    label: '🥪 Snacks' },
+                          ]}
+                          onChange={(val) => updateMeal(index, 'meal_type', val)}
+                        />
+                      </div>
+
+                      {/* Meal Name Input */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Meal Item Name *</label>
+                        <input
+                          type="text"
+                          value={item.name}
+                          onChange={(e) => updateMeal(index, 'name', e.target.value)}
+                          placeholder="e.g. Veg Buffet Lunch / Chicken Biryani"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-bold text-slate-800 shadow-sm"
+                          required
+                        />
+                      </div>
+
+                      {/* Serving Time */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 text-slate-400" /> Serving Time
+                        </label>
+                        <input
+                          type="text"
+                          value={item.serving_time || ''}
+                          onChange={(e) => updateMeal(index, 'serving_time', e.target.value)}
+                          placeholder="e.g. 1:00 PM - 2:30 PM"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-700 shadow-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Second Row Inputs */}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {/* Day Number */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Day Number</label>
+                        <input
+                          type="number"
+                          value={item.day_number || ''}
+                          onChange={(e) => updateMeal(index, 'day_number', e.target.value ? Number(e.target.value) : null)}
+                          placeholder="e.g. 1"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-700 shadow-sm"
+                          min="1"
+                        />
+                      </div>
+
+                      {/* Vegetarian Switch */}
+                      <div className="sm:col-span-3 flex items-center gap-3 pt-6 sm:pt-0 pl-1">
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={item.is_vegetarian}
+                            onChange={(e) => updateMeal(index, 'is_vegetarian', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#22c55e]" />
+                          <span className="ml-3 text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                            <Leaf className={`h-4.5 w-4.5 ${item.is_vegetarian ? 'text-green-500' : 'text-slate-400'}`} />
+                            {item.is_vegetarian ? 'Pure Vegetarian' : 'Non-Vegetarian'}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Optional description */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Menu Description</label>
+                      <input
+                        type="text"
+                        value={item.description || ''}
+                        onChange={(e) => updateMeal(index, 'description', e.target.value)}
+                        placeholder="e.g. Rice, Sambar, Veg Curry, Papad, Sweet, Curd"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] font-medium text-slate-700 shadow-sm"
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Tab 7: SEO */}
         {activeTab === 'seo' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1803,7 +2271,7 @@ export default function PackageForm({
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Canonical URL</label>
-                <input type="text" value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800 shadow-sm" placeholder="e.g. https://www.tsboattourism.org/packages/papikondalu-tour" />
+                <input type="text" value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#5ac4d7] font-semibold text-slate-800 shadow-sm" placeholder="e.g. https://www.tstelanganatourism.com/packages/papikondalu-tour" />
               </div>
               <div className="pt-2">
                 <ImageUpload label="Open Graph (Social Share) Image" value={ogImageUrl} onChange={setOgImageUrl} />

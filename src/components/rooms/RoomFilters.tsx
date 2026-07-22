@@ -23,14 +23,15 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   const pushRoomParams = (params: URLSearchParams) => {
     params.delete('page');
     const query = params.toString();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    startTransition(() => {
-      router.replace(query ? `/stays?${query}` : '/stays', { scroll: true });
-    });
+    const newUrl = query ? `/stays?${query}` : '/stays';
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', newUrl);
+      window.dispatchEvent(new Event('popstate'));
+    }
   };
 
   const setParam = (key: string, value: string | null, defaultValue?: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString());
 
     if (!value || value === defaultValue) {
       params.delete(key);
@@ -42,21 +43,22 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   };
 
   const toggleFacility = (facility: string) => {
-    const nextFacilities = activeFacilities.includes(facility)
-      ? activeFacilities.filter((item) => item !== facility)
-      : [...activeFacilities, facility];
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString());
+    const currentFacilities = params.getAll('facilities');
+    const nextFacilities = currentFacilities.includes(facility)
+      ? currentFacilities.filter((item) => item !== facility)
+      : [...currentFacilities, facility];
 
-    const params = new URLSearchParams(searchParams.toString());
     params.delete('facilities');
     nextFacilities.forEach((item) => params.append('facilities', item));
     pushRoomParams(params);
   };
 
   const clearAll = () => {
-    startTransition(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      router.replace('/stays', { scroll: true });
-    });
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/stays');
+      window.dispatchEvent(new Event('popstate'));
+    }
   };
 
   return (

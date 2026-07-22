@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Sign Up | Telangana Boat Tourism',
+  title: 'Sign Up | TS Boat Tourism',
   robots: { index: false, follow: false },
 };
 

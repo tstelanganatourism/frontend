@@ -34,7 +34,7 @@ async function fetchAllSlugs(endpoint: string) {
 }
  
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsboattourism.org';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tstelanganatourism.com';
   
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },

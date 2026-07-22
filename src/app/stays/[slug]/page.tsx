@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const description = room.meta_description || room.description?.replace(/<[^>]+>/g, '').slice(0, 160) || `${room.lodge_name} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
 
   const image = room.og_image_url || room.cover_image_url;
-  const absImage = image ? (image.startsWith('http') ? image : `https://www.tsboattourism.org${image}`) : undefined;
+  const absImage = image ? (image.startsWith('http') ? image : `https://www.tstelanganatourism.com${image}`) : undefined;
 
   return {
     title: room.meta_title || `${room.lodge_name} | Premium Riverside Stay`,
@@ -101,7 +101,7 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
   const canonical = room.canonical_url || `/stays/${room.slug}`;
 
   // Ensure all JSON-LD URLs are absolute — schema.org mandates fully-qualified URLs.
-  const SITE_ORIGIN = 'https://www.tsboattourism.org';
+  const SITE_ORIGIN = 'https://www.tstelanganatourism.com';
   const abs = (url?: string | null) =>
     url ? (url.startsWith('http') ? url : `${SITE_ORIGIN}${url}`) : undefined;
 

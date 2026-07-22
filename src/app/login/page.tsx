@@ -186,7 +186,7 @@ function LoginContent() {
         {/* Brand */}
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md p-1 border border-white/20">
-            <img src="/apple-touch-icon.png" alt="Telangana Boat Tourism" className="h-full w-full object-contain rounded-xl" />
+            <img src="/apple-touch-icon.png" alt="TS Boat Tourism" className="h-full w-full object-contain rounded-xl" />
           </div>
           <h1 className="text-2xl font-black text-white">
             {step === 'phone' ? 'Welcome back' : 'Verify your number'}

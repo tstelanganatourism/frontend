@@ -7,6 +7,8 @@ import PackageForm from '@/components/packages/PackageForm';
 import { toast } from 'sonner';
 import { parseValidationError } from '@/lib/utils';
 
+import { useAuthStore } from '@/stores/authStore';
+
 interface EditPageProps {
   params: Promise<{ id: string }>;
 }
@@ -15,13 +17,16 @@ export default function AdminPackageEditPage({ params }: EditPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
   const { currentPackage, isLoading, error, fetchPackageById, updatePackage, publishPackage } = useAdminStore();
+  const { isHydrated, accessToken } = useAuthStore();
   const [isUpdating, setIsUpdating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    fetchPackageById(resolvedParams.id).then(() => setHasFetched(true));
-  }, [fetchPackageById, resolvedParams.id]);
+    if (isHydrated) {
+      fetchPackageById(resolvedParams.id).then(() => setHasFetched(true));
+    }
+  }, [fetchPackageById, resolvedParams.id, isHydrated, accessToken]);
 
   const handleSubmit = async (formData: any) => {
     setIsUpdating(true);

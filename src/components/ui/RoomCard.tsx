@@ -222,135 +222,127 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
     <Link
       href={`/stays/${room.slug}`}
       prefetch={false}
-      className="group/card flex h-full flex-col overflow-hidden rounded-2xl border border-[#d6e4dd] bg-white shadow-[0_12px_34px_rgba(15,61,86,0.07)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-1 hover:border-[var(--color-brand-green)]/35 hover:shadow-[0_22px_52px_rgba(15,61,86,0.13)]"
+      className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/40 hover:shadow-[0_16px_36px_rgba(20,152,161,0.12)]"
     >
-      <div className="relative aspect-[16/11] overflow-hidden bg-slate-100">
+      {/* Visual Image Container */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
         <Image
           src={room.cover_image_url || '/placeholder-room.jpg'}
           alt={room.lodge_name}
           fill
           priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          quality={65}
-          className="object-cover transition-transform duration-500 group-hover/card:scale-[1.04]"
+          quality={75}
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,22,34,0.02)_0%,rgba(3,22,34,0.08)_48%,rgba(8,35,27,0.62)_100%)]" />
-        <div className="absolute left-3 top-3 z-10 flex max-w-[calc(100%-4rem)] flex-wrap gap-2">
-          {roomTags.slice(0, 2).map((tag) => (
-            <PremiumTag key={tag} name={tag} compact />
-          ))}
-        </div>
-        <div className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/35 bg-black/25 text-white shadow-lg backdrop-blur-md">
-          <ConciergeBell className="h-4 w-4" />
-        </div>
-        <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/36 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white backdrop-blur-md">
-          <MoonStar className="h-3.5 w-3.5 text-[#d9f2c8]" />
-          Comfort Stay
-        </div>
-        {prices && prices.percentOff > 0 && (
-          <div className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase text-[var(--color-brand-teal)] shadow-lg">
-            {prices.percentOff}% off
+        
+        {/* Soft shadow gradients */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(7,25,35,0.72)_0%,rgba(7,25,35,0.1)_55%,transparent_100%)]" />
+
+        {/* Floating Badges */}
+        <div className="absolute left-3 right-3 top-3 flex items-center justify-between gap-2 z-10">
+          <div className="flex flex-wrap gap-1">
+            {room.is_featured && (
+              <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white backdrop-blur-md shadow-xs">
+                Featured
+              </span>
+            )}
+            <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-900 backdrop-blur-md shadow-xs">
+              Stay
+            </span>
           </div>
-        )}
+          
+          {/* Review Badge */}
+          <div className="flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-black text-slate-900 backdrop-blur-md shadow-xs shrink-0">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
+            <span>{reviewScore}</span>
+          </div>
+        </div>
+
+        {/* Identity Category label on bottom left */}
+        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-slate-950/75 px-2.5 py-0.5 text-[9px] font-black text-white backdrop-blur-xs">
+          <MoonStar className="h-3 w-3 text-amber-400" />
+          <span className="tracking-wider uppercase">Riverside Stay</span>
+        </div>
+
+        {/* Active badge on bottom right */}
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">
+          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+          <span>Active</span>
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="min-w-0 text-xl font-black leading-tight text-slate-900 line-clamp-2 transition-colors duration-200 group-hover/card:text-[var(--color-brand-teal)]">
-            {room.lodge_name}
-          </h3>
-          {room.is_featured && (
-            <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700 ring-1 ring-emerald-200">
-              Verified
-            </span>
-          )}
-        </div>
+      {/* Details Body */}
+      <div className="flex flex-1 flex-col p-4 sm:p-4.5">
+        {/* Category Subtitle */}
+        <span className="text-[9px] font-black uppercase tracking-widest text-teal-600 mb-1">
+          Accommodation &amp; Lodging
+        </span>
 
-        <div className="mt-2 flex items-start gap-1.5 text-xs font-semibold leading-5 text-slate-600">
-          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-brand-teal)]" />
-          <span className="line-clamp-2">{room.address || 'Bhadrachalam'}</span>
-        </div>
+        {/* Title */}
+        <h3 className="mb-1.5 min-h-[2.5rem] text-sm font-extrabold leading-snug text-slate-900 line-clamp-2 transition-colors group-hover:text-teal-600">
+          {room.lodge_name}
+        </h3>
 
-        <div className="mt-2.5 flex items-center gap-1.5">
+        {/* Reviews Summary */}
+        <div className="mb-3 flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
           <div className="flex items-center gap-0.5">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const ratingVal = Number(reviewScore);
-              const fullStars = Math.floor(ratingVal);
-              const hasHalf = ratingVal % 1 >= 0.4;
-              if (i < fullStars) {
-                return <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />;
-              }
-              if (i === fullStars && hasHalf) {
-                return (
-                  <span key={i} className="relative h-3.5 w-3.5">
-                    <Star className="absolute inset-0 h-3.5 w-3.5 text-amber-400" />
-                    <div className="absolute inset-0 overflow-hidden w-[50%]">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    </div>
-                  </span>
-                );
-              }
-              return <Star key={i} className="h-3.5 w-3.5 text-slate-200" />;
-            })}
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
+            ))}
           </div>
-          <span className="text-[11px] font-bold text-slate-700">{reviewScore}</span>
-          <span className="text-[10px] font-semibold text-slate-400">({reviewCount} reviews)</span>
+          <span className="font-bold text-slate-800 ml-0.5">{reviewScore}</span>
+          <span className="text-slate-400">({reviewCount})</span>
         </div>
 
-
-
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {room.facilities.slice(0, 4).map((facility) => {
-            const Icon = getFacilityIcon(facility);
-            return (
-              <span
-                key={facility}
-                className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-100"
-              >
-                <Icon className="h-3.5 w-3.5 text-[var(--color-brand-teal)]" />
-                {facility}
-              </span>
-            );
-          })}
+        {/* Quick Highlights Info Grid */}
+        <div className="mt-auto mb-3.5 grid grid-cols-2 gap-1.5 rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-md bg-white shadow-2xs">
+              <ConciergeBell className="h-3 w-3 text-teal-600" />
+            </div>
+            <span className="text-[11px] font-bold text-slate-700 truncate">
+              {room.facilities && room.facilities.length > 0 ? room.facilities.slice(0, 2).join(' · ') : 'A/C · Wi-Fi'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-md bg-white shadow-2xs">
+              <MapPin className="h-3 w-3 text-teal-600" />
+            </div>
+            <span className="text-[11px] font-bold text-slate-700 truncate">
+              {room.address || 'Bhadrachalam'}
+            </span>
+          </div>
         </div>
 
-        <div className="mt-3 flex flex-col gap-3">
-          <div className="border-t border-slate-100 pt-3">
-            <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
-              Starts From
-            </p>
-            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-              <div>
-                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekdays</p>
-                <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
-                  <span className="text-[1.35rem] font-black leading-none tracking-tight text-[#0b5c6d]">
-                    {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'TBA'}
-                  </span>
-                  {prices && prices.originalPrice > (prices.discountedPrice || startPriceNum || 0) && (
-                    <span className="text-[11px] font-semibold text-slate-500 line-through decoration-rose-500">
-                      ₹{prices.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                    </span>
-                  )}
-                  <span className="text-[11px] font-bold text-slate-500">/ night</span>
-                </div>
-              </div>
-              {startWeekendNum && (
-                <div className="text-right">
-                  <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">Weekends</p>
-                  <div className="flex items-baseline justify-end gap-x-1.5 whitespace-nowrap">
-                    <span className="text-[1.15rem] font-black leading-none tracking-tight text-[#b45309]">
-                      ₹{startWeekendNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                    </span>
-                    <span className="text-[11px] font-bold text-slate-600">/ night</span>
-                  </div>
-                </div>
-              )}
+        {/* Pricing Segment */}
+        <div className="border-t border-slate-100 pt-2.5 mt-auto">
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+              Starts from
+            </span>
+            <div className="flex items-center gap-0.5 text-[11px] font-bold text-teal-600 group-hover:text-teal-700 transition-colors shrink-0">
+              <span>View Stay</span>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </div>
           </div>
-          <span className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-teal)] px-4 py-3 text-sm font-black text-white shadow-lg shadow-teal-900/20 transition-transform duration-200 group-hover/card:-translate-y-0.5 hover:bg-[#135968]">
-            View Stay
-            <ArrowRight className="h-4 w-4" />
-          </span>
+
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-base font-black text-slate-950 tracking-tight">
+                {startPriceNum ? `₹${startPriceNum.toLocaleString('en-IN')}` : '₹1,500'}
+              </span>
+              <span className="text-[9px] uppercase font-bold text-slate-500">/ Night</span>
+            </div>
+            {startWeekendNum && (
+              <div className="flex items-baseline gap-0.5 border-l border-slate-200 pl-2">
+                <span className="text-xs font-bold text-slate-700 tracking-tight">
+                  ₹{startWeekendNum.toLocaleString('en-IN')}
+                </span>
+                <span className="text-[8px] uppercase font-bold text-slate-400">/ Wknd</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Link>

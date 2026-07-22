@@ -358,7 +358,7 @@ function PackageSection({ group }: { group: PackageGroup }) {
               <thead>
                 <tr className="bg-slate-50 border-t border-slate-100">
                   <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Customer</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500 text-center">Booking ID</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500 text-center">PNR NUMBER</th>
                   <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500 text-center">Pax</th>
                   <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Transport Chosen</th>
                   <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500 text-right">Action</th>

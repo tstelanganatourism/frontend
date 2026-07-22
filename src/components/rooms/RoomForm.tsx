@@ -157,6 +157,13 @@ export default function RoomForm({
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [status, setStatus] = useState('DRAFT');
+  const [advancePaymentType, setAdvancePaymentType] = useState('FULL_PAYMENT');
+  const [advancePaymentValue, setAdvancePaymentValue] = useState(0);
+
+  // New Pricing/Capacity Fields (replacing separate RoomVariant configuration tab)
+  const [weekdayPrice, setWeekdayPrice] = useState<number | ''>('');
+  const [weekendPrice, setWeekendPrice] = useState<number | ''>('');
+  const [capacityPerRoom, setCapacityPerRoom] = useState<number | ''>('');
 
   // SEO Fields
   const [metaTitle, setMetaTitle] = useState('');
@@ -165,7 +172,6 @@ export default function RoomForm({
   const [canonicalUrl, setCanonicalUrl] = useState('');
 
   // Collections States (Nested child relations)
-  const [variants, setVariants] = useState<any[]>([]);
   const [gallery, setGallery] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
@@ -188,17 +194,25 @@ export default function RoomForm({
       setIsFeatured(initialData.is_featured || false);
       setIsActive(initialData.is_active !== false);
       setStatus(initialData.status || 'DRAFT');
+      setAdvancePaymentType(initialData.advance_payment_type || 'FULL_PAYMENT');
+      setAdvancePaymentValue(initialData.advance_payment_value || 0);
 
       setMetaTitle(initialData.meta_title || '');
       setMetaDescription(initialData.meta_description || '');
       setOgImageUrl(initialData.og_image_url || '');
       setCanonicalUrl(initialData.canonical_url || '');
 
-      setVariants(initialData.variants || []);
       setGallery(initialData.gallery || []);
       setHighlights(initialData.highlights || []);
       setFaqs(initialData.faqs || []);
       setPolicies(initialData.policies || []);
+
+      if (initialData.variants && initialData.variants[0]) {
+        const primaryVar = initialData.variants[0];
+        setWeekdayPrice(primaryVar.weekday_price ?? '');
+        setWeekendPrice(primaryVar.weekend_price ?? '');
+        setCapacityPerRoom(primaryVar.capacity_per_room ?? '');
+      }
     }
   }, [initialData]);
 
@@ -230,7 +244,7 @@ export default function RoomForm({
       // 3. Auto-generate Canonical URL
       const computedSlug = slug.trim() || lodgeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const expectedCanonical = computedSlug
-        ? `https://www.tsboattourism.org/stays/${computedSlug}`
+        ? `https://www.tstelanganatourism.com/stays/${computedSlug}`
         : '';
       if (!canonicalUrl || canonicalUrl === lastGeneratedCanonicalRef.current) {
         setCanonicalUrl(expectedCanonical);
@@ -273,23 +287,7 @@ export default function RoomForm({
     setList(rescaledList);
   };
 
-  // Variants management
-  const addVariant = () => {
-    setVariants(prev => [
-      ...prev,
-      { variant_name: '', weekday_price: 1500, weekend_price: 2000, capacity_per_room: 2, total_rooms: 5, is_active: true }
-    ]);
-  };
-  const updateVariant = (index: number, key: string, value: any) => {
-    setVariants(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [key]: value };
-      return updated;
-    });
-  };
-  const removeVariant = (index: number) => {
-    setVariants(prev => prev.filter((_, idx) => idx !== index));
-  };
+
 
   // Gallery management
   const addGalleryImage = () => {
@@ -393,19 +391,25 @@ export default function RoomForm({
       is_featured: isFeatured,
       is_active: isActive,
       status,
+      advance_payment_type: advancePaymentType,
+      advance_payment_value: Number(advancePaymentValue),
       meta_title: metaTitle || null,
       meta_description: metaDescription || null,
       og_image_url: ogImageUrl || null,
       canonical_url: canonicalUrl || null,
 
       // Relations
-      variants: variants.map(v => ({
-        ...v,
-        weekday_price: Number(v.weekday_price),
-        weekend_price: Number(v.weekend_price),
-        capacity_per_room: Number(v.capacity_per_room),
-          total_rooms: Number(v.total_rooms) || 0
-      })),
+      variants: [
+        {
+          id: initialData?.variants?.[0]?.id || undefined,
+          variant_name: lodgeName,
+          weekday_price: Number(weekdayPrice || 0),
+          weekend_price: Number(weekendPrice || 0),
+          capacity_per_room: Number(capacityPerRoom || 1),
+          total_rooms: Number(totalRooms || 1),
+          is_active: true
+        }
+      ],
       gallery,
       highlights,
       faqs,
@@ -421,7 +425,6 @@ export default function RoomForm({
 
   const tabs = [
     { id: 'basic', label: 'Basic Info', icon: Info },
-    { id: 'variants', label: 'Room Variants', icon: BedDouble },
     { id: 'gallery', label: 'Gallery', icon: ImageIcon },
     { id: 'highlights', label: 'Highlights', icon: Layout },
     { id: 'faqs', label: 'FAQs & Policies', icon: ShieldCheck },
@@ -535,13 +538,13 @@ export default function RoomForm({
           <div className="space-y-6">
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Lodge Name *</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Room Type Name *</label>
                 <input
                   type="text"
                   value={lodgeName}
                   onChange={(e) => setLodgeName(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
-                  placeholder="e.g. River Edge Holiday Resort"
+                  placeholder="e.g. Luxury 3 Beds AC Room"
                   required
                 />
               </div>
@@ -580,6 +583,44 @@ export default function RoomForm({
                   paddingClass="px-4 py-3"
                 />
               </div>
+
+              {/* Pricing & Capacity details on the Room (lodge) itself */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Weekday Price (₹) *</label>
+                <input
+                  type="number"
+                  value={weekdayPrice}
+                  onChange={(e) => setWeekdayPrice(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all font-bold text-slate-800"
+                  placeholder="e.g. 1500"
+                  required
+                  min={0}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Weekend Price (₹) *</label>
+                <input
+                  type="number"
+                  value={weekendPrice}
+                  onChange={(e) => setWeekendPrice(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all font-bold text-slate-800"
+                  placeholder="e.g. 2000"
+                  required
+                  min={0}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Capacity Per Room *</label>
+                <input
+                  type="number"
+                  value={capacityPerRoom}
+                  onChange={(e) => setCapacityPerRoom(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all font-bold text-slate-800"
+                  placeholder="e.g. 2"
+                  required
+                  min={1}
+                />
+              </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Check-in Slot Start</label>
                 <input
@@ -599,25 +640,63 @@ export default function RoomForm({
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Physical Address</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Default Physical Address (Optional)</label>
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all text-slate-700 font-semibold"
-                  placeholder="Enter full physical address..."
+                  placeholder="Enter default physical address for this room type..."
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Google Maps Embed Link / Share URL</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Default Google Maps Link (Optional)</label>
                 <input
                   type="text"
                   value={mapUrl}
                   onChange={(e) => setMapUrl(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all text-slate-700 font-semibold"
-                  placeholder="Paste Google Maps embed code iframe, share link, or coordinates URL..."
+                  placeholder="Paste default Google Maps embed code iframe, share link, or coordinates URL..."
                 />
-                <p className="text-[10px] text-slate-400 font-semibold mt-1">You can copy embed iframe code directly from Google Maps Share menu or paste a normal maps link. We automatically parse it!</p>
+                <p className="text-[10px] text-slate-400 font-semibold mt-1">Used as a fallback if the date-specific inventory slot doesn't have custom hotel coordinates.</p>
+              </div>
+
+              {/* Advance Payment Settings */}
+              <div className="sm:col-span-2 border-t border-slate-100 pt-6">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Advance Payment Settings</h4>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <CustomSelect
+                      label="Advance Payment Type"
+                      labelClassName="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"
+                      value={advancePaymentType}
+                      options={[
+                        { value: 'FULL_PAYMENT', label: 'Full Payment (100%)' },
+                        { value: 'PERCENTAGE', label: 'Percentage of Total' },
+                        { value: 'FIXED_AMOUNT', label: 'Fixed Amount per Room' }
+                      ]}
+                      onChange={setAdvancePaymentType}
+                      bgClass="bg-slate-50"
+                      paddingClass="px-4 py-3"
+                    />
+                  </div>
+                  {advancePaymentType !== 'FULL_PAYMENT' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        {advancePaymentType === 'PERCENTAGE' ? 'Advance Percentage (%) *' : 'Advance Amount per Room (₹) *'}
+                      </label>
+                      <input
+                        type="number"
+                        value={advancePaymentValue}
+                        onChange={(e) => setAdvancePaymentValue(Number(e.target.value))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all font-semibold text-slate-700"
+                        min={0}
+                        max={advancePaymentType === 'PERCENTAGE' ? 100 : 999999}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -771,116 +850,7 @@ export default function RoomForm({
           </div>
         )}
 
-        {/* Tab 2: Room Variants */}
-        {activeTab === 'variants' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Room Variants</h3>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Define room typologies, such as A/C Deluxe Rooms, Luxury Suites, or Non-A/C Cottages.</p>
-              </div>
-              <button
-                type="button"
-                onClick={addVariant}
-                className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-slate-800 cursor-pointer transition-all"
-              >
-                <Plus className="h-4 w-4" /> Add Room Variant
-              </button>
-            </div>
 
-            <div className="grid gap-6">
-              {variants.length === 0 ? (
-                <div className="text-center py-10 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl">
-                  <p className="text-xs font-bold">No variants configured. A/C & Non-A/C rates must be specified for user booking.</p>
-                </div>
-              ) : (
-                variants.map((variant, index) => (
-                  <div key={index} className="p-6 bg-slate-55 border border-slate-250/60 rounded-3xl space-y-4 relative group">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-xs font-black uppercase text-[#0f3d56] tracking-wider">Room Category #{index + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeVariant(index)}
-                        className="p-2 border border-slate-200 hover:border-red-200 bg-white text-slate-400 hover:text-red-500 rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Delete Variant
-                      </button>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-4">
-                      <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Variant Name *</label>
-                        <input
-                          type="text"
-                          value={variant.variant_name}
-                          onChange={(e) => updateVariant(index, 'variant_name', e.target.value)}
-                          placeholder="e.g. Luxury AC Suite"
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rooms of this type</label>
-                        <input
-                          type="number"
-                          value={variant.total_rooms ?? 0}
-                          onChange={(e) => updateVariant(index, 'total_rooms', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
-                          min={0}
-                          placeholder="e.g. 5"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Capacity Per Room</label>
-                        <input
-                          type="number"
-                          value={variant.capacity_per_room}
-                          onChange={(e) => updateVariant(index, 'capacity_per_room', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
-                          min={1}
-                        />
-                      </div>
-                      <div>
-                        <CustomSelect
-                          label="Active Status"
-                          value={variant.is_active ? 'true' : 'false'}
-                          options={[
-                            { value: 'true', label: 'Active' },
-                            { value: 'false', label: 'Inactive' }
-                          ]}
-                          onChange={(val) => updateVariant(index, 'is_active', val === 'true')}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Weekday Fare Rate (₹)</label>
-                        <input
-                          type="number"
-                          value={variant.weekday_price}
-                          onChange={(e) => updateVariant(index, 'weekday_price', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
-                          min={0}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Weekend Fare Rate (₹)</label>
-                        <input
-                          type="number"
-                          value={variant.weekend_price}
-                          onChange={(e) => updateVariant(index, 'weekend_price', e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-[#5ac4d7] font-semibold text-slate-700"
-                          min={0}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Tab 3: Gallery */}
         {activeTab === 'gallery' && (

@@ -272,6 +272,9 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
   const { patchRoomInventoryRow, deleteRoomInventoryRow } = useInventoryStore();
   const [capacity, setCapacity] = useState(row.total_rooms);
   const [isClosed, setIsClosed] = useState(row.is_closed);
+  const [hotelName, setHotelName] = useState(row.hotel_name || '');
+  const [hotelAddress, setHotelAddress] = useState(row.hotel_address || '');
+  const [hotelMapUrl, setHotelMapUrl] = useState(row.hotel_map_url || '');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -280,6 +283,9 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
       await patchRoomInventoryRow(row.id, {
         total_rooms: capacity,
         is_closed: isClosed,
+        hotel_name: hotelName || null,
+        hotel_address: hotelAddress || null,
+        hotel_map_url: hotelMapUrl || null,
       });
       toast.success(`Room inventory updated for slot ${row.slot_start}-${row.slot_end} on ${row.date}`);
       onSaved();
@@ -333,6 +339,25 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Total Rooms Available</label>
             <input type="number" min={row.booked_rooms} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+          </div>
+          
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <p className="text-xs font-black uppercase tracking-widest text-[#0f3d56]">Hotel Allocation for this date</p>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Name</label>
+              <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="e.g. Haritha Lodge Bhadrachalam"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Physical Address</label>
+              <input type="text" value={hotelAddress} onChange={(e) => setHotelAddress(e.target.value)} placeholder="e.g. Near Ramalayam Temple, Bhadrachalam"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Google Maps Link</label>
+              <input type="text" value={hotelMapUrl} onChange={(e) => setHotelMapUrl(e.target.value)} placeholder="e.g. https://maps.app.goo.gl/..."
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+            </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div>
@@ -973,6 +998,9 @@ function GenerateModal({
     return Object.fromEntries(roomSlots.map((slot) => [`${slot.slot_start}-${slot.slot_end}`, fallback]));
   });
   const [loading, setLoading] = useState(false);
+  const [hotelName, setHotelName] = useState('');
+  const [hotelAddress, setHotelAddress] = useState('');
+  const [hotelMapUrl, setHotelMapUrl] = useState('');
   const hasRoomSlotInputs = mode === 'room' && roomSlots.length > 0;
 
   const handleGenerate = async () => {
@@ -996,6 +1024,9 @@ function GenerateModal({
           to_date: toDate,
           override_total_rooms: capacity,
           slot_capacities,
+          hotel_name: hotelName || undefined,
+          hotel_address: hotelAddress || undefined,
+          hotel_map_url: hotelMapUrl || undefined,
         });
       }
       toast.success(result.message);
@@ -1043,6 +1074,30 @@ function GenerateModal({
               </button>
             )}
           </div>
+
+          {mode === 'room' && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-[#0f3d56] mb-1">Hotel Allocation for these dates</p>
+                <p className="text-[10px] text-slate-400 font-semibold mb-3">Provide the actual hotel name and address for these rooms.</p>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Name</label>
+                <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="e.g. Haritha Lodge Bhadrachalam"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Physical Address</label>
+                <input type="text" value={hotelAddress} onChange={(e) => setHotelAddress(e.target.value)} placeholder="e.g. Near Ramalayam Temple, Bhadrachalam"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Google Maps Link / Embed URL</label>
+                <input type="text" value={hotelMapUrl} onChange={(e) => setHotelMapUrl(e.target.value)} placeholder="e.g. https://maps.app.goo.gl/..."
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+              </div>
+            </div>
+          )}
 
           {hasRoomSlotInputs && (
             <div className="space-y-3">

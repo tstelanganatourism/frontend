@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -74,7 +74,7 @@ export default function ProtectedRoute({
             <div className="relative h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-lg border border-slate-100 ring-4 ring-[#1a6b7a]/5">
               <img
                 src="/apple-touch-icon.png"
-                alt="Telangana Boat Tourism"
+                alt="TS Boat Tourism"
                 className="h-12 w-12 object-contain rounded-xl"
               />
             </div>

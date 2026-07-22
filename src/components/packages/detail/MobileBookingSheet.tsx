@@ -5,7 +5,7 @@ import {
   Sheet, SheetContent, SheetDescription, 
   SheetHeader, SheetTitle, SheetTrigger 
 } from '@/components/ui/sheet';
-import { BookingSidebarV2 } from './BookingSidebarV2';
+import { BookingSidebarV3 } from './BookingSidebarV3';
 import { Sparkles } from 'lucide-react';
 import { useInventoryStore } from '@/stores/inventoryStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -49,9 +49,17 @@ interface MobileBookingSheetProps {
   refreshmentAdultPrice?: number | string | null;
   refreshmentChildPrice?: number | string | null;
   refreshmentStudentPrice?: number | string | null;
+  hasFoodOption?: boolean;
+  foodAdultPrice?: number | string | null;
+  foodChildPrice?: number | string | null;
+  foodStudentPrice?: number | string | null;
   minPassengers?: number;
   isStudentPackage?: boolean;
+  refreshmentsMinPassengers?: number;
   isActive?: boolean;
+  advancePaymentType?: string | null;
+  advancePaymentValue?: number | null;
+  extras?: any[];
 }
 
 export const MobileBookingSheet = ({ 
@@ -66,9 +74,17 @@ export const MobileBookingSheet = ({
   refreshmentAdultPrice,
   refreshmentChildPrice,
   refreshmentStudentPrice,
+  hasFoodOption = false,
+  foodAdultPrice = 0,
+  foodChildPrice = 0,
+  foodStudentPrice = 0,
   minPassengers = 1,
   isStudentPackage = false,
+  refreshmentsMinPassengers = 1,
   isActive = true,
+  advancePaymentType = 'FULL_PAYMENT',
+  advancePaymentValue = 0,
+  extras = [],
 }: MobileBookingSheetProps) => {
   const { publicAvailability, publicLoading } = useInventoryStore();
   const { user } = useAuthStore();
@@ -102,19 +118,19 @@ export const MobileBookingSheet = ({
   }, []);
 
   return (
-    <div className="fixed inset-x-0 bottom-16 z-50 border-t border-[#dfe8e2]/60 bg-white/95 p-3 shadow-[0_-18px_50px_rgba(15,61,86,0.14)] backdrop-blur lg:hidden">
+    <div className="fixed inset-x-0 bottom-16 z-50 border-t border-slate-200 bg-white/95 p-3 shadow-md backdrop-blur lg:hidden">
       <div className="flex items-center justify-between gap-3">
         
         {/* Left Side: Starter pricing */}
         <div className="min-w-0">
-          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 block">Starting from</span>
+          <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Starting from</span>
           <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-[#1a6b7a]">
+            <span className="text-xl font-black text-[#0d6e75]">
               {hasFare ? `₹${positiveStartingPrice.toLocaleString('en-IN')}` : 'Fare updating'}
             </span>
             {hasFare && (
-              <span className="text-[10px] font-bold text-slate-400">
-                {isStudentPackage ? '/ student' : '/ adult'}
+              <span className="text-[9px] font-bold text-slate-400 uppercase">
+                {isStudentPackage ? '/ stud' : '/ adult'}
               </span>
             )}
           </div>
@@ -134,7 +150,7 @@ export const MobileBookingSheet = ({
                   await downloadFileViaFetch(brochurePdfUrl, filename);
                 }
               }}
-              className="text-[10px] font-black text-[#1a6b7a] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
+              className="text-[9px] font-black text-[#0d6e75] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
             >
               📥 Brochure PDF
             </button>
@@ -145,14 +161,14 @@ export const MobileBookingSheet = ({
         {isPackageInactive || !isActive ? (
           <button
             disabled
-            className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-rose-500 px-6 text-xs font-black uppercase tracking-[0.14em] text-white cursor-not-allowed shadow-none"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-rose-600 px-5 text-xs font-black uppercase tracking-wider text-white cursor-not-allowed"
           >
-            {isPackageInactive ? 'Closed' : 'Bookings Suspended'}
+            {isPackageInactive ? 'Closed' : 'Suspended'}
           </button>
         ) : isSuspended ? (
           <button
             disabled
-            className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-rose-500 px-6 text-xs font-black uppercase tracking-[0.14em] text-white cursor-not-allowed shadow-none"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-rose-600 px-5 text-xs font-black uppercase tracking-wider text-white cursor-not-allowed"
           >
             Suspended
           </button>
@@ -161,23 +177,23 @@ export const MobileBookingSheet = ({
             <SheetTrigger asChild>
               <button
                 type="button"
-                className="inline-flex h-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#0f3d56] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md transition-all hover:bg-[#1a6b7a] active:scale-95"
+                className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-[#0d6e75] px-6 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:bg-[#0b5c62] active:scale-95"
               >
                 Book Now
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="!h-[92dvh] flex flex-col rounded-t-[24px] border-t border-[#dfe8e2]/60 bg-white px-0 pb-0 pt-6 overflow-hidden" showCloseButton>
+            <SheetContent side="bottom" className="!h-[92dvh] flex flex-col rounded-t-[20px] border-t border-slate-200 bg-white px-0 pb-0 pt-6 overflow-hidden" showCloseButton>
               <SheetHeader className="mb-4 text-left shrink-0 px-4">
-                <SheetTitle className="text-xl font-black text-[#0f3d56] flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-[#1a6b7a]" />
-                  Configure your ticket
+                <SheetTitle className="text-lg font-black text-[#0d6e75] flex items-center gap-1.5">
+                  <Sparkles className="h-4.5 w-4.5 text-amber-500 fill-amber-500" />
+                  Configure Tickets
                 </SheetTitle>
-                <SheetDescription className="text-xs font-bold text-slate-400">
-                  Official Telangana & Andhra Boat Tourism cruise bookings.
+                <SheetDescription className="text-[10px] font-semibold text-slate-400">
+                  Official Telangana & Andhra Boat Tourism reservation portal.
                 </SheetDescription>
               </SheetHeader>
               <div className="flex-1 overflow-y-auto pb-6 px-4 scrollbar-none">
-                <BookingSidebarV2 
+                <BookingSidebarV3 
                   startingPrice={startingPrice}
                   variants={variants}
                   packageId={packageId}
@@ -189,9 +205,17 @@ export const MobileBookingSheet = ({
                   refreshmentAdultPrice={refreshmentAdultPrice}
                   refreshmentChildPrice={refreshmentChildPrice}
                   refreshmentStudentPrice={refreshmentStudentPrice}
+                  hasFoodOption={hasFoodOption}
+                  foodAdultPrice={foodAdultPrice}
+                  foodChildPrice={foodChildPrice}
+                  foodStudentPrice={foodStudentPrice}
                   minPassengers={minPassengers}
                   isStudentPackage={isStudentPackage}
+                  refreshmentsMinPassengers={refreshmentsMinPassengers}
                   isActive={isActive}
+                  advancePaymentType={advancePaymentType}
+                  advancePaymentValue={advancePaymentValue}
+                  extras={extras}
                 />
               </div>
             </SheetContent>

@@ -1,11 +1,33 @@
-'use client';
-
 import React from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
+import Link from 'next/link';
+import {
+  ArrowUpRight,
+  Clock,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Star,
+} from 'lucide-react';
 
-const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.6249326203515!2d80.8842764!3d17.6679145!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9430aa06acf%3A0xc16caef81e0d09c9!2sTelangana%20Boat%20Tourism!5e0!3m2!1sen!2sin!4v1781946656779!5m2!1sen!2sin';
+const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d7603.244137815757!2d80.884021!3d17.66805!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1784614051800!5m2!1sen!2sin';
+
+const exploreLinks = [
+  { label: 'Packages', href: '/packages' },
+  { label: 'Brochures', href: '/brochures' },
+  { label: 'Gallery', href: '/gallery' },
+  { label: 'About', href: '/about' },
+  { label: 'Contact', href: '/contact' },
+];
+
+const policyLinks = [
+  { label: 'FAQs', href: '/faq' },
+  { label: 'Terms', href: '/terms' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Refunds', href: '/refund' },
+  { label: 'Cancellations', href: '/cancellation' },
+];
 
 const socialLinks = [
   { label: 'Facebook', href: '#', icon: <FacebookIcon /> },
@@ -19,40 +41,43 @@ interface PublicFooterProps {
 }
 
 export default function PublicFooter({ isDashboard = false }: PublicFooterProps) {
-  const [mapLoaded, setMapLoaded] = React.useState(false);
   return (
-    <footer className={`relative overflow-hidden border-t border-white/10 bg-[var(--color-brand-river)] text-white ${isDashboard ? 'pb-[calc(10rem_+_env(safe-area-inset-bottom))]' : 'pb-[calc(7rem_+_env(safe-area-inset-bottom))]'} pt-6 sm:pt-7 md:pb-5`}>
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
-      <div className="w-full px-4 sm:px-6 nav:px-8 xl:px-10">
-        <div className="grid min-w-0 grid-cols-1 gap-6 footer-col:grid-cols-[1fr_0.9fr] footer-nav:grid-cols-[0.9fr_0.72fr_1.1fr_1.15fr] footer-nav:items-start footer-nav:gap-7 footer-max:grid-cols-[0.9fr_0.7fr_1.08fr_1.22fr] footer-max:gap-8">
+    <footer
+      className={`relative overflow-hidden border-t border-[#1598a1]/20 bg-[#06232e] text-white ${
+        isDashboard
+          ? 'pb-[calc(7rem_+_env(safe-area-inset-bottom))] md:pb-8'
+          : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-8'
+      } min-h-[100svh] pt-8 md:min-h-[48svh] md:pt-10`}
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#8eecee]/60 to-transparent" />
+      <div className="mx-auto flex min-h-[calc(100svh-8rem)] w-full max-w-[1800px] flex-col justify-between px-4 sm:px-6 md:min-h-0 lg:px-8 xl:px-12">
+        <div className="grid gap-4 lg:grid-cols-[minmax(14rem,0.68fr)_minmax(17rem,0.82fr)_minmax(22rem,1fr)_minmax(32rem,1.55fr)]">
+          <section className="rounded-md border border-white/10 bg-white/[0.04] p-4">
+            <Link href="/" className="flex min-w-0 items-center gap-3">
+              <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full border border-white/15 bg-white">
+                <Image
+                  src="/ts-boat-tourism-logo.png"
+                  alt="TS Boat Tourism"
+                  width={46}
+                  height={46}
+                  className="h-11 w-11 rounded-full object-cover"
+                />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-lg font-black tracking-tight">
+                  TS Boat Tourism
+                </span>
+                <span className="mt-0.5 block text-[10px] font-black uppercase tracking-[0.18em] text-[#8eecee]">
+                  Official Booking Portal
+                </span>
+              </span>
+            </Link>
 
-          {/* Brand Info */}
-          <div className="min-w-0 rounded-xl border border-white/0 p-0 footer-nav:pr-4">
-            <div className="flex flex-col gap-3.5">
-              <Link href="/" className="group flex min-w-0 items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white p-1 shadow-sm ring-1 ring-white/40">
-                  <Image src="/aptdc-logo.svg" alt="Andhra Pradesh Tourism" width={44} height={44} className="h-full w-full object-contain" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">Andhra Pradesh</div>
-                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white transition-colors group-hover:text-[var(--color-brand-sand)]">Registered Tour & Travel Agency</div>
-                </div>
-              </Link>
-              
-              <div className="group flex min-w-0 items-center gap-3 transition-transform duration-200 hover:scale-[1.02]">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white p-1 shadow-sm ring-1 ring-white/40">
-                  <Image src="/telangana-tourism-logo.svg" alt="Telangana Tourism" width={44} height={44} className="h-full w-full object-contain" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">Telangana</div>
-                  <div className="truncate text-[13px] font-extrabold tracking-tight text-white transition-colors">Tourism Booking Services</div>
-                </div>
-              </div>
-            </div>
-            <p className="mt-4 max-w-sm text-[12px] leading-relaxed text-white/72">
-              Experience the breathtaking beauty of the Godavari river and majestic hills. Your premium journey starts here.
+            <p className="mt-3 text-xs font-semibold leading-6 text-white/64">
+              Papikondalu cruises, Bhadrachalam temple trips and guided Godavari booking support.
             </p>
-            <div className="mt-4 flex gap-2">
+
+            <div className="mt-4 flex flex-wrap gap-2">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
@@ -60,128 +85,137 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                   aria-label={social.label}
                   target={social.href.startsWith('http') ? '_blank' : undefined}
                   rel={social.href.startsWith('http') ? 'noreferrer' : undefined}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-all hover:-translate-y-0.5 hover:bg-white hover:text-[var(--color-brand-river)]"
+                  className="grid h-9 w-9 place-items-center rounded-md border border-white/10 bg-white/[0.05] text-white transition-all hover:-translate-y-0.5 hover:border-[#8eecee]/50 hover:bg-[#1598a1]"
                 >
                   {social.icon}
                 </a>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Links */}
-          <div className="grid min-w-0 grid-cols-2 gap-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 footer-col:grid-cols-1 footer-nav:grid-cols-2">
-            <div className="min-w-0">
-              <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Quick Links</h3>
-              <ul className="space-y-2.5">
-                <li><Link href="/about" className="text-[12px] text-slate-200 transition-colors hover:text-white">About Us</Link></li>
-                <li><Link href="/boat-rides" className="text-[12px] text-slate-200 transition-colors hover:text-white">Boat Rides</Link></li>
-                <li><Link href="/sightseeing" className="text-[12px] text-slate-200 transition-colors hover:text-white">Sightseeing</Link></li>
-                <li><Link href="/stays" className="text-[12px] text-slate-200 transition-colors hover:text-white">Accommodations</Link></li>
-                <li><Link href="/contact" className="text-[12px] text-slate-200 transition-colors hover:text-white font-semibold">Contact Us</Link></li>
-                <li>
-                  <a 
-                    href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="text-[12px] text-amber-400 font-bold transition-colors hover:text-amber-300"
+          <section className="grid grid-cols-2 gap-4 rounded-md border border-white/10 bg-white/[0.04] p-4">
+            <div>
+              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8eecee]">
+                Explore
+              </h3>
+              <nav className="mt-3 grid gap-2.5">
+                {exploreLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-xs font-bold text-white/72 transition-colors hover:text-white"
                   >
-                    Write a Review ★★★★★
-                  </a>
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+              <a
+                href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#1598a1] px-3 py-2 text-[11px] font-black text-white transition-colors hover:bg-[#117f87]"
+              >
+                <Star className="h-3.5 w-3.5 fill-current" />
+                Write Review
+              </a>
+            </div>
+
+            <div>
+              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8eecee]">
+                Policies
+              </h3>
+              <nav className="mt-3 grid gap-2.5">
+                {policyLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-xs font-bold text-white/72 transition-colors hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </section>
+
+          <section className="rounded-md border border-white/10 bg-white/[0.04] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8eecee]">
+                  Contact
+                </h3>
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-[#8eecee]/20 bg-[#1598a1]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#8eecee]">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Authorized
+                </span>
+              </div>
+
+              <ul className="mt-4 grid gap-2.5">
+                <li className="flex gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1598a1]/15 text-[#8eecee]">
+                    <MapPin className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs font-semibold leading-5 text-white/72">
+                    Om Shanti satram, Kalyana mandapam road, near SBI ATM, Bhadrachalam, Telangana 507111.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1598a1]/15 text-[#8eecee]">
+                    <Phone className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs font-black leading-5 text-white">
+                    +91 95420 69573, +91 98498 48982
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1598a1]/15 text-[#8eecee]">
+                    <Clock className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs font-semibold leading-5 text-white/72">
+                    Reporting: 7:00 AM to 7:30 AM
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1598a1]/15 text-[#8eecee]">
+                    <Mail className="h-4 w-4" />
+                  </span>
+                  <span className="break-all text-xs font-semibold leading-5 text-white/72">
+                    bookings@tstelanganatourism.com
+                  </span>
                 </li>
               </ul>
-            </div>
+          </section>
 
-            <div className="min-w-0">
-              <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Support & Policies</h3>
-              <ul className="space-y-2.5">
-                <li><Link href="/faq" className="text-[12px] text-slate-200 transition-colors hover:text-white">FAQs</Link></li>
-                <li><Link href="/terms" className="text-[12px] text-slate-200 transition-colors hover:text-white">Terms of Service</Link></li>
-                <li><Link href="/privacy" className="text-[12px] text-slate-200 transition-colors hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/refund" className="text-[12px] text-slate-200 transition-colors hover:text-white">Refund Policy</Link></li>
-                <li><Link href="/cancellation" className="text-[12px] text-slate-200 transition-colors hover:text-white">Cancellation Policy</Link></li>
-                <li><Link href="/shipping-delivery" className="text-[12px] text-slate-200 transition-colors hover:text-white">Fulfillment Policy</Link></li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Contact */}
-          <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 footer-col:col-span-2 footer-nav:col-span-1">
-            <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Contact Us</h3>
-            <ul className="grid gap-2.5 sm:grid-cols-2 footer-nav:grid-cols-1">
-              <li className="flex items-start gap-2.5">
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><MapPin className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 text-[12px] leading-relaxed text-slate-100 font-medium">DR NO:4-1-78/1, KALYANA MANDAPAM ROAD OPP SBI ATM, BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST), TELANGANA-507111.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Phone className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 text-[12px] leading-relaxed text-slate-100">+91 95420 69573, +91 984 984 89 82, +91 984 984 89 83, +91 984 984 89 38</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Clock className="h-3.5 w-3.5" /></span>
-                <span className="text-[12px] leading-relaxed text-slate-100">Reporting time: 7:00 AM to 7:30 AM</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><ShieldCheck className="h-3.5 w-3.5" /></span>
-                <span className="text-[12px] leading-relaxed text-slate-100">Carry Aadhaar Xerox for all passengers and submit it at the boat point.</span>
-              </li>
-              <li className="flex items-start gap-2.5 sm:col-span-2">
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.07] text-[var(--color-brand-teal)] ring-1 ring-white/10"><Mail className="h-3.5 w-3.5" /></span>
-                <span className="min-w-0 break-words text-[12px] leading-relaxed text-slate-100">bookings@tsboattourism.org</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Map */}
-          <div className="min-w-0 overflow-hidden rounded-xl border border-white/12 bg-white/[0.04] p-2 shadow-[0_14px_40px_rgba(0,0,0,0.12)] footer-col:col-span-2 footer-nav:col-span-1">
-            <div className="mb-2 flex items-center justify-between gap-3 px-1.5">
-              <h3 className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-sand)]">Telangana Boat Tourism</h3>
+          <section className="overflow-hidden rounded-md border border-white/10 bg-white/[0.04] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
+            <div className="mb-2 flex items-center justify-between gap-2 px-1">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8eecee]">
+                Official Map
+              </h3>
               <a
                 href="https://www.google.com/maps/place/Telangana+Boat+Tourism/@17.6679145,80.8842764,15z"
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 text-[11px] font-bold text-amber-400 transition-colors hover:text-white"
+                className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/72 hover:text-white"
               >
                 Open Maps
+                <ArrowUpRight className="h-3 w-3" />
               </a>
             </div>
-            <div 
-              className="group/map relative h-40 overflow-hidden rounded-lg border border-white/15 bg-slate-900/60 sm:h-48 lg:h-56 2xl:h-64 cursor-pointer"
-              onMouseEnter={() => setMapLoaded(true)}
-              onClick={() => setMapLoaded(true)}
-            >
-              {mapLoaded ? (
-                <iframe
-                  title="Telangana Boat Tourism map"
-                  src={MAP_EMBED_URL}
-                  className="h-full w-full"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-slate-950/40 transition-colors group-hover/map:bg-slate-950/60">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400/20 text-amber-300 ring-4 ring-amber-400/10 transition-transform group-hover/map:scale-110">
-                    <MapPin className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-xs font-black text-white">Click or Hover to Load Map</p>
-                  <p className="mt-1 text-[9px] text-slate-300">Saves data & speeds up page load</p>
-                </div>
-              )}
-            </div>
-          </div>
-
+            <iframe
+              title="TS Boat Tourism map"
+              src={MAP_EMBED_URL}
+              className="h-[15.5rem] w-full rounded-md bg-white md:h-[17.5rem] lg:h-full lg:min-h-[18rem]"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </section>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-3 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-4 text-center sm:flex-row sm:pr-20 sm:text-left md:pr-24">
-          <p suppressHydrationWarning className="text-center text-[10px] text-slate-100 sm:text-left">
-            © {new Date().getFullYear()} Telangana Boat Tourism. All rights reserved.
-            <span className="block mt-1 text-slate-300">Telangana Boat Tourism is a registered business operated by NALLA SAIBABU and NALLA SRILATHA.</span>
+        <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs font-semibold text-white/48 md:flex-row md:items-center md:justify-between">
+          <p suppressHydrationWarning>
+            © {new Date().getFullYear()} TS Boat Tourism. All rights reserved.
           </p>
-          {/* <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
-            Made with <Heart className="mx-0.5 h-3 w-3 fill-red-500 text-red-500" /> by <a href="https://wa.me/918886154275" target="_blank" rel="noreferrer" className="font-bold text-white transition-colors hover:text-[var(--color-brand-teal)]">Satvik</a>
-          </div> */}
         </div>
       </div>
     </footer>
@@ -201,7 +235,11 @@ function InstagramIcon() {
     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
       <defs>
         <linearGradient id="inst-footer" x1="2" x2="22" y1="22" y2="2">
-          <stop offset="0" stopColor="#feda75" /><stop offset="0.28" stopColor="#fa7e1e" /><stop offset="0.55" stopColor="#d62976" /><stop offset="0.78" stopColor="#962fbf" /><stop offset="1" stopColor="#4f5bd5" />
+          <stop offset="0" stopColor="#feda75" />
+          <stop offset="0.28" stopColor="#fa7e1e" />
+          <stop offset="0.55" stopColor="#d62976" />
+          <stop offset="0.78" stopColor="#962fbf" />
+          <stop offset="1" stopColor="#4f5bd5" />
         </linearGradient>
       </defs>
       <rect width="20" height="20" x="2" y="2" rx="5" fill="url(#inst-footer)" />

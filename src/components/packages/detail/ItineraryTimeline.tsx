@@ -151,23 +151,23 @@ export const ItineraryTimeline = (props: ItineraryTimelineProps) => {
   const standardSchedule = getStandardSchedule(props);
 
   return (
-    <section id="itinerary" className="scroll-mt-[170px]">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 bg-slate-50 p-5 md:p-7">
-          <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#1a6b7a]">
+    <section id="itinerary" className="scroll-mt-[135px] sm:scroll-mt-[160px]">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-gradient-to-r from-white via-slate-50 to-amber-500/5 p-5 md:p-7">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-[#0d6e75]">
             <Route className="h-3.5 w-3.5" />
-            Day-by-Day Itinerary
+            Day-by-Day Journey Flow
           </span>
-          <h2 className="mt-2 text-3xl font-black tracking-tight text-[#0f3d56] md:text-4xl">
-            Tour Schedule
+          <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+            Tour Schedule & Plan
           </h2>
-          <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-600">
-            Day-wise journey flow with practical timings. Final timing can change slightly based on water level, traffic, and operator instructions.
+          <p className="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-slate-500">
+            Day-wise schedule with practical boarding timings. River journey times can vary slightly depending on water level.
           </p>
         </div>
 
         {days && days.length > 0 ? (
-        <div className="space-y-5 p-5 md:p-7">
+        <div className="space-y-6 p-5 md:p-7">
           {days.map((day) => {
             const steps = parseItineraryLines(day.description);
             const fallbackLines = day.description
@@ -178,22 +178,22 @@ export const ItineraryTimeline = (props: ItineraryTimelineProps) => {
               : [];
 
             return (
-              <div key={day.id} className="overflow-hidden rounded-lg border border-slate-200">
-                <h3 className="border-b border-slate-200 bg-[#0f3d56] px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-white">
-                  Day {day.day_number} {day.title && `- ${day.title}`}
+              <div key={day.id} className="overflow-hidden rounded-xl border border-slate-200">
+                <h3 className="bg-[#0d6e75] px-4 py-3 text-xs font-black uppercase tracking-widest text-[#e5dac5]">
+                  Day {day.day_number} {day.title && `· ${day.title}`}
                 </h3>
 
                 {steps.length > 0 ? (
                   <div className="divide-y divide-slate-100 bg-white">
                     {steps.map((step, idx) => (
-                      <div key={idx} className="grid gap-1 px-4 py-3 text-sm transition hover:bg-[#f7fbfb] sm:grid-cols-[110px_1fr] sm:gap-4">
+                      <div key={idx} className="grid gap-1 px-4 py-3 text-xs transition hover:bg-slate-50/50 sm:grid-cols-[100px_1fr] sm:gap-4">
                         {step.isTimeStep ? (
                           <>
-                            <span className="whitespace-nowrap font-black text-[#0f3d56]">{step.time}</span>
-                            <span className="font-medium leading-relaxed text-slate-700">{step.text}</span>
+                            <span className="whitespace-nowrap font-black text-[#0d6e75]">{step.time}</span>
+                            <span className="font-semibold leading-relaxed text-slate-600">{step.text}</span>
                           </>
                         ) : (
-                          <span className="font-medium leading-relaxed text-slate-700 sm:col-span-2">{step.text}</span>
+                          <span className="font-semibold leading-relaxed text-slate-600 sm:col-span-2">{step.text}</span>
                         )}
                       </div>
                     ))}
@@ -201,14 +201,14 @@ export const ItineraryTimeline = (props: ItineraryTimelineProps) => {
                 ) : fallbackLines.length ? (
                   <div className="divide-y divide-slate-100 bg-white">
                     {fallbackLines.map((line, idx) => (
-                      <div key={idx} className="grid gap-1 px-4 py-3 text-sm transition hover:bg-[#f7fbfb] sm:grid-cols-[110px_1fr] sm:gap-4">
+                      <div key={idx} className="grid gap-1 px-4 py-3 text-xs transition hover:bg-slate-50/50 sm:grid-cols-[100px_1fr] sm:gap-4">
                         <span className="font-black text-slate-400">Step {idx + 1}</span>
-                        <span className="font-medium leading-relaxed text-slate-700">{line}</span>
+                        <span className="font-semibold leading-relaxed text-slate-600">{line}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 py-4 text-sm font-medium leading-relaxed text-amber-800">
+                  <p className="px-4 py-4 text-xs font-bold leading-relaxed text-amber-700">
                     Schedule details are not published for this day yet.
                   </p>
                 )}
@@ -217,20 +217,20 @@ export const ItineraryTimeline = (props: ItineraryTimelineProps) => {
           })}
         </div>
         ) : (
-          <div className="space-y-5 p-5 md:p-7">
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-900">
-              Operator-standard schedule shown below. Exact reporting point and final timings are confirmed before travel.
+          <div className="space-y-6 p-5 md:p-7">
+            <div className="rounded-xl border border-teal-100 bg-teal-500/5 px-4 py-3 text-xs font-bold leading-relaxed text-[#0d6e75]">
+              Standard operator route details shown below. Check-in reporting point and final timings are confirmed post-reservation.
             </div>
             {standardSchedule.map((day) => (
-              <div key={day.day} className="overflow-hidden rounded-lg border border-slate-200">
-                <h3 className="border-b border-slate-200 bg-[#0f3d56] px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-white">
-                  {day.day} - {day.title}
+              <div key={day.day} className="overflow-hidden rounded-xl border border-slate-200">
+                <h3 className="bg-[#0d6e75] px-4 py-3 text-xs font-black uppercase tracking-widest text-[#e5dac5]">
+                  {day.day} · {day.title}
                 </h3>
                 <div className="divide-y divide-slate-100 bg-white">
                   {day.steps.map(([time, activity]) => (
-                    <div key={`${day.day}-${time}-${activity}`} className="grid gap-1 px-4 py-3 text-sm transition hover:bg-[#f7fbfb] sm:grid-cols-[110px_1fr] sm:gap-4">
-                      <span className="whitespace-nowrap font-black text-[#0f3d56]">{time}</span>
-                      <span className="font-medium leading-relaxed text-slate-700">{activity}</span>
+                    <div key={`${day.day}-${time}-${activity}`} className="grid gap-1 px-4 py-3 text-xs transition hover:bg-slate-50/50 sm:grid-cols-[100px_1fr] sm:gap-4">
+                      <span className="whitespace-nowrap font-black text-[#0d6e75]">{time}</span>
+                      <span className="font-semibold leading-relaxed text-slate-600">{activity}</span>
                     </div>
                   ))}
                 </div>

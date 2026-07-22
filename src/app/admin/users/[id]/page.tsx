@@ -248,7 +248,7 @@ export default function UserDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/70">
-                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Booking ID</th>
+                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">PNR NUMBER</th>
                     <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Destination / Variant</th>
                     <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Travel Date</th>
                     <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Total Amount</th>

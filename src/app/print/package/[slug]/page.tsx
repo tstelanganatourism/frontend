@@ -3,33 +3,48 @@ import { PrintButton } from './PrintButton';
 
 export const dynamic = 'force-dynamic';
 
-// ─── Company constants (fixed for every brochure) ──────────────────────────
 const CO = {
   bannerUrl: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1780902910/8f1dd045-5038-4ae4-9b7c-1f8ba27c897f_uftvpr.png',
-  addr1: 'DR NO:4-1-78/1,',
-  addr2: 'KALYANA MANDAPAM ROAD OPP SBI ATM,',
-  addr3: 'BHADRACHALAM, BHADRADRI KOTHAGUDEM (DIST),',
-  addr4: 'TELANGANA-507111',
-  phones: ['+91 95420 69573', '+91 984 984 89 82', '+91 984 984 89 83', '+91 984 984 89 38'],
-  website: 'www.tsboattourism.org',
+  addr1: 'Om Shanti Satram, Kalyana Mandapam Road,',
+  addr2: 'Near SBI ATM, Bhadrachalam,',
+  addr3: 'Telangana 507111',
+  phones: ['+91 95420 69573', '+91 98498 48982', '+91 98498 48983'],
+  email: 'bookings@tstelanganatourism.com',
+  website: 'www.tstelanganatourism.com',
 };
 
-// ─── Types ─────────────────────────────────────────────────────────────────
 type Itinerary = { day_number: number; title: string; description?: string | null; timing?: string | null; duration_at_stop?: string | null; meal_included: boolean; sort_order: number };
 type Inclusion = { label: string };
 type Exclusion = { label: string };
 type Policy = { type: string; title: string; description: string };
 type BoardingPt = { title: string; address?: string | null; landmark?: string | null; departure_time?: string | null; contact_number?: string | null; pickup_instructions?: string | null };
 type Gallery = { image_url: string; alt_text?: string | null };
-type Variant = { title: string; adult_price: number; child_price: number; transport_info?: string | null };
-type TransportOption = { id: number; type: string; title: string; capacity?: number | null; adult_price?: number | null; child_price?: number | null; weekend_adult_price?: number | null; weekend_child_price?: number | null; fixed_price?: number | null; weekend_fixed_price?: number | null; };
+type Variant = { title: string; adult_price: number; child_price: number; weekend_adult_price?: number | null; weekend_child_price?: number | null; student_price?: number | null; weekend_student_price?: number | null };
+type TransportOption = { id: number; type: string; title: string; capacity?: number | null; adult_price?: number | null; child_price?: number | null; weekend_adult_price?: number | null; weekend_child_price?: number | null; fixed_price?: number | null; weekend_fixed_price?: number | null };
+type MealItem = { id: number; meal_type: string; name: string; serving_time?: string | null; description?: string | null; cost_per_person: number; is_vegetarian: boolean; day_number?: number | null };
+type ExtraItem = { id: number; title: string; description?: string | null; adult_price?: number | null; child_price?: number | null; student_price?: number | null; min_passengers: number };
 
 interface Pkg {
   title: string;
   type: string;
   duration?: string | null;
   region?: string | null;
+  place?: string | null;
+  description?: string | null;
   cover_image_url?: string | null;
+  min_passengers?: number;
+  is_student_package?: boolean;
+  has_transport?: boolean;
+  transport_options?: TransportOption[];
+  has_refreshments?: boolean;
+  refreshment_adult_price?: number | null;
+  refreshment_child_price?: number | null;
+  refreshment_student_price?: number | null;
+  refreshments_min_passengers?: number;
+  has_food_option?: boolean;
+  food_adult_price?: number | null;
+  food_child_price?: number | null;
+  food_student_price?: number | null;
   itinerary: Itinerary[];
   inclusions: Inclusion[];
   exclusions: Exclusion[];
@@ -37,14 +52,10 @@ interface Pkg {
   boarding_points: BoardingPt[];
   gallery: Gallery[];
   variants: Variant[];
-  has_transport?: boolean;
-  transport_options?: TransportOption[];
-  has_refreshments?: boolean;
-  refreshment_adult_price?: number | null;
-  refreshment_child_price?: number | null;
+  meals?: MealItem[];
+  extras?: ExtraItem[];
 }
 
-// ─── Data fetch ────────────────────────────────────────────────────────────
 async function getPackage(slug: string): Promise<Pkg | null> {
   try {
     const backendUrl = process.env.BACKEND_URL ?? 'http://127.0.0.1:8000';
@@ -56,11 +67,10 @@ async function getPackage(slug: string): Promise<Pkg | null> {
   }
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
 function deriveDuration(itinerary: Itinerary[]): string {
   const maxDay = itinerary.length ? Math.max(...itinerary.map(i => i.day_number)) : 0;
-  if (maxDay === 0) return '—';
-  if (maxDay === 1) return '1 Day';
+  if (maxDay === 0) return 'Custom Tour';
+  if (maxDay === 1) return '1 Day Tour';
   return `${maxDay} Days / ${maxDay - 1} Night${maxDay - 1 > 1 ? 's' : ''}`;
 }
 
@@ -74,448 +84,425 @@ function groupByDay(itinerary: Itinerary[]): Map<number, Itinerary[]> {
   return map;
 }
 
-function typeLabel(type: string) {
-  const map: Record<string, string> = { TOUR: 'Tour Package', TRIP: 'Day Trip', CRUISE: 'River Cruise', SIGHTSEEING: 'Sightseeing' };
-  return map[type] ?? type;
+function formatCurrency(val?: number | null) {
+  if (val === undefined || val === null || isNaN(val)) return '—';
+  return `₹${Number(val).toLocaleString('en-IN')}`;
 }
 
-function hasVal(v?: string | null) { return v && v.trim().length > 0; }
-
-// ─── Main page ─────────────────────────────────────────────────────────────
 export default async function BrochurePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const pkg = await getPackage(slug);
   if (!pkg) notFound();
 
-  const byDay = groupByDay(pkg.itinerary);
-  const duration = hasVal(pkg.duration) ? pkg.duration! : deriveDuration(pkg.itinerary);
-  const primary = pkg.boarding_points[0];
-  const variantsList = pkg.variants || [];
-  const transportOptions: string[] = [];
-  variantsList.forEach(v => {
-    const titleLower = v.title.toLowerCase();
-    if (titleLower.includes('non-a/c') || titleLower.includes('non-ac') || titleLower.includes('shared non-a/c')) {
-      if (!transportOptions.includes('Shared Non-A/C')) transportOptions.push('Shared Non-A/C');
-    } else if (titleLower.includes('a/c') || titleLower.includes(' ac ') || titleLower.includes('shared a/c') || titleLower.includes('shared ac')) {
-      if (!transportOptions.includes('Shared A/C')) transportOptions.push('Shared A/C');
-    } else if (titleLower.includes('car') || titleLower.includes('cab') || titleLower.includes('private') || titleLower.includes('separate')) {
-      if (!transportOptions.includes('Separate Vehicle')) transportOptions.push('Separate Vehicle');
-    }
-  });
-
-  let transport = '';
-  if (transportOptions.length > 0) {
-    transport = transportOptions.join(' / ');
-  } else {
-    const firstActive = variantsList[0];
-    if (firstActive) {
-      const infoLower = (firstActive.transport_info || '').toLowerCase();
-      if (infoLower.includes('no transport') || firstActive.title.toLowerCase().includes('no transport')) {
-        transport = 'No transport included';
-      } else {
-        transport = firstActive.title;
-      }
-    } else {
-      transport = 'No transport specified';
-    }
-  }
-  const galleryImgs = pkg.gallery.slice(0, 3);
-
-  // Has any itinerary item a timing value?
-  const hasAnyTiming = pkg.itinerary.some(i => hasVal(i.timing));
-  const hasAnyDuration = pkg.itinerary.some(i => hasVal(i.duration_at_stop));
+  const byDay = groupByDay(pkg.itinerary || []);
+  const durationText = pkg.duration?.trim() || deriveDuration(pkg.itinerary || []);
+  const galleryImgs = (pkg.gallery || []).slice(0, 4);
 
   const CSS = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: A4 portrait; margin: 0; }
     html, body {
-      background: #e8e8e8;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 9pt; color: #1a1a1a;
+      background: #0f172a;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 8.5pt; color: #1e293b;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    /* Screen: center the A4 column */
-    .page {
+    .brochure-container {
       width: 210mm;
-      min-height: 297mm;
-      max-width: 210mm;
       margin: 0 auto;
-      background: #fff;
-      padding: 0 0 6mm 0;
-      overflow: hidden;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+      background: #f8fafc;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
-    /* Print: full bleed */
     @media print {
       html, body { background: #fff; }
-      .page { box-shadow: none; margin: 0; width: 210mm; }
+      .brochure-container { box-shadow: none; width: 210mm; }
       .no-print { display: none !important; }
     }
-    /* Screen-only print button */
     .no-print {
       display: flex; justify-content: flex-end;
-      padding: 4mm 7mm 2mm;
-      background: #e8e8e8;
-      width: 210mm; max-width: 210mm; margin: 0 auto;
+      padding: 12px 24px; background: #0f172a;
+      width: 210mm; margin: 0 auto;
     }
-    .print-btn {
-      background: #0d2f5e; color: #fff; border: none; cursor: pointer;
-      padding: 2.5mm 6mm; border-radius: 4px; font-size: 8.5pt; font-weight: 700;
-      display: flex; align-items: center; gap: 2mm;
+    .banner-img { width: 100%; display: block; height: auto; }
+    
+    .hero-header {
+      background: linear-gradient(135deg, #0f3d56 0%, #1e5878 100%);
+      color: #fff;
+      padding: 16px 24px;
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 4px solid #5ac4d7;
     }
-    .print-btn:hover { background: #1a4a80; }
-
-    /* ── BANNER HEADER ── */
-    .banner { width: 100%; display: block; }
-
-    /* ── TITLE STRIP below banner ── */
-    .title-strip {
-      background: #fff;
-      border: 1.5px solid #0d2f5e;
-      border-top: none;
-      padding: 4mm 6mm;
-      margin-bottom: 3mm;
+    .hero-title {
+      font-size: 17pt;
+      font-weight: 800;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
     }
-    .title-strip h1 {
-      font-size: 18pt; font-weight: 700;
-      color: #0d2f5e; text-transform: uppercase;
-      line-height: 1.1;
+    .hero-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
     }
-    .title-meta {
-      margin-top: 1.5mm;
-      font-size: 8pt; color: #555;
-      display: flex; gap: 5mm; flex-wrap: wrap;
+    .badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #e0f2fe;
+      font-size: 7.5pt;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
     }
-    .title-meta span { display: flex; align-items: center; gap: 1.5mm; }
+    .badge-accent {
+      background: #5ac4d7;
+      color: #0f3d56;
+      border: none;
+    }
+    
+    .section-title {
+      font-size: 9pt;
+      font-weight: 800;
+      color: #0f3d56;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 6px 12px;
+      background: #e2e8f0;
+      border-left: 4px solid #5ac4d7;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-    /* ── SECTION HEADER ── */
-    .sh { background: #0d2f5e; color: #fff; font-weight: 700; font-size: 8.5pt; letter-spacing: .04em; padding: 2mm 4mm; text-align: center; text-transform: uppercase; }
+    .content-padding { padding: 14px 20px; }
 
-    /* ── OVERVIEW ── */
-    .ov { border: 1px solid #b8c8d8; margin: 0 7mm 3mm; }
-    .ov-grid { display: grid; grid-template-columns: repeat(3,1fr); }
-    .ov-cell { padding: 2.5mm 3mm; border-right: 1px solid #b8c8d8; border-top: 1px solid #b8c8d8; }
-    .ov-cell:nth-child(3n) { border-right: none; }
-    .ov-label { font-size: 7pt; color: #555; }
-    .ov-val { font-size: 8.5pt; font-weight: 700; color: #0d2f5e; margin-top: .5mm; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
-    /* ── MID GRID ── */
-    .mid { display: grid; grid-template-columns: 1.55fr 1fr; gap: 3mm; margin: 0 7mm 3mm; }
-    .tw { border: 1px solid #b8c8d8; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #e8eef4; font-size: 7.5pt; font-weight: 700; color: #0d2f5e; padding: 2mm 2.5mm; border-bottom: 1px solid #b8c8d8; text-align: left; }
-    td { font-size: 7.5pt; padding: 1.8mm 2.5mm; border-bottom: 1px solid #e4ecf2; vertical-align: top; }
-    .day-lbl { font-weight: 700; color: #0d2f5e; }
-    .mb { display: inline-block; background: #e8f5e9; color: #2e7d32; font-size: 6.5pt; font-weight: 700; padding: .3mm 1.5mm; border-radius: 2px; margin-top: .5mm; }
-    .mp { border: 1px solid #b8c8d8; }
-    .mr { padding: 3mm 3.5mm; border-bottom: 1px solid #e4ecf2; display: flex; align-items: flex-start; gap: 2.5mm; }
-    .mi { font-size: 11pt; min-width: 5mm; }
-    .mn { font-weight: 700; font-size: 8pt; color: #0d2f5e; }
-    .md { font-size: 7.5pt; color: #444; margin-top: .5mm; }
+    .card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px;
+    }
 
-    /* ── THREE COL ── */
-    .tc { display: grid; grid-template-columns: repeat(3,1fr); gap: 3mm; margin: 0 7mm 3mm; }
-    .cp { border: 1px solid #b8c8d8; }
-    .li { display: flex; align-items: flex-start; gap: 2mm; padding: 1.5mm 3mm; border-bottom: 1px solid #f0f4f7; font-size: 7.5pt; }
-    .ii { color: #2e7d32; font-size: 9pt; min-width: 4mm; font-weight: 700; }
-    .xi { color: #c62828; font-size: 9pt; min-width: 4mm; font-weight: 700; }
-    .ri { color: #f47920; font-size: 9pt; min-width: 4mm; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+    }
+    .data-table th {
+      background: #0f3d56;
+      color: #ffffff;
+      font-weight: 700;
+      text-align: left;
+      padding: 5px 8px;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+    }
+    .data-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+    }
+    .data-table tr:nth-child(even) td { background: #f8fafc; }
 
-    /* ── INFO ── */
-    .ip { border: 1px solid #b8c8d8; margin: 0 7mm 3mm; }
-    .il { display: flex; align-items: flex-start; gap: 2mm; padding: 1.5mm 3.5mm; border-bottom: 1px solid #f0f4f7; font-size: 7.5pt; }
+    .price-tag { font-weight: 700; color: #059669; }
+    .price-weekend { font-weight: 700; color: #d97706; }
 
-    /* ── GALLERY + RP ── */
-    .bg { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin: 0 7mm 3mm; }
-    .gg { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5mm; padding: 2mm; }
-    .gg img { width: 100%; height: 25mm; object-fit: cover; display: block; }
-    .gph { width: 100%; height: 25mm; background: #dde8f0; display: flex; align-items: center; justify-content: center; font-size: 7pt; color: #8aa; }
-    .rp { border: 1px solid #b8c8d8; }
-    .rr { padding: 2mm 3.5mm; border-bottom: 1px solid #e4ecf2; font-size: 7.5pt; display: flex; gap: 2mm; }
-    .rl { font-weight: 700; color: #0d2f5e; min-width: 24mm; }
+    .itinerary-item {
+      padding: 6px 0;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .itinerary-item:last-child { border-bottom: none; }
+    .itinerary-day { font-weight: 800; color: #0f3d56; font-size: 8.5pt; }
+    .itinerary-time { font-size: 7.5pt; color: #64748b; font-weight: 600; }
+    .itinerary-desc { font-size: 7.5pt; color: #475569; margin-top: 2px; line-height: 1.35; }
 
-    /* ── FOOTER ── */
-    .fw { height: 3mm; background: linear-gradient(90deg,#f47920 0%,#0d2f5e 40%,#009688 100%); margin: 0 7mm; }
-    .ft { background: #0d2f5e; color: #fff; display: grid; grid-template-columns: repeat(4,1fr); margin: 0 7mm; }
-    .fc { padding: 3mm 3.5mm; border-right: 1px solid #1e4a7a; }
-    .fc:last-child { border-right: none; }
-    .ft-t { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 1.5mm; opacity: .8; }
-    .ft-v { font-size: 7.5pt; line-height: 1.6; }
+    .list-item { display: flex; gap: 6px; font-size: 7.5pt; margin-bottom: 4px; color: #334155; }
+    .check-icon { color: #059669; font-weight: bold; }
+    .cross-icon { color: #dc2626; font-weight: bold; }
+
+    .footer {
+      background: #0f3d56;
+      color: #ffffff;
+      padding: 12px 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      border-top: 3px solid #5ac4d7;
+      font-size: 7.5pt;
+    }
+    .footer-heading { font-size: 8pt; font-weight: 800; color: #5ac4d7; margin-bottom: 4px; text-transform: uppercase; }
   `;
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-
       <PrintButton />
 
-      <div className="page">
-
-        {/* ── COMPANY BANNER (full width) ─────────────────────────── */}
+      <div className="brochure-container">
+        {/* Company Header Banner */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={CO.bannerUrl} alt="TSTG Boat Tourism" className="banner" />
+        <img src={CO.bannerUrl} alt="Telangana & AP Tourism Partner" className="banner-img" />
 
-        {/* ── PACKAGE TITLE STRIP ─────────────────────────────────── */}
-        <div className="title-strip" style={{ margin: '0 7mm 3mm' }}>
-          <h1>{pkg.title}</h1>
-          <div className="title-meta">
-            <span>🚢 {typeLabel(pkg.type)}</span>
-            <span>⏱ {duration}</span>
-            {hasVal(primary?.departure_time) && <span>⏰ Reporting: {primary!.departure_time}</span>}
-            {hasVal(primary?.title) && <span>📍 {primary!.title}</span>}
-          </div>
-        </div>
-
-        {/* ── PACKAGE OVERVIEW ─────────────────────────────────────── */}
-        <div className="ov">
-          <div className="sh">Package Overview</div>
-          <div className="ov-grid">
-            <div className="ov-cell"><div className="ov-label">🚢 Package Type</div><div className="ov-val">{typeLabel(pkg.type)}</div></div>
-            <div className="ov-cell"><div className="ov-label">⏱ Duration</div><div className="ov-val">{duration}</div></div>
-            <div className="ov-cell"><div className="ov-label">⭐ Best For</div><div className="ov-val">Families &amp; Groups</div></div>
-            <div className="ov-cell"><div className="ov-label">📍 Reporting Point</div><div className="ov-val">{primary?.title ?? '—'}</div></div>
-            <div className="ov-cell"><div className="ov-label">🚌 Transport Type</div><div className="ov-val">{transport}</div></div>
-            <div className="ov-cell"><div className="ov-label">⏰ Reporting Time</div><div className="ov-val">{primary?.departure_time ?? '—'}</div></div>
-          </div>
-        </div>
-
-        {/* ── FARE & VARIANT PRICING ───────────────────────────────── */}
-        {pkg.variants && pkg.variants.length > 0 && (
-          <div className="ov" style={{ marginTop: '0mm', marginBottom: '3mm' }}>
-            <div className="sh">Fare &amp; Variant Options</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#e8eef4' }}>
-                  <th style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, color: '#0d2f5e', borderBottom: '1px solid #b8c8d8' }}>Fare Option / Transport Variant</th>
-                  <th style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, color: '#0d2f5e', borderBottom: '1px solid #b8c8d8', width: '35mm', textAlign: 'right' }}>Adult Price</th>
-                  <th style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, color: '#0d2f5e', borderBottom: '1px solid #b8c8d8', width: '35mm', textAlign: 'right' }}>Child Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pkg.variants.map((v, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #e4ecf2' }}>
-                    <td style={{ padding: '2mm 3.5mm', fontSize: '7.5pt' }}>
-                      <div style={{ fontWeight: 700, color: '#0d2f5e' }}>{v.title}</div>
-                      {v.transport_info && <div style={{ fontSize: '7pt', color: '#666', marginTop: '0.5mm' }}>{v.transport_info}</div>}
-                    </td>
-                    <td style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, textAlign: 'right', color: '#2e7d32' }}>
-                      ₹{Number(v.adult_price).toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '2mm 3.5mm', fontSize: '7.5pt', fontWeight: 700, textAlign: 'right', color: '#1a6b7a' }}>
-                      ₹{Number(v.child_price).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* ── ITINERARY + MEALS ─────────────────────────────────────── */}
-        <div className="mid">
+        {/* Hero Package Title */}
+        <div className="hero-header">
           <div>
-            <div className="sh">Itinerary (Day Wise)</div>
-            <div className="tw">
-              <table>
+            <h1 className="hero-title">{pkg.title}</h1>
+            <div className="hero-badges">
+              <span className="badge badge-accent">🚢 {pkg.type === 'TRIP' ? 'Day Trip' : 'Tour Package'}</span>
+              <span className="badge">⏱ {durationText}</span>
+              {pkg.place && <span className="badge">📍 {pkg.place}</span>}
+              {pkg.min_passengers && pkg.min_passengers > 1 && (
+                <span className="badge" style={{ background: '#f59e0b', color: '#000' }}>👥 Min {pkg.min_passengers} Passengers</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="content-padding">
+
+          {/* Description */}
+          {pkg.description && (
+            <div className="card" style={{ marginBottom: '12px', background: '#eff6ff', borderColor: '#bfdbfe' }}>
+              <div style={{ fontSize: '8pt', color: '#1e3a8a', lineHeight: '1.4' }}>
+                {pkg.description}
+              </div>
+            </div>
+          )}
+
+          {/* Section 1: Ticket Variants & Transport Pricing */}
+          <div className="section-title">🎫 Package Ticket Fare &amp; Pricing Options</div>
+          <table className="data-table card" style={{ marginBottom: '14px', padding: 0 }}>
+            <thead>
+              <tr>
+                <th>Ticket Category / Variant Name</th>
+                <th>Weekday Adult</th>
+                <th>Weekday Child</th>
+                <th>Weekend Adult</th>
+                <th>Weekend Child</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(pkg.variants || []).map((v, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 700, color: '#0f3d56' }}>{v.title}</td>
+                  <td className="price-tag">{formatCurrency(v.adult_price)}</td>
+                  <td className="price-tag">{formatCurrency(v.child_price)}</td>
+                  <td className="price-weekend">{formatCurrency(v.weekend_adult_price || v.adult_price)}</td>
+                  <td className="price-weekend">{formatCurrency(v.weekend_child_price || v.child_price)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Section 2: Transport & Vehicle Options */}
+          {pkg.has_transport && pkg.transport_options && pkg.transport_options.length > 0 && (
+            <>
+              <div className="section-title">🚐 Pickup &amp; Transport Vehicle Choices</div>
+              <table className="data-table card" style={{ marginBottom: '14px', padding: 0 }}>
                 <thead>
                   <tr>
-                    <th style={{ width: '10mm' }}>Day</th>
-                    {hasAnyTiming && <th style={{ width: '18mm' }}>Time</th>}
-                    <th>Activity / Plan Details</th>
-                    {hasAnyDuration && <th style={{ width: '20mm' }}>Duration</th>}
+                    <th>Vehicle Type / Pickup Service</th>
+                    <th>Type</th>
+                    <th>Capacity</th>
+                    <th>Fare Rate</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {byDay.size === 0
-                    ? <tr><td colSpan={4} style={{ color: '#888', fontStyle: 'italic' }}>No itinerary added yet</td></tr>
-                    : Array.from(byDay.entries()).map(([day, stops]) =>
-                      stops.map((stop, idx) => (
-                        <tr key={`${day}-${idx}`}>
-                          {idx === 0 && (
-                            <td rowSpan={stops.length} className="day-lbl" style={{ verticalAlign: 'middle', borderRight: '1px solid #dde', textAlign: 'center' }}>
-                              Day {day}
-                            </td>
-                          )}
-                          {hasAnyTiming && <td>{hasVal(stop.timing) ? stop.timing : '—'}</td>}
-                          <td style={{ padding: '2.5mm 3.5mm' }}>
-                            <div style={{ fontWeight: 700, color: '#0d2f5e', fontSize: '8pt', marginBottom: '0.5mm' }}>{stop.title}</div>
-                            {hasVal(stop.description) && (
-                              <div style={{ fontSize: '7.5pt', color: '#444', whiteSpace: 'pre-line', lineHeight: '1.4', paddingLeft: '2mm', borderLeft: '2.5px solid #5ac4d7', marginTop: '1.5mm', marginBottom: '1.5mm' }}>
-                                {stop.description}
-                              </div>
-                            )}
-                            {stop.meal_included && <div className="mb">✓ Meal Included</div>}
-                          </td>
-                          {hasAnyDuration && <td>{hasVal(stop.duration_at_stop) ? stop.duration_at_stop : '—'}</td>}
-                        </tr>
-                      ))
-                    )
-                  }
+                  {pkg.transport_options.map((t, i) => (
+                    <tr key={i}>
+                      <td style={{ fontWeight: 700, color: '#0f3d56' }}>{t.title}</td>
+                      <td>{t.type === 'SHARED' ? 'Shared Bus/Cab' : 'Separate Private Cab'}</td>
+                      <td>{t.capacity ? `${t.capacity} Persons` : 'Shared'}</td>
+                      <td className="price-tag">
+                        {t.type === 'SHARED' 
+                          ? `Adult: ${formatCurrency(t.adult_price)} | Child: ${formatCurrency(t.child_price)}`
+                          : `Fixed Cab Rate: ${formatCurrency(t.fixed_price)}`
+                        }
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
+            </>
+          )}
+
+          {/* Section 3: Meals, Fresh-Up & Add-ons Grid */}
+          <div className="grid-2" style={{ marginBottom: '14px' }}>
+            {/* Meals & Food Experience */}
+            <div>
+              <div className="section-title">🍽 Included Food &amp; Catering Menu</div>
+              <div className="card">
+                {pkg.meals && pkg.meals.length > 0 ? (
+                  pkg.meals.map((m, i) => (
+                    <div key={i} style={{ marginBottom: '6px', paddingBottom: '6px', borderBottom: i < pkg.meals!.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, color: '#0f3d56', fontSize: '8pt' }}>
+                          {m.is_vegetarian ? '🟢' : '🔴'} {m.name}
+                        </span>
+                        <span style={{ fontSize: '7pt', background: '#f1f5f9', padding: '1px 5px', borderRadius: '3px', color: '#475569' }}>
+                          {m.serving_time || m.meal_type}
+                        </span>
+                      </div>
+                      {m.description && <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{m.description}</div>}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '7.5pt', color: '#64748b', fontStyle: 'italic' }}>
+                    Standard Veg/Non-Veg meals provided during Godavari boat cruise.
+                  </div>
+                )}
+                {pkg.has_food_option && (
+                  <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #cbd5e1', fontSize: '7.5pt', color: '#047857', fontWeight: 600 }}>
+                    Optional Food Package: Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Fresh Up & Custom Add-on Extras */}
+            <div>
+              <div className="section-title">🏨 Fresh-Up Rooms &amp; Add-on Extras</div>
+              <div className="card">
+                {pkg.has_refreshments && (
+                  <div style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                    <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '8pt' }}>Fresh-Up Room Stay (Bath &amp; Change)</div>
+                    <div style={{ fontSize: '7.5pt', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
+                      Adult: {formatCurrency(pkg.refreshment_adult_price)} | Child: {formatCurrency(pkg.refreshment_child_price)}
+                    </div>
+                  </div>
+                )}
+
+                {pkg.extras && pkg.extras.length > 0 ? (
+                  pkg.extras.map((e, i) => (
+                    <div key={i} style={{ marginBottom: '6px' }}>
+                      <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '8pt' }}>✨ {e.title}</div>
+                      {e.description && <div style={{ fontSize: '7pt', color: '#64748b' }}>{e.description}</div>}
+                      <div style={{ fontSize: '7.5pt', color: '#d97706', fontWeight: 600 }}>
+                        Adult: {formatCurrency(e.adult_price)} | Child: {formatCurrency(e.child_price)}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '7.5pt', color: '#64748b', fontStyle: 'italic' }}>
+                    No custom add-on extras configured.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div>
-            <div className="sh">Food / Meal Timings</div>
-            <div className="mp">
-              {pkg.itinerary.filter(i => i.meal_included).length === 0 ? (
-                <div className="mr">
-                  <span className="mi">🍽</span>
-                  <div><div className="mn">Meals</div><div className="md">No meals included in this package</div></div>
+          {/* Section 4: Day-by-Day Itinerary */}
+          <div className="section-title">🗺 Tour Itinerary &amp; Daily Schedule</div>
+          <div className="card" style={{ marginBottom: '14px' }}>
+            {Array.from(byDay.entries()).map(([dayNum, items]) => (
+              <div key={dayNum} style={{ marginBottom: '8px' }}>
+                <div style={{ background: '#0f3d56', color: '#fff', fontSize: '8pt', fontWeight: 800, padding: '2px 8px', borderRadius: '3px', display: 'inline-block', marginBottom: '4px' }}>
+                  DAY {dayNum}
                 </div>
-              ) : (
-                pkg.itinerary.filter(i => i.meal_included).map((i, idx) => (
-                  <div className="mr" key={idx}>
-                    <span className="mi">🍽</span>
-                    <div>
-                      <div className="mn">Day {i.day_number} — {i.title}</div>
-                      <div className="md">✓ Meal included{hasVal(i.timing) ? ` · ${i.timing}` : ''}</div>
+                {items.map((item, idx) => (
+                  <div key={idx} className="itinerary-item">
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="itinerary-day">{item.title}</span>
+                      {item.timing && <span className="itinerary-time">⏰ {item.timing}</span>}
                     </div>
+                    {item.description && <div className="itinerary-desc">{item.description}</div>}
                   </div>
-                ))
-              )}
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Section 5: Boarding Points */}
+          {(pkg.boarding_points || []).length > 0 && (
+            <>
+              <div className="section-title">📍 Boarding &amp; Pickup Locations</div>
+              <div className="grid-2" style={{ marginBottom: '14px' }}>
+                {pkg.boarding_points.map((bp, i) => (
+                  <div key={i} className="card">
+                    <div style={{ fontWeight: 800, color: '#0f3d56', fontSize: '8.5pt' }}>{bp.title}</div>
+                    {bp.address && <div style={{ fontSize: '7.5pt', color: '#475569', marginTop: '2px' }}>{bp.address}</div>}
+                    {bp.departure_time && <div style={{ fontSize: '7.5pt', color: '#d97706', fontWeight: 700, marginTop: '4px' }}>⏰ Reporting Time: {bp.departure_time}</div>}
+                    {bp.contact_number && <div style={{ fontSize: '7.5pt', color: '#059669', fontWeight: 700 }}>📞 Contact: {bp.contact_number}</div>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Section 6: Inclusions, Exclusions & Policies */}
+          <div className="grid-3" style={{ marginBottom: '14px' }}>
+            <div>
+              <div className="section-title" style={{ background: '#dcfce7', color: '#166534', borderLeftColor: '#22c55e' }}>✓ Inclusions</div>
+              <div className="card">
+                {(pkg.inclusions || []).map((inc, i) => (
+                  <div key={i} className="list-item"><span className="check-icon">✓</span><span>{inc.label}</span></div>
+                ))}
+              </div>
             </div>
 
-            {pkg.has_refreshments && (
-              <>
-                <div className="sh" style={{ marginTop: '3mm' }}>Fresh-Up / Resting Stop</div>
-                <div className="mp">
-                  <div className="mr" style={{ borderBottom: 'none' }}>
-                    <span className="mi">🏨</span>
-                    <div style={{ width: '100%' }}>
-                      <div className="mn">Hotel Stop for Bath &amp; Rest</div>
-                      <div className="md" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1mm' }}>
-                        <span>Adult: ₹{pkg.refreshment_adult_price?.toLocaleString('en-IN') ?? 0}</span>
-                        <span>Child: ₹{pkg.refreshment_child_price?.toLocaleString('en-IN') ?? 0}</span>
-                      </div>
-                    </div>
+            <div>
+              <div className="section-title" style={{ background: '#fee2e2', color: '#991b1b', borderLeftColor: '#ef4444' }}>✕ Exclusions</div>
+              <div className="card">
+                {(pkg.exclusions || []).map((exc, i) => (
+                  <div key={i} className="list-item"><span className="cross-icon">✕</span><span>{exc.label}</span></div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="section-title">📋 Important Guidelines</div>
+              <div className="card">
+                {(pkg.policies || []).slice(0, 4).map((p, i) => (
+                  <div key={i} style={{ marginBottom: '4px', fontSize: '7pt' }}>
+                    <span style={{ fontWeight: 700, color: '#0f3d56' }}>{p.title}: </span>
+                    <span style={{ color: '#475569' }}>{p.description}</span>
                   </div>
-                </div>
-              </>
-            )}
+                ))}
+              </div>
+            </div>
+          </div>
 
-            {pkg.has_transport && pkg.transport_options && pkg.transport_options.length > 0 && (
-              <>
-                <div className="sh" style={{ marginTop: '3mm' }}>Transport Options</div>
-                <div className="mp">
-                  {pkg.transport_options.map((opt, idx) => (
-                    <div className="mr" key={idx} style={{ borderBottom: idx === pkg.transport_options!.length - 1 ? 'none' : '1px solid #e4ecf2' }}>
-                      <span className="mi">{opt.type === 'SHARED' ? '🚐' : '🚗'}</span>
-                      <div style={{ width: '100%' }}>
-                        <div className="mn">{opt.title}</div>
-                        <div className="md" style={{ marginTop: '1mm', lineHeight: '1.4' }}>
-                          <span style={{ fontWeight: 600, color: '#1a6b7a' }}>{opt.type === 'SHARED' ? 'Shared Vehicle' : 'Separate Vehicle'}</span>
-                          {opt.type === 'SHARED' ? (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5mm' }}>
-                              <span>Adult: ₹{opt.adult_price?.toLocaleString('en-IN') ?? 0}</span>
-                              <span>Child: ₹{opt.child_price?.toLocaleString('en-IN') ?? 0}</span>
-                            </div>
-                          ) : (
-                            <div style={{ marginTop: '0.5mm' }}>
-                              Fixed Price: ₹{opt.fixed_price?.toLocaleString('en-IN') ?? 0} <span style={{ color: '#888' }}>(Capacity: {opt.capacity})</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* ── INCLUSIONS / EXCLUSIONS / POLICIES ────────────────────── */}
-        <div className="tc">
-          <div className="cp">
-            <div className="sh">Inclusions</div>
-            {pkg.inclusions.length === 0
-              ? <div className="li" style={{ color: '#888', fontStyle: 'italic' }}>No inclusions added</div>
-              : pkg.inclusions.map((inc, i) => (
-                <div className="li" key={i}><span className="ii">✔</span><span>{inc.label}</span></div>
-              ))}
-          </div>
-          <div className="cp">
-            <div className="sh">Exclusions</div>
-            {pkg.exclusions.length === 0
-              ? <div className="li" style={{ color: '#888', fontStyle: 'italic' }}>No exclusions added</div>
-              : pkg.exclusions.map((exc, i) => (
-                <div className="li" key={i}><span className="xi">✖</span><span>{exc.label}</span></div>
-              ))}
-          </div>
-          <div className="cp">
-            <div className="sh">Travel Policies</div>
-            {pkg.policies.length === 0
-              ? <div className="li" style={{ color: '#888', fontStyle: 'italic' }}>No policy guidelines added</div>
-              : pkg.policies.map((p, i) => (
-                <div className="li" key={i} style={{ flexDirection: 'column', gap: '0.5mm', padding: '2mm 3mm', borderBottom: '1px solid #f0f4f7' }}>
-                  <div style={{ fontWeight: 700, color: '#f47920', fontSize: '7.5pt' }}>{p.title || p.type}</div>
-                  <div style={{ fontSize: '7pt', color: '#444', whiteSpace: 'pre-line', lineHeight: '1.3' }}>{p.description}</div>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* ── GALLERY + REPORTING POINT ────────────────────────────── */}
-        <div className="bg">
-          <div>
-            <div className="sh">Gallery</div>
-            <div className="gg">
-              {galleryImgs.length === 0
-                ? [0, 1, 2].map(i => <div key={i} className="gph">No image</div>)
-                : galleryImgs.map((img, i) => (
+          {/* Gallery Showcase */}
+          {galleryImgs.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <div className="section-title">🖼 Destination Gallery</div>
+              <div className="grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                {galleryImgs.map((img, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={img.image_url} alt={img.alt_text ?? `Gallery ${i + 1}`} />
-                ))
-              }
+                  <img key={i} src={img.image_url} alt="Gallery" style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                ))}
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="sh">Reporting Point</div>
-            <div className="rp">
-              {/* Only render rows that have actual values */}
-              {hasVal(primary?.address) && (
-                <div className="rr"><span className="rl">Address</span><span>{primary!.address}</span></div>
-              )}
-              {hasVal(primary?.landmark) && (
-                <div className="rr"><span className="rl">Landmark</span><span>{primary!.landmark}</span></div>
-              )}
-              {hasVal(primary?.contact_number) && (
-                <div className="rr"><span className="rl">Contact Person</span><span>{primary!.contact_number}</span></div>
-              )}
-              {hasVal(primary?.departure_time) && (
-                <div className="rr"><span className="rl">Reporting Time</span><span>{primary!.departure_time}</span></div>
-              )}
-              {hasVal(primary?.pickup_instructions) && (
-                <div className="rr"><span className="rl">Instructions</span><span>{primary!.pickup_instructions}</span></div>
-              )}
-              {!primary && (
-                <div className="rr" style={{ color: '#888', fontStyle: 'italic' }}>No reporting point added</div>
-              )}
-            </div>
-          </div>
+          )}
+
         </div>
 
-        {/* ── FOOTER ───────────────────────────────────────────────── */}
-        <div className="fw" />
-        <div className="ft">
-          <div className="fc">
-            <div className="ft-t">📍 Contact Us</div>
-            <div className="ft-v">{CO.addr1}<br />{CO.addr2}<br />{CO.addr3}<br />{CO.addr4}</div>
+        {/* Footer */}
+        <div className="footer">
+          <div>
+            <div className="footer-heading">🏢 Office Address</div>
+            <div>{CO.addr1}<br />{CO.addr2}<br />{CO.addr3}</div>
           </div>
-          <div className="fc">
-            <div className="ft-t">📞 Call Us</div>
-            <div className="ft-v">{CO.phones.map((p, i) => <div key={i}>{p}</div>)}</div>
+          <div>
+            <div className="footer-heading">📞 Hotline Numbers</div>
+            <div>{CO.phones.map((p, i) => <div key={i}>{p}</div>)}</div>
           </div>
-          <div className="fc">
-            <div className="ft-t">✉ Email Us</div>
-            <div className="ft-v">bookings@tsboattourism.org</div>
+          <div>
+            <div className="footer-heading">✉ Official Email</div>
+            <div>{CO.email}</div>
           </div>
-          <div className="fc">
-            <div className="ft-t">🌐 Visit Us</div>
-            <div className="ft-v">{CO.website}</div>
+          <div>
+            <div className="footer-heading">🌐 Online Booking</div>
+            <div>{CO.website}</div>
           </div>
         </div>
 

@@ -55,9 +55,17 @@ interface BookingSidebarV2Props {
   refreshmentAdultPrice?: number | string | null;
   refreshmentChildPrice?: number | string | null;
   refreshmentStudentPrice?: number | string | null;
+  hasFoodOption?: boolean;
+  foodAdultPrice?: number | string | null;
+  foodChildPrice?: number | string | null;
+  foodStudentPrice?: number | string | null;
   minPassengers?: number;
   isStudentPackage?: boolean;
+  refreshmentsMinPassengers?: number;
   isActive?: boolean;
+  advancePaymentType?: string | null;
+  advancePaymentValue?: number | null;
+  extras?: any[];
 }
 
 function todayIST(): Date {
@@ -107,9 +115,17 @@ export const BookingSidebarV2 = ({
   refreshmentAdultPrice,
   refreshmentChildPrice,
   refreshmentStudentPrice,
+  hasFoodOption,
+  foodAdultPrice,
+  foodChildPrice,
+  foodStudentPrice,
   minPassengers = 1,
   isStudentPackage = false,
+  refreshmentsMinPassengers = 1,
   isActive = true,
+  advancePaymentType = 'FULL_PAYMENT',
+  advancePaymentValue = 0,
+  extras = [],
 }: BookingSidebarV2Props) => {
   const { isAuthenticated, user } = useAuthStore();
   const isSpecialUser = useMemo(() => {
@@ -175,6 +191,7 @@ export const BookingSidebarV2 = ({
 
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [selectedExtraIds, setSelectedExtraIds] = useState<number[]>([]);
   // Transport state: 'NONE' | 'SHARED' | 'SEPARATE'
   const [selectedTransportMode, setSelectedTransportMode] = useState<'NONE' | 'SHARED' | 'SEPARATE'>('NONE');
 
@@ -202,6 +219,7 @@ export const BookingSidebarV2 = ({
   // For SEPARATE: map of optionId -> quantity
   const [separateVehicleQtys, setSeparateVehicleQtys] = useState<Record<number, number>>({});
   const [includeRefreshments, setIncludeRefreshments] = useState<boolean>(false);
+  const [includeFoodOption, setIncludeFoodOption] = useState<boolean>(false);
   const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(today));
   const [adults, setAdults] = useState<number>(Math.max(1, minPassengers));
   const [children, setChildren] = useState<number>(0);
@@ -210,11 +228,20 @@ export const BookingSidebarV2 = ({
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
   const [isAdvanceSelected, setIsAdvanceSelected] = useState<boolean>(false);
 
+  const totalPassengers = isStudentPackage ? adults : (adults + children);
+  const isRefreshmentDisabled = totalPassengers < refreshmentsMinPassengers;
+
   useEffect(() => {
     if (isStudentPackage) {
       setChildren(0);
     }
   }, [isStudentPackage]);
+
+  useEffect(() => {
+    if (isRefreshmentDisabled && includeRefreshments) {
+      setIncludeRefreshments(false);
+    }
+  }, [isRefreshmentDisabled, includeRefreshments]);
 
   useEffect(() => {
     const handlePageShow = () => {
@@ -234,6 +261,7 @@ export const BookingSidebarV2 = ({
       const savedSharedOptionId = sessionStorage.getItem('last_checkout_selected_shared_option_id');
       const savedSeparateVehicleQtys = sessionStorage.getItem('last_checkout_separate_vehicle_qtys');
       const savedIncludeRefreshments = sessionStorage.getItem('last_checkout_include_refreshments');
+      const savedIncludeFoodOption = sessionStorage.getItem('last_checkout_include_food_option');
       const savedAdults = sessionStorage.getItem('last_checkout_adults');
       const savedChildren = sessionStorage.getItem('last_checkout_children');
       
@@ -254,6 +282,7 @@ export const BookingSidebarV2 = ({
         } catch (e) {}
       }
       if (savedIncludeRefreshments) setIncludeRefreshments(savedIncludeRefreshments === 'true');
+      if (savedIncludeFoodOption) setIncludeFoodOption(savedIncludeFoodOption === 'true');
       if (savedAdults) setAdults(Number(savedAdults));
       if (savedChildren) setChildren(Number(savedChildren));
       
@@ -744,7 +773,37 @@ export const BookingSidebarV2 = ({
       }
     }
 
-    const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal;
+    // FOOD OPTION PRICING
+    let foodSubtotal = 0;
+    let foodAdult = 0;
+    let foodChild = 0;
+    let foodStudent = 0;
+    if (hasFoodOption && includeFoodOption) {
+      if (isStudentPackage) {
+        foodStudent = isSpecialUser ? 1 : positiveNumber(foodStudentPrice);
+        foodSubtotal = adults * foodStudent;
+      } else {
+        foodAdult = isSpecialUser ? 1 : positiveNumber(foodAdultPrice);
+        foodChild = isSpecialUser ? 1 : positiveNumber(foodChildPrice);
+        foodSubtotal = (adults * foodAdult) + (children * foodChild);
+      }
+    }
+
+    // CUSTOM EXTRAS PRICING
+    let customExtrasSubtotal = 0;
+    if (extras && extras.length > 0 && selectedExtraIds.length > 0) {
+      extras.forEach((ex: any) => {
+        if (selectedExtraIds.includes(ex.id)) {
+          if (isStudentPackage) {
+            customExtrasSubtotal += adults * (isSpecialUser ? 1 : positiveNumber(ex.student_price));
+          } else {
+            customExtrasSubtotal += (adults * (isSpecialUser ? 1 : positiveNumber(ex.adult_price))) + (children * (isSpecialUser ? 1 : positiveNumber(ex.child_price)));
+          }
+        }
+      });
+    }
+
+    const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal + foodSubtotal + customExtrasSubtotal;
 
     let subtotal = rawSubtotal;
     let discount = 0;
@@ -779,23 +838,38 @@ export const BookingSidebarV2 = ({
       pureBaseSubtotal, weekendSurchargeSubtotal, surgeSubtotal, discountSubtotal,
       transportSubtotal, transportBreakdown,
       refreshmentSubtotal, 
+      foodSubtotal,
       rawSubtotal, discount, subtotal, gst, gatewayFee, 
       grandTotal, agentDiscount, agentPayable 
     };
-  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice]);
+  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice]);
 
-  const { effectivePayNow, isPartial } = useMemo(() => {
+  const { minPayable, effectivePayNow, isPartial } = useMemo(() => {
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-    const minPayable = Math.ceil(finalTotal * 0.35);
+    
+    let minPay = finalTotal;
+    const advType = advancePaymentType || 'FULL_PAYMENT';
+    const advVal = advancePaymentValue || 0;
+    
+    if (advType === 'PERCENTAGE') {
+      const pct = advVal || 35;
+      minPay = Math.ceil(finalTotal * (pct / 100));
+    } else if (advType === 'FIXED_AMOUNT') {
+      const fixedAmt = advVal || 500;
+      minPay = Math.min(finalTotal, fixedAmt);
+    }
+    
     const parsedCustom = parseInt(customPayAmount, 10);
     const payNow = !isAdvanceSelected
       ? finalTotal
-      : (isNaN(parsedCustom) || customPayAmount === '' ? minPayable : Math.min(finalTotal, Math.max(minPayable, parsedCustom)));
+      : (isNaN(parsedCustom) || customPayAmount === '' ? minPay : Math.min(finalTotal, Math.max(minPay, parsedCustom)));
+      
     return {
+      minPayable: minPay,
       effectivePayNow: payNow,
-      isPartial: isAdvanceSelected
+      isPartial: isAdvanceSelected && advType !== 'FULL_PAYMENT' && payNow < finalTotal
     };
-  }, [prices.agentPayable, prices.grandTotal, customPayAmount, isAgent, isAdvanceSelected]);
+  }, [prices.agentPayable, prices.grandTotal, customPayAmount, isAgent, isAdvanceSelected, advancePaymentType, advancePaymentValue, adults, children]);
 
   // Adjust custom pay amount when total price changes (e.g., removing a passenger)
   useEffect(() => {
@@ -804,7 +878,6 @@ export const BookingSidebarV2 = ({
       if (prev === '') return prev;
       const parsed = parseInt(prev, 10);
       const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-      const minPayable = Math.ceil(finalTotal * 0.35);
       if (!isNaN(parsed)) {
         if (parsed >= finalTotal) {
           setIsAdvanceSelected(false);
@@ -814,7 +887,7 @@ export const BookingSidebarV2 = ({
       }
       return prev;
     });
-  }, [prices.grandTotal, prices.agentPayable, isAgent, isAdvanceSelected]);
+  }, [prices.grandTotal, prices.agentPayable, isAgent, isAdvanceSelected, minPayable]);
 
   // Live recalculation / revalidation when dependencies change
   useEffect(() => {
@@ -1842,33 +1915,119 @@ export const BookingSidebarV2 = ({
           )}
 
 
-          {/* Refreshments Toggle */}
           {hasRefreshments && (
             <div className="pt-2.5 border-t border-slate-100">
               <label 
-                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  includeRefreshments 
-                    ? 'border-emerald-500 bg-emerald-50' 
-                    : 'border-slate-200 bg-white hover:border-emerald-500/50'
+                className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                  isRefreshmentDisabled
+                    ? 'border-slate-100 bg-slate-50/50 opacity-60 cursor-not-allowed'
+                    : includeRefreshments 
+                      ? 'border-emerald-500 bg-emerald-50 cursor-pointer' 
+                      : 'border-slate-200 bg-white hover:border-emerald-500/50 cursor-pointer'
                 }`}
               >
                 <input 
                   type="checkbox" 
                   checked={includeRefreshments}
                   onChange={(e) => setIncludeRefreshments(e.target.checked)}
-                  disabled={!isActive || (isPackageInactive && !isAdmin)}
-                  className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4"
+                  disabled={isRefreshmentDisabled || !isActive || (isPackageInactive && !isAdmin)}
+                  className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4 mt-0.5"
                 />
                 <div className="flex-1">
-                  <div className="text-xs font-bold text-slate-800">Add Refreshments</div>
+                  <div className="text-xs font-bold text-slate-800">Add Fresh-Up Room (Stay/Rest Option)</div>
                   <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
                     {isStudentPackage
                       ? `₹${formatINR(refreshmentStudentPrice || 0)}/Student`
                       : `₹${formatINR(refreshmentAdultPrice || 0)}/Adult, ₹${formatINR(refreshmentChildPrice || 0)}/Child`
                     }
                   </div>
+                  {isRefreshmentDisabled && (
+                    <div className="text-[9px] text-rose-500 font-bold mt-1">
+                      ⚠️ Requires minimum of {refreshmentsMinPassengers} passenger{refreshmentsMinPassengers > 1 ? 's' : ''} to book fresh-up stay (Current: {totalPassengers})
+                    </div>
+                  )}
                 </div>
               </label>
+            </div>
+          )}
+
+          {/* Food Option Toggle */}
+          {hasFoodOption && (
+            <div className="pt-2.5 border-t border-slate-100">
+              <label 
+                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  includeFoodOption 
+                    ? 'border-emerald-500 bg-emerald-50' 
+                    : 'border-slate-200 bg-white hover:border-emerald-500/50'
+                }`}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={includeFoodOption}
+                  onChange={(e) => setIncludeFoodOption(e.target.checked)}
+                  disabled={!isActive || (isPackageInactive && !isAdmin)}
+                  className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4"
+                />
+                <div className="flex-1">
+                  <div className="text-xs font-bold text-slate-800">Add Food / Meals Package</div>
+                  <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                    {isStudentPackage
+                      ? `₹${formatINR(foodStudentPrice || 0)}/Student`
+                      : `₹${formatINR(foodAdultPrice || 0)}/Adult, ₹${formatINR(foodChildPrice || 0)}/Child`
+                    }
+                  </div>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* Dynamic Custom Package Extras (e.g. Rajahmundry Drop, etc.) */}
+          {extras && extras.length > 0 && (
+            <div className="pt-2.5 border-t border-slate-100 space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Available Package Add-ons & Extras</div>
+              {extras.map((ex: any) => {
+                const isSelected = selectedExtraIds.includes(ex.id);
+                return (
+                  <label 
+                    key={ex.id}
+                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                      isSelected 
+                        ? 'border-amber-500 bg-amber-50/60 shadow-xs' 
+                        : 'border-slate-200 bg-white hover:border-amber-400'
+                    }`}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedExtraIds(prev => [...prev, ex.id]);
+                        } else {
+                          setSelectedExtraIds(prev => prev.filter(id => id !== ex.id));
+                        }
+                      }}
+                      disabled={!isActive || (isPackageInactive && !isAdmin)}
+                      className="rounded text-amber-500 focus:ring-amber-500 h-4 w-4 mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-slate-800 flex items-center justify-between gap-2">
+                        <span className="truncate">{ex.title}</span>
+                        <span className="text-[10px] font-black text-amber-700 shrink-0">
+                          {isStudentPackage
+                            ? `+₹${formatINR(ex.student_price || 0)}/pax`
+                            : `+₹${formatINR(ex.adult_price || 0)}/Adult`
+                          }
+                        </span>
+                      </div>
+                      {ex.description && (
+                        <p className="text-[10px] text-slate-500 font-medium mt-0.5 line-clamp-2 leading-relaxed">
+                          {ex.description}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           )}
 
@@ -1961,6 +2120,13 @@ export const BookingSidebarV2 = ({
                   <span className="font-bold">+₹{formatINR(prices.refreshmentSubtotal)}</span>
                 </div>
               )}
+              {/* Food Option */}
+              {prices.foodSubtotal > 0 && (
+                <div className="flex justify-between items-center text-emerald-600">
+                  <span className="font-semibold">Food & Meals</span>
+                  <span className="font-bold">+₹{formatINR(prices.foodSubtotal)}</span>
+                </div>
+              )}
               {appliedCoupon && (
                 <div className="flex justify-between items-center text-emerald-600 font-bold">
                   <span>Discount <span className="text-[10px]">({appliedCoupon.code})</span></span>
@@ -2001,80 +2167,99 @@ export const BookingSidebarV2 = ({
 
             {selectedDate && (() => {
               const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-              const minPayable = Math.ceil(finalTotal * 0.35);
+              const advType = advancePaymentType || 'FULL_PAYMENT';
+              const advVal = advancePaymentValue || 0;
+              const optionLabel = advType === 'PERCENTAGE' ? `${advVal}% Adv` : `₹${advVal} Adv`;
+              const noticeText = advType === 'PERCENTAGE' 
+                ? `No cancellation — ${advVal}% advance secures your booking. Balance payable later.` 
+                : `No cancellation — ₹${advVal} per passenger advance secures your booking. Balance payable later.`;
               const derivedPct = parseFloat(((effectivePayNow / finalTotal) * 100).toFixed(1));
               if (derivedPct !== paymentPercentage) setPaymentPercentage(derivedPct);
               return (
                 <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
-                  {/* Row 1: Toggle + Amount */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                    {/* Full / Advance toggle */}
-                    <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); setIsAdvanceSelected(false); }}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${!isAdvanceSelected ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
-                      >
-                        Full
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAdvanceSelected(true);
-                          if (customPayAmount === '') {
-                            setCustomPayAmount(String(minPayable));
-                            setPaymentPercentage(35);
-                          }
-                        }}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${isAdvanceSelected ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
-                      >
-                        Advance
-                      </button>
-                    </div>
-
-                    {/* Amount input / display */}
-                    {isAdvanceSelected ? (
-                      <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#1a6b7a]/40 rounded-lg px-2 py-1 shadow-sm">
-                        <span className="text-xs font-black text-slate-400">₹</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={customPayAmount}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, '');
-                            setCustomPayAmount(val);
-                          }}
-                          onBlur={() => {
-                            const v = parseInt(customPayAmount, 10);
-                            if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                            else if (v >= finalTotal) {
-                              setCustomPayAmount('');
-                              setIsAdvanceSelected(false);
-                            }
-                            else setCustomPayAmount(String(v));
-                          }}
-                          className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
-                          placeholder={String(minPayable)}
-                        />
-                        <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
+                  {advType !== 'FULL_PAYMENT' ? (
+                    <>
+                      {/* Notice */}
+                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-[10px] font-bold text-amber-700 leading-4">{noticeText}</p>
                       </div>
-                    ) : (
-                      <div className="flex-1 text-right shrink-0 whitespace-nowrap">
-                        <span className="text-xs font-black text-[#1a6b7a]">₹{formatINR(finalTotal)}</span>
-                        <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Row 2: Balance due / error */}
-                  {isPartial && (
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
-                      <span>Balance due later</span>
-                      <span className="font-black text-slate-600">₹{formatINR(finalTotal - effectivePayNow)}</span>
+                      {/* Row 1: Toggle + Amount */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                        {/* Full / Advance toggle */}
+                        <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => { setCustomPayAmount(''); setPaymentPercentage(100); setIsAdvanceSelected(false); }}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${!isAdvanceSelected ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                          >
+                            Full
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAdvanceSelected(true);
+                              if (customPayAmount === '') {
+                                setCustomPayAmount(String(minPayable));
+                              }
+                            }}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${isAdvanceSelected ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                          >
+                            {optionLabel}
+                          </button>
+                        </div>
+
+                        {/* Amount input / display */}
+                        {isAdvanceSelected ? (
+                          <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#1a6b7a]/40 rounded-lg px-2 py-1 shadow-sm">
+                            <span className="text-xs font-black text-slate-400">₹</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={customPayAmount}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                setCustomPayAmount(val);
+                              }}
+                              onBlur={() => {
+                                  const v = parseInt(customPayAmount, 10);
+                                  if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
+                                  else if (v >= finalTotal) {
+                                    setCustomPayAmount('');
+                                    setIsAdvanceSelected(false);
+                                  }
+                                  else setCustomPayAmount(String(v));
+                              }}
+                              className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
+                              placeholder={String(minPayable)}
+                            />
+                            <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
+                          </div>
+                        ) : (
+                          <div className="flex-1 text-right shrink-0 whitespace-nowrap">
+                            <span className="text-xs font-black text-[#1a6b7a]">₹{formatINR(finalTotal)}</span>
+                            <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Row 2: Balance due / error */}
+                      {isPartial && (
+                        <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
+                          <span>Balance due later</span>
+                          <span className="font-black text-slate-600">₹{formatINR(finalTotal - effectivePayNow)}</span>
+                        </div>
+                      )}
+                      {isAdvanceSelected && customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
+                        <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{formatINR(minPayable)}</p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-start gap-2 rounded-lg bg-emerald-50/50 border border-emerald-100 px-2.5 py-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <p className="text-[10px] font-bold text-slate-600 leading-4">Full payment is required to confirm this package booking.</p>
                     </div>
-                  )}
-                  {isAdvanceSelected && customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
-                    <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{formatINR(minPayable)} (35%)</p>
                   )}
                 </div>
               );
@@ -2091,58 +2276,7 @@ export const BookingSidebarV2 = ({
             </div>
           )}
 
-          {/* Payment Gateway Selector */}
-          {!isAdmin && isAuthenticated && (
-            <div className="mt-4 space-y-2">
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Pay Via</label>
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  id="gateway-phonepe"
-                  type="button"
-                  onClick={() => setSelectedGateway('PHONEPE')}
-                  className={`relative flex flex-col items-center justify-center gap-2 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                    selectedGateway === 'PHONEPE'
-                      ? 'border-[#5f259f] bg-[#5f259f]/5 shadow-md shadow-[#5f259f]/10 scale-[1.02]'
-                      : 'border-slate-200 bg-white hover:border-[#5f259f]/40'
-                  }`}
-                >
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#5f259f] text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-[#5f259f]/20">Recommended</span>
-                  <div className="flex items-center gap-2">
-                    <div className="bg-[#5f259f] p-1 rounded-full flex items-center justify-center shrink-0">
-                      <svg fill="#ffffff" role="img" viewBox="0 0 24 24" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M10.206 9.941h2.949v4.692c-.402.201-.938.268-1.34.268-1.072 0-1.609-.536-1.609-1.743V9.941zm13.47 4.816c-1.523 6.449-7.985 10.442-14.433 8.919C2.794 22.154-1.199 15.691.324 9.243 1.847 2.794 8.309-1.199 14.757.324c6.449 1.523 10.442 7.985 8.919 14.433zm-6.231-5.888a.887.887 0 0 0-.871-.871h-1.609l-3.686-4.222c-.335-.402-.871-.536-1.407-.402l-1.274.401c-.201.067-.268.335-.134.469l4.021 3.82H6.386c-.201 0-.335.134-.335.335v.67c0 .469.402.871.871.871h.938v3.217c0 2.413 1.273 3.82 3.418 3.82.67 0 1.206-.067 1.877-.335v2.145c0 .603.469 1.072 1.072 1.072h.938a.432.432 0 0 0 .402-.402V9.874h1.542c.201 0 .335-.134.335-.335v-.67z"/>
-                      </svg>
-                    </div>
-                    <span className="font-sans font-black text-sm text-[#5f259f] tracking-tight">PhonePe</span>
-                  </div>
-                  <span className="text-[8px] font-bold text-slate-400">UPI · Cards · NetBanking</span>
-                </button>
-                <button
-                  id="gateway-cashfree"
-                  type="button"
-                  onClick={() => setSelectedGateway('CASHFREE')}
-                  className={`flex flex-col items-center justify-center gap-2 py-3.5 px-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                    selectedGateway === 'CASHFREE'
-                      ? 'border-[#180e4b] bg-[#180e4b]/5 shadow-md shadow-[#180e4b]/10 scale-[1.02]'
-                      : 'border-slate-200 bg-white hover:border-[#180e4b]/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <svg viewBox="0 0 16 16" className="h-5.5 w-5.5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
-                      <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
-                      <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
-                      <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
-                    </svg>
-                    <span className="font-sans font-black text-sm text-[#180e4b] tracking-tight">
-                      Cashfree <span className="font-normal text-[#180e4b]/80">Payments</span>
-                    </span>
-                  </div>
-                  <span className="text-[8px] font-bold text-slate-400">UPI · Cards · All Methods</span>
-                </button>
-              </div>
-            </div>
-          )}
+
 
           {/* CTA */}
           <button

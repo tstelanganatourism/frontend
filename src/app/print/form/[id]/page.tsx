@@ -126,16 +126,16 @@ export default async function PrintFormPage({
       <div className="page-container">
         <div className="form-border">
           <div className="form-header">
-            <img src="/apple-icon.png" className="logo-img" alt="Telangana Boat Tourism" />
+            <img src="/apple-icon.png" className="logo-img" alt="TS Boat Tourism" />
             <div className="title-block">
               <h1>CUSTOMER DETAIL FORM</h1>
-              <h2>TELANGANA BOAT TOURISM</h2>
+              <h2>TS BOAT TOURISM</h2>
               <h3>AP  BOAT TOURISM</h3>
               <h4>
                 {booking.package_title} {booking.variant_title && booking.variant_title !== '—' && `- ${booking.variant_title}`}
               </h4>
             </div>
-            <img src="/aptdc-logo.svg" className="logo-img" alt="AP Tourism" />
+            <img src="/ts-boat-tourism-logo.png" className="logo-img" alt="TS Boat Tourism" />
           </div>
 
           <div className="meta-row">
@@ -228,8 +228,8 @@ export default async function PrintFormPage({
             ALL PASSENGERS MUST SUMBIT AADHAR CARD ZEROX COPIES AT BOAT
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', borderTop: '1px solid #000' }}>
-            <img src="/apple-icon.png" style={{ height: '40px', width: '40px', borderRadius: '50%', border: '1px solid #000' }} alt="Telangana Boat Tourism" />
-            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>TELANGANA BOAT TOURISM</span>
+            <img src="/apple-icon.png" style={{ height: '40px', width: '40px', borderRadius: '50%', border: '1px solid #000' }} alt="TS Boat Tourism" />
+            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>TS BOAT TOURISM</span>
           </div>
         </div>
       </div>

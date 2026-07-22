@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 import { 
@@ -112,11 +113,15 @@ export default function AdminPackagesPage() {
   const [togglingStatusId, setTogglingStatusId] = useState<number | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
+  const { isHydrated, accessToken } = useAuthStore();
+
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    fetchPackages('', statusFilter, 1, packagesLimit).then(() => setHasFetched(true));
-  }, [fetchPackages, statusFilter, packagesLimit]);
+    if (isHydrated) {
+      fetchPackages('', statusFilter, 1, packagesLimit).then(() => setHasFetched(true));
+    }
+  }, [fetchPackages, statusFilter, packagesLimit, isHydrated, accessToken]);
 
   const handleDeleteConfirm = async () => {
     if (selectedPackageId) {
@@ -418,7 +423,16 @@ export default function AdminPackagesPage() {
                       <td colSpan={7} className="text-center py-16 text-slate-400">
                         <ShieldAlert className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                         <h3 className="font-bold text-slate-700">No packages found</h3>
-                        <p className="text-xs text-slate-400 mt-1">Try resetting filters or create a new package.</p>
+                        <p className="text-xs text-slate-400 mt-1 mb-4">Try resetting filters, or click below to reload packages.</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            fetchPackages('', statusFilter, 1, packagesLimit);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-xl bg-[#5ac4d7]/10 text-[#0f3d56] hover:bg-[#5ac4d7]/20 px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          ⚡ Reload Packages List
+                        </button>
                       </td>
                     </tr>
                   );

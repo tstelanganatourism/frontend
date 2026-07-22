@@ -60,7 +60,7 @@ export default function GoogleCallbackPage() {
           {error ? (
             <img 
               src="/apple-touch-icon.png" 
-              alt="Telangana Boat Tourism Logo" 
+              alt="TS Boat Tourism Logo" 
               className="h-full w-full object-contain rounded-2xl opacity-40 grayscale"
             />
           ) : (
@@ -71,7 +71,7 @@ export default function GoogleCallbackPage() {
             >
               <img 
                 src="/apple-touch-icon.png" 
-                alt="Telangana Boat Tourism Logo" 
+                alt="TS Boat Tourism Logo" 
                 className="h-full w-full object-contain rounded-2xl"
               />
             </motion.div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Users, AlertTriangle, Zap, CheckCircle2 } from 'lucide-react';
@@ -619,7 +619,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               className="mt-1 h-4 w-4 rounded border-slate-300 text-[#1a6b7a] focus:ring-[#1a6b7a] disabled:opacity-50"
             />
             <label htmlFor="aadhaar-consent-checkbox" className="text-xs font-semibold text-slate-600 leading-relaxed cursor-pointer">
-              I hereby give my consent to Telangana Boat Tourism to collect, verify, and store my Aadhaar details for government-mandated boarding security checks.
+              I hereby give my consent to TS Boat Tourism to collect, verify, and store my Aadhaar details for government-mandated boarding security checks.
             </label>
           </div>
         </div>

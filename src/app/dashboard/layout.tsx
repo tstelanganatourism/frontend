@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import ClientLayout from './ClientLayout';
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Telangana Boat Tourism',
+  title: 'Dashboard | TS Boat Tourism',
   robots: { index: false, follow: false },
 };
 

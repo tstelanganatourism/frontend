@@ -40,13 +40,8 @@ export default function PaymentStatusPage() {
     }
 
     try {
-      const endpoint = gateway === 'CASHFREE'
-        ? `/api/v1/payments/verify-cashfree-status`
-        : `/api/v1/payments/verify-status`;
-      const paramKey = gateway === 'CASHFREE' ? 'order_id' : 'transaction_id';
-
-      const res = await apiClient.get(endpoint, {
-        params: { [paramKey]: merchantTransactionId }
+      const res = await apiClient.get(`/api/v1/payments/verify-status`, {
+        params: { transaction_id: merchantTransactionId }
       });
       
       const statusData = res.data;
@@ -177,7 +172,7 @@ export default function PaymentStatusPage() {
             <div className="relative h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-lg border border-slate-100 ring-4 ring-[#1a6b7a]/5">
               <img
                 src="/apple-touch-icon.png"
-                alt="Telangana Boat Tourism"
+                alt="TS Boat Tourism"
                 className="h-12 w-12 object-contain rounded-xl"
               />
             </div>

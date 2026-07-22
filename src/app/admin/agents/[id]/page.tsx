@@ -427,7 +427,7 @@ export default function AgentDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/70">
-                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Booking ID</th>
+                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">PNR NUMBER</th>
                     <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Package / Room</th>
                     <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Travel Date</th>
                     <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Amount</th>
@@ -701,7 +701,7 @@ export default function AgentDetailPage() {
                                 <table className="w-full text-left text-xs border-collapse">
                                   <thead>
                                     <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                                      <th className="py-2 px-3">Booking ID</th>
+                                      <th className="py-2 px-3">PNR NUMBER</th>
                                       <th className="py-2 px-3">Customer Name</th>
                                       <th className="py-2 px-3 text-center">Tickets</th>
                                       <th className="py-2 px-3 text-right">Amount</th>

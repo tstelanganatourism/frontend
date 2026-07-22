@@ -160,46 +160,29 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
           </Link>
         </div>
 
-        <button
-          type="button"
-          disabled={isDownloading}
-          onClick={async (e) => {
-            e.preventDefault();
-            if (isDownloading) return;
-            setIsDownloading(true);
-            const match = brochureUrl.match(/(private\/[^?#]+)/);
-            const rawKey = match ? decodeURIComponent(match[1]) : null;
-            const filename = `${pkg.slug}-brochure.pdf`;
-
-            try {
-              if (rawKey) {
-                const downloadUrl = `/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-                await downloadFileViaFetch(downloadUrl, filename);
-              } else {
-                await downloadFileViaFetch(brochureUrl, filename);
-              }
-            } catch (err) {
-              console.error("Failed to download brochure:", err);
-            } finally {
-              setIsDownloading(false);
-            }
-          }}
-          className={`mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1a6b7a] px-4 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c] ${
-            isDownloading ? 'opacity-80 cursor-not-allowed' : ''
-          }`}
-        >
-          {isDownloading ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Downloading Brochure...
-            </>
-          ) : (
-            <>
-              <FileDown className="h-4 w-4" />
-              Download Brochure
-            </>
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              window.open(`/print/package/${pkg.slug}`, '_blank');
+            }}
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[#1a6b7a] px-4 text-sm font-black text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#13505c] cursor-pointer"
+          >
+            <FileDown className="h-4 w-4" />
+            View &amp; Print Brochure
+          </button>
+          {brochureUrl && (
+            <a
+              href={brochureUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+              title="Open Direct PDF"
+            >
+              PDF
+            </a>
           )}
-        </button>
+        </div>
       </div>
     </article>
   );
@@ -225,68 +208,80 @@ export default function BrochuresList({ data }: { data?: PackageData }) {
 
   return (
     <div className="bg-[#f6f3ec]">
-      <section className="relative overflow-hidden bg-[#0f3d56] pb-16 pt-28 sm:pb-20 sm:pt-36">
+      {/* Unique State-of-the-Art Hero Canvas */}
+      <section className="relative overflow-hidden bg-slate-950 pb-16 pt-24 sm:pb-20 sm:pt-32">
+        {/* Ambient Glow Effects */}
+        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-indigo-500/10 blur-3xl" />
+        
+        {/* Rich Photography Background Image */}
         <Image
-          src={heroImages[0].src}
+          src="/images/brochures_hero_bg.png"
           alt="Papikondalu river hills"
           fill
           sizes="100vw"
-          className="object-cover opacity-75"
+          className="object-cover opacity-60"
           priority
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,32,47,0.28),rgba(7,32,47,0.84)),linear-gradient(90deg,rgba(7,32,47,0.92),rgba(7,32,47,0.42),rgba(7,32,47,0.72))]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_28%,rgba(229,218,197,0.24),transparent_30%),radial-gradient(circle_at_18%_72%,rgba(90,196,215,0.22),transparent_28%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#f6f3ec] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-indigo-950/40" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent" />
 
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.65fr)] lg:items-center lg:px-8">
-          <div className="max-w-3xl text-white">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
-              <Sparkles className="h-3 w-3 text-[#e5dac5]" />
-              Official Package PDFs
-            </div>
-            <h1 className="text-4xl font-black tracking-normal text-white md:text-6xl">
-              Tour Brochures
-            </h1>
-            <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-white/78 md:text-lg">
-              Download the latest package PDFs with itinerary, fare variants, reporting details, meal timings, inclusions, and booking rules in one place.
-            </p>
-          </div>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
+            
+            {/* Left Content */}
+            <div className="lg:col-span-7">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-cyan-300 backdrop-blur-md shadow-xs">
+                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                Official Package PDFs & Guides
+              </div>
 
-          <div className="hidden lg:grid grid-cols-[1fr_0.72fr] gap-4">
-            <div className="relative h-72 overflow-hidden rounded-lg border border-white/20 shadow-[0_28px_70px_rgba(0,0,0,0.34)]">
-              <Image
-                src={heroImages[1].src}
-                alt={heroImages[1].alt}
-                fill
-                sizes="360px"
-                className="object-cover"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#062735]/60 via-transparent to-white/10" />
-              <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-white/20 bg-white/12 px-4 py-3 text-white backdrop-blur-md">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/70">Preview before booking</p>
-                <p className="mt-1 text-sm font-black">PDFs with route, fare and timing details</p>
+              <h1 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
+                <span className="block text-cyan-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">Offline Tour Schedules</span>
+                <span className="block text-white drop-shadow-sm">Tour Brochures</span>
+              </h1>
+
+              <p className="mb-6 max-w-2xl text-sm font-medium leading-relaxed text-slate-300 sm:text-base">
+                Download verified package PDFs with itinerary details, fare variants, reporting points, meal timings, inclusions, and rules in one place.
+              </p>
+
+              {/* Quick Feature Badges */}
+              <div className="flex flex-wrap gap-3 text-[11px] font-bold text-slate-300">
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  📄 Full Itinerary PDF
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  📍 Boarding Instructions
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
+                  🍱 Meal Timings Included
+                </span>
               </div>
             </div>
 
-            <div className="grid gap-4">
-              {heroImages.slice(0, 2).map((image, index) => (
-                <div
-                  key={image.src}
-                  className="relative h-[136px] overflow-hidden rounded-lg border border-white/20 shadow-[0_18px_42px_rgba(0,0,0,0.28)]"
-                >
-                  <Image
-                    src={index === 0 ? heroImages[2].src : image.src}
-                    alt={index === 0 ? heroImages[2].alt : image.alt}
-                    fill
-                    sizes="260px"
-                    className="object-cover"
-                    priority={index === 0}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#062735]/55 to-transparent" />
+            {/* Right Card Panel */}
+            <div className="lg:col-span-5">
+              <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-cyan-400/40">
+                <div className="flex items-center gap-4">
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-white/20">
+                    <Image
+                      src={heroImages[1].src}
+                      alt={heroImages[1].alt}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-md font-bold text-white mb-1">High-Res Offline Guides</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Download complete printable brochures directly to your device for offline trip reference.
+                    </p>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
+
           </div>
         </div>
       </section>

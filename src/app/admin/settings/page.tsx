@@ -338,23 +338,13 @@ export default function AdminSettingsPage() {
                   </div>
                   <h3 className="text-lg font-bold text-slate-900">Financial Configuration</h3>
                 </div>
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-6 sm:grid-cols-1">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Global Tax % (GST)</label>
                     <input 
                       type="number" 
                       name="global_tax_percentage"
                       value={formData.global_tax_percentage || 0} 
-                      onChange={handleInputChange}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cashfree App ID</label>
-                    <input 
-                      type="text" 
-                      name="cashfree_app_id"
-                      value={formData.cashfree_app_id || ''} 
                       onChange={handleInputChange}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
                     />
