@@ -133,45 +133,57 @@ const GOOGLE_REVIEWS = [
   },
 ];
 
-const FALLBACK_PACKAGES: FeaturedPackage[] = [
+const FALLBACK_PACKAGES = [
   {
-    id: 101,
-    slug: 'papikondalu-day-cruise',
-    title: 'Papikondalu Day Cruise',
-    type: 'TOUR',
-    duration: '1 Day (Same Day)',
-    place: 'Papikondalu Hills',
-    region: 'AP & TS',
+    id: 1,
+    slug: 'hyderabad-kolluru-huts-3-days',
+    title: 'Hyderabad To Kolluru Huts 3 Days Tour',
+    type: 'PACKAGE',
+    duration: '3 Days / 2 Nights',
+    place: 'Kolluru Huts',
+    region: 'AP',
     cover_image_url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431926/papikondalu-3_jg6thw.png',
     is_featured: true,
-    tags: ['Best Seller', 'Cruise'],
-    starting_price: 1250,
+    tags: ['Cruise + Stay', 'Best Seller'],
+    starting_price: 4500,
+    transport_info: 'Train Sleeper / AC Coach',
+    variants: [
+      { id: 101, title: 'Standard Train Sleeper Package', adult_price: 4500, child_price: 4000, weekend_adult_price: 4800, weekend_child_price: 4200, is_active: true }
+    ]
   },
   {
-    id: 102,
-    slug: 'bhadrachalam-darshan-river-cruise',
-    title: 'Bhadrachalam Darshan & River Cruise',
-    type: 'TOUR',
+    id: 2,
+    slug: 'bhadrachalam-rajahmundry-1-day',
+    title: 'Bhadrachalam To Rajahmundry 1Day Tour',
+    type: 'PACKAGE',
     duration: '1 Day',
-    place: 'Bhadrachalam',
-    region: 'TS',
+    place: 'Rajahmundry',
+    region: 'AP',
     cover_image_url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432477/temple_0ciG4xn9_202402271449110_bck96x.jpg',
     is_featured: true,
-    tags: ['Temple Tour', 'Family'],
-    starting_price: 1800,
+    tags: ['Sightseeing', 'Popular'],
+    starting_price: 2500,
+    transport_info: 'Luxury Boat Cruise',
+    variants: [
+      { id: 102, title: 'Day Cruise Package', adult_price: 2500, child_price: 2200, is_active: true }
+    ]
   },
   {
-    id: 103,
-    slug: 'kolluru-bamboo-hut-stay',
-    title: 'Kolluru Bamboo Hut Stay & Cruise',
-    type: 'STAY',
+    id: 3,
+    slug: 'bhadrachalam-kolluru-huts-2-days',
+    title: 'Bhadrachalam To Kolluru Huts 2 Days Tour',
+    type: 'PACKAGE',
     duration: '2 Days / 1 Night',
-    place: 'Kolluru Sandbanks',
-    region: 'AP & TS',
+    place: 'Kolluru Huts',
+    region: 'AP',
     cover_image_url: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg',
     is_featured: true,
-    tags: ['Overnight Stay', 'Riverside'],
-    starting_price: 2500,
+    tags: ['Cruise + Stay', 'Nature Huts'],
+    starting_price: 4000,
+    transport_info: 'Boat Cruise + Bamboo Stay',
+    variants: [
+      { id: 103, title: 'Bamboo Hut Stay Package', adult_price: 4000, child_price: 3500, is_active: true }
+    ]
   },
 ];
 
@@ -532,61 +544,69 @@ async function FeaturedPackagesAndRooms() {
     fetchFeaturedRooms(),
   ]);
 
-  const pkgsToRender = (packages && packages.length > 0) ? packages.slice(0, 3) : FALLBACK_PACKAGES;
-  const roomsToRender = (rooms && rooms.length > 0) ? rooms.slice(0, 3) : FALLBACK_ROOMS;
+  const displayPkgs = (packages && packages.length > 0) ? packages.slice(0, 3) : null;
+  const displayRooms = (rooms && rooms.length > 0) ? rooms.slice(0, 3) : FALLBACK_ROOMS;
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-10">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-12">
       {/* LEFT COLUMN: Featured Tour Packages (3 Items) */}
-      <div className="flex flex-col gap-5 rounded-3xl border border-white/15 bg-white/5 p-5 backdrop-blur-md sm:p-6 shadow-xl">
+      <div className="flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm sm:p-6">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#0d6e75] text-white shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#1598a1] text-white">
               <Ship className="h-5 w-5" />
             </span>
             <div>
-              <h3 className="text-xl font-black text-white tracking-tight">Featured Packages</h3>
-              <p className="text-xs font-bold text-teal-300">Top Godavari Tour Packages</p>
+              <h3 className="text-xl font-black text-white">Featured Packages</h3>
+              <p className="text-xs font-semibold text-[#8eecee]">Top 3 Godavari Tour Packages</p>
             </div>
           </div>
           <Link
             href="/packages"
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-white transition-all hover:bg-white/20"
+            className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-[#8eecee] transition-colors hover:text-white"
           >
-            View All ({packages?.length || pkgsToRender.length}) <ArrowRight className="h-3.5 w-3.5" />
+            View All ({packages?.length || 3}) <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1">
-          {pkgsToRender.map((pkg, index) => (
-            <PackageCard key={pkg.id || pkg.slug} pkg={pkg} priority={index < 2} />
-          ))}
-        </div>
+        {displayPkgs ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {displayPkgs.map((pkg, index) => (
+              <PackageCard key={pkg.id} pkg={pkg} priority={index < 2} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {FALLBACK_PACKAGES.map((pkg, index) => (
+              <PackageCard key={pkg.id} pkg={pkg as any} priority={index < 2} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* RIGHT COLUMN: Featured Rooms & Accommodations (3 Items) */}
-      <div className="flex flex-col gap-5 rounded-3xl border border-white/15 bg-white/5 p-5 backdrop-blur-md sm:p-6 shadow-xl">
+      <div className="flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm sm:p-6">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-600 text-white shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#b45309] text-white">
               <BedDouble className="h-5 w-5" />
             </span>
             <div>
-              <h3 className="text-xl font-black text-white tracking-tight">Hotels &amp; Bamboo Stays</h3>
-              <p className="text-xs font-bold text-amber-300">Top Accommodations</p>
+              <h3 className="text-xl font-black text-white">Hotels &amp; Bamboo Stays</h3>
+              <p className="text-xs font-semibold text-amber-300">Top 3 Accommodations</p>
             </div>
           </div>
           <Link
             href="/rooms"
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-amber-300 transition-all hover:bg-white/20 hover:text-white"
+            className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-amber-300 transition-colors hover:text-white"
           >
             View All Rooms <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1">
-          {roomsToRender.map((room, index) => (
-            <RoomCard key={room.id || room.slug} room={room} variant="grid" priority={index < 2} />
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          {displayRooms.map((room, index) => (
+            <RoomCard key={room.id} room={room} variant="grid" priority={index < 2} />
           ))}
         </div>
       </div>
