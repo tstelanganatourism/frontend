@@ -76,6 +76,7 @@ interface PackageProps {
     }>;
   };
   priority?: boolean;
+  variant?: 'default' | 'compact';
 }
 
 function getDurationLabel(title: string, slug: string) {
@@ -105,7 +106,7 @@ function getTransportType(transport_info: string | null | undefined, title: stri
   return 'River Cruise Only';
 }
 
-function PackageCard({ pkg, priority = false }: PackageProps) {
+function PackageCard({ pkg, priority = false, variant = 'default' }: PackageProps) {
   const [imgSrc, setImgSrc] = React.useState<string>(pkg.cover_image_url || '/images/sightseeing-banner-2026.webp');
   const isTrip = pkg.type?.toUpperCase() === 'TRIP';
 
@@ -146,6 +147,117 @@ function PackageCard({ pkg, priority = false }: PackageProps) {
     return (4.5 + randomSeed * 0.1).toFixed(1);
   }, [pkg.id]);
 
+  // ── COMPACT SQUARE TILE (square image + full details) ──────────────────────
+  if (variant === 'compact') {
+    const reviewCount = 40 + ((pkg.id * 31 + 7) % 120);
+    return (
+      <Link
+        href={`/packages/${pkg.slug}`}
+        prefetch={false}
+        className="group flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/60 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-teal-400/50 hover:shadow-[0_10px_28px_rgba(20,152,161,0.14)]"
+      >
+        {/* Square image */}
+        <div className="relative aspect-square w-full overflow-hidden bg-slate-100 shrink-0">
+          <Image
+            src={imgSrc}
+            alt={pkg.title}
+            fill
+            priority={priority}
+            sizes="(max-width: 640px) 50vw, 20vw"
+            quality={70}
+            onError={() => setImgSrc('/images/sightseeing-banner-2026.webp')}
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(7,25,35,0.68)_0%,transparent_55%)]" />
+
+          {/* Top badges */}
+          <div className="absolute left-2 right-2 top-2 flex items-center justify-between z-10">
+            {pkg.is_featured ? (
+              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white shadow-xs">
+                Featured
+              </span>
+            ) : <span />}
+            <div className="flex items-center gap-0.5 rounded-full bg-white/95 px-1.5 py-0.5 text-[9px] font-black text-slate-900 backdrop-blur-md shadow-xs shrink-0">
+              <svg className="h-2.5 w-2.5 fill-amber-400" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+              <span>{reviewScore}</span>
+            </div>
+          </div>
+
+          {/* Bottom type badge */}
+          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full bg-slate-950/70 px-2 py-0.5 text-[8px] font-black text-white backdrop-blur-xs">
+            <IdentityIcon className="h-2.5 w-2.5 text-teal-300" />
+            <span className="uppercase tracking-wide">{experienceType}</span>
+          </div>
+          <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-white">
+            <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+            Active
+          </div>
+        </div>
+
+        {/* Full-detail body */}
+        <div className="flex flex-1 flex-col p-3">
+          {/* Category */}
+          <span className="text-[9px] font-black uppercase tracking-widest text-teal-600 truncate">{transport}</span>
+
+          {/* Title */}
+          <h3 className="mt-0.5 text-xs font-extrabold leading-snug text-slate-900 line-clamp-2 group-hover:text-teal-700 transition-colors min-h-[2.25rem]">
+            {pkg.title}
+          </h3>
+
+          {/* Stars */}
+          <div className="mt-1.5 flex items-center gap-1 text-[9px] text-slate-500">
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <svg key={i} className={`h-2.5 w-2.5 ${i < Math.floor(Number(reviewScore)) ? 'fill-amber-400' : 'fill-slate-200'}`} viewBox="0 0 24 24">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              ))}
+            </div>
+            <span className="font-bold text-slate-700">{reviewScore}</span>
+            <span className="text-slate-400">({reviewCount})</span>
+          </div>
+
+          {/* Duration + Place info row */}
+          <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg bg-slate-50 p-2 border border-slate-100">
+            <div className="flex items-center gap-1 min-w-0">
+              <Clock className="h-2.5 w-2.5 shrink-0 text-teal-600" />
+              <span className="text-[9px] font-bold text-slate-700 truncate">{duration}</span>
+            </div>
+            <div className="flex items-center gap-1 min-w-0">
+              <MapPin className="h-2.5 w-2.5 shrink-0 text-teal-600" />
+              <span className="text-[9px] font-bold text-slate-700 truncate">{destination}</span>
+            </div>
+          </div>
+
+          {/* Price row */}
+          <div className="mt-auto pt-2.5 border-t border-slate-100 mt-2">
+            <div className="flex items-center justify-between gap-1 mb-1">
+              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Starts from</span>
+              <span className="flex items-center gap-0.5 text-[9px] font-bold text-teal-600 group-hover:text-teal-700 shrink-0 transition-colors">
+                View Details <ChevronRight className="h-2.5 w-2.5" />
+              </span>
+            </div>
+            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-sm font-black text-slate-950 tracking-tight">
+                  ₹{adultPrice > 0 ? adultPrice.toLocaleString('en-IN') : '—'}
+                </span>
+                <span className="text-[8px] font-bold text-slate-400">/Adult</span>
+              </div>
+              {childPrice !== null && childPrice > 0 && (
+                <div className="flex items-baseline gap-0.5 border-l border-slate-200 pl-1.5">
+                  <span className="text-[11px] font-bold text-slate-700">₹{childPrice.toLocaleString('en-IN')}</span>
+                  <span className="text-[8px] font-bold text-slate-400">/Child</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  // ── DEFAULT FULL CARD ─────────────────────────────────────────────────────
   return (
     <Link
       href={`/packages/${pkg.slug}`}

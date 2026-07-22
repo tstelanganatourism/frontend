@@ -570,15 +570,15 @@ async function FeaturedPackagesAndRooms() {
         </div>
 
         {displayPkgs ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3">
             {displayPkgs.map((pkg, index) => (
-              <PackageCard key={pkg.id} pkg={pkg} priority={index < 2} />
+              <PackageCard key={pkg.id} pkg={pkg} priority={index < 2} variant="compact" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3">
             {FALLBACK_PACKAGES.map((pkg, index) => (
-              <PackageCard key={pkg.id} pkg={pkg as any} priority={index < 2} />
+              <PackageCard key={pkg.id} pkg={pkg as any} priority={index < 2} variant="compact" />
             ))}
           </div>
         )}
@@ -604,9 +604,9 @@ async function FeaturedPackagesAndRooms() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3">
           {displayRooms.map((room, index) => (
-            <RoomCard key={room.id} room={room} variant="grid" priority={index < 2} />
+            <RoomCard key={room.id} room={room} variant="compact" priority={index < 2} />
           ))}
         </div>
       </div>

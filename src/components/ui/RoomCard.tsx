@@ -33,7 +33,7 @@ interface RoomProps {
     address: string | null;
     facilities: string[];
   };
-  variant?: 'grid' | 'list';
+  variant?: 'grid' | 'list' | 'compact';
   priority?: boolean;
 }
 
@@ -76,6 +76,113 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
     room.is_featured,
     4
   );
+
+  if (variant === 'compact') {
+    return (
+      <Link
+        href={`/stays/${room.slug}`}
+        prefetch={false}
+        className="group flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/60 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-amber-400/50 hover:shadow-[0_10px_28px_rgba(180,83,9,0.12)]"
+      >
+        {/* Square image */}
+        <div className="relative aspect-square w-full overflow-hidden bg-slate-100 shrink-0">
+          <Image
+            src={room.cover_image_url || '/placeholder-room.jpg'}
+            alt={room.lodge_name}
+            fill
+            priority={priority}
+            sizes="(max-width: 640px) 50vw, 20vw"
+            quality={70}
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(7,25,35,0.68)_0%,transparent_55%)]" />
+
+          {/* Top badges */}
+          <div className="absolute left-2 right-2 top-2 flex items-center justify-between z-10">
+            {room.is_featured ? (
+              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white shadow-xs">
+                Featured
+              </span>
+            ) : <span />}
+            <div className="flex items-center gap-0.5 rounded-full bg-white/95 px-1.5 py-0.5 text-[9px] font-black text-slate-900 backdrop-blur-md shadow-xs shrink-0">
+              <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+              <span>{reviewScore}</span>
+            </div>
+          </div>
+
+          {/* Bottom type + active badges */}
+          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full bg-slate-950/70 px-2 py-0.5 text-[8px] font-black text-white backdrop-blur-xs">
+            <MoonStar className="h-2.5 w-2.5 text-amber-400" />
+            <span className="uppercase tracking-wide">Riverside Stay</span>
+          </div>
+          <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-white">
+            <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+            Active
+          </div>
+        </div>
+
+        {/* Full-detail body */}
+        <div className="flex flex-1 flex-col p-3">
+          {/* Category */}
+          <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 truncate">Accommodation &amp; Lodging</span>
+
+          {/* Title */}
+          <h3 className="mt-0.5 text-xs font-extrabold leading-snug text-slate-900 line-clamp-2 group-hover:text-amber-700 transition-colors min-h-[2.25rem]">
+            {room.lodge_name}
+          </h3>
+
+          {/* Stars */}
+          <div className="mt-1.5 flex items-center gap-1 text-[9px] text-slate-500">
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className={`h-2.5 w-2.5 ${i < Math.floor(Number(reviewScore)) ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'}`} />
+              ))}
+            </div>
+            <span className="font-bold text-slate-700">{reviewScore}</span>
+            <span className="text-slate-400">({reviewCount})</span>
+          </div>
+
+          {/* Facilities + address info row */}
+          <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg bg-slate-50 p-2 border border-slate-100">
+            <div className="flex items-center gap-1 min-w-0">
+              <ConciergeBell className="h-2.5 w-2.5 shrink-0 text-teal-600" />
+              <span className="text-[9px] font-bold text-slate-700 truncate">
+                {room.facilities && room.facilities.length > 0 ? room.facilities.slice(0, 2).join(' · ') : 'A/C · Wi-Fi'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 min-w-0">
+              <MapPin className="h-2.5 w-2.5 shrink-0 text-teal-600" />
+              <span className="text-[9px] font-bold text-slate-700 truncate">{room.address || 'Bhadrachalam'}</span>
+            </div>
+          </div>
+
+          {/* Price row */}
+          <div className="mt-auto pt-2.5 border-t border-slate-100 mt-2">
+            <div className="flex items-center justify-between gap-1 mb-1">
+              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Starts from</span>
+              <span className="flex items-center gap-0.5 text-[9px] font-bold text-teal-600 group-hover:text-teal-700 shrink-0 transition-colors">
+                View Stay <ArrowRight className="h-2.5 w-2.5" />
+              </span>
+            </div>
+            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-sm font-black text-slate-950 tracking-tight">
+                  ₹{startPriceNum ? startPriceNum.toLocaleString('en-IN') : '1,500'}
+                </span>
+                <span className="text-[8px] font-bold text-slate-400">/Night</span>
+              </div>
+              {startWeekendNum && (
+                <div className="flex items-baseline gap-0.5 border-l border-slate-200 pl-1.5">
+                  <span className="text-[11px] font-bold text-slate-700">₹{startWeekendNum.toLocaleString('en-IN')}</span>
+                  <span className="text-[8px] font-bold text-slate-400">/Wknd</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   if (variant === 'list') {
     const visibleFacilities = room.facilities.slice(0, 5);
