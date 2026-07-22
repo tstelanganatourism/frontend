@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Download, Share, PlusSquare } from 'lucide-react';
+import Image from 'next/image';
+import { X, Share, PlusSquare, Smartphone } from 'lucide-react';
 
 export default function InstallPromptModal() {
   const [isIOS, setIsIOS] = useState(false);
@@ -104,43 +105,59 @@ export default function InstallPromptModal() {
   if (!showPrompt || isStandalone) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-10 fade-in duration-500 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[380px]">
-      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 p-5">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-10 fade-in duration-500 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[400px]">
+      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_12px_36px_rgba(13,110,117,0.18)] border border-slate-200 p-5">
         <button
           onClick={handleDismiss}
           className="absolute right-3 top-3 rounded-full bg-slate-100 p-1.5 text-slate-500 transition-colors hover:bg-slate-200"
+          aria-label="Close"
         >
           <X className="h-4 w-4" />
         </button>
 
-        <div className="flex gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#5ac4d7] to-[#1a6b7a] shadow-inner">
-            <Download className="h-6 w-6 text-white" />
+        <div className="flex gap-3.5 items-start">
+          <div className="relative flex h-13 w-13 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-50 p-1 border border-slate-200/80 shadow-xs">
+            <Image
+              src="/logo.png"
+              alt="TS Boat Tourism"
+              width={48}
+              height={48}
+              className="h-full w-full object-contain"
+            />
           </div>
           
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 pr-4">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-[#0d6e75] bg-[#0d6e75]/10 px-2 py-0.5 rounded-full">
+                <Smartphone className="h-3 w-3" />
+                Official Web App
+              </span>
+            </div>
+            
             <h3 className="text-sm font-black text-slate-900 leading-tight mb-1">
-              Install our App
+              Install TS Boat Tourism App
             </h3>
             
             {isIOS ? (
               <div className="text-xs text-slate-600 font-medium space-y-2">
-                <p>Install TS Boat Tourism for a faster, better experience.</p>
-                <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-col gap-1.5">
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Instant 1-tap bookings, live cruise updates, offline tickets &amp; priority support.
+                </p>
+                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 flex flex-col gap-1.5 text-[11px]">
                   <span className="flex items-center gap-1.5">1. Tap the Share button <Share className="h-3.5 w-3.5 text-blue-500 inline" /></span>
-                  <span className="flex items-center gap-1.5">2. Scroll down & select <b>Add to Home Screen</b> <PlusSquare className="h-3.5 w-3.5 text-slate-700 inline" /></span>
+                  <span className="flex items-center gap-1.5">2. Scroll &amp; select <b>Add to Home Screen</b> <PlusSquare className="h-3.5 w-3.5 text-slate-700 inline" /></span>
                 </div>
               </div>
             ) : (
               <>
-                <p className="text-xs text-slate-500 font-medium mb-3">
-                  Install TS Boat Tourism for offline access, faster booking, and exclusive updates.
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed mb-3">
+                  Instant 1-tap bookings, live cruise status, offline ticket access &amp; 24/7 VIP assistance.
                 </p>
                 <button
                   onClick={handleInstallClick}
-                  className="w-full rounded-xl bg-[#1a6b7a] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition-all hover:bg-[#0f3d56] hover:-translate-y-0.5"
+                  className="w-full rounded-xl bg-[#0d6e75] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md shadow-[#0d6e75]/20 transition-all hover:bg-[#0b5c62] hover:-translate-y-0.5"
                 >
-                  Install App Now
+                  Install Official App
                 </button>
               </>
             )}
