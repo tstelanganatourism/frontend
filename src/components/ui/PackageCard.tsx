@@ -77,6 +77,7 @@ interface PackageProps {
   };
   priority?: boolean;
   variant?: 'default' | 'compact';
+  href?: string;
 }
 
 function getDurationLabel(title: string, slug: string) {
@@ -106,7 +107,7 @@ function getTransportType(transport_info: string | null | undefined, title: stri
   return 'River Cruise Only';
 }
 
-function PackageCard({ pkg, priority = false, variant = 'default' }: PackageProps) {
+function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOverride }: PackageProps) {
   const [imgSrc, setImgSrc] = React.useState<string>(pkg.cover_image_url || '/images/sightseeing-banner-2026.webp');
   const isTrip = pkg.type?.toUpperCase() === 'TRIP';
 
@@ -152,7 +153,7 @@ function PackageCard({ pkg, priority = false, variant = 'default' }: PackageProp
     const reviewCount = 40 + ((pkg.id * 31 + 7) % 120);
     return (
       <Link
-        href={`/packages/${pkg.slug}`}
+        href={hrefOverride ?? `/packages/${pkg.slug}`}
         prefetch={false}
         className="group flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/60 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-teal-400/50 hover:shadow-[0_10px_28px_rgba(20,152,161,0.14)]"
       >

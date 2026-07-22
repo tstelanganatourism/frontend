@@ -35,6 +35,7 @@ interface RoomProps {
   };
   variant?: 'grid' | 'list' | 'compact';
   priority?: boolean;
+  href?: string;
 }
 
 const FACILITY_ICON_MAP: Record<string, React.ElementType> = {
@@ -60,7 +61,7 @@ function getFacilityIcon(name: string): React.ElementType {
 
 
 
-function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
+function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride }: RoomProps) {
   const startPriceNum = room.starting_price ? Number(room.starting_price) : null;
   const startWeekendNum = room.starting_weekend_price ? Number(room.starting_weekend_price) : null;
   const prices = getPriceDetails(startPriceNum);
@@ -80,7 +81,7 @@ function RoomCard({ room, variant = 'list', priority = false }: RoomProps) {
   if (variant === 'compact') {
     return (
       <Link
-        href={`/stays/${room.slug}`}
+        href={hrefOverride ?? `/stays/${room.slug}`}
         prefetch={false}
         className="group flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/60 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-amber-400/50 hover:shadow-[0_10px_28px_rgba(180,83,9,0.12)]"
       >
