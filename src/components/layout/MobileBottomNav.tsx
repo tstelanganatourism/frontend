@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Ship, Image as ImageIcon, User } from 'lucide-react';
+import { Home, Ship, Hotel, Image as ImageIcon, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -15,6 +15,7 @@ export default function MobileBottomNav({ isStacked = false }: { isStacked?: boo
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Packages', href: '/packages', icon: Ship },
+    { name: 'Accommodations', href: '/stays', icon: Hotel },
     { name: 'Gallery', href: '/gallery', icon: ImageIcon },
     { name: isAuthenticated ? 'Dashboard' : 'Login', href: profileHref, icon: User },
   ];
@@ -22,8 +23,8 @@ export default function MobileBottomNav({ isStacked = false }: { isStacked?: boo
   const bottomClass = isStacked ? "bottom-16 sm:bottom-0" : "bottom-0";
 
   return (
-    <div className={`fixed ${bottomClass} left-0 right-0 z-50 border-t border-white/80 bg-white/96 px-2.5 pb-[calc(env(safe-area-inset-bottom)_+_0.45rem)] pt-1.5 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-md md:hidden`}>
-      <div className="mx-auto grid max-w-md grid-cols-4 items-center gap-1">
+    <div className={`fixed ${bottomClass} left-0 right-0 z-50 border-t border-white/80 bg-white/96 px-1.5 pb-[calc(env(safe-area-inset-bottom)_+_0.45rem)] pt-1.5 shadow-[0_-14px_40px_rgba(15,61,86,0.12)] backdrop-blur-md md:hidden`}>
+      <div className="mx-auto grid max-w-md grid-cols-5 items-center gap-0.5">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
           const Icon = item.icon;

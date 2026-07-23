@@ -117,7 +117,7 @@ export default function FAQClient() {
 
         {/* Dynamic Support Contact Cards */}
         <div className="mt-12 grid gap-5 md:grid-cols-2">
-          <a href="mailto:bookings@tstelanganatourism.com" className="group relative overflow-hidden rounded-md bg-white p-6 shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-slate-150/60 transition-all duration-300 hover:shadow-[0_12px_40px_rgba(15,61,86,0.08)] hover:-translate-y-1">
+          <a href="mailto:tstelanganatourism@gmail.com" className="group relative overflow-hidden rounded-md bg-white p-6 shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-slate-150/60 transition-all duration-300 hover:shadow-[0_12px_40px_rgba(15,61,86,0.08)] hover:-translate-y-1">
             <div className="absolute top-0 left-0 w-2 h-full bg-[#1598a1]" />
             <div className="flex items-start gap-4">
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#f0f7f8] text-[#1598a1] transition-colors group-hover:bg-[#1598a1] group-hover:text-white">
@@ -125,12 +125,12 @@ export default function FAQClient() {
               </span>
               <div>
                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Booking Desk</div>
-                <div className="mt-2 text-[16px] font-extrabold text-[#1e468a] break-all">bookings@tstelanganatourism.com</div>
+                <div className="mt-2 text-[16px] font-extrabold text-[#1e468a] break-all">tstelanganatourism@gmail.com</div>
               </div>
             </div>
           </a>
 
-          <a href="tel:+919542069573" className="group relative overflow-hidden rounded-md bg-white p-6 shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-slate-150/60 transition-all duration-300 hover:shadow-[0_12px_40px_rgba(15,61,86,0.08)] hover:-translate-y-1">
+          <a href="tel:+919951369573" className="group relative overflow-hidden rounded-md bg-white p-6 shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-slate-150/60 transition-all duration-300 hover:shadow-[0_12px_40px_rgba(15,61,86,0.08)] hover:-translate-y-1">
             <div className="absolute top-0 left-0 w-2 h-full bg-[#1598a1]" />
             <div className="flex items-start gap-4">
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-[#e9f7f7] text-[#1598a1] transition-colors group-hover:bg-[#1598a1] group-hover:text-white">
@@ -139,8 +139,8 @@ export default function FAQClient() {
               <div>
                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Call Help Center</div>
                 <div className="mt-3 flex flex-col gap-1.5">
-                  <span className="text-sm font-extrabold text-[#0f3d56]">+91 95420 69573</span>
-                  <span className="text-sm font-semibold text-slate-500">+91 98498 48982</span>
+                  <span className="text-sm font-extrabold text-[#0f3d56]">+91 99513 69573</span>
+                  <span className="text-sm font-semibold text-slate-500">+91 77801 19268</span>
                 </div>
               </div>
             </div>

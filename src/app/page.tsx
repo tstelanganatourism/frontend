@@ -18,6 +18,7 @@ import RoomCard from '@/components/ui/RoomCard';
 import GoogleReviewsCarousel from '@/components/ui/GoogleReviewsCarousel';
 import { ShimmerGrid } from '@/components/ui/SkeletonLoader';
 import { apiFetch } from '@/lib/api';
+import HeroBackgroundSlideshow from '@/components/ui/HeroBackgroundSlideshow';
 
 export const metadata: Metadata = {
   title: 'TS Boat Tourism | Papikondalu Tours, Bhadrachalam & Godavari River Packages',
@@ -85,8 +86,8 @@ const TRUST_ITEMS = [
   { value: '100%', label: 'Secure Payments' },
 ];
 
-const GOOGLE_REVIEW_URL = 'https://share.google/QH1HqWMDXerEUGu3N';
-const GOOGLE_WRITE_REVIEW_URL = 'https://g.page/r/CckJDR74rmzBEAI/review';
+const GOOGLE_REVIEW_URL = 'https://g.page/r/CcdqZmyXuAhxEAI';
+const GOOGLE_WRITE_REVIEW_URL = 'https://g.page/r/CcdqZmyXuAhxEAI/review';
 
 const GOOGLE_REVIEWS = [
   {
@@ -334,18 +335,11 @@ export default async function HomePage() {
     <main className="w-full overflow-x-clip bg-[#f6faf8] text-[#0f2f3d]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <section className="relative isolate overflow-hidden bg-[#eaf7f6]">
-        <Image
-          src="/home/godavari-hero-banner.jpg"
-          alt="Godavari boat experience in Papikondalu"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,28,36,0.88)_0%,rgba(6,55,63,0.68)_48%,rgba(232,247,247,0.24)_100%)]" />
+      <section className="relative isolate overflow-hidden bg-[#07242c]">
+        <HeroBackgroundSlideshow />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#021c24]/85 via-[#021c24]/55 to-[#021c24]/90 lg:bg-gradient-to-r lg:from-[#021c24]/92 lg:via-[#06373f]/65 lg:to-transparent z-[1]" />
 
-        <div className="relative z-10 mx-auto grid min-h-[calc(100dvh-92px)] lg:h-[calc(100dvh-92px)] w-full max-w-[1800px] items-center gap-8 px-4 py-4 lg:py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,460px)] lg:px-8 xl:px-12">
+        <div className="relative z-10 mx-auto grid min-h-[auto] lg:min-h-screen lg:h-screen w-full max-w-[1800px] items-start lg:items-center gap-8 px-4 pb-8 pt-24 sm:pt-28 lg:pt-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,460px)] lg:px-8 xl:px-12">
           <div className="max-w-4xl py-4 text-white lg:py-6">
             <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-[#35c6ca]/45 bg-[#1598a1]/18 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#a7f3f4] backdrop-blur-md sm:text-xs">
               <ShieldCheck className="h-3.5 w-3.5" />
@@ -368,7 +362,7 @@ export default async function HomePage() {
                 View Packages <ArrowRight className="h-4 w-4" />
               </Link>
               <a
-                href="tel:+919542069573"
+                href="tel:+919951369573"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/28 bg-white/12 px-7 text-sm font-black text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 sm:text-base"
               >
                 <Phone className="h-4 w-4" /> Talk to Booking Team
@@ -444,6 +438,31 @@ export default async function HomePage() {
                 Browse All Packages <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Official HD Banner Showcase (Mobile & Small Devices Only) */}
+      <section className="block lg:hidden bg-[#07242c] py-6 border-t border-b border-[#1598a1]/25">
+        <div className="mx-auto max-w-[1800px] px-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#a7f3f4]">
+                <ShieldCheck className="h-3 w-3 text-[#1598a1]" />
+                Official Govt. MSME Registered Unit
+              </span>
+              <h2 className="mt-1 text-lg font-black text-white tracking-tight">
+                TS Boat Tourism Official Banner
+              </h2>
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-teal-400/25 bg-[#021c24] p-1.5 shadow-2xl">
+            <img 
+              src="https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png"
+              alt="TS Boat Tourism Official HD Banner"
+              className="w-full h-auto rounded-lg object-contain"
+              loading="eager"
+            />
           </div>
         </div>
       </section>
@@ -524,11 +543,11 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[28rem]">
-            <a href="tel:+919542069573" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-md bg-[#1598a1] px-6 text-sm font-black text-white transition-colors hover:bg-[#117f87]">
+            <a href="tel:+919951369573" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-md bg-[#1598a1] px-6 text-sm font-black text-white transition-colors hover:bg-[#117f87]">
               <Phone className="h-4 w-4" />
               Call Now
             </a>
-            <a href="https://wa.me/919542069573" target="_blank" rel="noreferrer" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-6 text-sm font-black text-[#0f3d56] transition-colors hover:bg-[#eef8f8]">
+            <a href="https://wa.me/919951369573" target="_blank" rel="noreferrer" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-6 text-sm font-black text-[#0f3d56] transition-colors hover:bg-[#eef8f8]">
               WhatsApp
             </a>
           </div>

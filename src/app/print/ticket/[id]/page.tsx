@@ -250,7 +250,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
     <div className="ticket-page-wrapper">
       <style dangerouslySetInnerHTML={{
         __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Telugu:wght@500;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Telugu:wght@500;700;800&display=swap');
         
         body {
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -316,10 +316,11 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         }
 
         .brand-title {
-          font-family: 'Outfit', sans-serif;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-style: italic;
           font-weight: 900;
           color: #0a2351;
-          font-size: 20px;
+          font-size: 21px;
           line-height: 1.1;
         }
 
@@ -356,8 +357,9 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
         }
 
         .ticket-main-title {
-          font-family: 'Outfit', sans-serif;
-          font-size: 22px;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-style: italic;
+          font-size: 23px;
           font-weight: 900;
           color: #c8a45a;
           margin: 0;
@@ -420,14 +422,15 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
 
         /* Passenger Table */
         .section-header {
-          font-family: 'Outfit', sans-serif;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-style: italic;
           font-weight: 900;
-          font-size: 12px;
+          font-size: 13px;
           color: #ffffff;
           background: #0a2351;
           padding: 6px 12px;
           border-radius: 6px 6px 0 0;
-          text-transform: uppercase;
+          text-transform: none;
           letter-spacing: 0.5px;
         }
 
@@ -847,6 +850,16 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
           </div>
         </div>
       )}
+
+      {/* TS Boat Tourism Graphic Banner */}
+      <div style={{ width: '100%', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img 
+          src="https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png" 
+          alt="TS Boat Tourism Banner" 
+          style={{ width: '100%', height: 'auto', display: 'block' }} 
+        />
+      </div>
 
       <div className="ticket-container">
         {/* Notch punches */}
@@ -1290,7 +1303,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             <div className="rule-card">
               <div className="rule-card-title">📍 Support & Office</div>
               <ul>
-                <li>Support: +91 95420 69573, +91 984 984 8982</li>
+                <li>Support: 9951369573, 7780119268</li>
                 <li>Office: Om Shanti Satram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam</li>
                 <li>Arrive 30 mins before reporting time.</li>
               </ul>
@@ -1331,7 +1344,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
       {/* Footer */}
       <div className="ticket-footer">
         <div>Official TS Boat Tourism confirmation voucher</div>
-        <div>Support: bookings@tstelanganatourism.com | <a href="https://www.tstelanganatourism.com">www.tstelanganatourism.com</a></div>
+        <div>Support: tstelanganatourism@gmail.com | <a href="https://www.tstelanganatourism.com">www.tstelanganatourism.com</a></div>
       </div>
 
       <PrintAction showClose />

@@ -5,7 +5,7 @@ export const FAQS = [
     questions: [
       {
         q: 'How can I cancel my online ticket?',
-        a: 'Online tickets can only be cancelled through the phone number you used for booking. Please send your ticket details to our WhatsApp numbers (+91 95420 69573 / +91 984 984 89 82 / +91 984 984 89 83 / +91 984 984 89 38).',
+        a: 'Online tickets can only be cancelled through the phone number you used for booking. Please send your ticket details to our WhatsApp numbers (+91 99513 69573 / +91 77801 19268).',
       },
       {
         q: 'What is the refund policy for cancellations?',

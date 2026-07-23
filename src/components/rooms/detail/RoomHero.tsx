@@ -1,7 +1,10 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { getHdImageUrl } from '@/lib/utils';
-import { BedDouble, Home, MapPin, ShieldCheck, Sparkles, ChevronRight } from 'lucide-react';
+import { BedDouble, MapPin, ShieldCheck, Sparkles, ChevronRight, Camera, Star, ChevronLeft, BadgeCheck } from 'lucide-react';
+import { useState, useMemo } from 'react';
 
 interface RoomHeroProps {
   lodgeName: string;
@@ -10,94 +13,220 @@ interface RoomHeroProps {
   isFeatured?: boolean;
   startingPrice?: number | string | null;
   totalRooms?: number;
+  gallery?: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
 }
 
 const fallbackImage = 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg';
 
-export const RoomHero = ({ lodgeName, coverImage, address, isFeatured, startingPrice, totalRooms }: RoomHeroProps) => {
-  const imageUrl = coverImage || fallbackImage;
+export const RoomHero = ({
+  lodgeName,
+  coverImage,
+  address,
+  isFeatured,
+  startingPrice,
+  totalRooms,
+  gallery = [],
+}: RoomHeroProps) => {
+  const imageUrl = getHdImageUrl(coverImage || fallbackImage);
+  const [imgError, setImgError] = useState(false);
+
+  // Build full gallery array for slider
+  const slides = useMemo(() => {
+    const list = [...gallery];
+    if (coverImage && !list.some((img) => img.image_url === coverImage)) {
+      list.unshift({ id: -99, image_url: coverImage, alt_text: lodgeName, is_cover: true });
+    }
+    return list.length > 0
+      ? list
+      : [{ id: -1, image_url: fallbackImage, alt_text: lodgeName, is_cover: true }];
+  }, [gallery, coverImage, lodgeName]);
+
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const moveSlide = (direction: 'left' | 'right') => {
+    setActiveIdx((prev) => {
+      if (direction === 'left') return (prev - 1 + slides.length) % slides.length;
+      return (prev + 1) % slides.length;
+    });
+  };
+
+  const activeSlide = slides[activeIdx] || slides[0];
 
   return (
-    <section className="relative overflow-hidden bg-[#fafaf7] border-b border-slate-200/60 pb-10">
-      <div className="relative mx-auto max-w-[1600px] px-4 pt-6 sm:px-6 lg:px-12">
-        {/* Breadcrumb */}
-        <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#0d6e75]/70">
-          <Link href="/" className="transition hover:text-[#0d6e75]">
-            Home
-          </Link>
-          <ChevronRight className="h-3 w-3 text-slate-400" />
-          <Link href="/stays" className="transition hover:text-[#0d6e75]">
-            Stays
-          </Link>
-          <ChevronRight className="h-3 w-3 text-slate-400" />
-          <span className="truncate text-slate-600">Accommodation Detail</span>
-        </div>
+    <section className="relative isolate overflow-hidden bg-[#071923]">
+      {/* Full-bleed background image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src={imgError ? fallbackImage : imageUrl}
+          alt={lodgeName}
+          fill
+          priority
+          className="object-cover opacity-50"
+          sizes="100vw"
+          onError={() => setImgError(true)}
+        />
+        {/* Directional gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#021c24]/96 via-[#06373f]/75 to-[#021c24]/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#021c24]/80 via-transparent to-transparent" />
+      </div>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-          {/* Left Text */}
-          <div className="min-w-0 flex flex-col justify-center">
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              {isFeatured && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75]/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#0d6e75]">
-                  <ShieldCheck className="h-3 w-3" />
-                  Verified Partner Stay
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-700">
-                <Home className="h-3 w-3" />
+      {/* Content layer */}
+      <div className="relative z-10 mx-auto w-full max-w-[1800px] px-4 pb-10 pt-8 sm:pt-10 lg:pt-12 sm:px-6 lg:px-8 xl:px-12">
+
+        {/* Breadcrumb */}
+        <nav className="mb-7 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-white/45">
+          <Link href="/" className="transition hover:text-white/80">Home</Link>
+          <ChevronRight className="h-3 w-3" />
+          <Link href="/stays" className="transition hover:text-white/80">Stays</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="max-w-[200px] truncate text-white/65">{lodgeName}</span>
+        </nav>
+
+        {/* Main hero grid */}
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-center">
+
+          {/* ── Left: Text & Badges ── */}
+          <div className="space-y-5">
+
+            {/* Badges & Tags */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#35c6ca]/40 bg-[#1598a1]/20 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#8eecee] backdrop-blur-sm">
+                <ShieldCheck className="h-3 w-3" />
+                Verified Partner Stay
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-300 backdrop-blur-sm">
+                <Star className="h-3 w-3 fill-amber-300" />
+                Premium Accommodation
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold text-white/80 uppercase tracking-wider backdrop-blur-sm">
                 Bhadrachalam Stay
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold text-white/80 uppercase tracking-wider backdrop-blur-sm">
+                River Cruise Route
               </span>
             </div>
 
-            <h1 className="text-3xl font-black leading-tight tracking-tight text-slate-900 sm:text-4xl lg:text-5xl break-words">
+            {/* Title */}
+            <h1 className="text-3xl font-black leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl xl:text-[3.2rem]">
               {lodgeName}
             </h1>
 
-            <p className="mt-4 max-w-3xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
-              A clean stay page with room variants, facilities, check-in expectations, policy clarity, and reservation support before payment.
-            </p>
+            {/* Address */}
+            {address && (
+              <p className="flex items-center gap-2 text-sm font-semibold text-white/65">
+                <MapPin className="h-4 w-4 shrink-0 text-[#8eecee]" />
+                {address}
+              </p>
+            )}
 
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <MapPin className="mb-2.5 h-4.5 w-4.5 text-amber-500" />
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Location</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-950 truncate">{address || 'Bhadrachalam, Telangana'}</p>
+            {/* Quick stats */}
+            <div className="grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 backdrop-blur-md sm:max-w-lg">
+              <div className="bg-[#06333c]/75 px-4 py-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white/45">Starting From</p>
+                <p className="mt-1.5 text-xl font-black text-[#8eecee]">
+                  {startingPrice ? `₹${Number(startingPrice).toLocaleString('en-IN')}` : '—'}
+                </p>
+                <p className="text-[9px] font-semibold text-white/35">per night</p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <BedDouble className="mb-2.5 h-4.5 w-4.5 text-amber-500" />
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Rooms</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-950">{totalRooms ? `${totalRooms} rooms` : 'Available Room Options'}</p>
+              <div className="bg-[#06333c]/75 px-4 py-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white/45">Rooms</p>
+                <p className="mt-1.5 text-xl font-black text-white">{totalRooms ?? '—'}</p>
+                <p className="text-[9px] font-semibold text-white/35">{totalRooms ? 'available' : 'on request'}</p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm col-span-2 sm:col-span-1">
-                <Sparkles className="mb-2.5 h-4.5 w-4.5 text-[#0d6e75]" />
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Tariff starts at</p>
-                <p className="mt-1 text-sm font-extrabold text-[#0d6e75]">{startingPrice ? `₹${startingPrice}` : 'Check Fares'}</p>
+              <div className="bg-[#06333c]/75 px-4 py-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white/45">Type</p>
+                <p className="mt-1.5 text-xl font-black text-white">Stay</p>
+                <p className="text-[9px] font-semibold text-white/35">accommodation</p>
               </div>
             </div>
 
-            <div className="mt-8">
-              <a
-                href="#rooms-list"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#0d6e75] px-6 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b5c62] cursor-pointer"
+            {/* CTA */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('categories');
+                  if (el) {
+                    const top = el.getBoundingClientRect().top + window.scrollY - 130;
+                    window.scrollTo({ top, behavior: 'smooth' });
+                  }
+                }}
+                className="inline-flex min-h-12 items-center gap-2.5 rounded-xl bg-[#1598a1] px-7 text-sm font-black text-white shadow-[0_18px_45px_rgba(21,152,161,0.30)] transition-all hover:-translate-y-0.5 hover:bg-[#117f87] hover:shadow-[0_22px_50px_rgba(21,152,161,0.40)] active:scale-95"
               >
-                Choose Rooms & Book
-              </a>
+                <BedDouble className="h-4 w-4" />
+                Choose Room &amp; Book
+              </button>
             </div>
           </div>
 
-          {/* Right Image */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
-            <div className="relative overflow-hidden rounded-xl bg-slate-950 aspect-[4/3] w-full sm:aspect-[16/10] lg:min-h-[380px]">
-              <Image
-                src={getHdImageUrl(imageUrl)}
-                alt={lodgeName}
-                fill
-                priority
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 640px"
-              />
+          {/* ── Right: Expanded Visual Image Card & Gallery Slider (Matching PackageHeroV3) ── */}
+          <div className="rounded-2xl border border-white/15 bg-white/5 p-2.5 backdrop-blur-md shadow-2xl">
+            <div className="relative overflow-hidden rounded-xl bg-slate-950">
+              <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:min-h-[350px]">
+                <Image
+                  src={getHdImageUrl(activeSlide.image_url)}
+                  alt={activeSlide.alt_text || lodgeName}
+                  fill
+                  priority
+                  className="object-cover transition-transform duration-500"
+                  sizes="(max-width: 1024px) 100vw, 460px"
+                />
+                
+                {/* Overlay Footer Badges */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent p-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-900 shadow-sm">
+                    <Camera className="h-3.5 w-3.5 text-[#0d6e75]" />
+                    {slides.length} {slides.length === 1 ? 'Photo' : 'Photos'}
+                  </span>
+                  {totalRooms ? (
+                    <span className="rounded-full bg-slate-950/80 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white ring-1 ring-white/20">
+                      {totalRooms} Rooms Available
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Slider Control Arrows */}
+                {slides.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveSlide('left');
+                      }}
+                      className="absolute left-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
+                      aria-label="Previous photo"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveSlide('right');
+                      }}
+                      className="absolute right-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
+                      aria-label="Next photo"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Notice Tag */}
+            <div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1598a1]/15 border border-[#1598a1]/30 px-3.5 py-2.5 text-[11px] font-bold text-[#8eecee]">
+              <BadgeCheck className="h-4 w-4 text-[#8eecee] shrink-0" />
+              <span>More photos &amp; room details will be confirmed before travel.</span>
             </div>
           </div>
+        </div>
+
+        {/* Bottom tag bar */}
+        <div className="mt-7 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/35">
+          <Sparkles className="h-3 w-3 text-amber-300" />
+          Premium Bhadrachalam Accommodation · Instant Online Booking
         </div>
       </div>
     </section>

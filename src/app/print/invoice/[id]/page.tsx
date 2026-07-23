@@ -174,7 +174,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
       <div className="invoice-container">
         <style dangerouslySetInnerHTML={{
           __html: `
-          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
           
           body {
             margin: 0;
@@ -220,8 +220,9 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           }
           
           .brand-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 24px;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-style: italic;
+            font-size: 25px;
             font-weight: 900;
             color: #0a2351;
             line-height: 1.1;
@@ -240,8 +241,9 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           }
 
           .invoice-main-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 26px;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-style: italic;
+            font-size: 28px;
             font-weight: 900;
             color: #c8a45a;
             margin: 0 0 4px 0;
@@ -626,6 +628,16 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           }
         ` }} />
 
+        {/* TS Boat Tourism Graphic Banner */}
+        <div style={{ width: '100%', marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src="https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png" 
+            alt="TS Boat Tourism Banner" 
+            style={{ width: '100%', height: 'auto', display: 'block' }} 
+          />
+        </div>
+
         {/* HEADER */}
         <div className="header-row">
           <div className="header-left">
@@ -644,11 +656,11 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
         {/* DETAILS META GRID */}
         <div className="info-meta-row">
           <div className="company-card">
-            <strong>TS Boat Tourism</strong><br />
-            Om Shanti Satram, Kalyana Mandapam Road,<br />
-            Near SBI ATM, Bhadrachalam, Telangana 507111<br />
-            📞 +91 95420 69573 | bookings@tstelanganatourism.com<br />
-            GSTIN: 36AABCT4827M1Z1 (Official Registered Partner)
+            <strong>HARITHA BOAT BOOKING (TS Boat Tourism)</strong><br />
+            Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
+            Bhadrachalam, Bhadradri Kothagudem, Telangana 507111<br />
+            📞 9951369573, 7780119268 | tstelanganatourism@gmail.com<br />
+            Udyam Reg. No: UDYAM-TS-11-0024618 (Govt. of India MSME)
           </div>
 
           <div>
@@ -756,7 +768,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
               <td>{hsnCode}</td>
               <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
               <td style={{ textAlign: 'right' }}>5.0%</td>
-              <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
+              <td style={{ textAlign: 'right' }}>{money(Number(baseFare) * 1.05, 2)}</td>
             </tr>
 
             {transportSelections.map((ts, idx) => (
@@ -769,7 +781,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 <td>996411</td>
                 <td style={{ textAlign: 'right' }}>{money(ts.item_total || 0, 2)}</td>
                 <td style={{ textAlign: 'right' }}>5.0%</td>
-                <td style={{ textAlign: 'right' }}>{money(ts.item_total || 0, 2)}</td>
+                <td style={{ textAlign: 'right' }}>{money(Number(ts.item_total || 0) * 1.05, 2)}</td>
               </tr>
             ))}
 
@@ -783,7 +795,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 <td>996331</td>
                 <td style={{ textAlign: 'right' }}>{money(refreshmentAmount, 2)}</td>
                 <td style={{ textAlign: 'right' }}>5.0%</td>
-                <td style={{ textAlign: 'right' }}>{money(refreshmentAmount, 2)}</td>
+                <td style={{ textAlign: 'right' }}>{money(Number(refreshmentAmount) * 1.05, 2)}</td>
               </tr>
             )}
           </tbody>
@@ -926,20 +938,6 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           </ul>
         </div>
 
-        {/* SIGNATURES */}
-        <div className="sign-footer">
-          <div className="sign-col">
-            <div className="sign-line" />
-            <div className="sign-title">Customer Acknowledgement</div>
-          </div>
-          <div className="sign-col" style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '10px', fontWeight: 800, color: '#0a2351' }}>For TS BOAT TOURISM</div>
-            <div className="sign-line" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '18px', color: '#1a6b7a', opacity: 0.6 }}>TS Boat Tourism Admin</span>
-            </div>
-            <div className="sign-title">Authorized Signatory</div>
-          </div>
-        </div>
 
         <div className="bottom-bar">
           ⚓ Thank you for booking with TS Boat Tourism. Have a safe and memorable trip! ⚓

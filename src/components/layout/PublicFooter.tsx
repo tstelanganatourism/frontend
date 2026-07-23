@@ -15,6 +15,7 @@ const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d7603
 
 const exploreLinks = [
   { label: 'Packages', href: '/packages' },
+  { label: 'Accommodations', href: '/stays' },
   { label: 'Brochures', href: '/brochures' },
   { label: 'Gallery', href: '/gallery' },
   { label: 'About', href: '/about' },
@@ -33,7 +34,7 @@ const socialLinks = [
   { label: 'Facebook', href: '#', icon: <FacebookIcon /> },
   { label: 'Instagram', href: 'https://www.instagram.com/ap_ts_boat_tourism/', icon: <InstagramIcon /> },
   { label: 'YouTube', href: 'https://youtube.com/@telanganaboattourism?si=V1bDCkIJD0mE7lXq', icon: <YouTubeIcon /> },
-  { label: 'WhatsApp', href: 'https://wa.me/919542069573', icon: <WhatsAppIcon /> },
+  { label: 'WhatsApp', href: 'https://wa.me/919951369573', icon: <WhatsAppIcon /> },
 ];
 
 interface PublicFooterProps {
@@ -110,7 +111,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                 ))}
               </nav>
               <a
-                href="https://search.google.com/local/writereview?placeid=ChIJz2qgCkOpNjoRyQkNHviubME"
+                href="https://g.page/r/CcdqZmyXuAhxEAI/review"
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#1598a1] px-3 py-2 text-[11px] font-black text-white transition-colors hover:bg-[#117f87]"
@@ -155,7 +156,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                     <MapPin className="h-4 w-4" />
                   </span>
                   <span className="text-xs font-semibold leading-5 text-white/72">
-                    Om Shanti satram, Kalyana mandapam road, near SBI ATM, Bhadrachalam, Telangana 507111.
+                    Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Bhadrachalam, Telangana 507111.
                   </span>
                 </li>
                 <li className="flex gap-3">
@@ -163,7 +164,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                     <Phone className="h-4 w-4" />
                   </span>
                   <span className="text-xs font-black leading-5 text-white">
-                    +91 95420 69573, +91 98498 48982
+                    +91 99513 69573, +91 77801 19268
                   </span>
                 </li>
                 <li className="flex gap-3">
@@ -179,7 +180,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                     <Mail className="h-4 w-4" />
                   </span>
                   <span className="break-all text-xs font-semibold leading-5 text-white/72">
-                    bookings@tstelanganatourism.com
+                    tstelanganatourism@gmail.com
                   </span>
                 </li>
               </ul>
@@ -191,7 +192,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                 Official Map
               </h3>
               <a
-                href="https://www.google.com/maps/place/Telangana+Boat+Tourism/@17.6679145,80.8842764,15z"
+                href="https://g.page/r/CcdqZmyXuAhxEAI"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/72 hover:text-white"

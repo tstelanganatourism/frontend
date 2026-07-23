@@ -150,11 +150,6 @@
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
-    text-rendering: optimizeLegibility;
-  }
-
   body {
     overflow-x: hidden;
   }

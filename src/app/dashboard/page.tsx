@@ -81,7 +81,7 @@ export default function DashboardPage() {
               Explore New Tours
             </Link>
             <a 
-              href="https://wa.me/919542069573"
+              href="https://wa.me/919951369573"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-6 py-3 text-sm font-bold backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all"

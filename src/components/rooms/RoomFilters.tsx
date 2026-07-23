@@ -2,7 +2,7 @@
 
 import React, { useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Check, Filter, Loader2 } from 'lucide-react';
+import { Check, Filter, Loader2, RotateCcw, Sparkles } from 'lucide-react';
 import type { SortOption } from '@/stores/useFilterStore';
 import SortDropdown from '@/components/ui/SortDropdown';
 import { cn } from '@/lib/utils';
@@ -61,35 +61,51 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
     }
   };
 
+  const hasActiveFilters = isFeatured || activeFacilities.length > 0 || activeSort !== 'priority';
+
   return (
-    <div className={cn('relative space-y-8 overflow-visible rounded-[1.35rem] border border-white/70 bg-white/88 p-5 shadow-[0_18px_55px_rgba(44,94,67,0.1)] backdrop-blur-xl sm:p-6', sticky && 'sticky top-24', className)}>
+    <div
+      className={cn(
+        'relative space-y-6 overflow-visible rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all',
+        sticky && 'sticky top-[100px] max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200',
+        className
+      )}
+    >
       {isPending && (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-[1.35rem] bg-white/72 backdrop-blur-sm">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-green)]/15 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-[var(--color-brand-river)] shadow-lg">
-            <Loader2 className="h-4 w-4 animate-spin text-[var(--color-brand-green)]" />
-            Applying
+        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-white/80 backdrop-blur-xs">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#0d6e75]/20 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-[#0d6e75] shadow-md">
+            <Loader2 className="h-4 w-4 animate-spin text-[#0d6e75]" />
+            Updating Filters
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-[var(--color-brand-river)] flex items-center gap-2">
-          <Filter className="h-5 w-5 text-[var(--color-brand-teal)]" />
-          Filters
+
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
+            <Filter className="h-4 w-4" />
+          </div>
+          Filter Accommodations
         </h3>
-        <button 
-          type="button"
-          onClick={clearAll}
-          disabled={isPending}
-          className="text-xs font-medium text-muted-foreground hover:text-[var(--color-brand-teal)] transition-colors"
-        >
-          Clear All
-        </button>
+        {hasActiveFilters && (
+          <button 
+            type="button"
+            onClick={clearAll}
+            disabled={isPending}
+            className="inline-flex items-center gap-1 text-[11px] font-extrabold text-rose-600 hover:text-rose-700 transition-colors"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Clear
+          </button>
+        )}
       </div>
 
-      {/* Featured Filter */}
-      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-        <label htmlFor="featured" className="text-sm font-semibold text-[var(--color-brand-river)] cursor-pointer">
-          Show Recommended Only
+      {/* Recommended Only Filter Toggle */}
+      <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100/80 hover:border-slate-200 transition-colors">
+        <label htmlFor="featured" className="text-xs font-bold text-slate-800 cursor-pointer flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+          Recommended Stays Only
         </label>
         <input 
           id="featured"
@@ -97,14 +113,16 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
           checked={isFeatured}
           onChange={(e) => setParam('is_featured', e.target.checked ? 'true' : null)}
           disabled={isPending}
-          className="h-5 w-5 rounded border-slate-300 text-[var(--color-brand-teal)] focus:ring-[var(--color-brand-teal)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-4 w-4 rounded border-slate-300 text-[#0d6e75] focus:ring-[#0d6e75] cursor-pointer"
         />
       </div>
 
-      {/* Facilities Filter */}
+      {/* Facilities Filter Grid */}
       <div>
-        <h4 className="text-sm font-semibold text-[var(--color-brand-river)] mb-3">Facilities</h4>
-        <div className="grid grid-cols-1 gap-2">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2.5 block">
+          Facilities & Amenities
+        </label>
+        <div className="grid grid-cols-1 gap-1.5">
           {FACILITIES.map((f) => {
             const isActive = activeFacilities.includes(f);
             return (
@@ -113,22 +131,25 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
                 type="button"
                 onClick={() => toggleFacility(f)}
                 disabled={isPending}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                   isActive 
-                    ? 'bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)] font-bold border border-[var(--color-brand-green)]/20' 
-                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                    ? 'bg-[#0d6e75]/10 text-[#0d6e75] border border-[#0d6e75]/30 shadow-2xs' 
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-slate-100'
                 }`}
               >
-                {f}
-                {isActive && <Check className="h-4 w-4" />}
+                <span>{f}</span>
+                {isActive && <Check className="h-4 w-4 text-[#0d6e75] stroke-[2.5]" />}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Sort Option */}
+      {/* Sort Option Dropdown */}
       <div className="pt-4 border-t border-slate-100">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">
+          Sort Results By
+        </label>
         <SortDropdown 
           options={[
             { label: 'Recommended', value: 'priority' },

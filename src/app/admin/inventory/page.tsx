@@ -1147,6 +1147,8 @@ function GenerateModal({
 function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: { mode: 'package' | 'room', entityId: number, dateStr: string, rows: any[], onClose: () => void, onRefresh: () => void }) {
   const { generateInventory, generateRoomInventory, patchInventoryRow, patchRoomInventoryRow, deleteInventoryRow, deleteRoomInventoryRow } = useInventoryStore();
   const [capacity, setCapacity] = useState(mode === 'package' ? 500 : 20);
+  const [hotelName, setHotelName] = useState('');
+  const [hotelAddress, setHotelAddress] = useState('');
   const [loading, setLoading] = useState(false);
 
   const hasInventory = rows.length > 0;
@@ -1166,7 +1168,14 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
       if (mode === 'package') {
         await generateInventory({ variant_id: entityId, from_date: dateStr, to_date: dateStr, total_capacity: capacity });
       } else {
-        await generateRoomInventory({ room_variant_id: entityId, from_date: dateStr, to_date: dateStr, override_total_rooms: capacity });
+        await generateRoomInventory({
+          room_variant_id: entityId,
+          from_date: dateStr,
+          to_date: dateStr,
+          override_total_rooms: capacity,
+          hotel_name: hotelName.trim() || undefined,
+          hotel_address: hotelAddress.trim() || undefined,
+        });
       }
       toast.success(`Inventory opened for ${dateStr}!`);
       onRefresh();
@@ -1281,42 +1290,76 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
             </div>
           )}
 
-          {/* Capacity Input */}
+          {/* Capacity Input & Hotel Allocation */}
           {!hasInventory && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-                <div className="flex-1">
-                  <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
-                    Starting Capacity
-                  </label>
-                  <p className="mt-1.5 text-sm font-medium text-slate-500">
-                    Use this capacity for {dateStr}.
-                  </p>
-                  <div className="relative mt-3">
-                    <input
-                      type="number"
-                      min={1}
-                      max={10000}
-                      value={capacity}
-                      onChange={(e) => setCapacity(parseInt(e.target.value) || defaultCapacity)}
-                      className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 pl-4 pr-20 py-3.5 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      autoFocus
-                    />
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{unitLabel}</span>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-600">
+                      <Zap className="h-3.5 w-3.5 text-amber-500" />
+                      Starting Capacity
+                    </label>
+                    <p className="mt-1.5 text-sm font-medium text-slate-500">
+                      Use this capacity for {dateStr}.
+                    </p>
+                    <div className="relative mt-3">
+                      <input
+                        type="number"
+                        min={1}
+                        max={10000}
+                        value={capacity}
+                        onChange={(e) => setCapacity(parseInt(e.target.value) || defaultCapacity)}
+                        className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 pl-4 pr-20 py-3.5 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        autoFocus
+                      />
+                      <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                        <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{unitLabel}</span>
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={handleCreate}
+                    disabled={loading || capacity < 1}
+                    className="flex h-[56px] items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-6 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50 disabled:hover:shadow-md sm:min-w-[160px]"
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+                    Open Date
+                  </button>
                 </div>
-                <button
-                  onClick={handleCreate}
-                  disabled={loading || capacity < 1}
-                  className="flex h-[56px] items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-6 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50 disabled:hover:shadow-md sm:min-w-[160px]"
-                >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
-                  Open Date
-                </button>
               </div>
+
+              {mode === 'room' && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#0f3d56]">
+                    <Bed className="h-4 w-4 text-[#1a6b7a]" />
+                    <span>Hotel Allocation for this date (Optional)</span>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Hotel / Resort Name</label>
+                    <input
+                      type="text"
+                      value={hotelName}
+                      onChange={(e) => setHotelName(e.target.value)}
+                      placeholder="e.g. Haritha Lodge / Resort Name"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Hotel Address / Location</label>
+                    <input
+                      type="text"
+                      value={hotelAddress}
+                      onChange={(e) => setHotelAddress(e.target.value)}
+                      placeholder="e.g. Main Temple Road, Bhadrachalam"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
+                    />
+                  </div>
+                  <p className="text-[10px] font-semibold text-slate-400 leading-relaxed">
+                    💡 <strong className="text-slate-600">Default Behavior:</strong> If left blank, the booking portal automatically links and displays the primary Stay / Lodge property configured for this room variant.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

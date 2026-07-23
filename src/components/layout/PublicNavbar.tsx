@@ -29,10 +29,7 @@ import { logout } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 
-const LiveBookingCount = dynamic(() => import('./LiveBookingCount'), {
-  ssr: false,
-  loading: () => <div className="hidden h-9 w-24 animate-pulse rounded-md bg-slate-100 lg:block" />,
-});
+
 
 const navLinks = [
   { name: 'Home', href: '/', icon: Home, path: '/' },
@@ -55,6 +52,9 @@ export default function PublicNavbar() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const user = useAuthStore((s) => s.user);
+
+  const isHome = pathname === '/';
+  const showTransparent = isHome && !isScrolled;
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
@@ -102,18 +102,30 @@ export default function PublicNavbar() {
 
   return (
     <>
-      <header className={`sticky top-0 z-[100] w-full border-b transition-all duration-300 ${isScrolled ? 'border-slate-200 bg-white/95 shadow-[0_12px_35px_rgba(15,35,58,0.08)] backdrop-blur-xl' : 'border-transparent bg-white'}`}>
+      <header className={`fixed top-0 left-0 right-0 z-[100] w-full border-b transition-all duration-300 ${
+        showTransparent 
+          ? 'border-transparent bg-transparent shadow-none' 
+          : 'border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs'
+      }`}>
 
 
         <div className="mx-auto w-full max-w-[1800px] px-3 sm:px-5 2xl:px-8">
           <nav className="grid min-h-[72px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5 nav:grid-cols-[auto_minmax(0,1fr)_auto] xl:grid-cols-[auto_minmax(0,1fr)_auto]">
-            <Link href="/" onClick={closeMenus} className="flex min-w-0 items-center gap-3 rounded-md p-1.5 transition-colors hover:bg-slate-50">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-200 bg-white shadow-sm sm:h-14 sm:w-14">
+            <Link href="/" onClick={closeMenus} className={`flex min-w-0 items-center gap-3 rounded-md p-1.5 transition-colors ${
+              showTransparent ? 'hover:bg-white/10' : 'hover:bg-slate-50'
+            }`}>
+              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full border shadow-sm sm:h-14 sm:w-14 transition-colors ${
+                showTransparent ? 'border-white/20 bg-white/10' : 'border-slate-200 bg-white'
+              }`}>
                 <Image src="/ts-boat-tourism-logo.png" alt="TS Boat Tourism" width={48} height={48} className="h-10 w-10 object-cover rounded-full sm:h-12 sm:w-12" />
               </span>
               <span className="min-w-0 leading-tight">
-                <span className="block truncate text-[15px] font-black tracking-tight text-[#0f3d56] sm:text-lg xl:text-xl">TS Boat Tourism</span>
-                <span className="block truncate text-[10px] font-black uppercase tracking-[0.16em] text-[#1598a1] sm:text-[11px]">Official Booking Portal</span>
+                <span className={`block truncate text-[15px] font-black tracking-tight sm:text-lg xl:text-xl transition-colors ${
+                  showTransparent ? 'text-white' : 'text-[#0f3d56]'
+                }`}>TS Boat Tourism</span>
+                <span className={`block truncate text-[10px] font-black uppercase tracking-[0.16em] sm:text-[11px] transition-colors ${
+                  showTransparent ? 'text-[#8eecee]' : 'text-[#1598a1]'
+                }`}>Official Booking Portal</span>
               </span>
             </Link>
 
@@ -128,11 +140,21 @@ export default function PublicNavbar() {
                     aria-current={isActive ? 'page' : undefined}
                     className={`group inline-flex h-11 items-center gap-1.5 rounded-md px-1.5 text-[11.5px] font-black transition-all xl:gap-2 xl:px-3 xl:text-[13px] 2xl:px-4 ${
                       isActive
-                        ? 'bg-[#0f3d56] text-white shadow-[0_10px_24px_rgba(15,61,86,0.18)]'
-                        : 'text-slate-650 hover:bg-[#e9f7f7] hover:text-[#0f3d56]'
+                        ? showTransparent
+                          ? 'bg-white/20 text-white'
+                          : 'bg-[#0f3d56] text-white shadow-[0_10px_24px_rgba(15,61,86,0.18)]'
+                        : showTransparent
+                          ? 'text-white/85 hover:bg-white/10 hover:text-white'
+                          : 'text-slate-650 hover:bg-[#e9f7f7] hover:text-[#0f3d56]'
                     }`}
                   >
-                    <link.icon className={`h-4 w-4 hidden xl:block ${isActive ? 'text-[#8eecee]' : 'text-slate-400 group-hover:text-[#1598a1]'}`} />
+                    <link.icon className={`h-4 w-4 hidden xl:block transition-colors ${
+                      isActive
+                        ? 'text-[#8eecee]'
+                        : showTransparent
+                          ? 'text-white/60 group-hover:text-white'
+                          : 'text-slate-400 group-hover:text-[#1598a1]'
+                    }`} />
                     {link.name}
                   </Link>
                 );
@@ -140,9 +162,7 @@ export default function PublicNavbar() {
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2 xl:gap-2.5">
-              <div className="hidden xl:block">
-                <LiveBookingCount />
-              </div>
+
 
               <div className="hidden nav:block">
                 {!isHydrated ? (
@@ -151,7 +171,11 @@ export default function PublicNavbar() {
                   <div className="relative" ref={accountRef}>
                     <button
                       onClick={() => setAccountOpen((open) => !open)}
-                      className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-sm font-black text-[#0f3d56] shadow-sm transition-colors hover:bg-slate-50"
+                      className={`flex h-10 items-center gap-2 rounded-md border px-2.5 text-sm font-black transition-colors ${
+                        showTransparent 
+                          ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' 
+                          : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
+                      }`}
                     >
                       <span className="grid h-7 w-7 place-items-center rounded-md bg-[#1598a1] text-xs text-white">
                         {user?.avatar_url ? <Image src={user.avatar_url} alt="Profile" width={28} height={28} unoptimized className="h-full w-full rounded-md object-cover" /> : user?.full_name?.charAt(0).toUpperCase() || 'U'}
@@ -191,20 +215,28 @@ export default function PublicNavbar() {
                     </AnimatePresence>
                   </div>
                 ) : (
-                  <Link href="/login" onClick={closeMenus} className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-black text-[#0f3d56] shadow-sm transition-colors hover:bg-slate-50">
+                  <Link href="/login" onClick={closeMenus} className={`flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-black transition-colors ${
+                    showTransparent 
+                      ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' 
+                      : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
+                  }`}>
                     <User className="h-4 w-4 text-[#1598a1]" />
                     Login
                   </Link>
                 )}
               </div>
 
-              <Link href="/packages" onClick={closeMenus} className="hidden h-11 items-center rounded-md bg-[#1598a1] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(21,152,161,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#117f87] nav:inline-flex">
+              <Link href="/packages" onClick={closeMenus} className={`hidden h-11 items-center rounded-md bg-[#1598a1] px-5 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-[#117f87] nav:inline-flex ${
+                showTransparent ? '' : 'shadow-[0_12px_28px_rgba(21,152,161,0.22)]'
+              }`}>
                 Book Online
               </Link>
 
               <button
                 onClick={() => setIsOpen((open) => !open)}
-                className="grid h-11 w-11 place-items-center rounded-md bg-[#0f3d56] text-white shadow-sm nav:hidden"
+                className={`grid h-11 w-11 place-items-center rounded-md text-white transition-colors nav:hidden ${
+                  showTransparent ? 'bg-white/15 hover:bg-white/25' : 'bg-[#0f3d56] shadow-sm'
+                }`}
                 aria-label="Toggle menu"
               >
                 {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -273,7 +305,7 @@ export default function PublicNavbar() {
                   <Link href="/packages" onClick={closeMenus} className="flex min-h-12 items-center justify-center rounded-md bg-[#1598a1] px-4 text-sm font-black text-white shadow-[0_12px_28px_rgba(21,152,161,0.18)]">
                     Book Online
                   </Link>
-                  <a href="tel:+919542069573" className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-[#0f3d56]">
+                  <a href="tel:+919951369573" className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-[#0f3d56]">
                     <Phone className="h-4 w-4 text-[#1598a1]" />
                     Call to Book
                   </a>

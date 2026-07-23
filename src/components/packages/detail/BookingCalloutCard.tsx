@@ -109,7 +109,7 @@ export const BookingCalloutCard = ({
   const hasTabs = showAddonsTab || showTransportTab;
 
   return (
-    <div className="sticky top-[140px] max-h-[calc(100vh-155px)] rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-100/50 flex flex-col overflow-hidden">
+    <div className="max-h-[calc(100dvh-116px)] rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-100/50 flex flex-col overflow-hidden">
       {/* Top Banner Header */}
       <div className="bg-[#0d6e75] px-5 py-3 text-white flex items-center justify-between shrink-0">
         <span className="text-[11px] font-black uppercase tracking-wider text-white flex items-center gap-1.5">
@@ -122,13 +122,13 @@ export const BookingCalloutCard = ({
       </div>
 
       {/* Starting Price & Book Button */}
-      <div className="p-5 pb-4 bg-gradient-to-b from-slate-50/70 to-white border-b border-slate-100 space-y-3 shrink-0">
+      <div className="p-4 pb-3 bg-gradient-to-b from-slate-50/70 to-white border-b border-slate-100 space-y-3 shrink-0 xl:p-5 xl:pb-4">
         
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Starting Price</h3>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-3xl font-black text-[#0d6e75] tracking-tight">
+              <span className="text-2xl font-black text-[#0d6e75] tracking-tight xl:text-3xl">
                 ₹{formattedStartingPrice}
               </span>
               <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest">
@@ -140,7 +140,7 @@ export const BookingCalloutCard = ({
           <button
             onClick={handleBookNowClick}
             type="button"
-            className="group relative isolate inline-flex h-11 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl bg-[#0d6e75] hover:bg-[#0b5c62] px-4 text-[11px] font-black uppercase tracking-wider text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 focus:outline-none active:translate-y-0 active:scale-[0.98]"
+            className="group relative isolate inline-flex h-10 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-xl bg-[#0d6e75] hover:bg-[#0b5c62] px-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 focus:outline-none active:translate-y-0 active:scale-[0.98] xl:h-11 xl:gap-2 xl:px-4 xl:text-[11px]"
           >
             <span className="absolute inset-y-0 -left-10 w-8 rotate-12 bg-white/20 transition-transform duration-500 group-hover:translate-x-36" />
             <Ticket className="h-4 w-4 shrink-0 stroke-[2.6]" />
@@ -151,7 +151,7 @@ export const BookingCalloutCard = ({
       </div>
 
       {/* Content Area - Scrollable Stream */}
-      <div className="p-5 flex-1 space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 min-h-0">
+      <div className="p-4 flex-1 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 min-h-0 xl:p-5 xl:space-y-4">
         
         {/* Ticket Variants & Fares */}
         <div className="space-y-4">
@@ -168,13 +168,13 @@ export const BookingCalloutCard = ({
                       : 'bg-white border border-slate-150 hover:border-slate-300'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <Compass className="h-3.5 w-3.5 text-[#0d6e75]" />
-                      {v.title}
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-start gap-1.5 min-w-0 flex-1">
+                      <Compass className="h-3.5 w-3.5 text-[#0d6e75] shrink-0 mt-0.5" />
+                      <span>{v.title}</span>
                     </h4>
                     {isSelected && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-widest">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-widest shrink-0 whitespace-nowrap self-start">
                         ✓ Selected
                       </span>
                     )}

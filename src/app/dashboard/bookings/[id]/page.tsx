@@ -321,7 +321,7 @@ export default function BookingDetailPage() {
       const feePct = diffDays >= 7 ? 35 : 50;
 
       const message = `Hello TS Boat Tourism, I would like to request a cancellation for:\n\nBooking ID: ${booking?.public_id}\nPackage: ${booking?.package_title}\nTravel Date: ${new Date(booking?.travel_date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}\nCancellation Fee: ${feePct}%\nReason: ${cancelReason}`;
-      window.open(`https://wa.me/919542069573?text=${encodeURIComponent(message)}`, '_blank');
+      window.open(`https://wa.me/919951369573?text=${encodeURIComponent(message)}`, '_blank');
       setBooking(prev => prev ? { ...prev, has_pending_cancellation: true } : null);
       setShowCancelModal(false);
       setCancelReason('');
@@ -346,7 +346,7 @@ export default function BookingDetailPage() {
       const formattedCurrentDate = new Date(booking?.travel_date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
       const formattedNewDate = new Date(postponeNewDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
       const message = `Hello TS Boat Tourism, I would like to request a postponement for:\n\nBooking ID: ${booking?.public_id}\nPackage: ${booking?.package_title}\nCurrent Travel Date: ${formattedCurrentDate}\nRequested New Date: ${formattedNewDate}\nReason: ${postponeReason}`;
-      window.open(`https://wa.me/919542069573?text=${encodeURIComponent(message)}`, '_blank');
+      window.open(`https://wa.me/919951369573?text=${encodeURIComponent(message)}`, '_blank');
       setBooking(prev => prev ? {
         ...prev,
         has_pending_postpone: true,
@@ -1127,7 +1127,7 @@ export default function BookingDetailPage() {
               )}
             </div>
             <a
-              href="https://wa.me/919542069573"
+              href="https://wa.me/919951369573"
               target="_blank"
               rel="noopener noreferrer"
               className="block text-center bg-white text-[var(--color-brand-river)] text-xs font-bold py-2.5 rounded-xl shadow-sm hover:shadow transition-all uppercase tracking-wider"

@@ -536,22 +536,27 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
   // ─── Public SSE Actions ──────────────────────────────────────────────────────
 
-  fetchPublicAvailability: async (slug, month, force = true) => {
+  fetchPublicAvailability: async (slug, month, force = false) => {
     const key = `${slug}:${month}`;
-    if (get().publicLoading) return;
+    const currentKey = get().publicFetchKey;
+    const currentData = get().publicAvailability;
 
-    if (force || get().publicFetchKey !== key || get().publicAvailability === null) {
-      if (get().publicFetchKey !== key || !get().publicAvailability) {
-        set({ publicLoading: true });
-      }
-      try {
-        const res = await apiClient.get<PublicAvailabilityResponse>(
-          `/api/v1/packages/${slug}/availability`,
-          { params: { month, t: Date.now() } }
-        );
-        set({ publicAvailability: res.data, publicFetchKey: key, publicLoading: false });
-      } catch {
+    // Show loading spinner ONLY if changing months or initial fetch with no data
+    if (currentKey !== key || !currentData) {
+      set({ publicLoading: true });
+    }
+
+    try {
+      const res = await apiClient.get<PublicAvailabilityResponse>(
+        `/api/v1/packages/${slug}/availability`,
+        { params: { month } }
+      );
+      set({ publicAvailability: res.data, publicFetchKey: key, publicLoading: false });
+    } catch (err) {
+      if (currentKey !== key) {
         set({ publicAvailability: null, publicLoading: false });
+      } else {
+        set({ publicLoading: false });
       }
     }
   },

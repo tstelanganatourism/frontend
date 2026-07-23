@@ -333,13 +333,13 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
       className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/40 hover:shadow-[0_16px_36px_rgba(20,152,161,0.12)]"
     >
       {/* Visual Image Container */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+      <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-100 shrink-0">
         <Image
           src={room.cover_image_url || '/placeholder-room.jpg'}
           alt={room.lodge_name}
           fill
           priority={priority}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
           quality={75}
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
@@ -348,40 +348,40 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(7,25,35,0.72)_0%,rgba(7,25,35,0.1)_55%,transparent_100%)]" />
 
         {/* Floating Badges */}
-        <div className="absolute left-3 right-3 top-3 flex items-center justify-between gap-2 z-10">
+        <div className="absolute left-2.5 right-2.5 top-2.5 flex items-center justify-between gap-2 z-10">
           <div className="flex flex-wrap gap-1">
             {room.is_featured && (
-              <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white backdrop-blur-md shadow-xs">
+              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white backdrop-blur-md shadow-xs">
                 Featured
               </span>
             )}
-            <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-900 backdrop-blur-md shadow-xs">
+            <span className="rounded-full bg-white/95 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-slate-900 backdrop-blur-md shadow-xs">
               Stay
             </span>
           </div>
           
           {/* Review Badge */}
-          <div className="flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-black text-slate-900 backdrop-blur-md shadow-xs shrink-0">
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
+          <div className="flex items-center gap-0.5 rounded-full bg-white/95 px-2 py-0.5 text-[9px] font-black text-slate-900 backdrop-blur-md shadow-xs shrink-0">
+            <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 shrink-0" />
             <span>{reviewScore}</span>
           </div>
         </div>
 
         {/* Identity Category label on bottom left */}
-        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-slate-950/75 px-2.5 py-0.5 text-[9px] font-black text-white backdrop-blur-xs">
-          <MoonStar className="h-3 w-3 text-amber-400" />
+        <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 rounded-full bg-slate-950/75 px-2 py-0.5 text-[8px] font-black text-white backdrop-blur-xs">
+          <MoonStar className="h-2.5 w-2.5 text-amber-400" />
           <span className="tracking-wider uppercase">Riverside Stay</span>
         </div>
 
         {/* Active badge on bottom right */}
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">
-          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+        <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-white">
+          <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
           <span>Active</span>
         </div>
       </div>
 
       {/* Details Body */}
-      <div className="flex flex-1 flex-col p-4 sm:p-4.5">
+      <div className="flex flex-1 flex-col p-3.5 sm:p-4">
         {/* Category Subtitle */}
         <span className="text-[9px] font-black uppercase tracking-widest text-teal-600 mb-1">
           Accommodation &amp; Lodging

@@ -13,7 +13,7 @@ const POINTS = [
   'Cancellations requested at least 7 days before departure can be processed without administrative fees or converted to full travel credit vouchers.',
   'For cancellations made within 7 days of travel, a reschedule request or administrative fee of up to 35% applies depending on the package partner limits.',
   'If TS Boat Tourism cancels a tour due to weather conditions, technical problems, or administrative rules, you are entitled to a 100% full refund or immediate rescheduling.',
-  'To request a cancellation, log in to your dashboard, click "Cancel Booking", or reach out to us at bookings@tstelanganatourism.com.',
+  'To request a cancellation, log in to your dashboard, click "Cancel Booking", or reach out to us at tstelanganatourism@gmail.com.',
 ];
 
 export default function CancellationPage() {

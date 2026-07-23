@@ -536,15 +536,22 @@ export default function RoomForm({
         {/* Tab 1: Basic Info */}
         {activeTab === 'basic' && (
           <div className="space-y-6">
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4 flex items-start gap-3 shadow-xs">
+              <Info className="h-5 w-5 text-[#0f3d56] shrink-0 mt-0.5" />
+              <div className="text-xs leading-relaxed text-slate-700 font-medium">
+                <strong className="text-slate-900 font-bold">Default Hotel & Stay Configuration:</strong> The name, address, cover image, and map link configured on this page serve as the <span className="font-bold text-[#0f3d56]">Default Hotel & Location</span> for all date inventory slots. If you open a date in the Inventory Calendar without entering a custom hotel override, these default details are automatically assigned.
+              </div>
+            </div>
+
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Room Type Name *</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Hotel / Stay / Lodge Name *</label>
                 <input
                   type="text"
                   value={lodgeName}
                   onChange={(e) => setLodgeName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all"
-                  placeholder="e.g. Luxury 3 Beds AC Room"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#5ac4d7] transition-all font-bold text-slate-900"
+                  placeholder="e.g. Godavari Riverside Bamboo Huts"
                   required
                 />
               </div>

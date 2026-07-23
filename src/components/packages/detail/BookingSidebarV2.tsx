@@ -828,7 +828,7 @@ export const BookingSidebarV2 = ({
       if (commissionType === 'FIXED_AMOUNT') {
         agentDiscount = Math.min(commissionFixedAmount, commissionableBase, grandTotal);
       } else {
-        agentDiscount = Math.min(grandTotal, Math.round((commissionableBase * commissionPercentage) / 100));
+        agentDiscount = Math.min(grandTotal, Number(((commissionableBase * commissionPercentage) / 100).toFixed(2)));
       }
     }
     const agentPayable = Math.max(0, grandTotal - agentDiscount);

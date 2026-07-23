@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Users, AlertTriangle, Zap, CheckCircle2 } from 'lucide-react';
@@ -48,7 +48,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
   const isEmailRequired = !isAgentOrAdmin && (!user || !user.email || user.email.trim() === '');
 
   const [passengers, setPassengers] = useState<PassengerInput[]>([]);
-  const [passengerMode, setPassengerMode] = useState<'full' | 'quick'>('full');
+  const [passengerMode, setPassengerMode] = useState<'full' | 'quick'>('quick');
   const [quickPassenger, setQuickPassenger] = useState<PassengerInput>({
     full_name: '',
     age: '',

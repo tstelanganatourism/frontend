@@ -192,10 +192,10 @@ export default function TermsPage() {
                 Contact our customer support desk for questions regarding bookings, cancellations, or data protection.
               </p>
               <div className="mt-5 space-y-3">
-                <a href="tel:+919542069573" className="block text-center rounded-md bg-[#1598a1] py-2.5 text-xs font-black text-white hover:bg-[#117f87] transition-colors shadow-sm">
+                <a href="tel:+919951369573" className="block text-center rounded-md bg-[#1598a1] py-2.5 text-xs font-black text-white hover:bg-[#117f87] transition-colors shadow-sm">
                   Call Customer Care
                 </a>
-                <a href="mailto:bookings@tstelanganatourism.com" className="block text-center rounded-md border border-white/20 bg-white/10 py-2.5 text-xs font-black text-white hover:bg-white/20 transition-colors">
+                <a href="mailto:tstelanganatourism@gmail.com" className="block text-center rounded-md border border-white/20 bg-white/10 py-2.5 text-xs font-black text-white hover:bg-white/20 transition-colors">
                   Email Support
                 </a>
               </div>

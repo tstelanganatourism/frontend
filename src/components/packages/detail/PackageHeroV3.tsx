@@ -114,7 +114,7 @@ export const PackageHeroV3 = ({
   return (
     <section className="relative overflow-hidden bg-[#fafaf7] border-b border-slate-200/60 pb-10">
       {/* Top Breadcrumb & Title Area */}
-      <div className="relative mx-auto max-w-[1600px] px-4 pt-6 sm:px-6 lg:px-12">
+      <div className="relative mx-auto w-full max-w-[1600px] px-4 pt-6 sm:px-6 lg:px-12">
         <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#0d6e75]/70">
           <Link href="/" className="transition hover:text-[#0d6e75]">
             Home

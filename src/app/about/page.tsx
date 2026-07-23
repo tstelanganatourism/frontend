@@ -180,23 +180,61 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <span className="text-[#1598a1] font-black tracking-[0.2em] uppercase text-xs mb-3 block">Agency Credentials</span>
-            <h2 className="text-4xl font-black text-[#0f3d56] mb-4 tracking-tight">Government Registered & Licensed</h2>
+            <h2 className="text-4xl font-black text-[#0f3d56] mb-4 tracking-tight">Government Registered MSME Enterprise</h2>
             <p className="text-slate-500 max-w-2xl mx-auto font-medium">
-              TS Boat Tourism is officially registered under the Telangana Shops &amp; Establishments Act, 1988 with a valid Boat Tourism Licence issued by the Government of Telangana Labour Department.
+              TS Boat Tourism is an officially registered operating unit of HARITHA BOAT BOOKING under the Ministry of Micro, Small &amp; Medium Enterprises (Govt. of India).
             </p>
           </div>
 
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            {/* Certificate Card */}
-            <div className="group relative rounded-md overflow-hidden shadow-2xl border border-slate-200 hover:shadow-[0_30px_80px_rgba(15,61,86,0.15)] transition-all duration-700">
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1e468a]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
-              <img
-                src="/ts_boat_certificate.webp"
-                alt="Government of Telangana - Labour Department Certificate of Registration for TS Boat Tourism"
-                className="w-full h-auto object-contain bg-white"
-              />
-              <div className="absolute inset-x-0 bottom-0 z-20 p-5 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                <p className="text-white text-xs font-bold text-center uppercase tracking-wider">Govt. of Telangana — Labour Department Registration Certificate</p>
+            {/* Digital Certificate Badge / Card */}
+            <div className="group relative rounded-2xl overflow-hidden shadow-2xl border border-[#1598a1]/30 bg-gradient-to-br from-[#0f3d56] via-[#0f6f78] to-[#1598a1] p-8 text-white">
+              <div className="flex items-center justify-between border-b border-white/15 pb-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+                    <ShieldCheck className="h-7 w-7 text-[#8eecee]" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8eecee]">Govt. of India - MSME</span>
+                    <h3 className="text-xl font-black tracking-tight text-white">UDYAM REGISTRATION CERTIFICATE</h3>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
+                  <div className="text-[10px] uppercase font-black tracking-widest text-[#8eecee]">Name of Enterprise</div>
+                  <div className="text-xl font-black tracking-wide text-white">HARITHA BOAT BOOKING</div>
+                  <div className="text-xs text-slate-200 mt-1">Operating Unit: <strong className="text-white font-black">TS BOAT TOURISM</strong></div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                    <div className="text-[9px] uppercase font-bold text-slate-300">Registration Number</div>
+                    <div className="text-xs sm:text-sm font-black text-[#8eecee]">UDYAM-TS-11-0024618</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                    <div className="text-[9px] uppercase font-bold text-slate-300">Enterprise Type</div>
+                    <div className="text-xs sm:text-sm font-black text-white">Micro Enterprise</div>
+                  </div>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <div className="text-[9px] uppercase font-bold text-slate-300">Proprietor / Entrepreneur</div>
+                  <div className="text-sm font-black text-white">KANDHULA DURGA PRASAD</div>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <div className="text-[9px] uppercase font-bold text-slate-300">Official Registered Address</div>
+                  <div className="text-xs font-semibold text-slate-200">
+                    Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Bhadrachalam, Bhadradri Kothagudem, Telangana - 507111
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-wrap items-center justify-between text-[11px] font-bold text-slate-200 gap-2 border-t border-white/10">
+                  <span>Major Activity: Services (NIC 50212)</span>
+                  <span className="text-[#8eecee]">Date of Udyam Reg.: 09/06/2025</span>
+                </div>
               </div>
             </div>
 
@@ -210,20 +248,21 @@ export default function AboutPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Government Registration</p>
-                      <h3 className="text-lg font-black text-[#0f3d56] tracking-tight">Boat Tourism Licence</h3>
+                      <h3 className="text-lg font-black text-[#0f3d56] tracking-tight">MSME Udyam Credentials</h3>
                     </div>
                   </div>
                 </div>
                 <dl className="divide-y divide-slate-100 p-6 sm:p-8">
                   {[
-                    { label: 'Registration No.', value: 'SEA/KMM/ALO/BC/09998/2016' },
-                    { label: 'Registered Under', value: 'Telangana Shops & Establishments Act, 1988' },
-                    { label: 'Name of Employer', value: 'NALLA SAI BABU' },
-                    { label: 'Establishment Name', value: 'TELANGANA BOAT TOURISM' },
-                    { label: 'Nature of Business', value: 'BOAT TOURISM' },
-                    { label: 'Date of Registration', value: '01/09/2016' },
-                    { label: 'Date of Commencement', value: '19/03/2016' },
-                    { label: 'Shop Address', value: '3-1-20/A, Ramalayam Veedi, Bhadrachalam, Khammam, Telangana' },
+                    { label: 'Udyam Reg No.', value: 'UDYAM-TS-11-0024618' },
+                    { label: 'Registered Under', value: 'Ministry of Micro, Small & Medium Enterprises (Govt. of India)' },
+                    { label: 'Name of Enterprise', value: 'HARITHA BOAT BOOKING' },
+                    { label: 'Name of Unit(s)', value: 'TS BOAT TOURISM, Haritha Boat Booking' },
+                    { label: 'Proprietor', value: 'KANDHULA DURGA PRASAD' },
+                    { label: 'NIC Code (5 Digit)', value: '50212 - River cruise, water taxi, boat services' },
+                    { label: 'Date of Incorporation', value: '03/01/2022' },
+                    { label: 'Udyam Reg. Date', value: '09/06/2025' },
+                    { label: 'Official Address', value: 'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Bhadrachalam, Bhadradri Kothagudem, Telangana 507111' },
                   ].map((item) => (
                     <div key={item.label} className="grid gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[170px_minmax(0,1fr)] sm:gap-5">
                       <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{item.label}</dt>
@@ -239,18 +278,18 @@ export default function AboutPage() {
                     <Award className="h-6 w-6 text-[#8eecee]" />
                   </span>
                   <div>
-                    <h4 className="mb-1 text-base font-black">Official Registration Records</h4>
+                    <h4 className="mb-1 text-base font-black">Official Verification Records</h4>
                     <p className="text-xs leading-relaxed text-slate-200">
-                      This certificate is digitally signed and can be verified at{' '}
+                      This Udyam Registration Certificate is digitally issued by Govt. of India and can be verified at{' '}
                       <a
-                        href="http://labour.telangana.gov.in/"
+                        href="https://udyamregistration.gov.in/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#8eecee] font-bold underline hover:no-underline"
                       >
-                        labour.telangana.gov.in
+                        udyamregistration.gov.in
                       </a>
-                      {' '}by using registration reference number SEA/KMM/ALO/BC/09998/2016.
+                      {' '}by searching Udyam Registration Number UDYAM-TS-11-0024618.
                     </p>
                   </div>
                 </div>
@@ -314,8 +353,8 @@ export default function AboutPage() {
                       <dt className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                         Contact lines
                       </dt>
-                      <dd className="mt-1 text-sm font-black text-[#1598a1]">+91 95420 69573</dd>
-                      <dd className="text-sm font-black text-[#1598a1]">+91 98498 48982</dd>
+                      <dd className="mt-1 text-sm font-black text-[#1598a1]">+91 99513 69573</dd>
+                      <dd className="text-sm font-black text-[#1598a1]">+91 77801 19268</dd>
                     </div>
 
                     <div className="min-w-0">
@@ -330,12 +369,12 @@ export default function AboutPage() {
                     <dt className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Email support
                     </dt>
-                    <dd className="text-sm font-extrabold text-[#0f3d56]">bookings@tstelanganatourism.com</dd>
+                    <dd className="text-sm font-extrabold text-[#0f3d56]">tstelanganatourism@gmail.com</dd>
                   </div>
                 </dl>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  <a href="tel:+919542069573" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1598a1] px-5 py-3.5 text-sm font-black text-white transition-all hover:bg-[#0f7279] shadow-md shadow-teal-500/10">
+                  <a href="tel:+919951369573" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1598a1] px-5 py-3.5 text-sm font-black text-white transition-all hover:bg-[#0f7279] shadow-md shadow-teal-500/10">
                     <Phone className="h-4 w-4" />
                     Call Now
                   </a>

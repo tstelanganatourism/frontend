@@ -130,8 +130,8 @@ export default function RootLayout({
                 "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
                 "image": "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg",
                 "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
-                "telephone": "+91 95420 69573",
-                "email": "bookings@tstelanganatourism.com",
+                "telephone": "+91 99513 69573",
+                "email": "tstelanganatourism@gmail.com",
                 "address": {
                   "@type": "PostalAddress",
                   "streetAddress": "Om Shanti satram, Kalyana mandapam road, near SBI ATM",
@@ -196,7 +196,7 @@ export default function RootLayout({
                   "name": "TS Boat Tourism Support",
                   "contactPoint": {
                     "@type": "ContactPoint",
-                    "telephone": "+91 9542069573",
+                    "telephone": "+91 9951369573",
                     "contactType": "customer service",
                     "areaServed": "IN",
                     "availableLanguage": ["en", "hi", "te"]

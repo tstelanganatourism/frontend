@@ -4,12 +4,12 @@ import { PrintButton } from './PrintButton';
 export const dynamic = 'force-dynamic';
 
 const CO = {
-  bannerUrl: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1780902910/8f1dd045-5038-4ae4-9b7c-1f8ba27c897f_uftvpr.png',
+  bannerUrl: 'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png',
   addr1: 'Om Shanti Satram, Kalyana Mandapam Road,',
   addr2: 'Near SBI ATM, Bhadrachalam,',
   addr3: 'Telangana 507111',
-  phones: ['+91 95420 69573', '+91 98498 48982', '+91 98498 48983'],
-  email: 'bookings@tstelanganatourism.com',
+  phones: ['9951369573', '7780119268'],
+  email: 'tstelanganatourism@gmail.com',
   website: 'www.tstelanganatourism.com',
 };
 
@@ -99,11 +99,13 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
   const galleryImgs = (pkg.gallery || []).slice(0, 4);
 
   const CSS = `
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: A4 portrait; margin: 0; }
     html, body {
       background: #0f172a;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 8.5pt; color: #1e293b;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
@@ -137,11 +139,13 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
       border-bottom: 4px solid #5ac4d7;
     }
     .hero-title {
-      font-size: 17pt;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 19pt;
       font-weight: 800;
       color: #ffffff;
-      text-transform: uppercase;
-      letter-spacing: -0.02em;
+      text-transform: none;
+      letter-spacing: -0.01em;
       line-height: 1.2;
     }
     .hero-badges {
@@ -166,11 +170,13 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
     }
     
     .section-title {
-      font-size: 9pt;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 10pt;
       font-weight: 800;
       color: #0f3d56;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      text-transform: none;
+      letter-spacing: 0.02em;
       padding: 6px 12px;
       background: #e2e8f0;
       border-left: 4px solid #5ac4d7;
@@ -239,7 +245,15 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
       border-top: 3px solid #5ac4d7;
       font-size: 7.5pt;
     }
-    .footer-heading { font-size: 8pt; font-weight: 800; color: #5ac4d7; margin-bottom: 4px; text-transform: uppercase; }
+    .footer-heading {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 8.5pt;
+      font-weight: 800;
+      color: #5ac4d7;
+      margin-bottom: 4px;
+      text-transform: none;
+    }
   `;
 
   return (

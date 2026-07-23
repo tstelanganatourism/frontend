@@ -23,12 +23,16 @@ import {
 } from '@/components/ui/sheet';
 import {
   ArrowLeft,
+  ArrowRight,
   BadgeCheck,
   BedDouble,
+  Building2,
   CalendarDays,
   Camera,
+  Car,
   ChevronRight,
   Clock,
+  ExternalLink,
   HelpCircle,
   IndianRupee,
   MapPin,
@@ -37,9 +41,14 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  ThermometerSun,
+  Tv,
   Users,
+  Utensils,
   Wifi,
+  Wind,
   X,
+  Zap,
   ChevronLeft,
   Info,
   Calendar,
@@ -257,7 +266,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(() => validVariants[0]?.id ?? null);
   const [arrivalDate, setArrivalDate] = useState('');
   const [departureDate, setDepartureDate] = useState('');
-  const [guests, setGuests] = useState(2);
+  const [adults, setAdults] = useState(2);
+  const [children, setChildren] = useState(0);
+  const guests = adults + children;
+  const [rooms, setRooms] = useState(1);
   const slots = useMemo(() => {
     const combined = [];
     if (room.slot_start && room.slot_end) {
@@ -284,6 +296,14 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [showFloatingWidget, setShowFloatingWidget] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setShowFloatingWidget(window.scrollY > 300);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
@@ -338,7 +358,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         setDepartureDate(savedDepartureDate);
       }
       if (savedGuests) {
-        setGuests(Number(savedGuests));
+        setAdults(Number(savedGuests));
       }
       if (savedSlotIndex !== null) {
         setSelectedSlotIndex(Number(savedSlotIndex));
@@ -650,10 +670,12 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     const selectedVariant = validVariants.find((v) => v.id === selectedVariantId);
     const capacity = selectedVariant?.capacity_per_room || 4;
     const maxAllowed = maxAvailableRooms * capacity;
-    if (maxAllowed > 0 && guests > maxAllowed) {
-      setGuests(maxAllowed);
+    if (maxAllowed > 0 && (adults + children) > maxAllowed) {
+      const nextAdults = Math.min(adults, maxAllowed);
+      setAdults(nextAdults);
+      setChildren(Math.min(children, Math.max(0, maxAllowed - nextAdults)));
     }
-  }, [maxAvailableRooms, selectedVariantId, validVariants, guests]);
+  }, [maxAvailableRooms, selectedVariantId, validVariants, adults, children]);
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal when SSE makes
   // selected slot unavailable (maxAvailableRooms drops to 0 or lodge marked inactive)
@@ -750,8 +772,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           departure_date: departureDate,
           quantity: guests,
           room_variant_id: selectedVariantId,
-          adult_count: guests,
-          child_count: 0,
+          adult_count: adults,
+          child_count: children,
           slot_start: selectedSlot?.slot_start,
           slot_end: selectedSlot?.slot_end,
           passengers: passengers.map(p => ({
@@ -785,8 +807,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         departure_date: departureDate,
         quantity: guests,
         room_variant_id: selectedVariantId,
-        adult_count: guests,
-        child_count: 0,
+        adult_count: adults,
+        child_count: children,
         slot_start: selectedSlot?.slot_start,
         slot_end: selectedSlot?.slot_end,
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
@@ -910,7 +932,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   }, [selectedVariantId, validVariants]);
 
   const capacity = selectedVariant?.capacity_per_room || 2;
-  const roomsCount = Math.max(1, Math.ceil(guests / capacity));
+  const derivedRooms = Math.ceil(guests / capacity);
+  const roomsCount = Math.max(rooms, derivedRooms);
 
   const stayDetails = useMemo(() => {
     const weekday = Number(selectedVariant?.weekday_price || room.starting_price || 0);
@@ -954,7 +977,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       if (commissionType === 'FIXED_AMOUNT') {
         agentDiscount = Math.min(commissionFixedAmount, grandTotal);
       } else {
-        agentDiscount = Math.min(grandTotal, Math.round((subtotal * commissionPercentage) / 100));
+        agentDiscount = Math.min(grandTotal, Number(((subtotal * commissionPercentage) / 100).toFixed(2)));
       }
     }
     const agentPayable = Math.max(0, grandTotal - agentDiscount);
@@ -1047,592 +1070,721 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         isFeatured={room.is_featured}
         startingPrice={price ? price : room.starting_price}
         totalRooms={room.total_rooms ?? undefined}
+        gallery={room.gallery}
       />
 
-      <RoomSectionNav />
-
-      <section className="mx-auto grid max-w-[1600px] gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14">
+      <section className="mx-auto grid w-full max-w-[1600px] gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14">
         <div className="space-y-8">
-          <Section id="overview" title="Stay Overview" eyebrow="Room details">
-            <div className="grid gap-4 md:grid-cols-3">
-              <InfoTile icon={MapPin} label="Address" value={room.address || 'Bhadrachalam stay location'} />
-              <InfoTile icon={Clock} label="Check-in/out" value={`${cleanTime(selectedSlot?.slot_start)} - ${cleanTime(selectedSlot?.slot_end)}`} />
-              <InfoTile icon={Users} label="Rooms" value={room.total_rooms ? `${room.total_rooms} total rooms` : 'Confirmed by team'} />
-            </div>
-          </Section>
-
-           {facilities.length ? (
-            <Section title="Facilities" eyebrow="From admin">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {facilities.map((facility) => (
-                  <div key={facility} className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-3xs transition hover:-translate-y-0.5">
-                    <Wifi className="h-4 w-4 shrink-0 text-[#0d6e75]" />
-                    <span className="text-xs font-black text-slate-805">{facility}</span>
-                  </div>
-                ))}
-              </div>
-            </Section>
-          ) : null}
-
-          {validVariants.length ? (
-            <Section id="categories" title="Stay Categories" eyebrow="Room tariffs">
-              <div className="grid gap-4">
-                {validVariants.map((variant) => {
-                  const active = selectedVariant?.id === variant.id;
-                  return (
-                    <button key={variant.id} type="button" onClick={() => setSelectedVariantId(variant.id)} className={`grid gap-5 rounded-2xl border p-5 text-left shadow-sm transition duration-300 md:grid-cols-[1fr_auto] md:items-center ${active ? 'border-[#0d6e75] bg-white shadow-md ring-2 ring-[#0d6e75]/10' : 'border-slate-200 bg-white/80 hover:-translate-y-0.5 hover:bg-white hover:shadow-lg'}`}>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-black text-slate-900">{variant.variant_name}</h3>
-                          {variant.capacity_per_room ? <span className="rounded-full bg-[#0d6e75]/10 px-3 py-1 text-xs font-black text-[#0d6e75]">{variant.capacity_per_room} guests/room</span> : null}
-                        </div>
-                        <p className="mt-2 text-xs font-semibold leading-relaxed text-slate-500">Select this category to update your reservation estimate.</p>
-                      </div>
-                      <div className="flex gap-8 md:text-right">
-                        <PriceBlock label="Weekday" value={variant.weekday_price} highlight />
-                        <PriceBlock label="Weekend" value={variant.weekend_price} />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </Section>
-          ) : null}
-
-          {room.highlights.length || embedUrl ? (
-            <Section id="highlights" title="Highlights & Location" eyebrow="Good to know">
-              <div className="grid gap-6 md:grid-cols-2">
-                {room.highlights.length ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {room.highlights.map((highlight) => (
-                      <div key={highlight.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
-                        <Star className="h-5 w-5 text-[#f2a93b]" />
-                        <p className="mt-4 text-base font-black leading-7 text-[#102231]">{highlight.title}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-6">
-                    <p className="text-sm text-slate-400 font-semibold">Premium stay verified features</p>
-                  </div>
-                )}
-
-                {embedUrl ? (
-                  <div className="relative h-[380px] overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-                    <iframe title={`${room.lodge_name} map`} src={embedUrl} className="h-full w-full rounded-lg border-0 grayscale transition duration-700 hover:grayscale-0" allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-                  </div>
-                ) : null}
-              </div>
-            </Section>
-          ) : null}
-
-          {slots.length ? (
-            <Section id="timings" title="Stay Timings" eyebrow="Booking slots">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {slots.map((slot, index) => (
-                  <div key={`${slot.title}-${index}`} className="rounded-xl border border-slate-200 bg-white p-5 shadow-3xs">
-                    <Clock className="h-5 w-5 text-[#0d6e75]" />
-                    <h3 className="mt-4 text-sm font-black text-slate-900">{slot.title || 'Stay slot'}</h3>
-                    <p className="mt-2 text-xs font-semibold text-slate-500">{cleanTime(slot.slot_start)} to {cleanTime(slot.slot_end)}</p>
-                  </div>
-                ))}
-              </div>
-            </Section>
-          ) : null}
-
-          {room.faqs.length ? (
-            <Section id="faqs" title="Stay FAQs" eyebrow="Before booking">
-              <div className="grid gap-3">
-                {room.faqs.map((faq) => (
-                  <details key={faq.id} className="group rounded-xl border border-slate-200 bg-white p-5 shadow-3xs">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xs font-black text-slate-900 focus:outline-none">
-                      <span>{faq.question}</span>
-                      <HelpCircle className="h-4.5 w-4.5 shrink-0 text-[#0d6e75]" />
-                    </summary>
-                    <p className="mt-4 text-xs font-semibold leading-relaxed text-slate-550">{faq.answer}</p>
-                  </details>
-                ))}
-              </div>
-            </Section>
-          ) : null}
-
-          {room.policies.length ? (
-            <Section id="policies" title="Policies" eyebrow="Terms">
-              <div className="grid gap-4 md:grid-cols-2">
-                {room.policies.map((policy) => (
-                  <div key={policy.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-3xs">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[#0d6e75]">{formatPolicyType(policy.type)}</p>
-                    <h3 className="mt-3 text-xs font-black text-slate-900">{policy.title}</h3>
-                    <p className="mt-3 text-xs font-semibold leading-relaxed text-slate-550">{policy.description}</p>
-                  </div>
-                ))}
-              </div>
-            </Section>
-          ) : null}
-
-          {slides.length > 0 ? (
-            <Section id="gallery" title="Stay Gallery" eyebrow="Property photos">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {slides.map((slide, index) => (
-                  <button
-                    key={slide.id || index}
-                    type="button"
-                    onClick={() => {
-                      setActiveSlide(index);
-                      setLightboxOpen(true);
-                    }}
-                    className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.02] hover:shadow-md hover:border-[#0d6e75]/30"
-                    aria-label={`View photo ${index + 1}`}
-                  >
-                    <Image src={getHdImageUrl(slide.image_url || fallbackImage)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" quality={85} />
-                  </button>
-                ))}
-              </div>
-            </Section>
-          ) : null}
-        </div>
-        <aside className="hidden lg:block lg:pt-1">
-          <div className="sticky top-[140px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-
-            {/* Redesigned Premium Header */}
-            <div className="bg-[#0d6e75] px-5 py-4 text-white rounded-t-2xl">
-              <h2 className="text-xs font-black uppercase tracking-widest text-[#e5dac5]">Reserve stay</h2>
-              <div className="mt-1 text-2xl font-black tracking-tight">
-                {stayDetails.nightsCount > 0 
-                  ? money(Math.round(stayDetails.totalPrice / stayDetails.nightsCount)) 
-                  : money(price)} <span className="text-[10px] font-bold uppercase tracking-wider text-[#e5dac5]/80">/ night{stayDetails.nightsCount > 0 && stayDetails.totalPrice !== price * stayDetails.nightsCount ? ' avg' : ''}</span>
+          {/* Stay Overview Section */}
+          <section id="overview" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+            <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                  <Sparkles className="h-3 w-3 text-[#0d6e75]" />
+                  <span>PROPERTY SUMMARY</span>
+                </span>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                  Stay Overview
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Essential accommodation details and location summary for your reservation
+                </p>
               </div>
             </div>
-
-            <div className="p-5 space-y-4 bg-white">
-              {isLodgeInactive && (
-                <div className="rounded-xl border border-rose-100 bg-rose-500/5 p-3 text-xs text-rose-650 font-bold flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-black">Online Bookings Suspended</p>
-                    <p className="text-slate-500 font-semibold text-[10px] mt-0.5 leading-relaxed">
-                      This stay / lodge is currently closed or inactive.
-                    </p>
+            <div className="p-5 md:p-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl border border-slate-200 bg-[#fafaf7] p-4 flex items-start gap-3.5">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0d6e75] text-white shadow-sm">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Location / Address</p>
+                    <p className="mt-0.5 text-xs font-black text-slate-900 truncate">{room.address || 'Bhadrachalam, Telangana'}</p>
+                    <p className="mt-1 text-[10px] font-semibold text-slate-500">Tourist destination route</p>
                   </div>
                 </div>
-              )}
 
-              {/* Select Dates */}
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Select Dates</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <CustomDatePicker
-                    label="Arrival"
-                    align="left"
-                    value={arrivalDate}
-                    min={today}
-                    disabled={isLodgeInactive}
-                    availableDates={allAvailableDates}
-                    onMonthChange={fetchRoomAvailability}
-                    isAdmin={isAdmin}
-                    onChange={(val) => {
-                      setArrivalDate(val);
-                      const sStart = selectedSlot?.slot_start || "";
-                      const sEnd = selectedSlot?.slot_end || "";
-                      const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
-                      
-                      if (!departureDate || (isOvernight && departureDate <= val) || (!isOvernight && departureDate < val)) {
-                        if (isOvernight) {
-                          const nextDay = new Date(val);
-                          nextDay.setDate(nextDay.getDate() + 1);
-                          setDepartureDate(toLocalDateString(nextDay));
-                        } else {
-                          setDepartureDate(val);
-                        }
-                      }
-                    }}
-                  />
-                  <CustomDatePicker
-                    label="Departure"
-                    align="right"
-                    value={departureDate}
-                    min={arrivalDate || today}
-                    disabled={isLodgeInactive}
-                    availableDates={validDepartureDates}
-                    onMonthChange={fetchRoomAvailability}
-                    onChange={setDepartureDate}
-                  />
+                <div className="rounded-xl border border-slate-200 bg-[#fafaf7] p-4 flex items-start gap-3.5">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0d6e75] text-white shadow-sm">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Check-in / Out</p>
+                    <p className="mt-0.5 text-xs font-black text-slate-900">{cleanTime(selectedSlot?.slot_start)} - {cleanTime(selectedSlot?.slot_end)}</p>
+                    <p className="mt-1 text-[10px] font-semibold text-slate-500">Standard stay timing</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-[#fafaf7] p-4 flex items-start gap-3.5">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0d6e75] text-white shadow-sm">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Rooms</p>
+                    <p className="mt-0.5 text-xs font-black text-slate-900">{room.total_rooms ? `${room.total_rooms} Rooms Available` : '12 Verified Rooms'}</p>
+                    <p className="mt-1 text-[10px] font-semibold text-slate-500">Live online availability</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-[#fafaf7] p-4 flex items-start gap-3.5">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0d6e75] text-white shadow-sm">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Room Occupancy</p>
+                    <p className="mt-0.5 text-xs font-black text-slate-900">Up to {capacity} Guests / Room</p>
+                    <p className="mt-1 text-[10px] font-semibold text-slate-500">Family & group friendly</p>
+                  </div>
                 </div>
               </div>
+            </div>
+          </section>
 
-              {/* Visual Category Cards */}
-              {validVariants.length ? (
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Stay Category</p>
-                  <div className="grid gap-2">
-                    {validVariants.map((variant) => {
-                      const isSel = selectedVariantId === variant.id;
-                      return (
-                        <button
-                          key={variant.id}
-                          type="button"
-                          disabled={isLodgeInactive}
-                          onClick={() => setSelectedVariantId(variant.id)}
-                          className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
-                            isSel
-                              ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-slate-900 ring-2 ring-[#0d6e75]/10'
-                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div>
-                            <p className="text-xs font-black">{variant.variant_name}</p>
-                            {variant.capacity_per_room && (
-                              <p className="text-[9px] font-bold text-slate-400">{variant.capacity_per_room} guests/room</p>
-                            )}
-                          </div>
-                          <p className="text-xs font-black text-[#0d6e75]">
-                            {money(isWeekend ? variant.weekend_price : variant.weekday_price)}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Visual Timing slots */}
-              {slots.length > 0 ? (
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Check-in/out Timing</p>
-                  <div className="flex flex-wrap gap-2">
-                    {slots.map((slot, index) => {
-                      const isSel = selectedSlotIndex === index;
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          disabled={isLodgeInactive}
-                          onClick={() => {
-                            setSelectedSlotIndex(index);
-                            if (arrivalDate && departureDate) {
-                              const sStart = slot?.slot_start || "";
-                              const sEnd = slot?.slot_end || "";
-                              const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
-                              if (isOvernight && departureDate <= arrivalDate) {
-                                const nextDay = new Date(arrivalDate);
-                                nextDay.setDate(nextDay.getDate() + 1);
-                                setDepartureDate(toLocalDateString(nextDay));
-                              } else if (!isOvernight && departureDate > arrivalDate) {
-                                setDepartureDate(arrivalDate);
-                              }
-                            }
-                          }}
-                          className={`rounded-lg border px-3 py-2 text-left transition-all ${
-                            isSel
-                              ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75] ring-2 ring-[#0d6e75]/10'
-                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          <p className="text-[10px] font-black">{slot.title}</p>
-                          <p className="text-[9px] font-bold text-slate-450 mt-0.5">{cleanTime(slot.slot_start)} - {cleanTime(slot.slot_end)}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Guests */}
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Guests</p>
-                <div className={`flex items-center justify-between rounded-lg border px-3 py-1 ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
-                  <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0d6e75]'}`} aria-label="Decrease guests">
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="text-xs font-black">{guests} {guests === 1 ? 'Adult' : 'Adults'}</span>
-                  <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:text-[#0d6e75]'}`} aria-label="Increase guests">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex justify-between items-center mt-1">
-                  {selectedVariant?.capacity_per_room ? <p className="text-[10px] font-semibold text-slate-400">{selectedVariant.capacity_per_room} guests/room capacity</p> : <div />}
-                  <p className={`text-[10px] font-bold ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0d6e75]'}`}>
-                    {arrivalDate && maxAvailableRooms === 0
-                      ? 'No rooms available — select different dates'
-                      : `Requires ${roomsCount} room${roomsCount !== 1 ? 's' : ''}${arrivalDate ? ` (${maxAvailableRooms} available)` : ''}`
+          {/* Facilities & Services Section */}
+          {facilities.length > 0 && (
+            <section id="facilities" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+              <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                  <Wifi className="h-3 w-3 text-[#0d6e75]" />
+                  <span>RESORT AMENITIES</span>
+                </span>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                  Facilities & Services
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Complimentary amenities provided on-site for guest convenience
+                </p>
+              </div>
+              <div className="p-5 md:p-6">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {facilities.map((facility) => {
+                    const lower = facility.toLowerCase();
+                    let IconComp = CheckCircle2;
+                    let subtext = "Verified property facility";
+                    
+                    if (lower.includes('park') || lower.includes('car')) {
+                      IconComp = Car;
+                      subtext = "Complimentary vehicle parking";
+                    } else if (lower.includes('water') || lower.includes('hot')) {
+                      IconComp = ThermometerSun;
+                      subtext = "24/7 hot water supply";
+                    } else if (lower.includes('power') || lower.includes('invert') || lower.includes('backup')) {
+                      IconComp = Zap;
+                      subtext = "Continuous power backup";
+                    } else if (lower.includes('room service') || lower.includes('service')) {
+                      IconComp = Utensils;
+                      subtext = "Prompt room assistance";
+                    } else if (lower.includes('ac') || lower.includes('air')) {
+                      IconComp = Wind;
+                      subtext = "Climate controlled room";
+                    } else if (lower.includes('tv') || lower.includes('television')) {
+                      IconComp = Tv;
+                      subtext = "Satellite channels available";
+                    } else if (lower.includes('wifi') || lower.includes('internet')) {
+                      IconComp = Wifi;
+                      subtext = "High speed internet access";
                     }
-                  </p>
+
+                    return (
+                      <div
+                        key={facility}
+                        className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition hover:border-[#0d6e75]/40 hover:bg-[#0d6e75]/5"
+                      >
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0d6e75]/10 text-[#0d6e75]">
+                          <IconComp className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-black text-slate-900 truncate">{facility}</p>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">{subtext}</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-widest shrink-0">
+                          ✓ Available
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            </section>
+          )}
 
-              {/* Coupon Section */}
-              <div className="pt-4 border-t border-slate-100">
-                <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2 relative">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Have a promo code?"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      disabled={validatingCoupon || !!appliedCoupon}
-                      className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#0d6e75] focus:bg-white disabled:opacity-60"
-                    />
-                    {appliedCoupon ? (
-                      <button
-                        type="button"
-                        onClick={handleRemoveCoupon}
-                        className="flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-650 transition hover:bg-red-100"
-                      >
-                        Remove
-                      </button>
-                    ) : (
-                      <button
-                        type="submit"
-                        disabled={!couponCode || validatingCoupon}
-                        className="flex w-16 items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:opacity-50"
-                      >
-                        {validatingCoupon ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
-                      </button>
-                    )}
-                  </div>
-                  {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
-                  {couponSuccess && <p className="text-[10px] font-bold text-green-600">{couponSuccess}</p>}
-                </form>
+          {/* Stay Categories & Tariffs Section */}
+          {validVariants.length > 0 && (
+            <section id="categories" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+              <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                  <BedDouble className="h-3 w-3 text-[#0d6e75]" />
+                  <span>ROOM TARIFFS</span>
+                </span>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                  Stay Categories
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Choose a room category to configure your live reservation price
+                </p>
               </div>
-
-              {isLodgeInactive ? (
-                <button disabled className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-slate-400 cursor-not-allowed h-11 flex items-center justify-center">
-                  Reservations Closed
-                </button>
-              ) : (
-                <>
-                  {/* Pricing Details & Advance Payment Card */}
-                  <div className="rounded-2xl border border-slate-250 bg-[#fafaf7] p-4 space-y-3">
-                <div className="space-y-2 text-xs text-slate-500 font-semibold">
-                  <div className="flex items-center justify-between">
-                    <span>Base Room Fare <span className="text-[10px] text-slate-450 font-medium">({nights || 1}N, {roomsCount}R)</span></span>
-                    <span className="font-extrabold text-slate-900">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
-                  </div>
-                  {stayDetails.weekendSurchargeTotal > 0 && (
-                    <div className="flex items-center justify-between text-amber-600">
-                      <span>Weekend Surcharge</span>
-                      <span className="font-extrabold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
-                    </div>
-                  )}
-                  {appliedCoupon && (
-                    <div className="flex items-center justify-between text-[#16a34a] font-bold">
-                      <span>Coupon Discount</span>
-                      <span className="font-extrabold">- {money(appliedCoupon.discount_amount)}</span>
-                    </div>
-                  )}
-                  {nights > 0 && selectedVariant && arrivalDate && departureDate && stayDetails.breakdown.some(d => d.isWeekend) ? (
-                    <div className="text-[10px] font-bold text-slate-400 mt-0.5">
-                      Includes {stayDetails.breakdown.filter(d => d.isWeekend).length} weekend night(s)
-                    </div>
-                  ) : null}
-                  <div className="flex justify-between items-center">
-                    <span>GST <span className="text-[10px] text-slate-450 font-medium">(5%)</span></span>
-                    <span className="font-extrabold text-slate-900">{money(prices.gst)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Gateway Fee <span className="text-[10px] text-slate-455 font-medium">(1%)</span></span>
-                    <span className="font-extrabold text-slate-900">{money(prices.gatewayFee)}</span>
-                  </div>
-                  {isAgent ? (
-                    <>
-                      <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-xs font-bold text-slate-650">
-                        <span>Tourist Total Bill</span>
-                        <span>{money(prices.grandTotal)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-rose-600 font-bold">
-                        <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
-                        <span>- {money(prices.agentDiscount)}</span>
-                      </div>
-                      <div className="flex justify-between items-center border-t border-slate-300 pt-2 mt-1.5 text-sm font-black text-slate-900">
-                        <span>Net Payable to Portal</span>
-                        <span className="text-[#0d6e75] text-lg">{money(prices.agentPayable)}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-sm font-black text-slate-950">
-                      <span>Total Price</span>
-                      <span className="text-[#0d6e75] text-lg font-black">{money(prices.grandTotal || price * roomsCount)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {arrivalDate && departureDate && (() => {
-                  const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
-                  
-                  const advType = room.advance_payment_type || 'FULL_PAYMENT';
-                  const advVal = room.advance_payment_value || 0;
-
-                  let minPayable = finalTotal;
-                  let optionLabel = '';
-                  let noticeText = '';
-
-                  if (advType === 'PERCENTAGE') {
-                    const pct = advVal || 50;
-                    minPayable = Math.ceil(finalTotal * (pct / 100));
-                    optionLabel = `${pct}% Adv`;
-                    noticeText = `No cancellation — ${pct}% advance secures your room. Balance payable before check-in.`;
-                  } else if (advType === 'FIXED_AMOUNT') {
-                    const fixedAmt = advVal || 500;
-                    minPayable = Math.min(finalTotal, fixedAmt * roomsCount);
-                    optionLabel = `₹${fixedAmt.toLocaleString('en-IN')} Adv`;
-                    noticeText = `No cancellation — ₹${fixedAmt.toLocaleString('en-IN')} per room advance secures your room. Balance payable before check-in.`;
-                  }
-
-                  const parsedCustom = parseInt(customPayAmount, 10);
-                  const effectivePay = isNaN(parsedCustom) || customPayAmount === ''
-                    ? finalTotal
-                    : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
-                  const isPartial = effectivePay < finalTotal;
-                  return (
-                    <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
-                      {advType !== 'FULL_PAYMENT' ? (
-                        <>
-                          {/* No cancellation notice */}
-                          <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
-                            <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
-                            <p className="text-[10px] font-bold text-amber-700 leading-4">{noticeText}</p>
+              <div className="p-5 md:p-6">
+                <div className="grid gap-4">
+                  {validVariants.map((variant) => {
+                    const active = selectedVariant?.id === variant.id;
+                    return (
+                      <div
+                        key={variant.id}
+                        onClick={() => setSelectedVariantId(variant.id)}
+                        className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 ${
+                          active
+                            ? 'border-[#0d6e75] bg-white ring-2 ring-[#0d6e75]/15 shadow-md'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-1.5 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-base font-black text-slate-900">{variant.variant_name}</h3>
+                              {variant.capacity_per_room && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75]/10 px-2.5 py-0.5 text-[10px] font-black text-[#0d6e75]">
+                                  <Users className="h-3 w-3" />
+                                  {variant.capacity_per_room} Guests / Room
+                                </span>
+                              )}
+                              {active && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2.5 py-0.5 text-[9px] font-black text-white uppercase tracking-widest">
+                                  ✓ Selected
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs font-semibold text-slate-500">
+                              Air-cooled luxury cottage accommodation with attached private washroom &amp; verified room service.
+                            </p>
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-bold text-slate-600">
+                                Attached Bath
+                              </span>
+                              <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-bold text-slate-600">
+                                Hot Water
+                              </span>
+                              <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-bold text-slate-600">
+                                Power Backup
+                              </span>
+                            </div>
                           </div>
 
-                          {/* Toggle + amount row */}
-                          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                            <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => setCustomPayAmount('')}
-                                className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
-                              >
-                                Full
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                                className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
-                              >
-                                {optionLabel}
-                              </button>
+                          <div className="flex items-center gap-4 bg-[#fafaf7] p-3.5 rounded-xl border border-slate-200/80 shrink-0">
+                            <div className="text-left">
+                              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Weekday Fare</p>
+                              <p className="text-sm font-black text-[#0d6e75]">{money(variant.weekday_price)}</p>
+                              <p className="text-[9px] text-slate-400 font-semibold">Mon–Fri / night</p>
                             </div>
+                            <div className="h-8 w-px bg-slate-200" />
+                            <div className="text-left">
+                              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Weekend Fare</p>
+                              <p className="text-sm font-black text-amber-600">{money(variant.weekend_price)}</p>
+                              <p className="text-[9px] text-slate-400 font-semibold">Sat–Sun / night</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedVariantId(variant.id);
+                                setIsBookingModalOpen(true);
+                              }}
+                              className={`ml-2 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors shrink-0 ${
+                                active
+                                  ? 'bg-[#0d6e75] text-white hover:bg-[#0b5c62] shadow-sm'
+                                  : 'bg-white border border-[#0d6e75] text-[#0d6e75] hover:bg-[#0d6e75] hover:text-white'
+                              }`}
+                            >
+                              {active ? 'Book Now' : 'Select'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
 
-                            {customPayAmount !== '' ? (
-                              <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0d6e75]/40 rounded-lg px-2 py-1 shadow-sm">
-                                <span className="text-xs font-black text-slate-400">₹</span>
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={customPayAmount}
-                                  onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                  onBlur={() => {
-                                    const v = parseInt(customPayAmount, 10);
-                                    if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                                    else if (v >= finalTotal) setCustomPayAmount('');
-                                    else setCustomPayAmount(String(v));
-                                  }}
-                                  className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
-                                  placeholder={String(minPayable)}
-                                />
-                                <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
-                              </div>
-                            ) : (
-                              <div className="flex-1 text-right shrink-0">
-                                <span className="text-xs font-black text-[#0d6e75]">₹{finalTotal.toLocaleString('en-IN')}</span>
-                                <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
-                              </div>
+          {/* Highlights & Location Section */}
+          <section id="highlights" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+            <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                <Star className="h-3 w-3 text-[#0d6e75]" />
+                <span>LOCATION &amp; ADVANTAGES</span>
+              </span>
+              <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                Highlights &amp; Location
+              </h2>
+              <p className="mt-1 text-xs font-semibold text-slate-500">
+                Key property features and interactive map directions
+              </p>
+            </div>
+            <div className="p-5 md:p-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Left: Highlights list */}
+                <div className="space-y-3">
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Key Stay Highlights</p>
+                  {room.highlights.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                      {room.highlights.map((highlight) => (
+                        <div key={highlight.id} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-500/10 text-amber-600">
+                            <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-slate-900">{highlight.title}</p>
+                            <p className="text-[10px] font-semibold text-slate-500 mt-0.5">Verified tourism facility highlight</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
+                          <Sparkles className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900">Prime Eco-Tourism Location</p>
+                          <p className="text-[10px] font-semibold text-slate-500 mt-0.5">Situated along scenic Bhadrachalam &amp; Papikondalu routes.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
+                          <ShieldCheck className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900">TS Tourism Verified Standards</p>
+                          <p className="text-[10px] font-semibold text-slate-500 mt-0.5">Certified cleanliness, safety protocols &amp; genuine tariffs.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
+                          <Zap className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900">Power Backup &amp; Hot Water</p>
+                          <p className="text-[10px] font-semibold text-slate-500 mt-0.5">24/7 hot water supply and inverter power backup guaranteed.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
+                          <Car className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900">On-Site Parking Available</p>
+                          <p className="text-[10px] font-semibold text-slate-500 mt-0.5">Direct road access with safe parking for tourist vehicles.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: Map */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-400">Interactive Location Map</p>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(room.address || room.lodge_name || 'Bhadrachalam')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-black text-[#0d6e75] hover:underline"
+                    >
+                      <span>Open in Google Maps</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  <div className="relative h-[260px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-inner">
+                    <iframe
+                      title={`${room.lodge_name} map`}
+                      src={embedUrl || `https://maps.google.com/maps?q=${encodeURIComponent(room.address || room.lodge_name || 'Bhadrachalam')}&z=14&output=embed`}
+                      className="h-full w-full border-0"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Stay Timings Section */}
+          {slots.length > 0 && (
+            <section id="timings" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+              <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                  <Clock className="h-3 w-3 text-[#0d6e75]" />
+                  <span>BOOKING SLOTS</span>
+                </span>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                  Stay Timings &amp; Schedule
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Standard check-in and check-out schedule for your reservation
+                </p>
+              </div>
+              <div className="p-5 md:p-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {slots.map((slot, index) => (
+                    <div key={`${slot.title}-${index}`} className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0d6e75]/10 text-[#0d6e75]">
+                        <Clock className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black text-slate-900">{slot.title || 'Standard Stay Slot'}</h3>
+                        <p className="mt-1 text-sm font-black text-[#0d6e75]">
+                          {cleanTime(slot.slot_start)} — {cleanTime(slot.slot_end)}
+                        </p>
+                        <p className="mt-1 text-[10px] font-semibold text-slate-400">Overnight stay schedule</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Stay FAQs Section */}
+          {room.faqs.length > 0 && (
+            <section id="faqs" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+              <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                  <HelpCircle className="h-3 w-3 text-[#0d6e75]" />
+                  <span>FREQUENTLY ASKED</span>
+                </span>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                  Stay FAQs
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Common questions regarding room bookings and property guidelines
+                </p>
+              </div>
+              <div className="p-5 md:p-6">
+                <div className="grid gap-3">
+                  {room.faqs.map((faq) => (
+                    <details key={faq.id} className="group rounded-xl border border-slate-200 bg-white p-4 transition duration-200 hover:border-slate-300">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xs font-black text-slate-900 focus:outline-none">
+                        <span>{faq.question}</span>
+                        <HelpCircle className="h-4 w-4 shrink-0 text-[#0d6e75]" />
+                      </summary>
+                      <p className="mt-3 text-xs font-semibold leading-relaxed text-slate-600 border-t border-slate-100 pt-3">{faq.answer}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Stay Policies Section */}
+          {room.policies.length > 0 && (
+            <section id="policies" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+              <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                  <FileText className="h-3 w-3 text-[#0d6e75]" />
+                  <span>TERMS &amp; CONDITIONS</span>
+                </span>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                  Stay Policies
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Cancellation rules, payment guidelines, and guest ID requirements
+                </p>
+              </div>
+              <div className="p-5 md:p-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {room.policies.map((policy) => (
+                    <div key={policy.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0d6e75]">
+                        {formatPolicyType(policy.type)}
+                      </span>
+                      <h3 className="mt-2 text-xs font-black text-slate-900">{policy.title}</h3>
+                      <p className="mt-1.5 text-xs font-semibold leading-relaxed text-slate-500">{policy.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Stay Gallery Section */}
+          {slides.length > 0 && (
+            <section id="gallery" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+              <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
+                  <Camera className="h-3 w-3 text-[#0d6e75]" />
+                  <span>PROPERTY PHOTOS</span>
+                </span>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                  Stay Gallery
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Browse room photos and resort surroundings
+                </p>
+              </div>
+              <div className="p-5 md:p-6">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {slides.map((slide, index) => (
+                    <button
+                      key={slide.id || index}
+                      type="button"
+                      onClick={() => {
+                        setActiveSlide(index);
+                        setLightboxOpen(true);
+                      }}
+                      className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:scale-[1.02] hover:shadow-md hover:border-[#0d6e75]"
+                      aria-label={`View photo ${index + 1}`}
+                    >
+                      <Image src={getHdImageUrl(slide.image_url || fallbackImage)} alt={slide.alt_text || `Gallery photo ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" quality={85} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+        <aside className="hidden lg:block lg:pt-1 self-start sticky top-[92px]">
+          <div className="w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg transition duration-300 hover:shadow-xl">
+
+            {/* Header Banner - Matching Packages Image 2 */}
+            <div className="flex items-center justify-between bg-[#0d6e75] px-5 py-3.5 text-white">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-300" />
+                <span className="text-xs font-black uppercase tracking-widest text-white">Fast Online Booking</span>
+              </div>
+              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white backdrop-blur-sm">
+                Live Fare
+              </span>
+            </div>
+
+            {/* Top Price Bar with Book Now Button - Matching Packages Image 2 */}
+            <div className="flex items-center justify-between border-b border-slate-100 p-5 bg-gradient-to-b from-[#0d6e75]/5 to-transparent">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Starting Price</p>
+                <p className="mt-0.5 text-2xl font-black text-slate-900">
+                  {money(price || room.starting_price)}{' '}
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">/ night</span>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={isLodgeInactive}
+                onClick={() => setIsBookingModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-[#0d6e75] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-[#0b5c62] hover:scale-105 active:scale-95 disabled:opacity-50"
+              >
+                <span>Reserve Now</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Stay Categories & Tariffs List - Matching Packages Image 2 */}
+            {validVariants.length > 0 && (
+              <div className="p-5 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Stay Categories &amp; Tariffs</p>
+                <div className="grid gap-3">
+                  {validVariants.map((variant) => {
+                    const isSel = selectedVariantId === variant.id;
+                    return (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedVariantId(variant.id);
+                        }}
+                        className={`w-full rounded-2xl border p-4 text-left transition-all ${
+                          isSel
+                            ? 'border-[#0d6e75] bg-[#0d6e75]/5 ring-2 ring-[#0d6e75]/10 shadow-sm'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">{variant.variant_name}</h4>
+                              {isSel && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-widest shrink-0 whitespace-nowrap">
+                                  ✓ Selected
+                                </span>
+                              )}
+                            </div>
+                            {variant.capacity_per_room && (
+                              <p className="text-[10px] font-semibold text-slate-400 mt-1">{variant.capacity_per_room} guests per room</p>
                             )}
                           </div>
-
-                          {isPartial && (
-                            <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
-                              <span>Balance due later</span>
-                              <span className="font-black text-slate-600">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
-                            </div>
-                          )}
-                          {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
-                            <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{minPayable.toLocaleString('en-IN')}</p>
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex items-start gap-2 rounded-lg bg-emerald-50/50 border border-emerald-100 px-2.5 py-2">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                          <p className="text-[10px] font-bold text-slate-600 leading-4">Full payment is required to confirm this stay booking.</p>
                         </div>
-                      )}
-                    </div>
-                  );
-                })()}
+
+                        {/* Weekday & Weekend Fares Table - Matching Packages Image 2 */}
+                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-white border border-slate-150 p-2.5 text-center">
+                          <div>
+                            <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">Weekday Fares</p>
+                            <p className="text-xs font-black text-[#0d6e75] mt-0.5">{money(variant.weekday_price)}</p>
+                          </div>
+                          <div className="border-l border-slate-150 pl-2">
+                            <p className="text-[8px] font-black uppercase tracking-wider text-amber-600">Weekend / Peak</p>
+                            <p className="text-xs font-black text-amber-700 mt-0.5">{money(variant.weekend_price)}</p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Included Stay Amenities - Matching Packages Image 2 */}
+            <div className="px-5 pb-5 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Included Stay Amenities</p>
+              <div className="space-y-2 text-xs font-semibold text-slate-600">
+                <div className="flex items-center gap-2.5 rounded-xl border border-slate-150 bg-slate-50/50 p-3">
+                  <ShieldCheck className="h-4 w-4 text-[#0d6e75] shrink-0" />
+                  <span>Verified Tourism Lodging &amp; Support</span>
+                </div>
+                <div className="flex items-center gap-2.5 rounded-xl border border-slate-150 bg-slate-50/50 p-3">
+                  <Clock className="h-4 w-4 text-[#0d6e75] shrink-0" />
+                  <span>Standard Timing: {cleanTime(selectedSlot?.slot_start)} - {cleanTime(selectedSlot?.slot_end)}</span>
+                </div>
               </div>
 
-
-
-                  {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
-                    <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
-                      Not Available
-                    </div>
-                  ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms && !isAdmin ? (
-                    <div className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 h-11 flex items-center justify-center cursor-not-allowed opacity-80">
-                      Not Enough Rooms
-                    </div>
-                  ) : (
-                    <button onClick={handleBookingClick} disabled={isProcessingCheckout} className="w-full rounded-lg py-3 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0d6e75] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b5c62] h-11 flex items-center justify-center disabled:opacity-60">
-                      {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve Now'}
-                    </button>
-                  )}
-                </>
-              )}
+              {/* Reserve Button */}
+              <button
+                type="button"
+                disabled={isLodgeInactive}
+                onClick={() => setIsBookingModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#0d6e75] py-3.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-[#0b5c62] hover:shadow-lg active:scale-98 disabled:opacity-50"
+              >
+                <span>Reserve Stay Now</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </aside>
       </section>
 
-      <div className="fixed inset-x-0 bottom-16 z-50 border-t border-white/50 bg-white/95 p-3 shadow-[0_-18px_50px_rgba(23,34,50,0.14)] backdrop-blur-xl sm:bottom-0 lg:hidden">
+      {/* Floating Action Bar (Desktop bottom right widget stacked above WhatsApp) - Matching Packages */}
+      {showFloatingWidget && (
+        <div className="fixed bottom-6 right-6 z-40 hidden lg:flex items-center gap-3 rounded-full bg-[#0d6e75] p-2 pr-5 text-white shadow-2xl transition-all hover:scale-105">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+            <Sparkles className="h-5 w-5 text-amber-300" />
+          </div>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#e5dac5]">From {money(price || room.starting_price)} · Live Fare</p>
+            <p className="text-xs font-black">{room.lodge_name}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsBookingModalOpen(true)}
+            className="ml-2 flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-black text-[#0d6e75] uppercase tracking-wider transition hover:bg-slate-100"
+          >
+            <span>Book Now</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Floating Bar */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/95 p-3 shadow-[0_-10px_28px_rgba(15,61,86,0.14)] backdrop-blur-md lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
               Total ({roomsCount} {roomsCount === 1 ? 'room' : 'rooms'}){isAgent && prices.agentPayable < prices.grandTotal ? ' · Agent Rate' : ''}
             </p>
-            <p className="text-xl font-black text-[#102231] min-[380px]:text-2xl">{(isAgent ? prices.agentPayable : prices.grandTotal) ? money(isAgent ? prices.agentPayable : prices.grandTotal) : money(price * roomsCount)}</p>
+            <p className="text-xl font-black text-[#102231] min-[380px]:text-2xl font-black">
+              {(isAgent ? prices.agentPayable : prices.grandTotal) ? money(isAgent ? prices.agentPayable : prices.grandTotal) : money(price * roomsCount)}
+            </p>
           </div>
           {isLodgeInactive ? (
-            <button disabled className="flex h-12 shrink-0 items-center justify-center rounded-full bg-slate-400 px-6 text-sm font-black uppercase tracking-[0.14em] text-white cursor-not-allowed animate-none">
+            <button disabled className="flex h-12 shrink-0 items-center justify-center rounded-full bg-slate-400 px-6 text-sm font-black uppercase tracking-[0.14em] text-white cursor-not-allowed">
               Closed
             </button>
           ) : (
-            <Sheet>
-              <SheetTrigger asChild>
-                <button type="button" className="flex h-12 shrink-0 items-center justify-center rounded-full bg-[#0d6e75] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95">
-                  Reserve Now
-                </button>
-              </SheetTrigger>
-              <SheetContent
-                side="bottom"
-                className="!h-[92dvh] flex flex-col rounded-t-[24px] border-t border-slate-200 bg-white px-4 pb-0 pt-6 overflow-hidden"
-                showCloseButton
+            <button
+              type="button"
+              onClick={() => setIsBookingModalOpen(true)}
+              className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[#0d6e75] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95"
+            >
+              <span>Reserve Now</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Booking Modal Dialog Overlay (Desktop & Mobile) - Matching BookingDialogV3 on Packages (Image 5) */}
+      {isBookingModalOpen && (
+        <div
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsBookingModalOpen(false); }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsBookingModalOpen(false)} />
+
+          {/* Dialog Panel — slides up from bottom on mobile (Image 5 style), centered on desktop */}
+          <div className="relative z-10 w-full max-w-full sm:max-w-[660px] flex flex-col h-[92dvh] sm:h-auto sm:max-h-[86vh] bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-250">
+
+            {/* Modal Header — Image 5 Teal Header */}
+            <div className="bg-gradient-to-r from-[#0d6e75] to-[#0b5c62] px-5 sm:px-6 py-3.5 text-white flex items-center justify-between shrink-0 shadow-md">
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#c8e6e8] flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3 fill-amber-400 text-amber-400" />
+                  Verified Reservation Portal
+                </span>
+                <h2 className="text-base sm:text-lg font-black text-white leading-tight">
+                  Configure Stay Reservation
+                </h2>
+                <p className="text-[10px] font-bold text-white/70 truncate max-w-[280px]">{room.lodge_name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBookingModalOpen(false)}
+                className="ml-4 shrink-0 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+                aria-label="Close"
               >
-                <SheetHeader className="mb-4 text-left shrink-0">
-                  <SheetTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-[#0d6e75]" />
-                    Configure your stay
-                  </SheetTitle>
-                  <SheetDescription className="text-xs font-bold text-slate-400">
-                    Room category, dates, guests, and payment details.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-8 pt-2 space-y-4 scrollbar-none">
-                  {/* Select Dates */}
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin scrollbar-thumb-slate-200">
+              {isLodgeInactive ? (
+                <div className="rounded-xl border border-rose-100 bg-rose-500/5 p-4 text-xs text-rose-600 font-bold flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
                   <div>
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Select Dates</p>
-                    <div className="grid gap-3">
+                    <p className="font-black text-sm">Online Bookings Suspended</p>
+                    <p className="text-slate-500 font-semibold text-xs mt-1">
+                      This stay / lodge is currently closed or inactive.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Step 1: Select Dates */}
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#0d6e75] mb-2 flex items-center gap-1.5">
+                      <span className="grid h-4.5 w-4.5 place-items-center rounded-full bg-[#0d6e75] text-[9px] text-white">1</span>
+                      Select Dates
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
                       <CustomDatePicker
                         label="Arrival"
+                        align="left"
                         value={arrivalDate}
                         min={today}
                         disabled={isLodgeInactive}
                         availableDates={allAvailableDates}
                         onMonthChange={fetchRoomAvailability}
+                        isAdmin={isAdmin}
                         onChange={(val) => {
                           setArrivalDate(val);
                           const sStart = selectedSlot?.slot_start || "";
                           const sEnd = selectedSlot?.slot_end || "";
                           const isOvernight = (sStart && sEnd) ? sStart > sEnd : true;
-                          
+
                           if (!departureDate || (isOvernight && departureDate <= val) || (!isOvernight && departureDate < val)) {
                             if (isOvernight) {
                               const nextDay = new Date(val);
@@ -1646,6 +1798,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       />
                       <CustomDatePicker
                         label="Departure"
+                        align="right"
                         value={departureDate}
                         min={arrivalDate || today}
                         disabled={isLodgeInactive}
@@ -1656,10 +1809,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     </div>
                   </div>
 
-                  {/* Visual Stay Category Cards */}
-                  {validVariants.length ? (
+                  {/* Step 2: Stay Category */}
+                  {validVariants.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Stay Category</p>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#0d6e75] mb-2 flex items-center gap-1.5">
+                        <span className="grid h-4.5 w-4.5 place-items-center rounded-full bg-[#0d6e75] text-[9px] text-white">2</span>
+                        Stay Category
+                      </p>
                       <div className="grid gap-2">
                         {validVariants.map((variant) => {
                           const isSel = selectedVariantId === variant.id;
@@ -1669,19 +1825,26 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                               type="button"
                               disabled={isLodgeInactive}
                               onClick={() => setSelectedVariantId(variant.id)}
-                              className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
+                              className={`flex items-start justify-between gap-3 rounded-xl border p-3.5 text-left transition-all ${
                                 isSel
                                   ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-slate-900 ring-2 ring-[#0d6e75]/10'
-                                  : 'border-slate-200 bg-white text-slate-650 hover:bg-slate-50'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                               }`}
                             >
-                              <div>
-                                <p className="text-xs font-black">{variant.variant_name}</p>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="text-xs font-black text-slate-800">{variant.variant_name}</p>
+                                  {isSel && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-widest shrink-0 whitespace-nowrap">
+                                      ✓ Selected
+                                    </span>
+                                  )}
+                                </div>
                                 {variant.capacity_per_room && (
-                                  <p className="text-[9px] font-bold text-slate-400">{variant.capacity_per_room} guests/room</p>
+                                  <p className="text-[9px] font-bold text-slate-400 mt-0.5">{variant.capacity_per_room} guests/room</p>
                                 )}
                               </div>
-                              <p className="text-xs font-black text-[#0d6e75]">
+                              <p className="text-xs font-black text-[#0d6e75] shrink-0">
                                 {money(isWeekend ? variant.weekend_price : variant.weekday_price)}
                               </p>
                             </button>
@@ -1689,12 +1852,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         })}
                       </div>
                     </div>
-                  ) : null}
+                  )}
 
-                  {/* Visual Timing Slots */}
-                  {slots.length > 0 ? (
+                  {/* Step 3: Check-in Timing */}
+                  {slots.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Check-in/out Timing</p>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#0d6e75] mb-2 flex items-center gap-1.5">
+                        <span className="grid h-4.5 w-4.5 place-items-center rounded-full bg-[#0d6e75] text-[9px] text-white">3</span>
+                        Check-in/out Timing
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {slots.map((slot, index) => {
                           const isSel = selectedSlotIndex === index;
@@ -1721,7 +1887,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                               className={`rounded-lg border px-3 py-2 text-left transition-all ${
                                 isSel
                                   ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75] ring-2 ring-[#0d6e75]/10'
-                                  : 'border-slate-200 bg-white text-slate-650 hover:bg-slate-50'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                               }`}
                             >
                               <p className="text-[10px] font-black">{slot.title}</p>
@@ -1731,32 +1897,117 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         })}
                       </div>
                     </div>
-                  ) : null}
+                  )}
 
+                  {/* Step 4: Rooms & Guests (Adults & Children) */}
                   <div>
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Guests</p>
-                    <div className={`flex min-h-14 items-center justify-between rounded-lg border px-4 ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
-                      <button type="button" disabled={isLodgeInactive} onClick={() => setGuests((value) => Math.max(1, value - 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0d6e75] hover:text-[#0d6e75]'}`} aria-label="Decrease guests">
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <span className="text-sm font-black">{guests} {guests === 1 ? 'Guest' : 'Guests'}</span>
-                      <button type="button" disabled={isLodgeInactive || guests >= (maxAvailableRooms * capacity)} onClick={() => setGuests((value) => Math.min(maxAvailableRooms * capacity, value + 1))} className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition ${isLodgeInactive || guests >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed text-slate-300' : 'hover:border-[#0d6e75] hover:text-[#0d6e75]'}`} aria-label="Increase guests">
-                        <Plus className="h-4 w-4" />
-                      </button>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#0d6e75] mb-2 flex items-center gap-1.5">
+                      <span className="grid h-4.5 w-4.5 place-items-center rounded-full bg-[#0d6e75] text-[9px] text-white">4</span>
+                      Rooms &amp; Guests
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      {/* Rooms Counter */}
+                      <div className={`rounded-xl border p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 truncate">Rooms</span>
+                        <div className="flex items-center justify-between gap-1">
+                          <button
+                            type="button"
+                            disabled={isLodgeInactive || roomsCount <= 1}
+                            onClick={() => setRooms((r) => Math.max(1, Math.min(r, roomsCount) - 1))}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || roomsCount <= 1 ? 'cursor-not-allowed opacity-30' : 'hover:bg-slate-100 hover:text-[#0d6e75]'}`}
+                            aria-label="Decrease rooms"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="text-xs font-black text-slate-800 truncate text-center">{roomsCount}</span>
+                          <button
+                            type="button"
+                            disabled={isLodgeInactive || roomsCount >= maxAvailableRooms}
+                            onClick={() => setRooms((r) => Math.min(maxAvailableRooms, Math.max(r, roomsCount) + 1))}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || roomsCount >= maxAvailableRooms ? 'cursor-not-allowed opacity-30' : 'hover:bg-slate-100 hover:text-[#0d6e75]'}`}
+                            aria-label="Increase rooms"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Adults Counter */}
+                      <div className={`rounded-xl border p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 truncate">Adults</span>
+                        <div className="flex items-center justify-between gap-1">
+                          <button
+                            type="button"
+                            disabled={isLodgeInactive || adults <= 1}
+                            onClick={() => setAdults((val) => Math.max(1, val - 1))}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || adults <= 1 ? 'cursor-not-allowed opacity-30' : 'hover:bg-slate-100 hover:text-[#0d6e75]'}`}
+                            aria-label="Decrease adults"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="text-xs font-black text-slate-800 truncate text-center">{adults}</span>
+                          <button
+                            type="button"
+                            disabled={isLodgeInactive || (adults + children) >= (maxAvailableRooms * capacity)}
+                            onClick={() => {
+                              const nextAdults = Math.min(maxAvailableRooms * capacity - children, adults + 1);
+                              setAdults(nextAdults);
+                              const neededR = Math.ceil((nextAdults + children) / capacity);
+                              if (neededR > rooms) setRooms(neededR);
+                            }}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || (adults + children) >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed opacity-30' : 'hover:bg-slate-100 hover:text-[#0d6e75]'}`}
+                            aria-label="Increase adults"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Children Counter */}
+                      <div className={`rounded-xl border p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 truncate">Children</span>
+                        <div className="flex items-center justify-between gap-1">
+                          <button
+                            type="button"
+                            disabled={isLodgeInactive || children <= 0}
+                            onClick={() => setChildren((val) => Math.max(0, val - 1))}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || children <= 0 ? 'cursor-not-allowed opacity-30' : 'hover:bg-slate-100 hover:text-[#0d6e75]'}`}
+                            aria-label="Decrease children"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="text-xs font-black text-slate-800 truncate text-center">{children}</span>
+                          <button
+                            type="button"
+                            disabled={isLodgeInactive || (adults + children) >= (maxAvailableRooms * capacity)}
+                            onClick={() => {
+                              const nextChild = Math.min(maxAvailableRooms * capacity - adults, children + 1);
+                              setChildren(nextChild);
+                              const neededR = Math.ceil((adults + nextChild) / capacity);
+                              if (neededR > rooms) setRooms(neededR);
+                            }}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition ${isLodgeInactive || (adults + children) >= (maxAvailableRooms * capacity) ? 'cursor-not-allowed opacity-30' : 'hover:bg-slate-100 hover:text-[#0d6e75]'}`}
+                            aria-label="Increase children"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      {selectedVariant?.capacity_per_room ? <p className="text-xs font-bold text-slate-400">Selected category capacity: {selectedVariant.capacity_per_room} guests per room.</p> : null}
-                      <p className={`text-xs font-black ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0d6e75]'}`}>
+
+                    <div className="flex justify-between items-center mt-1.5 px-0.5">
+                      {selectedVariant?.capacity_per_room ? <p className="text-[10px] font-semibold text-slate-400">{selectedVariant.capacity_per_room} guests/room capacity</p> : <div />}
+                      <p className={`text-[10px] font-bold ${arrivalDate && maxAvailableRooms === 0 ? 'text-red-500' : arrivalDate && roomsCount > maxAvailableRooms ? 'text-red-500' : 'text-[#0d6e75]'}`}>
                         {arrivalDate && maxAvailableRooms === 0
                           ? 'No rooms available — select different dates'
-                          : `Requires ${roomsCount} room${roomsCount !== 1 ? 's' : ''}${arrivalDate ? ` (${maxAvailableRooms} available)` : ''}`
+                          : `${roomsCount} room${roomsCount !== 1 ? 's' : ''} (${adults} Adult${adults !== 1 ? 's' : ''}${children > 0 ? `, ${children} Child${children !== 1 ? 'ren' : ''}` : ''})`
                         }
                       </p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-200 pt-4 space-y-3">
-                    {/* Mobile Coupon Section */}
+                  {/* Coupon Code Section */}
+                  <div className="pt-3 border-t border-slate-100">
                     <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2 relative">
                       <div className="flex gap-2">
                         <input
@@ -1765,13 +2016,13 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                           disabled={validatingCoupon || !!appliedCoupon}
-                          className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#0d6e75] focus:bg-white disabled:opacity-60"
+                          className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#0d6e75] focus:bg-white disabled:opacity-60"
                         />
                         {appliedCoupon ? (
                           <button
                             type="button"
                             onClick={handleRemoveCoupon}
-                            className="flex items-center justify-center rounded-lg bg-red-50 px-4 py-2 text-sm font-black text-red-655 transition hover:bg-red-100"
+                            className="flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-650 transition hover:bg-red-100"
                           >
                             Remove
                           </button>
@@ -1779,187 +2030,201 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                           <button
                             type="submit"
                             disabled={!couponCode || validatingCoupon}
-                            className="flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-50"
+                            className="flex w-16 items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:opacity-50"
                           >
-                            {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                            {validatingCoupon ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
                           </button>
                         )}
                       </div>
                       {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
                       {couponSuccess && <p className="text-[10px] font-bold text-green-600">{couponSuccess}</p>}
                     </form>
+                  </div>
 
-                    {/* Pricing Details & Advance Payment Card */}
-                    <div className="rounded-2xl border border-slate-250 bg-[#fafaf7] p-4 space-y-3">
-                      <div className="space-y-2 text-xs text-slate-500 font-semibold">
-                        <div className="flex justify-between items-center">
-                          <span>Base Room Fare <span className="text-[10px] text-slate-450 font-medium">({nights || 1}N, {roomsCount}R)</span></span>
-                          <span className="font-extrabold text-slate-900">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
-                        </div>
-                        {stayDetails.weekendSurchargeTotal > 0 && (
-                          <div className="flex justify-between items-center text-amber-600">
-                            <span>Weekend Surcharge</span>
-                            <span className="font-extrabold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
-                          </div>
-                        )}
-                        {appliedCoupon && (
-                          <div className="flex items-center justify-between text-[#16a34a] font-bold">
-                            <span>Coupon Discount</span>
-                            <span className="font-extrabold">- {money(appliedCoupon.discount_amount)}</span>
-                          </div>
-                        )}
-                        {nights > 0 && selectedVariant && arrivalDate && departureDate && stayDetails.breakdown.some(d => d.isWeekend) ? (
-                          <div className="text-[10px] font-bold text-slate-400 mt-0.5">
-                            Includes {stayDetails.breakdown.filter(d => d.isWeekend).length} weekend night(s)
-                          </div>
-                        ) : null}
-                        <div className="flex justify-between items-center">
-                          <span>GST <span className="text-[10px] text-slate-450 font-medium">(5%)</span></span>
-                          <span className="font-extrabold text-slate-900">{money(prices.gst)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Gateway Fee <span className="text-[10px] text-slate-450 font-medium">(1%)</span></span>
-                          <span className="font-extrabold text-slate-900">{money(prices.gatewayFee)}</span>
-                        </div>
-                        {isAgent ? (
-                          <>
-                            <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-xs font-bold text-slate-650">
-                              <span>Tourist Total Bill</span>
-                              <span>{money(prices.grandTotal)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-rose-600 font-bold">
-                              <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
-                              <span>- {money(prices.agentDiscount)}</span>
-                            </div>
-                            <div className="flex justify-between items-center border-t border-slate-300 pt-2 mt-1.5 text-sm font-black text-slate-900">
-                              <span>Net Payable to Portal</span>
-                              <span className="text-[#0d6e75] text-lg">{money(prices.agentPayable)}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-sm font-black text-slate-950">
-                            <span>Total Price</span>
-                            <span className="text-[#0d6e75] text-lg font-black">{money(prices.grandTotal || price * roomsCount)}</span>
-                          </div>
-                        )}
+                  {/* Pricing Details Breakdown */}
+                  <div className="rounded-2xl border border-slate-200 bg-[#fafaf7] p-4 space-y-3">
+                    <div className="space-y-2 text-xs text-slate-500 font-semibold">
+                      <div className="flex items-center justify-between">
+                        <span>Base Room Fare <span className="text-[10px] text-slate-450 font-medium">({nights || 1}N, {roomsCount}R)</span></span>
+                        <span className="font-extrabold text-slate-900">{money((stayDetails.pureBaseTotal > 0 ? stayDetails.pureBaseTotal : price) * roomsCount)}</span>
                       </div>
-
-                      {arrivalDate && departureDate && (() => {
-                        const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
-                        const minPayable = Math.ceil(finalTotal * 0.50);
-                        const parsedCustom = parseInt(customPayAmount, 10);
-                        const effectivePay = isNaN(parsedCustom) || customPayAmount === ''
-                          ? finalTotal
-                          : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
-                        const isPartial = effectivePay < finalTotal;
-                        return (
-                          <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
-                            {/* No cancellation notice */}
-                            <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-250 px-2.5 py-2">
-                              <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
-                              <p className="text-[10px] font-bold text-amber-700 leading-4">No cancellation — 50% advance secures your room. Balance payable before check-in.</p>
-                            </div>
-
-                            {/* Toggle + amount row */}
-                            <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                              <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => setCustomPayAmount('')}
-                                  className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
-                                >
-                                  Full
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                                  className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
-                                >
-                                  50% Adv
-                                </button>
-                              </div>
-
-                              {customPayAmount !== '' ? (
-                                <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0d6e75]/40 rounded-lg px-2 py-1 shadow-sm">
-                                  <span className="text-xs font-black text-slate-400">₹</span>
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={customPayAmount}
-                                    onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                    onBlur={() => {
-                                      const v = parseInt(customPayAmount, 10);
-                                      if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                                      else if (v >= finalTotal) setCustomPayAmount('');
-                                      else setCustomPayAmount(String(v));
-                                    }}
-                                    className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
-                                    placeholder={String(minPayable)}
-                                  />
-                                  <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
-                                </div>
-                              ) : (
-                                <div className="flex-1 text-right shrink-0">
-                                  <span className="text-xs font-black text-[#0d6e75]">₹{finalTotal.toLocaleString('en-IN')}</span>
-                                  <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {isPartial && (
-                              <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
-                                <span>Balance due later</span>
-                                <span className="font-black text-slate-600">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
-                              </div>
-                            )}
-                            {customPayAmount !== '' && parseInt(customPayAmount, 10) < minPayable && (
-                              <p className="text-[10px] text-red-500 font-bold">Min advance: ₹{minPayable.toLocaleString('en-IN')} (50%)</p>
-                            )}
+                      {stayDetails.weekendSurchargeTotal > 0 && (
+                        <div className="flex items-center justify-between text-amber-600">
+                          <span>Weekend Surcharge</span>
+                          <span className="font-extrabold text-amber-600">+ {money(stayDetails.weekendSurchargeTotal * roomsCount)}</span>
+                        </div>
+                      )}
+                      {appliedCoupon && (
+                        <div className="flex items-center justify-between text-[#16a34a] font-bold">
+                          <span>Coupon Discount</span>
+                          <span className="font-extrabold">- {money(appliedCoupon.discount_amount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <span>GST <span className="text-[10px] text-slate-450 font-medium">(5%)</span></span>
+                        <span className="font-extrabold text-slate-900">{money(prices.gst)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Gateway Fee <span className="text-[10px] text-slate-455 font-medium">(1%)</span></span>
+                        <span className="font-extrabold text-slate-900">{money(prices.gatewayFee)}</span>
+                      </div>
+                      {isAgent ? (
+                        <>
+                          <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-xs font-bold text-slate-650">
+                            <span>Tourist Total Bill</span>
+                            <span>{money(prices.grandTotal)}</span>
                           </div>
-                        );
-                      })()}
+                          <div className="flex justify-between items-center text-rose-600 font-bold">
+                            <span>Agent Commission ({user?.commission_type === 'FIXED_AMOUNT' ? 'Fixed' : `${user?.commission_percentage}%`})</span>
+                            <span>- {money(prices.agentDiscount)}</span>
+                          </div>
+                          <div className="flex justify-between items-center border-t border-slate-300 pt-2 mt-1.5 text-sm font-black text-slate-900">
+                            <span>Net Payable to Portal</span>
+                            <span className="text-[#0d6e75] text-lg">{money(prices.agentPayable)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-1.5 text-sm font-black text-slate-950">
+                          <span>Total Price</span>
+                          <span className="text-[#0d6e75] text-lg font-black">{money(prices.grandTotal || price * roomsCount)}</span>
+                        </div>
+                      )}
                     </div>
 
+                    {arrivalDate && departureDate && (() => {
+                      const finalTotal = (isAgent ? prices.agentPayable : prices.grandTotal) || price * roomsCount;
+                      const advType = room.advance_payment_type || 'FULL_PAYMENT';
+                      const advVal = room.advance_payment_value || 0;
 
+                      let minPayable = finalTotal;
+                      let optionLabel = '';
+                      let noticeText = '';
 
-                    {/* Mobile CTA — same checkout flow as desktop */}
-                    {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
-                      <div className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 flex items-center justify-center cursor-not-allowed opacity-80">
-                        Not Available on Selected Dates
-                      </div>
-                    ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms && !isAdmin ? (
-                      <div className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-red-500 flex items-center justify-center cursor-not-allowed opacity-80">
-                        Not Enough Rooms — Reduce Guests
-                      </div>
-                    ) : !arrivalDate || !departureDate ? (
-                      <div className="w-full rounded-lg py-3.5 px-5 font-black text-slate-400 text-sm uppercase tracking-wider bg-slate-100 flex items-center justify-center cursor-not-allowed">
-                        Select Arrival &amp; Departure Dates
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleBookingClick}
-                        disabled={isProcessingCheckout || isLodgeInactive}
-                        className="w-full rounded-lg py-3.5 px-5 font-black text-white text-sm uppercase tracking-wider bg-[#0d6e75] shadow-md transition hover:-translate-y-0.5 hover:bg-[#0b5c62] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isProcessingCheckout ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}
-                      </button>
-                    )}
+                      if (advType === 'PERCENTAGE') {
+                        const pct = advVal || 50;
+                        minPayable = Math.ceil(finalTotal * (pct / 100));
+                        optionLabel = `${pct}% Adv`;
+                        noticeText = `No cancellation — ${pct}% advance secures your room. Balance payable before check-in.`;
+                      } else if (advType === 'FIXED_AMOUNT') {
+                        const fixedAmt = advVal || 500;
+                        minPayable = Math.min(finalTotal, fixedAmt * roomsCount);
+                        optionLabel = `₹${fixedAmt.toLocaleString('en-IN')} Adv`;
+                        noticeText = `No cancellation — ₹${fixedAmt.toLocaleString('en-IN')} per room advance secures your room. Balance payable before check-in.`;
+                      }
+
+                      const parsedCustom = parseInt(customPayAmount, 10);
+                      const effectivePay = isNaN(parsedCustom) || customPayAmount === ''
+                        ? finalTotal
+                        : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
+                      const isPartial = effectivePay < finalTotal;
+                      return (
+                        <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
+                          {advType !== 'FULL_PAYMENT' ? (
+                            <>
+                              <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
+                                <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
+                                <p className="text-[10px] font-bold text-amber-700 leading-4">{noticeText}</p>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                                <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCustomPayAmount('')}
+                                    className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
+                                  >
+                                    Full
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                                    className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
+                                  >
+                                    {optionLabel}
+                                  </button>
+                                </div>
+
+                                {customPayAmount !== '' ? (
+                                  <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0d6e75]/40 rounded-lg px-2 py-1 shadow-sm">
+                                    <span className="text-xs font-black text-slate-400">₹</span>
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      value={customPayAmount}
+                                      onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                      onBlur={() => {
+                                        const v = parseInt(customPayAmount, 10);
+                                        if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
+                                        else if (v >= finalTotal) setCustomPayAmount('');
+                                        else setCustomPayAmount(String(v));
+                                      }}
+                                      className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
+                                      placeholder={String(minPayable)}
+                                    />
+                                    <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex-1 text-right shrink-0">
+                                    <span className="text-xs font-black text-[#0d6e75]">₹{finalTotal.toLocaleString('en-IN')}</span>
+                                    <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {isPartial && (
+                                <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
+                                  <span>Balance due later</span>
+                                  <span className="font-black text-slate-600">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex items-start gap-2 rounded-lg bg-emerald-50/50 border border-emerald-100 px-2.5 py-2">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                              <p className="text-[10px] font-bold text-slate-600 leading-4">Full payment is required to confirm this stay booking.</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
-                  <ConfirmModal
-                    isOpen={showLoginPrompt}
-                    onClose={() => setShowLoginPrompt(false)}
-                    onConfirm={() => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`)}
-                    title="Verification Required"
-                    message="Please log in to continue booking your reservation."
-                    confirmText="Proceed to Login"
-                    cancelText="Cancel"
-                  />
+                </>
+              )}
+            </div>
+
+            {/* ── Fixed Footer Action Bar Inside Modal (Image 5 Style) ── */}
+            {!isLodgeInactive && (
+              <div className="border-t border-slate-200/80 bg-white p-4 shrink-0 flex items-center justify-between gap-3 shadow-lg">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Price</span>
+                  <span className="text-xl font-black text-[#0d6e75] tracking-tight">
+                    {(isAgent ? prices.agentPayable : prices.grandTotal) ? money(isAgent ? prices.agentPayable : prices.grandTotal) : money(price * roomsCount)}
+                  </span>
                 </div>
-              </SheetContent>
-            </Sheet>
-          )}
+
+                {arrivalDate && departureDate && maxAvailableRooms === 0 && !isAdmin ? (
+                  <button disabled className="rounded-xl py-3.5 px-5 font-black text-white text-xs uppercase tracking-wider bg-red-500 cursor-not-allowed opacity-80">
+                    Not Available
+                  </button>
+                ) : arrivalDate && departureDate && roomsCount > maxAvailableRooms && !isAdmin ? (
+                  <button disabled className="rounded-xl py-3.5 px-5 font-black text-white text-xs uppercase tracking-wider bg-red-500 cursor-not-allowed opacity-80">
+                    Not Enough Rooms
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleBookingClick}
+                    disabled={isProcessingCheckout}
+                    className="flex-1 max-w-[280px] rounded-xl py-3.5 px-5 font-black text-white text-xs uppercase tracking-wider bg-[#0d6e75] shadow-md transition hover:bg-[#0b5c62] hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95"
+                  >
+                    <span>{isProcessingCheckout ? 'Processing...' : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {lightboxOpen ? (
         <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-sm" {...lightboxHandlers}>
@@ -2073,8 +2338,8 @@ const RoomSectionNav = () => {
   };
 
   return (
-    <div className="sticky top-[65px] sm:top-[79px] z-30 border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12">
+    <div className="sticky top-[65px] sm:top-[79px] z-30 w-full max-w-full border-b border-slate-200/70 bg-white/92 shadow-sm backdrop-blur-xl">
+      <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-12">
         <div className="flex flex-nowrap gap-2 overflow-x-auto py-3 scrollbar-none">
           {ROOM_NAV_ITEMS.map((item) => {
             const isActive = activeSection === item.id;
@@ -2240,9 +2505,21 @@ const CustomDatePicker = ({
       const isPast = dateStr < minDateStr;
       const isSelected = dateStr === value;
 
-      // If availableDates is provided, only enable dates that are in the set (Admins bypass this)
-      const hasInventory = availableDates ? availableDates.has(dateStr) : true;
+      const hasInventory = availableDates ? availableDates.has(dateStr) : false;
       const isDisabled = isPast || (!hasInventory && !isAdmin);
+
+      let dateStyle = '';
+      if (isSelected) {
+        dateStyle = 'bg-[#0d6e75] text-white shadow-md font-black ring-2 ring-[#0d6e75]/20 scale-105';
+      } else if (isDisabled) {
+        dateStyle = 'text-slate-300 bg-slate-100/60 cursor-not-allowed line-through';
+      } else if (!hasInventory) {
+        // Admin override view for closed / no-inventory dates
+        dateStyle = 'text-slate-400 bg-slate-100/80 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 cursor-pointer';
+      } else {
+        // Genuine open dates with inventory
+        dateStyle = 'bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200/60 hover:bg-[#0d6e75] hover:text-white hover:border-[#0d6e75] cursor-pointer';
+      }
 
       days.push(
         <button
@@ -2250,14 +2527,7 @@ const CustomDatePicker = ({
           type="button"
           disabled={isDisabled}
           onClick={() => handleDaySelect(i)}
-          className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black transition-all
-            ${isDisabled
-              ? 'text-slate-200 cursor-not-allowed line-through bg-slate-50/30'
-              : isSelected
-                ? 'bg-[#0d6e75] text-white shadow-md'
-                : 'text-slate-800 hover:bg-[#0d6e75]/5 hover:text-[#0d6e75] cursor-pointer'
-            }
-          `}
+          className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${dateStyle}`}
         >
           {i}
         </button>

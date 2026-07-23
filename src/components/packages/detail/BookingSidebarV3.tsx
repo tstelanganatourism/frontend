@@ -288,14 +288,18 @@ export const BookingSidebarV3 = ({
 
   // Listen for Live SSE Inventory updates
   useEffect(() => {
-    const sse = new ReconnectingEventSource(`${API_BASE}/api/v1/packages/sse/inventory?package_id=${packageId}`);
+    const sse = new ReconnectingEventSource(`${API_BASE}/api/v1/stream/packages/${packageId}`);
     
     const handleUpdate = (e: any) => {
       try {
         const payload = JSON.parse(e.data);
-        if (payload && payload.date && payload.variant_id) {
-          const { fetchPublicAvailability } = useInventoryStore.getState();
-          fetchPublicAvailability(packageSlug, currentMonthStr, true);
+        if (payload) {
+          const { applySSEPayload, fetchPublicAvailability } = useInventoryStore.getState();
+          if (payload.date && payload.variant_id && payload.available !== undefined) {
+            applySSEPayload({ ...payload, travel_date: payload.date, package_id: packageId });
+          } else {
+            fetchPublicAvailability(packageSlug, currentMonthStr, false);
+          }
         }
       } catch (err) {
         console.error('[SSE] Failed to parse inventory payload', err);
@@ -307,7 +311,7 @@ export const BookingSidebarV3 = ({
         const payload = JSON.parse(e.data);
         if (payload && payload.package_id === packageId) {
           const { fetchPublicAvailability } = useInventoryStore.getState();
-          fetchPublicAvailability(packageSlug, currentMonthStr, true);
+          fetchPublicAvailability(packageSlug, currentMonthStr, false);
         }
       } catch (err) {
         console.error('[SSE] Failed to parse entity payload', err);
@@ -319,7 +323,7 @@ export const BookingSidebarV3 = ({
         const payload = JSON.parse(e.data);
         if (payload && payload.package_id === packageId) {
           const { fetchPublicAvailability } = useInventoryStore.getState();
-          fetchPublicAvailability(packageSlug, currentMonthStr, true);
+          fetchPublicAvailability(packageSlug, currentMonthStr, false);
         }
       } catch (err) {
         console.error('[SSE] Failed to parse quota payload', err);
@@ -329,7 +333,7 @@ export const BookingSidebarV3 = ({
     const handleTransportUpdate = (e: any) => {
       try {
         const { fetchPublicAvailability } = useInventoryStore.getState();
-        fetchPublicAvailability(packageSlug, currentMonthStr, true);
+        fetchPublicAvailability(packageSlug, currentMonthStr, false);
       } catch (err) {
         console.error('[SSE] Failed to parse transport payload', err);
       }
@@ -340,7 +344,7 @@ export const BookingSidebarV3 = ({
         const payload = JSON.parse(e.data);
         if (payload && payload.package_id === packageId) {
           const { fetchPublicAvailability } = useInventoryStore.getState();
-          fetchPublicAvailability(packageSlug, currentMonthStr, true);
+          fetchPublicAvailability(packageSlug, currentMonthStr, false);
         }
       } catch (err) {
         console.error('[SSE] Failed to parse bulk refresh payload', err);
@@ -698,14 +702,18 @@ export const BookingSidebarV3 = ({
 
     // Extras Options
     let customExtrasSubtotal = 0;
+    const customExtrasBreakdown: Array<{id: number; title: string; subtotal: number}> = [];
     if (extras && extras.length > 0 && selectedExtraIds.length > 0) {
       extras.forEach((ex: any) => {
         if (selectedExtraIds.includes(ex.id)) {
+          let itemCost = 0;
           if (isStudentPackage) {
-            customExtrasSubtotal += adults * (isSpecialUser ? 1 : positiveNumber(ex.student_price));
+            itemCost = adults * (isSpecialUser ? 1 : positiveNumber(ex.student_price));
           } else {
-            customExtrasSubtotal += (adults * (isSpecialUser ? 1 : positiveNumber(ex.adult_price))) + (children * (isSpecialUser ? 1 : positiveNumber(ex.child_price)));
+            itemCost = (adults * (isSpecialUser ? 1 : positiveNumber(ex.adult_price))) + (children * (isSpecialUser ? 1 : positiveNumber(ex.child_price)));
           }
+          customExtrasSubtotal += itemCost;
+          customExtrasBreakdown.push({ id: ex.id, title: ex.title, subtotal: itemCost });
         }
       });
     }
@@ -734,7 +742,7 @@ export const BookingSidebarV3 = ({
       if (commissionType === 'FIXED_AMOUNT') {
         agentDiscount = Math.min(commissionFixedAmount, commissionableBase, grandTotal);
       } else {
-        agentDiscount = Math.min(grandTotal, Math.round((commissionableBase * commissionPercentage) / 100));
+        agentDiscount = Math.min(grandTotal, Number(((commissionableBase * commissionPercentage) / 100).toFixed(2)));
       }
     }
     const agentPayable = Math.max(0, grandTotal - agentDiscount);
@@ -745,6 +753,7 @@ export const BookingSidebarV3 = ({
       transportSubtotal, transportBreakdown,
       refreshmentSubtotal, 
       foodSubtotal,
+      customExtrasSubtotal, customExtrasBreakdown,
       rawSubtotal, discount, subtotal, gst, gatewayFee, 
       grandTotal, agentDiscount, agentPayable 
     };
@@ -1079,6 +1088,9 @@ export const BookingSidebarV3 = ({
           variant_id: selectedVariantId,
           transport_selections: buildTransportSelections(),
           include_refreshments: hasRefreshments ? includeRefreshments : false,
+          include_food_option: hasFoodOption ? includeFoodOption : false,
+          selected_extra_ids: selectedExtraIds,
+          extra_ids: selectedExtraIds,
           passengers: passengers.map(p => ({
             ...p,
             aadhaar: p.aadhaar || undefined,
@@ -1101,6 +1113,9 @@ export const BookingSidebarV3 = ({
         variant_id: selectedVariantId,
         transport_selections: buildTransportSelections(),
         include_refreshments: hasRefreshments ? includeRefreshments : false,
+        include_food_option: hasFoodOption ? includeFoodOption : false,
+        selected_extra_ids: selectedExtraIds,
+        extra_ids: selectedExtraIds,
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
         adult_count: isStudentPackage ? 0 : adults,
         child_count: isStudentPackage ? 0 : children,
@@ -1224,7 +1239,7 @@ export const BookingSidebarV3 = ({
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="w-9 h-9" />);
+      days.push(<div key={`empty-${i}`} className="w-8 h-8" />);
     }
 
     for (let i = 1; i <= daysInMonth; i++) {
@@ -1259,36 +1274,46 @@ export const BookingSidebarV3 = ({
         isDisabled = true;
       }
 
+      let titleText = 'Select travel date';
+      if (isPast) {
+        titleText = 'Past date';
+      } else if (dayStatus === 'soldout') {
+        titleText = 'Bookings closed / Sold out for this date';
+      } else if (dayStatus === 'available') {
+        titleText = 'Available for booking';
+      }
+
       days.push(
         <button
           key={i}
           type="button"
           disabled={isDisabled}
+          title={titleText}
           onClick={() => handleDaySelect(i)}
           className={[
             // Base: square container that becomes a circle
-            'w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-150 select-none',
+            'w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-extrabold transition-all duration-150 select-none relative',
             // Past / disabled
             isPast
-              ? 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-60'
+              ? 'bg-slate-100/70 text-slate-300 cursor-not-allowed'
               : isDisabled
               ? 'text-slate-300 cursor-not-allowed opacity-50'
               : 'cursor-pointer',
             // Selected
             isSelected
-              ? '!bg-[#0d6e75] !text-white font-black shadow-md scale-105'
+              ? '!bg-[#0d6e75] !text-white font-black shadow-md scale-105 ring-2 ring-[#0d6e75]/20 z-10'
               : '',
             // Available (not selected, not past, not disabled)
             !isSelected && !isPast && dayStatus === 'available'
-              ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-black hover:scale-110'
+              ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 font-black hover:scale-105 cursor-pointer'
               : '',
             // Sold-out (not past, just unavailable)
             !isPast && !isSelected && dayStatus === 'soldout'
-              ? 'text-slate-300 line-through cursor-not-allowed'
+              ? 'text-slate-300 bg-slate-50/80 line-through cursor-not-allowed opacity-60'
               : '',
             // Regular available (no slot data yet)
             !isSelected && !isPast && !isDisabled && dayStatus === 'none'
-              ? 'text-slate-600 hover:bg-slate-100 hover:scale-105'
+              ? 'text-slate-600 hover:bg-slate-100 hover:scale-105 cursor-pointer'
               : '',
           ].filter(Boolean).join(' ')}
         >
@@ -1300,30 +1325,30 @@ export const BookingSidebarV3 = ({
     return (
       <div className="w-full select-none">
         {/* Month navigation */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-2.5 px-1">
           <button
             type="button"
             onClick={prevMonth}
-            className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-500 transition-colors flex items-center justify-center"
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors flex items-center justify-center"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <div className="font-black text-sm text-slate-800 tracking-wide">
+          <div className="font-black text-xs text-slate-800 uppercase tracking-wider">
             {monthNames[calMonth]} {calYear}
           </div>
           <button
             type="button"
             onClick={nextMonth}
-            className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-500 transition-colors flex items-center justify-center"
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors flex items-center justify-center"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        {/* Day headers — match w-9 width of day buttons */}
+        {/* Day headers */}
         <div className="grid grid-cols-7 place-items-center mb-1">
           {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-            <div key={d} className="w-9 h-7 flex items-center justify-center text-[9px] font-black text-slate-400 uppercase tracking-wider">
+            <div key={d} className="w-8 h-6 flex items-center justify-center text-[9px] font-black text-slate-400 uppercase tracking-wider">
               {d}
             </div>
           ))}
@@ -1380,7 +1405,10 @@ export const BookingSidebarV3 = ({
 
           {/* Block 1: Choose Variant (Visual selector) */}
           <div>
-            <label className="mb-2.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Step 1: Choose Package Variant</label>
+            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">1</span>
+              Choose Package Variant
+            </label>
             <div className="grid gap-2">
               {validVariants.map((variant) => {
                 const isSelected = variant.id === selectedVariantId;
@@ -1393,17 +1421,20 @@ export const BookingSidebarV3 = ({
                     key={variant.id}
                     type="button"
                     onClick={() => setSelectedVariantId(variant.id)}
-                    className={`w-full rounded-xl border text-left p-3.5 transition-all duration-200 ${
+                    className={`w-full rounded-xl border text-left p-3 transition-all duration-200 shadow-2xs ${
                       isSelected
-                        ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-xs ring-2 ring-[#0d6e75]/10'
-                        : 'border-slate-200 bg-white hover:border-slate-350'
+                        ? 'border-[#0d6e75] bg-[#0d6e75]/5 ring-2 ring-[#0d6e75]/15'
+                        : 'border-slate-200 bg-white hover:border-[#0d6e75]/40 hover:bg-slate-50/50'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <span className="block text-xs font-black text-slate-900">{variant.title}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="block text-xs font-black text-slate-900">{variant.title}</span>
+                          {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#0d6e75] animate-pulse" />}
+                        </div>
                         {variant.transport_info && (
-                          <span className="block text-[10px] font-semibold text-slate-400 mt-1">{variant.transport_info}</span>
+                          <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{variant.transport_info}</span>
                         )}
                       </div>
                       <div className="shrink-0 text-right">
@@ -1421,48 +1452,65 @@ export const BookingSidebarV3 = ({
             </div>
           </div>
 
-          {/* Block 2: Date Select (Collapsible Calendar Picker) */}
-          <div className="pt-3.5 border-t border-slate-100">
-            <label className="mb-2.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Step 2: Choose Travel Date</label>
+          {/* Block 2: Date Select (Sleek Compact Calendar Picker) */}
+          <div className="relative pt-3 border-t border-slate-100 z-30">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">2</span>
+                Choose Travel Date
+              </label>
+              {selectedDate && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                  {(() => {
+                    const parts = selectedDate.split('-');
+                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                  })()}
+                </span>
+              )}
+            </div>
             
             <button
               type="button"
               onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 shadow-2xs text-xs font-bold
-                ${isCalendarExpanded 
-                  ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75]' 
-                  : 'border-slate-200 bg-white hover:border-[#0d6e75]/40 text-slate-700'
-                }`}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 text-xs font-bold shadow-2xs ${
+                isCalendarExpanded 
+                  ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75] ring-2 ring-[#0d6e75]/15' 
+                  : selectedDate
+                  ? 'border-emerald-300/80 bg-emerald-50/40 text-slate-800 hover:border-[#0d6e75]/60'
+                  : 'border-slate-200 bg-white hover:border-[#0d6e75]/50 text-slate-600'
+              }`}
             >
-              <div className="flex items-center gap-2.5">
-                <CalendarDays className="h-4.5 w-4.5 shrink-0" />
-                <span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
+                  <CalendarDays className="h-4 w-4 shrink-0" />
+                </div>
+                <span className="truncate">
                   {selectedDate 
                     ? (() => {
                         const parts = selectedDate.split('-');
                         const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
                         return d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
                       })()
-                    : 'Choose Travel Date...'
+                    : 'Select a Date...'
                   }
                 </span>
               </div>
-              <ChevronDown className={`h-4.5 w-4.5 shrink-0 transition-transform duration-300 ${isCalendarExpanded ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isCalendarExpanded ? 'rotate-180 text-[#0d6e75]' : 'text-slate-400'}`} />
             </button>
 
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCalendarExpanded ? 'max-h-[350px] opacity-100 mt-3 p-3.5 border border-slate-200 bg-white rounded-xl shadow-2xs' : 'max-h-0 opacity-0 pointer-events-none'}`}>
-              {renderCalendar()}
-            </div>
-
-            {selectedDate && (
-              <div className="mt-2.5 flex items-center justify-between text-[11px] font-black bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 text-emerald-700">
-                <span>Travel Confirmed: {(() => {
-                  const parts = selectedDate.split('-');
-                  const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                })()}</span>
-                <span className="text-[9px] bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
-              </div>
+            {/* Popup Backdrop & Calendar Overlay */}
+            {isCalendarExpanded && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-[2px]"
+                  onClick={() => setIsCalendarExpanded(false)}
+                />
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-[300px] max-w-[calc(100vw-24px)] bg-white border border-slate-200/90 rounded-2xl shadow-xl p-3 animate-in fade-in-50 zoom-in-95 duration-200">
+                  {renderCalendar()}
+                </div>
+              </>
             )}
           </div>
 
@@ -1470,78 +1518,84 @@ export const BookingSidebarV3 = ({
           {(selectedDate || (!selectedDate && tomorrowSlot)) && (
             <div className="text-[11px] font-bold">
               {availabilityState.kind === 'loading' ? (
-                <div className="flex items-center gap-1.5 text-slate-500"><Loader2 className="h-3.5 w-3.5 animate-spin text-[#0d6e75]" /> {availabilityState.message}</div>
+                <div className="flex items-center gap-2 text-slate-500 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2"><Loader2 className="h-3.5 w-3.5 animate-spin text-[#0d6e75]" /> {availabilityState.message}</div>
               ) : availabilityState.kind === 'closed' ? (
-                <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200/80 rounded-xl p-2.5">
                   <XCircle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
                   <div>
                     <span className="block font-black text-rose-900">Bookings Closed</span>
-                    <span className="block text-[11px] font-semibold text-rose-700 mt-0.5">Online reservations for this travel date are closed.</span>
+                    <span className="block text-[10px] font-semibold text-rose-700 mt-0.5">Online reservations for this travel date are closed.</span>
                   </div>
                 </div>
               ) : availabilityState.kind === 'sold_out' ? (
-                <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200/80 rounded-xl p-2.5">
                   <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
                   <div>
                     <span className="block font-black text-rose-900">Sold Out</span>
-                    <span className="block text-[11px] font-semibold text-rose-700 mt-0.5">All seats for this travel date have been fully booked.</span>
+                    <span className="block text-[10px] font-semibold text-rose-700 mt-0.5">All seats for this travel date have been fully booked.</span>
                   </div>
                 </div>
               ) : availabilityState.kind === 'unpublished' ? (
-                <div className="flex items-start gap-2 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <div className="flex items-start gap-2 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200/80 rounded-xl p-2.5">
                   <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <span className="block font-black text-amber-900">Schedule Pending</span>
-                    <span className="block text-[11px] font-semibold text-amber-700 mt-0.5">Schedule has not been opened yet for online booking. Please pick another date or call our team to confirm.</span>
+                    <span className="block text-[10px] font-semibold text-amber-700 mt-0.5">Schedule has not been opened yet for online booking. Please pick another date or call our team to confirm.</span>
                   </div>
                 </div>
               ) : availabilityState.kind === 'open' ? (
-                <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>{(availabilityState as any).message}</span>
+                <div className="flex items-center justify-between text-emerald-800 bg-gradient-to-r from-emerald-50 to-teal-50/60 border border-emerald-200/70 px-3 py-2 rounded-xl shadow-2xs">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span className="text-[11px] font-black">{(availabilityState as any).message}</span>
+                  </div>
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md">Live</span>
                 </div>
               ) : null}
             </div>
           )}
 
-          {/* Block 3: Steppers (Side-by-side) */}
-          <div className="pt-3.5 border-t border-slate-100">
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">Step 3: Ticket Quantity</label>
+          {/* Block 3: Steppers (Modern Ticket Quantity Selector) */}
+          <div className="pt-3 border-t border-slate-100">
+            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">3</span>
+              Ticket Quantity
+            </label>
             {isStudentPackage ? (
-              <div className="flex items-center justify-between rounded-xl border border-amber-250 bg-amber-50/30 px-3.5 py-1.5">
-                <span className="text-xs font-black text-amber-800 uppercase tracking-widest">🎓 Students</span>
+              <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50/60 to-amber-100/30 px-3.5 py-2">
+                <span className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">🎓 Students</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     disabled={!isActive || (isPackageInactive && !isAdmin)}
                     onClick={() => setAdults(p => Math.max(1, p - 1))}
-                    className="h-8 w-8 rounded-lg border border-amber-300 text-amber-850 hover:bg-amber-100 flex items-center justify-center font-bold"
+                    className="h-8 w-8 rounded-lg border border-amber-300 bg-white text-amber-900 hover:bg-amber-100 flex items-center justify-center font-black transition-all shadow-2xs active:scale-95 disabled:opacity-50"
                   >-</button>
                   <span className="w-8 text-center text-sm font-black text-slate-900">{adults}</span>
                   <button
                     type="button"
                     disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
                     onClick={() => setAdults(p => p + 1)}
-                    className="h-8 w-8 rounded-lg border border-amber-300 text-amber-850 hover:bg-amber-100 flex items-center justify-center font-bold"
+                    className="h-8 w-8 rounded-lg border border-amber-300 bg-white text-amber-900 hover:bg-amber-100 flex items-center justify-center font-black transition-all shadow-2xs active:scale-95 disabled:opacity-50"
                   >+</button>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-slate-200 bg-white p-3">
-                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Adults (11+ yrs)</span>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
+                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Adults (11+ yrs)</span>
                   <div className="flex items-center justify-between">
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className="h-7 w-7 rounded-lg border border-slate-200 hover:border-slate-350 flex items-center justify-center font-black">-</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
                     <span className="text-sm font-black text-slate-900">{adults}</span>
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className="h-7 w-7 rounded-lg border border-slate-200 hover:border-slate-350 flex items-center justify-center font-black">+</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
                   </div>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3">
-                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Children (4-10 yrs)</span>
+                <div className="rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
+                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Children (4-10 yrs)</span>
                   <div className="flex items-center justify-between">
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className="h-7 w-7 rounded-lg border border-slate-200 hover:border-slate-350 flex items-center justify-center font-black">-</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
                     <span className="text-sm font-black text-slate-900">{children}</span>
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className="h-7 w-7 rounded-lg border border-slate-200 hover:border-slate-350 flex items-center justify-center font-black">+</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
                   </div>
                 </div>
               </div>
@@ -1550,8 +1604,11 @@ export const BookingSidebarV3 = ({
 
           {/* Block 4: Add-ons, Transport & Refreshments */}
           {(hasTransport || hasRefreshments || hasFoodOption || (extras && extras.length > 0)) && (
-            <div className="pt-3.5 border-t border-slate-100 space-y-3">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Step 4: Optional Add-ons & Transport</label>
+            <div className="pt-3 border-t border-slate-100 space-y-2.5">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">4</span>
+                Optional Add-ons & Transport
+              </label>
               
               {/* Transport Toggles */}
               {hasTransport && transportOptions.length > 0 && (
@@ -1747,8 +1804,11 @@ export const BookingSidebarV3 = ({
           )}
 
           {/* Block 5: Promo code */}
-          <div className="pt-3.5 border-t border-slate-100">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Step 5: Apply Coupon Code</label>
+          <div className="pt-3 border-t border-slate-100">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">5</span>
+              Apply Coupon Code
+            </label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -1819,6 +1879,12 @@ export const BookingSidebarV3 = ({
                   <span>+₹{formatINR(prices.foodSubtotal)}</span>
                 </div>
               )}
+              {prices.customExtrasBreakdown && prices.customExtrasBreakdown.map((item) => (
+                <div key={item.id} className="flex justify-between items-center text-[#0d6e75] font-semibold gap-2">
+                  <span className="truncate" title={item.title}>{item.title}</span>
+                  <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
+                </div>
+              ))}
               {appliedCoupon && (
                 <div className="flex justify-between items-center text-emerald-600 font-black">
                   <span>Discount ({appliedCoupon.code})</span>
@@ -2059,6 +2125,227 @@ export const BookingSidebarV3 = ({
         targetType="package"
         isStudentPackage={isStudentPackage}
       />
+
+      <style jsx global>{`
+        .rdp-root {
+          --rdp-accent-color: #0d6e75;
+          --rdp-accent-background-color: #dcfce7;
+          --rdp-day-width: 40px;
+          --rdp-day-height: 40px;
+          --rdp-day_button-width: 40px;
+          --rdp-day_button-height: 40px;
+          --rdp-day_button-border-radius: 999px;
+          width: 100%;
+          color: #0f3d56;
+        }
+
+        .rdp,
+        [data-slot="calendar"] {
+          width: 100%;
+        }
+
+        .rdp-months,
+        [data-slot="calendar"] .rdp-months {
+          width: 100%;
+        }
+
+        .rdp-month,
+        [data-slot="calendar"] .rdp-month {
+          width: 100%;
+          border-radius: 20px;
+          border: 1px solid rgba(13, 110, 117, 0.18);
+          background:
+            radial-gradient(circle at 92% 8%, rgba(255, 183, 3, 0.14), transparent 28%),
+            linear-gradient(180deg, #ffffff 0%, #f8fcfc 100%);
+          box-shadow: 0 18px 46px rgba(15, 61, 86, 0.1);
+          padding: 16px;
+        }
+
+        .rdp-month_caption {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 42px;
+          margin-bottom: 8px;
+        }
+
+        .rdp-caption_label {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 30px;
+          border-radius: 999px;
+          background: #f0fbfb;
+          padding: 0 14px;
+          color: #0f3d56;
+          font-size: 13px;
+          font-weight: 950;
+          letter-spacing: 0;
+          text-transform: uppercase;
+          box-shadow: inset 0 0 0 1px rgba(13, 110, 117, 0.1);
+        }
+
+        .rdp-caption,
+        [data-slot="calendar"] .rdp-caption {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 40px;
+          margin-bottom: 8px;
+          color: #0f3d56;
+          font-size: 13px;
+          font-weight: 900;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
+        .rdp-nav,
+        [data-slot="calendar"] .rdp-nav {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          inset: 16px 16px auto 16px;
+          height: 36px;
+          pointer-events: none;
+        }
+
+        .rdp-nav_button,
+        .rdp-button_previous,
+        .rdp-button_next,
+        [data-slot="calendar"] .rdp-nav_button {
+          width: 36px;
+          height: 36px;
+          border-radius: 999px;
+          border: 1px solid rgba(13, 110, 117, 0.14);
+          background: #ffffff;
+          color: #0d6e75;
+          box-shadow: 0 8px 18px rgba(15, 61, 86, 0.08);
+          transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+          pointer-events: auto;
+        }
+
+        .rdp-nav_button:hover,
+        .rdp-button_previous:hover,
+        .rdp-button_next:hover,
+        [data-slot="calendar"] .rdp-nav_button:hover {
+          transform: translateY(-1px);
+          border-color: rgba(13, 110, 117, 0.34);
+          background: #f0fbfb;
+        }
+
+        .rdp-table,
+        .rdp-month_grid,
+        [data-slot="calendar"] .rdp-table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 7px;
+          table-layout: fixed;
+        }
+
+        .rdp-head_cell,
+        .rdp-weekday,
+        [data-slot="calendar"] .rdp-head_cell {
+          padding-bottom: 5px;
+          color: #64748b;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
+        .rdp-cell,
+        [data-slot="calendar"] .rdp-cell {
+          padding: 0;
+          text-align: center;
+        }
+
+        .rdp-day,
+        [data-slot="calendar"] .rdp-day {
+          width: 40px;
+          height: 40px;
+        }
+
+        .rdp-day_button {
+          width: 40px;
+          height: 40px;
+          margin: 0 auto;
+          border-radius: 999px;
+          border: 1px solid rgba(16, 185, 129, 0.32);
+          background: linear-gradient(180deg, #ecfdf5 0%, #dcfce7 100%);
+          color: #047857;
+          font-size: 12px;
+          font-weight: 900;
+          transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+
+        .rdp-day:not(.rdp-day_disabled):hover,
+        .rdp-day_button:not([disabled]):hover,
+        [data-slot="calendar"] .rdp-day:not([disabled]):hover {
+          transform: translateY(-1px);
+          border-color: rgba(13, 110, 117, 0.34);
+          background: linear-gradient(180deg, #d1fae5 0%, #bbf7d0 100%);
+          box-shadow: 0 9px 20px rgba(16, 185, 129, 0.22);
+        }
+
+        .rdp-day_selected,
+        .rdp-day_selected:hover,
+        .rdp-selected .rdp-day_button,
+        .rdp-selected .rdp-day_button:hover,
+        [data-slot="calendar"] [aria-selected="true"] {
+          border-color: #0d6e75 !important;
+          background: linear-gradient(180deg, #0f7d84 0%, #0b5c62 100%) !important;
+          color: #ffffff !important;
+          box-shadow: 0 12px 26px rgba(13, 110, 117, 0.32);
+        }
+
+        .rdp-day_today:not(.rdp-day_selected),
+        .rdp-today .rdp-day_button:not([aria-selected="true"]),
+        [data-slot="calendar"] [data-today="true"]:not([aria-selected="true"]) {
+          border-color: rgba(255, 159, 28, 0.55);
+          background: linear-gradient(180deg, #fff7e6 0%, #ffedd5 100%);
+          color: #9a5800;
+        }
+
+        .rdp-day_disabled,
+        .rdp-disabled .rdp-day_button,
+        [data-slot="calendar"] .rdp-day[disabled],
+        [data-slot="calendar"] button[disabled] {
+          border-color: transparent !important;
+          background: #f4f7f9 !important;
+          color: #cbd5e1 !important;
+          box-shadow: none !important;
+          cursor: not-allowed;
+          opacity: 1;
+        }
+
+        .rdp-outside .rdp-day_button {
+          background: transparent !important;
+          color: #dbe3ea !important;
+        }
+
+        @media (max-width: 640px) {
+          .rdp-month,
+          [data-slot="calendar"] .rdp-month {
+            padding: 10px;
+            border-radius: 14px;
+          }
+
+          .rdp-table,
+          .rdp-month_grid,
+          [data-slot="calendar"] .rdp-table {
+            border-spacing: 4px;
+          }
+
+          .rdp-day,
+          .rdp-day_button,
+          [data-slot="calendar"] .rdp-day {
+            width: 34px;
+            height: 34px;
+            font-size: 11px;
+          }
+        }
+      `}</style>
 
       <BusWarningModal
         isOpen={showBusWarningModal}

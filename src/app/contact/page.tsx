@@ -15,10 +15,8 @@ const CONTACT_CHANNELS = [
     title: 'Customer Helpline',
     desc: 'Call us for package queries, stays support and direct offline bookings.',
     details: [
-      '+91 95420 69573',
-      '+91 98498 48982',
-      '+91 98498 48983',
-      '+91 98498 48938'
+      '+91 99513 69573',
+      '+91 77801 19268'
     ],
     color: 'from-[#1598a1] to-[#0f7279]'
   },
@@ -27,7 +25,7 @@ const CONTACT_CHANNELS = [
     title: 'Email Correspondence',
     desc: 'Send us your inquiries, custom group bookings or cancellation requests.',
     details: [
-      'bookings@tstelanganatourism.com'
+      'tstelanganatourism@gmail.com'
     ],
     color: 'from-[#0f6f78] to-[#0f3d56]'
   },
@@ -36,7 +34,7 @@ const CONTACT_CHANNELS = [
     title: 'Central Booking Office',
     desc: 'Visit our ticketing counter in Bhadrachalam.',
     details: [
-      'Om Shanti satram, Kalyana mandapam road, near SBI ATM, Bhadrachalam, Telangana 507111'
+      'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111'
     ],
     color: 'from-[#1598a1] to-[#0f6f78]'
   }
@@ -113,21 +111,21 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* Official Shop License Info (Premium Redesign) */}
+        {/* Official Shop & MSME Registration Info */}
         <div className="mt-8 rounded-md bg-white p-7 shadow-[0_4px_25px_rgba(15,61,86,0.04)] border border-slate-100 sm:p-10">
           <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Landmark className="h-6 w-6 text-[#1598a1]" />
-                <h3 className="text-xl font-bold text-[#1e468a] tracking-tight">Official Shop Registration</h3>
+                <h3 className="text-xl font-bold text-[#1e468a] tracking-tight">Official MSME Govt. Registration</h3>
               </div>
               <p className="text-slate-500 text-base leading-relaxed">
-                TS Boat Tourism (officially registered as TELANGANA BOAT TOURISM) is operated by NALLA SAI BABU, registered under the Telangana Shops &amp; Establishments Act, 1988.
+                TS Boat Tourism is an official unit of HARITHA BOAT BOOKING, operated by proprietor KANDHULA DURGA PRASAD, registered under the Ministry of Micro, Small &amp; Medium Enterprises (MSME), Government of India.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <span className="inline-flex items-center gap-2 rounded-md bg-[#e9f7f7] border border-[#1598a1]/20 px-4 py-2.5 text-xs font-black text-[#0f3d56]">
                   <ShieldCheck className="h-4 w-4 text-[#1598a1]" />
-                  Registration No: SEA/KMM/ALO/BC/09998/2016
+                  Udyam Reg No: UDYAM-TS-11-0024618
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-150 px-4 py-2.5 text-xs font-black text-slate-600">
                   <Clock className="h-4 w-4" />

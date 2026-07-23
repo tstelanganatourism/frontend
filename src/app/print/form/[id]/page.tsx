@@ -104,7 +104,7 @@ export default async function PrintFormPage({
         .meta-right { display: flex; flex-direction: column; gap: 5px; }
         .meta-item { display: flex; align-items: center; }
         .meta-label { width: 80px; }
-        .meta-val { border-bottom: 1px dotted #000; width: 150px; text-align: left; padding-left: 5px; }
+        .meta-val { border-bottom: 1px dotted #000; min-width: 180px; text-align: left; padding-left: 5px; font-family: monospace; font-size: 11px; white-space: nowrap; }
 
         /* Table Area */
         .form-table { width: 100%; border-collapse: collapse; font-size: 12px; font-weight: 700; flex: 1; }
@@ -130,7 +130,6 @@ export default async function PrintFormPage({
             <div className="title-block">
               <h1>CUSTOMER DETAIL FORM</h1>
               <h2>TS BOAT TOURISM</h2>
-              <h3>AP  BOAT TOURISM</h3>
               <h4>
                 {booking.package_title} {booking.variant_title && booking.variant_title !== '—' && `- ${booking.variant_title}`}
               </h4>
@@ -156,7 +155,7 @@ export default async function PrintFormPage({
             <div className="meta-right">
               <div className="meta-item"><span className="meta-label">DATE:</span> <span className="meta-val">{formattedDate}</span></div>
               <div className="meta-item"><span className="meta-label">TCKT NO:</span> <span className="meta-val"></span></div>
-              <div className="meta-item"><span className="meta-label">ONLINE NO:</span> <span className="meta-val">{booking.public_id}</span></div>
+              <div className="meta-item"><span className="meta-label">PNR NO:</span> <span className="meta-val">{booking.public_id}</span></div>
             </div>
           </div>
 

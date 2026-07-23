@@ -373,7 +373,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       <SectionNav />
 
       {/* Main Content Grid with a wider booking column for long fare and transport rows */}
-      <div className="mx-auto grid max-w-[1600px] gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-10 lg:py-14 xl:gap-10 xl:px-12">
+      <div className="mx-auto grid w-full max-w-[1800px] items-start gap-7 px-3 py-6 sm:px-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-6 lg:py-10 xl:gap-8 2xl:px-8">
 
         {/* Left Content Column */}
         <div className="space-y-10">
@@ -430,7 +430,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Right Sticky Booking Callout Card with full fare variants, weekday/weekend, transport & add-ons breakdown */}
-        <aside className="hidden lg:block relative">
+        <aside className="hidden lg:block sticky top-[92px] self-start">
           <BookingCalloutCard
             startingPrice={getPositiveStartingPrice(pkg)}
             isStudentPackage={pkg.is_student_package}

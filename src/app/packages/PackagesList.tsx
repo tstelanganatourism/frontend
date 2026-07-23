@@ -226,10 +226,10 @@ export default function PackagesList({
   return (
     <div className="min-h-screen bg-slate-50/50">
       {/* Unique State-of-the-Art Hero Canvas */}
-      <div className="relative overflow-hidden bg-slate-950 pb-16 pt-24 sm:pb-20 sm:pt-32">
+      <div className="relative overflow-hidden bg-slate-950 pb-8 pt-20 sm:pb-10 sm:pt-24">
         {/* Ambient Glow Effects */}
-        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
-        <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-teal-500/10 blur-3xl" />
+        <div className="absolute right-0 top-1/2 h-60 w-60 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl" />
         
         {/* Rich Photography Background Image */}
         <Image
@@ -242,85 +242,84 @@ export default function PackagesList({
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-slate-900/40" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent" />
-
-        <div className="relative z-10 mx-auto max-w-[98rem] px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
+        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-50/50 to-transparent" />
+ 
+        <div className="relative z-10 mx-auto max-w-[112rem] px-3 sm:px-5 lg:px-6 2xl:px-8">
+          <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-12">
             
             {/* Left Content */}
             <div className="lg:col-span-7">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-teal-300 backdrop-blur-md shadow-xs">
-                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-500/10 px-3.5 py-1 text-[9px] font-black uppercase tracking-widest text-teal-300 backdrop-blur-md shadow-xs">
+                <Sparkles className="h-3 w-3 text-amber-300" />
                 {badgeText}
               </div>
-
-              <h1 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
-                <span className="block text-teal-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">{headingPrimary}</span>
+ 
+              <h1 className="mb-2 text-2xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl leading-[1.1]">
+                <span className="block text-teal-400 font-extrabold text-sm sm:text-base uppercase tracking-widest mb-1">{headingPrimary}</span>
                 <span className="block text-white drop-shadow-sm">{headingSecondary}</span>
               </h1>
-
-              <p className="mb-6 max-w-2xl text-sm font-medium leading-relaxed text-slate-300 sm:text-base">
+ 
+              <p className="mb-4 max-w-xl text-xs font-semibold leading-relaxed text-slate-350 sm:text-sm">
                 {descriptionText}
               </p>
-
+ 
               {/* Quick Feature Badges */}
-              <div className="flex flex-wrap gap-3 text-[11px] font-bold text-slate-300">
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
-                  ✨ Instant Confirmation
+              <div className="flex flex-wrap gap-2 text-[10px] font-bold text-slate-400">
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 backdrop-blur-xs">
+                  ✨ Instant
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
-                  🛡️ Verified Local Support
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 backdrop-blur-xs">
+                  🛡️ Verified
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
-                  🚢 Safe River Cruises
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 backdrop-blur-xs">
+                  🚢 Safe
                 </span>
               </div>
             </div>
-
+ 
             {/* Right Interactive Card Panel */}
             <div className="lg:col-span-5">
-              <div className="rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-teal-400/40">
-                <h3 className="mb-2 text-md font-bold text-white flex items-center gap-2">
-                  <Search className="h-4 w-4 text-teal-400" />
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-teal-400/40">
+                <h3 className="mb-1 text-sm font-bold text-white flex items-center gap-2">
+                  <Search className="h-3.5 w-3.5 text-teal-400" />
                   Find Your Ideal Experience
                 </h3>
-                <p className="mb-4 text-xs text-slate-300">Search by title, location, or tour highlights</p>
-
-                <div className="relative mb-4">
+                <p className="mb-3 text-[10px] text-slate-300">Search by title, location, or tour highlights</p>
+ 
+                <div className="relative mb-3">
                   <input
                     type="text"
                     value={searchVal}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Search e.g. Papikondalu, Kolluru, Bhadrachalam..."
-                    className="w-full bg-slate-950/70 border border-slate-700/80 backdrop-blur-md rounded-xl py-3 px-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-inner"
+                    className="w-full bg-slate-950/70 border border-slate-700/80 backdrop-blur-md rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-inner"
                   />
                 </div>
-
-                <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-slate-300">
-                  <span className="text-slate-400">Popular:</span>
+ 
+                <div className="flex flex-wrap gap-1.5 text-[9px] font-semibold text-slate-350">
+                  <span className="text-slate-450">Popular:</span>
                   <button onClick={() => handleSearchChange('Papikondalu')} className="hover:text-teal-300 underline cursor-pointer">Papikondalu</button>
-                  <button onClick={() => handleSearchChange('Kolluru')} className="hover:text-teal-300 underline cursor-pointer">Kolluru Huts</button>
-                  <button onClick={() => handleSearchChange('Sirivaka')} className="hover:text-teal-300 underline cursor-pointer">Sirivaka Resorts</button>
-                  <button onClick={() => handleSearchChange('Bogatha')} className="hover:text-teal-300 underline cursor-pointer">Bogatha Falls</button>
+                  <button onClick={() => handleSearchChange('Kolluru')} className="hover:text-teal-300 underline cursor-pointer">Kolluru</button>
+                  <button onClick={() => handleSearchChange('Sirivaka')} className="hover:text-teal-300 underline cursor-pointer">Sirivaka</button>
+                  <button onClick={() => handleSearchChange('Bogatha')} className="hover:text-teal-300 underline cursor-pointer">Bogatha</button>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="mx-auto max-w-[98rem] px-4 py-8 pb-16 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+      <div className="mx-auto max-w-[112rem] px-3 py-7 pb-16 sm:px-5 lg:px-6 2xl:px-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] items-start">
           
           {/* Desktop Sidebar Filters */}
-          <aside className="hidden lg:block lg:col-span-3 xl:col-span-3">
-            <PackageFilters />
+          <aside className="hidden lg:block sticky top-[92px] self-start">
+            <PackageFilters sticky={false} />
           </aside>
 
           {/* Packages Listing Area */}
-          <div className="lg:col-span-9 xl:col-span-9">
+          <div className="min-w-0">
             {!activeData ? (
               <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-xs">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
@@ -350,7 +349,7 @@ export default function PackagesList({
 
                 {isFetching ? (
                   /* Premium Skeleton Loader */
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                       <div key={i} className="flex h-[360px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
                         <div className="h-40 w-full animate-pulse bg-slate-100" />
@@ -364,7 +363,7 @@ export default function PackagesList({
                     ))}
                   </div>
                 ) : filteredItems.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {filteredItems.map((pkg, index) => (
                       <PackageCard key={pkg.id} pkg={pkg} priority={index < 6} />
                     ))}

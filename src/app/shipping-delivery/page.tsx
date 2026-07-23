@@ -13,7 +13,7 @@ const POINTS = [
   'TS Boat Tourism provides digital ticketing and services. No physical shipping is required.',
   'Upon successful payment completion, your official booking ticket, tax invoice, and travel details are sent instantly via Email and WhatsApp (within 5-10 minutes).',
   'You can access and print your booking receipts, ticket passes, and invoice sheets at any time by logging into the customer dashboard.',
-  'If you do not receive your digital confirmation within 30 minutes, please contact our support team at bookings@tstelanganatourism.com or call +91 95420 69573.',
+  'If you do not receive your digital confirmation within 30 minutes, please contact our support team at tstelanganatourism@gmail.com or call +91 99513 69573.',
 ];
 
 export default function ShippingDeliveryPage() {

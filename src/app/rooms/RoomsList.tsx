@@ -2,13 +2,12 @@
 
 import React, { useTransition } from 'react';
 import Image from 'next/image';
-import { BedDouble, Sparkles } from 'lucide-react';
+import { BedDouble, Sparkles, LayoutGrid, List } from 'lucide-react';
 import RoomCard from '@/components/ui/RoomCard';
 import RoomFilters from '@/components/rooms/RoomFilters';
 import RoomListPagination from '@/components/rooms/RoomListPagination';
 import MobileRoomFilterSheet from '@/components/rooms/MobileRoomFilterSheet';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 type RoomData = {
@@ -43,6 +42,7 @@ export default function RoomsList({
   const [allRooms, setAllRooms] = React.useState<RoomItem[]>(data?.items || []);
   const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
 
   // Sync search input with URL parameter 'q'
@@ -53,7 +53,7 @@ export default function RoomsList({
     }
   }, [currentBrowserSearch]);
 
-  // Initial fetch of complete rooms dataset (size=100) for instant offline client-side search
+  // Initial fetch of complete rooms dataset (size=100) for instant client-side search
   React.useEffect(() => {
     let isMounted = true;
     const fetchAllRooms = async () => {
@@ -88,7 +88,7 @@ export default function RoomsList({
 
     let list = [...allRooms];
 
-    // 1. Filter by search query (instant matching across lodge_name, address, slug, facilities)
+    // 1. Filter by search query
     if (query) {
       const queryWords = query.split(/\s+/);
       list = list.filter((item) => {
@@ -128,7 +128,6 @@ export default function RoomsList({
   const handleSearchChange = (val: string) => {
     setSearchVal(val);
     
-    // Instant background URL sync without network re-fetches
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const cleanVal = val.trim();
@@ -145,14 +144,12 @@ export default function RoomsList({
   };
 
   return (
-    <div className="bg-[#f4f6ef]">
-      {/* Unique State-of-the-Art Hero Canvas */}
+    <div className="bg-[#f4f6ef] min-h-screen">
+      {/* State-of-the-Art Hero Canvas */}
       <div className="relative overflow-hidden bg-slate-950 pb-16 pt-24 sm:pb-20 sm:pt-32">
-        {/* Ambient Glow Effects */}
         <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
         <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl" />
         
-        {/* Rich Photography Background Image */}
         <Image
           src="/images/stays_hero_bg.png"
           alt="Riverside stays and accommodation banner"
@@ -164,7 +161,7 @@ export default function RoomsList({
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-emerald-950/40" />
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent" />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-[112rem] px-3 sm:px-5 lg:px-6 2xl:px-8">
           <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
             
             {/* Left Content */}
@@ -179,7 +176,6 @@ export default function RoomsList({
                 <span className="block text-white drop-shadow-sm">Riverside Stays</span>
               </h1>
 
-              {/* Quick Feature Badges */}
               <div className="flex flex-wrap gap-3 text-[11px] font-bold text-slate-300">
                 <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
                   🛖 Authentic Bamboo Huts
@@ -207,15 +203,15 @@ export default function RoomsList({
                     type="text"
                     value={searchVal}
                     onChange={(e) => handleSearchChange(e.target.value)}
-                    placeholder="Search e.g. Kolluru, Sirivaka, Bhadrachalam..."
+                    placeholder="Search e.g. Bamboo Huts, AC Family Suite, Forest Cottages..."
                     className="w-full bg-slate-950/70 border border-slate-700/80 backdrop-blur-md rounded-xl py-3 px-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all shadow-inner"
                   />
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-slate-300">
-                  <span className="text-slate-400">Featured:</span>
-                  <button onClick={() => handleSearchChange('Kolluru')} className="hover:text-emerald-300 underline cursor-pointer">Kolluru Bamboo Huts</button>
-                  <button onClick={() => handleSearchChange('Sirivaka')} className="hover:text-emerald-300 underline cursor-pointer">Sirivaka Eco Resorts</button>
+                  <span className="text-slate-400">Featured Types:</span>
+                  <button onClick={() => handleSearchChange('Bamboo')} className="hover:text-emerald-300 underline cursor-pointer">Bamboo Huts</button>
+                  <button onClick={() => handleSearchChange('Deluxe')} className="hover:text-emerald-300 underline cursor-pointer">Deluxe AC Suites</button>
                 </div>
               </div>
             </div>
@@ -223,31 +219,72 @@ export default function RoomsList({
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-7xl px-4 py-8 pb-8 sm:px-6 lg:px-8 lg:pb-16">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-          <aside className="hidden lg:col-span-1 lg:block">
-            <RoomFilters />
+
+      {/* Main Listing Layout */}
+      <div className="mx-auto max-w-[112rem] px-3 py-7 pb-8 sm:px-5 lg:px-6 lg:pb-16 2xl:px-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+          
+          {/* FIXED Sidebar Filter */}
+          <aside className="hidden lg:block sticky top-[100px] self-start">
+            <RoomFilters sticky={true} />
           </aside>
 
-          <div className="lg:col-span-3">
+          {/* Main Items Column */}
+          <div className="min-w-0">
             {!activeData ? (
               <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-20 text-center shadow-sm">
-                <h3 className="mb-2 text-xl font-black text-[var(--color-brand-river)]">Failed to load</h3>
+                <h3 className="mb-2 text-xl font-black text-[#0f3d56]">Failed to load</h3>
                 <p className="mx-auto mb-8 max-w-sm text-sm text-slate-500">Please try again later.</p>
               </div>
             ) : (
               <div className="transition-opacity duration-200">
-                <div className="mb-6 flex items-center justify-between lg:mb-8">
-                  <p className="max-w-[calc(100%-8rem)] text-sm font-medium leading-5 text-slate-500 sm:max-w-none">
-                    We found <span className="font-bold text-[var(--color-brand-river)]">{activeData.total || 0}</span> beautiful stays
+                
+                {/* Results Header + View Switcher Toggle */}
+                <div className="mb-6 flex items-center justify-between lg:mb-8 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+                  <p className="text-xs sm:text-sm font-bold text-slate-700">
+                    We found <span className="font-black text-[#0d6e75]">{activeData.total || 0}</span> beautiful stays
                   </p>
-                  <MobileRoomFilterSheet />
+
+                  <div className="flex items-center gap-2">
+                    {/* View Switcher: Boxes (Grid) vs Full (List) */}
+                    <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('grid')}
+                        title="Boxes / Grid View"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                          viewMode === 'grid'
+                            ? 'bg-[#0d6e75] text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <LayoutGrid className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Boxes</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('list')}
+                        title="Full / Detailed List View"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                          viewMode === 'list'
+                            ? 'bg-[#0d6e75] text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <List className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Full</span>
+                      </button>
+                    </div>
+
+                    <MobileRoomFilterSheet />
+                  </div>
                 </div>
 
+                {/* Listing Items */}
                 {isFetching ? (
                   <div className="flex flex-col gap-5">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex min-h-[240px] flex-col overflow-hidden rounded-2xl border border-[#d6e4dd] bg-white shadow-sm md:flex-row">
+                      <div key={i} className="flex min-h-[240px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:flex-row">
                         <div className="h-56 w-full animate-pulse bg-slate-100 md:h-[240px] md:w-[320px] shrink-0" />
                         <div className="flex flex-1 flex-col p-5">
                           <div className="mb-3 h-7 w-2/3 animate-pulse rounded bg-slate-100" />
@@ -263,23 +300,31 @@ export default function RoomsList({
                     ))}
                   </div>
                 ) : filteredItems.length > 0 ? (
-                  <div className="flex flex-col gap-5">
-                    {filteredItems.map((room) => (
-                      <RoomCard key={room.id} room={room} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-20 text-center shadow-sm">
-                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50">
-                      <BedDouble className="h-10 w-10 text-slate-300" />
+                  viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                      {filteredItems.map((room) => (
+                        <RoomCard key={room.id} room={room} variant="grid" />
+                      ))}
                     </div>
-                    <h3 className="mb-2 text-xl font-black text-[var(--color-brand-river)]">No stays found</h3>
-                    <p className="mx-auto mb-8 max-w-sm text-sm text-slate-500 font-semibold leading-relaxed">
+                  ) : (
+                    <div className="flex flex-col gap-5">
+                      {filteredItems.map((room) => (
+                        <RoomCard key={room.id} room={room} variant="list" />
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-16 text-center shadow-sm">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 border border-slate-200">
+                      <BedDouble className="h-8 w-8 text-slate-400" />
+                    </div>
+                    <h3 className="mb-2 text-xl font-black text-[#0f3d56]">No stays found</h3>
+                    <p className="mx-auto mb-6 max-w-sm text-xs sm:text-sm text-slate-500 font-semibold leading-relaxed">
                       We could not find any accommodations matching your criteria. Try adjusting your search parameters.
                     </p>
-                    <Link href="/stays" className="text-sm font-black text-[var(--color-brand-teal)] hover:underline">
+                    <button onClick={() => handleSearchChange('')} className="inline-flex items-center justify-center rounded-xl bg-[#0d6e75] px-4 py-2.5 text-xs font-black text-white hover:bg-[#0b5c62] shadow-2xs">
                       Clear all filters
-                    </Link>
+                    </button>
                   </div>
                 )}
 
