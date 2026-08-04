@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useAuthStore } from '@/stores/authStore';
+import { trackFunnelEvent } from '@/lib/activityTracker';
 
 // ─── Verhoeff Checksum (client-side Aadhaar validation) ──────────────────────
 const _d = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 0, 6, 7, 8, 9, 5], [2, 3, 4, 0, 1, 7, 8, 9, 5, 6], [3, 4, 0, 1, 2, 8, 9, 5, 6, 7], [4, 0, 1, 2, 3, 9, 5, 6, 7, 8], [5, 9, 8, 7, 6, 0, 4, 3, 2, 1], [6, 5, 9, 8, 7, 1, 0, 4, 3, 2], [7, 6, 5, 9, 8, 2, 1, 0, 4, 3], [8, 7, 6, 5, 9, 3, 2, 1, 0, 4], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]];
@@ -190,6 +191,19 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
           });
         }
       }
+      // Log funnel event
+      const primaryPax = passengersPayload[0] || {};
+      trackFunnelEvent({
+        funnel_stage: 'PASSENGERS_FILLED',
+        customer_name: primaryPax.full_name,
+        customer_phone: primaryPax.phone,
+        customer_email: customerEmail.trim() || user?.email || undefined,
+        passengers_data: passengersPayload.map(p => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
+        adult_count: adults,
+        child_count: children,
+        target_type: targetType,
+      });
+
       await onSubmit(passengersPayload, true, customerEmail.trim() || undefined);
     } else {
       // Clean up ages for student package
@@ -197,6 +211,19 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
         ...p,
         age: isStudentPackage ? 0 : p.age,
       }));
+
+      const primaryPax = cleanPassengers[0] || {};
+      trackFunnelEvent({
+        funnel_stage: 'PASSENGERS_FILLED',
+        customer_name: primaryPax.full_name,
+        customer_phone: primaryPax.phone,
+        customer_email: customerEmail.trim() || user?.email || undefined,
+        passengers_data: cleanPassengers.map(p => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
+        adult_count: adults,
+        child_count: children,
+        target_type: targetType,
+      });
+
       await onSubmit(cleanPassengers, false, customerEmail.trim() || undefined);
     }
   };

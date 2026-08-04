@@ -72,6 +72,7 @@ export default function PackageFilters({ className, sticky = true }: { className
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', newUrl);
       window.dispatchEvent(new Event('popstate'));
+      window.dispatchEvent(new CustomEvent('app:filter-change', { detail: newUrl }));
     }
   };
 
@@ -91,6 +92,7 @@ export default function PackageFilters({ className, sticky = true }: { className
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', pathname);
       window.dispatchEvent(new Event('popstate'));
+      window.dispatchEvent(new CustomEvent('app:filter-change', { detail: pathname }));
     }
   };
 

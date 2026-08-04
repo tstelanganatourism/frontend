@@ -120,8 +120,8 @@ export const CustomDatePicker = ({
       const dateStr = toYYYYMMDD(calYear, calMonth, i);
       const isPast = !allowPast && dateStr < minDateStr;
       
-      const hasInventory = availableDates ? availableDates.has(dateStr) : false;
-      const isUnavailable = !hasInventory;
+      const hasInventory = availableDates ? availableDates.has(dateStr) : true;
+      const isUnavailable = availableDates ? !hasInventory : false;
       
       const isDisabled = isPast || (!isAdmin && isUnavailable);
       const isSelected = dateStr === value;

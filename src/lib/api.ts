@@ -47,13 +47,16 @@ export const apiClient: AxiosInstance = axios.create({
   timeout: 15_000,
 });
 
-// ─── Request interceptor: inject access token ────────────────────────────────
+let cachedAuthStore: any = null;
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  // Lazily import store to avoid SSR issues
   if (typeof window !== 'undefined') {
-    const { useAuthStore } = require('@/stores/authStore');
-    const token = useAuthStore.getState().accessToken;
+    if (!cachedAuthStore) {
+      try {
+        cachedAuthStore = require('@/stores/authStore').useAuthStore;
+      } catch (e) {}
+    }
+    const token = cachedAuthStore?.getState?.()?.accessToken;
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }

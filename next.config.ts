@@ -21,12 +21,14 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 86400, // cache optimized images for 1 day
-    qualities: [50, 60, 65, 75, 80, 85, 90, 100],
+    qualities: [50, 60, 65, 70, 75, 80, 85, 90, 100],
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
       { protocol: 'http', hostname: '127.0.0.1', pathname: '/**' },
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
-      { protocol: 'https', hostname: '*.r2.cloudflarestorage.com', pathname: '/**' }
+      { protocol: 'https', hostname: '*.r2.cloudflarestorage.com', pathname: '/**' },
+      { protocol: 'https', hostname: '*.googleusercontent.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' }
     ],
   },
   async headers() {
@@ -41,7 +43,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
-          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.cashfree.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://*.r2.cloudflarestorage.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.ggpht.com https://*.googleapis.com https://*.gstatic.com; connect-src 'self' https://api.tstelanganatourism.com wss://api.tstelanganatourism.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com wss: https://*.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net https://*.sentry.io https://cloudflareinsights.com https://maps.googleapis.com; frame-src 'self' https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://www.google.com https://maps.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;" },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.cashfree.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://*.r2.cloudflarestorage.com https://*.googleusercontent.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.ggpht.com https://*.googleapis.com https://*.gstatic.com; connect-src 'self' https://api.tstelanganatourism.com wss://api.tstelanganatourism.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com wss: https://*.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net https://*.sentry.io https://cloudflareinsights.com https://maps.googleapis.com; frame-src 'self' https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://www.google.com https://maps.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;" },
         ],
       },
     ];

@@ -1,48 +1,68 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
-const IMAGES = [
-  'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png', // Official HD TS Boat Tourism Banner
-  'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431943/papikondalu-tour-packages-ap-1_hje1jh.jpg', // Boat Tour Experience
-  'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431926/papikondalu-3_jg6thw.png', // Godavari Waters / Cruise
-  'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431922/papikondalu-sunset_bmvm1e.jpg', // Papikondalu Sunset
+// ─── Slide images ─────────────────────────────────────────────────────────
+const SLIDES = [
+  'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1784613511/ts_boat_tourism/packages/ywm9affxxbtriy8szyp2.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
 ];
 
+// Each slide stays visible for SLIDE_SECS seconds; crossfade lasts FADE_SECS seconds.
+const SLIDE_SECS = 6;
+const FADE_SECS = 1.5;
+const TOTAL_SECS = SLIDES.length * SLIDE_SECS; // 36s full cycle
+
+// Keyframe percentages
+const fadeInEnd   = ((FADE_SECS / TOTAL_SECS) * 100).toFixed(2);     // ~4.17%
+const holdEnd     = (((SLIDE_SECS - FADE_SECS) / TOTAL_SECS) * 100).toFixed(2); // ~12.5%
+const fadeOutEnd  = ((SLIDE_SECS / TOTAL_SECS) * 100).toFixed(2);    // ~16.67%
+
+const KEYFRAMES = `
+  @keyframes heroSlide {
+    0%              { opacity: 0; transform: scale(1.08); }
+    ${fadeInEnd}%   { opacity: 1; transform: scale(1.04); }
+    ${holdEnd}%     { opacity: 1; transform: scale(1.01); }
+    ${fadeOutEnd}%  { opacity: 0; transform: scale(1.0);  }
+    100%            { opacity: 0; transform: scale(1.08); }
+  }
+`;
+
 export default function HeroBackgroundSlideshow() {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % IMAGES.length);
-    }, 5500);
-    return () => clearInterval(timer);
-  }, []);
-
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#07242c]">
-      {IMAGES.map((img, i) => {
-        const isActive = i === index;
-        const isOfficialBanner = i === 0;
-        return (
+    <>
+      {/* Inject keyframes once */}
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
+
+      {/* Background layer — sits at z-0, below all hero content */}
+      <div
+        className="absolute inset-0 overflow-hidden bg-[#07242c]"
+        aria-hidden="true"
+        style={{ zIndex: 0 }}
+      >
+        {SLIDES.map((src, i) => (
           <div
-            key={img}
-            className={`absolute inset-0 transition-all duration-[2000ms] ease-in-out ${
-              isOfficialBanner 
-                ? 'bg-contain md:bg-cover bg-center bg-no-repeat' 
-                : 'bg-cover bg-center bg-no-repeat'
-            } ${
-              isActive 
-                ? 'opacity-100 scale-100' 
-                : 'opacity-0 scale-105'
-            }`}
-            style={{ 
-              backgroundImage: `url(${img})`,
-              transitionProperty: 'opacity, transform'
+            key={src}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${src})`,
+              /* Pure CSS animation — no JS state involved */
+              animation: `heroSlide ${TOTAL_SECS}s ease-in-out ${i * SLIDE_SECS}s infinite both`,
+              willChange: 'opacity, transform',
             }}
           />
-        );
-      })}
-    </div>
+        ))}
+
+        {/* Gradient overlay — always on top of the images */}
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-[#021c24]/85 via-[#021c24]/50 to-[#021c24]/90 lg:bg-gradient-to-r lg:from-[#021c24]/92 lg:via-[#06373f]/60 lg:to-[#021c24]/40"
+          style={{ zIndex: 1 }}
+        />
+      </div>
+    </>
   );
 }

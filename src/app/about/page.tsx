@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 const MAPS_LOCATION_URL = 'https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb';
 
 const OFFICE_ADDRESS =
-  'Om Shanti satram, Kalyana mandapam road, near SBI ATM, Bhadrachalam, Telangana 507111';
+  'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Bhadrachalam, Bhadradri Kothagudem, Telangana 507111';
 
 const TOURISM_METRICS = [
   { number: '20+', title: 'Years in tourism', text: 'Local Godavari expertise since 2004.' },
@@ -74,8 +74,8 @@ export default function AboutPage() {
               <div className="absolute -inset-4 bg-[#1598a1]/10 rounded-md -rotate-2 scale-95 group-hover:rotate-0 group-hover:scale-100 transition-transform duration-700 pointer-events-none" />
               <div className="relative overflow-hidden rounded-md shadow-2xl">
                 <img
-                  src="https://res.cloudinary.com/dpdab3e97/image/upload/v1779431943/papikondalu-tour-packages-ap-1_hje1jh.jpg"
-                  alt="TS Boat in Godavari River"
+                  src="https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg"
+                  alt="Papikondalu River View from TS Boat Tourism"
                   className="w-full h-auto object-cover transform transition-transform duration-1000 group-hover:scale-105"
                 />
               </div>

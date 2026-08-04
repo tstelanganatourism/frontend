@@ -14,7 +14,13 @@ import {
   User as UserIcon,
   Image as ImageIcon,
   Camera,
-  Loader2
+  Loader2,
+  Send,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  X,
+  Play
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
@@ -34,6 +40,38 @@ export default function AdminSettingsPage() {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Messaging Test Modal State
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testPhone, setTestPhone] = useState('9951369573');
+  const [testEmail, setTestEmail] = useState('tsboattourismservices@gmail.com');
+  const [testChannel, setTestChannel] = useState<'ALL' | 'SMS' | 'EMAIL'>('ALL');
+  const [testDryRun, setTestDryRun] = useState(false);
+  const [testingMessaging, setTestingMessaging] = useState(false);
+  const [testResults, setTestResults] = useState<any[] | null>(null);
+
+  const handleRunMessagingTests = async () => {
+    try {
+      setTestingMessaging(true);
+      setTestResults(null);
+      const res = await apiClient.post('/admin/settings/test-messaging', {
+        phone: testPhone,
+        email: testEmail,
+        channel: testChannel,
+        dry_run: testDryRun
+      });
+      if (res.data && res.data.success) {
+        setTestResults(res.data.results || []);
+        toast.success('Messaging tests completed successfully!');
+      } else {
+        toast.error('Failed to run messaging tests');
+      }
+    } catch (err: any) {
+      toast.error('Error running messaging tests: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setTestingMessaging(false);
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -322,6 +360,16 @@ export default function AdminSettingsPage() {
                       />
                     </div>
                   </div>
+                  <div className="sm:col-span-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowTestModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-colors border border-emerald-200 cursor-pointer shadow-2xs"
+                    >
+                      <Send className="h-4 w-4" />
+                      <span>Test All Messaging (MSG91 SMS & Brevo Email)</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -404,6 +452,149 @@ export default function AdminSettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* Test Messaging Modal */}
+      {showTestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-100 rounded-xl">
+                  <Send className="h-5 w-5 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">Live Production Messaging Test</h3>
+                  <p className="text-xs text-slate-500 font-medium">Verify MSG91 SMS templates & Brevo email failover channels</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowTestModal(false); setTestResults(null); }}
+                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Test Mobile Number</label>
+                  <input
+                    type="text"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] transition-all font-medium"
+                    placeholder="9951369573"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Test Email Address</label>
+                  <input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-[#5ac4d7] transition-all font-medium"
+                    placeholder="tsboattourismservices@gmail.com"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Channel:</label>
+                  {(['ALL', 'SMS', 'EMAIL'] as const).map((ch) => (
+                    <button
+                      key={ch}
+                      type="button"
+                      onClick={() => setTestChannel(ch)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${testChannel === ch ? 'bg-[#0d6e75] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                      {ch}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-600 select-none">
+                  <input
+                    type="checkbox"
+                    checked={testDryRun}
+                    onChange={(e) => setTestDryRun(e.target.checked)}
+                    className="rounded border-slate-300 text-[#0d6e75] focus:ring-[#0d6e75]"
+                  />
+                  <span>Dry Run (No real SMS/Email sent)</span>
+                </label>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={handleRunMessagingTests}
+                  disabled={testingMessaging}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0d6e75] hover:bg-[#0b5c62] text-white font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {testingMessaging ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Running Live Tests...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 fill-current" />
+                      <span>Run Live Tests Now</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Results Table */}
+              {testResults && (
+                <div className="mt-4 border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50">
+                  <div className="px-4 py-3 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between">
+                    <span className="font-extrabold text-xs text-slate-700 uppercase tracking-wider">Test Report ({testResults.length} checks)</span>
+                  </div>
+                  <div className="divide-y divide-slate-200/70 max-h-[300px] overflow-y-auto">
+                    {testResults.map((r, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3 p-3 text-xs bg-white">
+                        <div className="flex items-start gap-2.5">
+                          {r.status === 'PASS' ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                          ) : r.status === 'DRY_RUN' ? (
+                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                          )}
+                          <div>
+                            <div className="font-bold text-slate-800">{r.test_name}</div>
+                            <div className="text-[11px] text-slate-500 font-mono mt-0.5">{r.details}</div>
+                          </div>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded font-black text-[10px] uppercase ${r.status === 'PASS' ? 'bg-emerald-100 text-emerald-800' : r.status === 'DRY_RUN' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}`}>
+                          {r.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => { setShowTestModal(false); setTestResults(null); }}
+                className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

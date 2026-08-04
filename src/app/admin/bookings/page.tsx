@@ -179,16 +179,20 @@ export default function AdminBookingsPage() {
     fetchBookings();
   }, [fetchBookings]);
 
-  // Client-side filtering
-  const filteredBookings = bookings.filter((b) => {
+  // Client-side search & filter matching
+  const filteredBookings = bookings.filter((b: any) => {
     if (!search) return true;
-    const q = search.toLowerCase();
+    const q = search.trim().toLowerCase();
     const idMatch = b.public_id?.toLowerCase()?.includes(q) ?? false;
     const customerMatch = b.customer?.full_name?.toLowerCase()?.includes(q) ?? false;
     const primaryMatch = b.primary_passenger_name?.toLowerCase()?.includes(q) ?? false;
     const emailMatch = b.customer?.email?.toLowerCase()?.includes(q) ?? false;
+    const phoneMatch = (b.customer?.phone_number || b.phone_number || '')?.toLowerCase()?.includes(q) ?? false;
     const pkgMatch = b.package_title?.toLowerCase()?.includes(q) ?? false;
-    return idMatch || customerMatch || primaryMatch || emailMatch || pkgMatch;
+    const variantMatch = b.variant_title?.toLowerCase()?.includes(q) ?? false;
+    const agentMatch = b.agent?.full_name?.toLowerCase()?.includes(q) ?? false;
+    const travelDateMatch = b.travel_date?.toLowerCase()?.includes(q) ?? false;
+    return idMatch || customerMatch || primaryMatch || emailMatch || phoneMatch || pkgMatch || variantMatch || agentMatch || travelDateMatch;
   });
 
   const hasFilters = Boolean(search || statusFilter || sourceFilter || targetFilter || startDate || endDate);

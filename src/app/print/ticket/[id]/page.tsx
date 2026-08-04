@@ -156,6 +156,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
   const reportingTime = isRoom ? (booking.room_checkin || 'TBA') : (booking.boarding_point?.departure_time || 'TBA');
   
   const allocatedHotelName = booking.pricing_snapshot?.hotel_name || 
+                             booking.package_title ||
                              (booking.room_address ? booking.room_address.split(',')[0].trim() : null) || 
                              'Assigned Luxury Hotel (Details at Check-in)';
 

@@ -27,11 +27,12 @@ import dynamic from 'next/dynamic';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { logout } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
+import { useLanguageStore } from '@/stores/languageStore';
 import { toast } from 'sonner';
 
 
 
-const navLinks = [
+const NAV_LINKS_EN = [
   { name: 'Home', href: '/', icon: Home, path: '/' },
   { name: 'Packages', href: '/packages', icon: Ship, path: '/packages' },
   { name: 'Accommodations', href: '/stays', icon: Hotel, path: '/stays' },
@@ -41,17 +42,33 @@ const navLinks = [
   { name: 'Contact', href: '/contact', icon: Phone, path: '/contact' },
 ];
 
+const NAV_LINKS_TE = [
+  { name: 'హోమ్', href: '/', icon: Home, path: '/' },
+  { name: 'ప్యాకేజీలు', href: '/packages', icon: Ship, path: '/packages' },
+  { name: 'వసతి', href: '/stays', icon: Hotel, path: '/stays' },
+  { name: 'బ్రోచర్లు', href: '/brochures', icon: BookOpenText, path: '/brochures' },
+  { name: 'గ్యాలరీ', href: '/gallery', icon: Camera, path: '/gallery' },
+  { name: 'మా గురించి', href: '/about', icon: Info, path: '/about' },
+  { name: 'సంప్రదించండి', href: '/contact', icon: Phone, path: '/contact' },
+];
+
 export default function PublicNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const accountRef = useRef<HTMLDivElement>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const user = useAuthStore((s) => s.user);
+  const language = useLanguageStore((s) => s.language);
+  const toggleLanguage = useLanguageStore((s) => s.toggleLanguage);
+
+  const navLinks = language === 'te' ? NAV_LINKS_TE : NAV_LINKS_EN;
+  const isTelugu = language === 'te';
 
   const isHome = pathname === '/';
   const showTransparent = isHome && !isScrolled;
@@ -80,7 +97,7 @@ export default function PublicNavbar() {
       activeMap[link.name] = link.path === '/' ? pathname === '/' : pathname === link.path || pathname.startsWith(`${link.path}/`);
     });
     return activeMap;
-  }, [pathname]);
+  }, [pathname, navLinks]);
 
   const dashboardHref = user?.role === 'ADMIN' ? '/admin/dashboard' : user?.role === 'AGENT' ? '/agent/dashboard' : '/dashboard';
 
@@ -104,27 +121,27 @@ export default function PublicNavbar() {
     <>
       <header className={`fixed top-0 left-0 right-0 z-[100] w-full border-b transition-all duration-300 ${
         showTransparent 
-          ? 'border-transparent bg-transparent shadow-none' 
-          : 'border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs'
+          ? 'border-white/15 bg-gradient-to-b from-[#061826]/90 via-[#061826]/75 to-[#061826]/40 backdrop-blur-md shadow-md' 
+          : 'border-slate-200/90 bg-white/95 backdrop-blur-md shadow-sm'
       }`}>
 
 
         <div className="mx-auto w-full max-w-[1800px] px-3 sm:px-5 2xl:px-8">
           <nav className="grid min-h-[72px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5 nav:grid-cols-[auto_minmax(0,1fr)_auto] xl:grid-cols-[auto_minmax(0,1fr)_auto]">
-            <Link href="/" onClick={closeMenus} className={`flex min-w-0 items-center gap-3 rounded-md p-1.5 transition-colors ${
+            <Link href="/" onClick={closeMenus} className={`flex min-w-0 items-center gap-3 rounded-xl p-1.5 transition-colors ${
               showTransparent ? 'hover:bg-white/10' : 'hover:bg-slate-50'
             }`}>
-              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full border shadow-sm sm:h-14 sm:w-14 transition-colors ${
-                showTransparent ? 'border-white/20 bg-white/10' : 'border-slate-200 bg-white'
+              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full border shadow-sm sm:h-14 sm:w-14 transition-all ${
+                showTransparent ? 'border-cyan-400/40 bg-white/15 ring-2 ring-cyan-300/20' : 'border-slate-200 bg-white'
               }`}>
                 <Image src="/ts-boat-tourism-logo.png" alt="TS Boat Tourism" width={48} height={48} className="h-10 w-10 object-cover rounded-full sm:h-12 sm:w-12" />
               </span>
               <span className="min-w-0 leading-tight">
                 <span className={`block truncate text-[15px] font-black tracking-tight sm:text-lg xl:text-xl transition-colors ${
-                  showTransparent ? 'text-white' : 'text-[#0f3d56]'
+                  showTransparent ? 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]' : 'text-[#0f3d56]'
                 }`}>TS Boat Tourism</span>
                 <span className={`block truncate text-[10px] font-black uppercase tracking-[0.16em] sm:text-[11px] transition-colors ${
-                  showTransparent ? 'text-[#8eecee]' : 'text-[#1598a1]'
+                  showTransparent ? 'text-cyan-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[#1598a1]'
                 }`}>Official Booking Portal</span>
               </span>
             </Link>
@@ -136,23 +153,24 @@ export default function PublicNavbar() {
                   <Link
                     key={link.name}
                     href={link.href}
+                    prefetch={true}
                     onClick={closeMenus}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`group inline-flex h-11 items-center gap-1.5 rounded-md px-1.5 text-[11.5px] font-black transition-all xl:gap-2 xl:px-3 xl:text-[13px] 2xl:px-4 ${
+                    className={`group inline-flex h-11 items-center gap-1.5 rounded-lg px-2 text-[12px] font-extrabold transition-all xl:gap-2 xl:px-3.5 xl:text-[13.5px] 2xl:px-4 ${
                       isActive
                         ? showTransparent
-                          ? 'bg-white/20 text-white'
+                          ? 'bg-cyan-500/30 text-white border border-cyan-300/50 shadow-[0_2px_12px_rgba(0,0,0,0.3)] backdrop-blur-md'
                           : 'bg-[#0f3d56] text-white shadow-[0_10px_24px_rgba(15,61,86,0.18)]'
                         : showTransparent
-                          ? 'text-white/85 hover:bg-white/10 hover:text-white'
-                          : 'text-slate-650 hover:bg-[#e9f7f7] hover:text-[#0f3d56]'
+                          ? 'text-white hover:bg-white/15 hover:text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]'
+                          : 'text-slate-700 hover:bg-[#e9f7f7] hover:text-[#0f3d56]'
                     }`}
                   >
                     <link.icon className={`h-4 w-4 hidden xl:block transition-colors ${
                       isActive
-                        ? 'text-[#8eecee]'
+                        ? showTransparent ? 'text-cyan-300' : 'text-[#8eecee]'
                         : showTransparent
-                          ? 'text-white/60 group-hover:text-white'
+                          ? 'text-cyan-300/80 group-hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
                           : 'text-slate-400 group-hover:text-[#1598a1]'
                     }`} />
                     {link.name}
@@ -162,6 +180,32 @@ export default function PublicNavbar() {
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2 xl:gap-2.5">
+              {/* Language Toggle — Desktop */}
+              <button
+                onClick={toggleLanguage}
+                aria-label={isTelugu ? 'Switch to English' : 'తెలుగుకు మారండి'}
+                title={isTelugu ? 'Switch to English' : 'Switch to Telugu'}
+                className={`hidden nav:inline-flex h-9 items-center gap-0 rounded-full border text-[11px] font-black transition-all overflow-hidden shadow-sm ${
+                  showTransparent
+                    ? 'border-cyan-400/50 bg-[#061826]/60 shadow-[0_4px_14px_rgba(0,0,0,0.25)] backdrop-blur-md'
+                    : 'border-slate-200 bg-white'
+                }`}
+              >
+                <span className={`flex h-full items-center px-3 transition-colors ${
+                  !isTelugu
+                    ? 'bg-[#1598a1] text-white'
+                    : showTransparent ? 'text-white/70 hover:text-white' : 'text-slate-400 hover:text-slate-700'
+                }`}>
+                  EN
+                </span>
+                <span className={`flex h-full items-center px-3 font-telugu transition-colors ${
+                  isTelugu
+                    ? 'bg-[#1598a1] text-white'
+                    : showTransparent ? 'text-white/70 hover:text-white' : 'text-slate-400 hover:text-slate-700'
+                }`}>
+                  తె
+                </span>
+              </button>
 
 
               <div className="hidden nav:block">
@@ -171,17 +215,29 @@ export default function PublicNavbar() {
                   <div className="relative" ref={accountRef}>
                     <button
                       onClick={() => setAccountOpen((open) => !open)}
-                      className={`flex h-10 items-center gap-2 rounded-md border px-2.5 text-sm font-black transition-colors ${
+                      className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-black transition-all ${
                         showTransparent 
-                          ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' 
+                          ? 'border-cyan-400/50 bg-[#061826]/60 text-white hover:bg-cyan-500/20 shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur-md' 
                           : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
                       }`}
                     >
-                      <span className="grid h-7 w-7 place-items-center rounded-md bg-[#1598a1] text-xs text-white">
-                        {user?.avatar_url ? <Image src={user.avatar_url} alt="Profile" width={28} height={28} unoptimized className="h-full w-full rounded-md object-cover" /> : user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#1598a1] text-xs font-bold text-white shadow-xs overflow-hidden">
+                        {!avatarError && user?.avatar_url ? (
+                          <Image
+                            src={user.avatar_url}
+                            alt={user.full_name || 'Profile'}
+                            width={28}
+                            height={28}
+                            unoptimized
+                            className="h-full w-full rounded-lg object-cover"
+                            onError={() => setAvatarError(true)}
+                          />
+                        ) : (
+                          user?.full_name?.charAt(0).toUpperCase() || 'U'
+                        )}
                       </span>
                       <span className="max-w-[90px] truncate">{user?.full_name?.split(' ')[0] || 'Account'}</span>
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                      <ChevronDown className="h-4 w-4 text-cyan-300" />
                     </button>
 
                     <AnimatePresence>
@@ -191,7 +247,7 @@ export default function PublicNavbar() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.98 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute right-0 mt-2 w-64 overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_22px_60px_rgba(15,35,58,0.16)]"
+                          className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_22px_60px_rgba(15,35,58,0.16)]"
                         >
                           <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
                             <p className="truncate text-sm font-black text-slate-900">{user?.full_name}</p>
@@ -204,7 +260,7 @@ export default function PublicNavbar() {
                                 setAccountOpen(false);
                                 setIsLogoutModalOpen(true);
                               }}
-                              className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-left text-xs font-black text-red-600 transition-colors hover:bg-red-50"
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-black text-red-600 transition-colors hover:bg-red-50"
                             >
                               <LogOut className="h-4 w-4" />
                               Logout
@@ -215,27 +271,27 @@ export default function PublicNavbar() {
                     </AnimatePresence>
                   </div>
                 ) : (
-                  <Link href="/login" onClick={closeMenus} className={`flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-black transition-colors ${
+                  <Link href="/login" onClick={closeMenus} className={`flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-black transition-all ${
                     showTransparent 
-                      ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' 
+                      ? 'border-cyan-400/50 bg-[#061826]/60 text-white hover:bg-cyan-500/25 shadow-[0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-md' 
                       : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
                   }`}>
-                    <User className="h-4 w-4 text-[#1598a1]" />
+                    <User className="h-4 w-4 text-cyan-300" />
                     Login
                   </Link>
                 )}
               </div>
 
-              <Link href="/packages" onClick={closeMenus} className={`hidden h-11 items-center rounded-md bg-[#1598a1] px-5 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-[#117f87] nav:inline-flex ${
-                showTransparent ? '' : 'shadow-[0_12px_28px_rgba(21,152,161,0.22)]'
+              <Link href="/packages" onClick={closeMenus} className={`hidden h-11 items-center rounded-xl bg-gradient-to-r from-[#1598a1] via-[#117f87] to-[#0d6e75] px-5 text-sm font-black text-white transition-all hover:scale-[1.03] active:scale-[0.97] nav:inline-flex border border-cyan-300/30 ${isTelugu ? 'font-telugu' : ''} ${
+                showTransparent ? 'shadow-[0_4px_20px_rgba(21,152,161,0.45)]' : 'shadow-[0_8px_24px_rgba(21,152,161,0.3)]'
               }`}>
-                Book Online
+                {isTelugu ? 'ఆన్‌లైన్ బుక్ చేయండి' : 'Book Online'}
               </Link>
 
               <button
                 onClick={() => setIsOpen((open) => !open)}
-                className={`grid h-11 w-11 place-items-center rounded-md text-white transition-colors nav:hidden ${
-                  showTransparent ? 'bg-white/15 hover:bg-white/25' : 'bg-[#0f3d56] shadow-sm'
+                className={`grid h-11 w-11 place-items-center rounded-xl text-white transition-colors nav:hidden ${
+                  showTransparent ? 'bg-white/20 hover:bg-white/30 border border-white/20' : 'bg-[#0f3d56] shadow-sm'
                 }`}
                 aria-label="Toggle menu"
               >
@@ -302,13 +358,30 @@ export default function PublicNavbar() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-                  <Link href="/packages" onClick={closeMenus} className="flex min-h-12 items-center justify-center rounded-md bg-[#1598a1] px-4 text-sm font-black text-white shadow-[0_12px_28px_rgba(21,152,161,0.18)]">
-                    Book Online
+                  <Link href="/packages" onClick={closeMenus} className={`flex min-h-12 items-center justify-center rounded-md bg-[#1598a1] px-4 text-sm font-black text-white shadow-[0_12px_28px_rgba(21,152,161,0.18)] ${isTelugu ? 'font-telugu' : ''}`}>
+                    {isTelugu ? 'ఆన్‌లైన్ బుక్' : 'Book Online'}
                   </Link>
-                  <a href="tel:+919951369573" className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-[#0f3d56]">
+                  <a href="tel:+919951369573" className={`flex min-h-12 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-[#0f3d56] ${isTelugu ? 'font-telugu' : ''}`}>
                     <Phone className="h-4 w-4 text-[#1598a1]" />
-                    Call to Book
+                    {isTelugu ? 'కాల్ చేయండి' : 'Call to Book'}
                   </a>
+                </div>
+
+                {/* Language Toggle — Mobile */}
+                <div className="border-t border-slate-100 pt-3">
+                  <button
+                    onClick={toggleLanguage}
+                    className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-black text-[#0f3d56] transition-colors hover:bg-[#eef8f8]"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-base">🌐</span>
+                      <span>{isTelugu ? 'Language / భాష' : 'Language / భాష'}</span>
+                    </span>
+                    <span className="flex items-center gap-0 overflow-hidden rounded-full border border-slate-200">
+                      <span className={`px-2.5 py-1 text-xs font-black transition-colors ${ !isTelugu ? 'bg-[#1598a1] text-white' : 'text-slate-400'}`}>EN</span>
+                      <span className={`px-2.5 py-1 text-xs font-black font-telugu transition-colors ${ isTelugu ? 'bg-[#1598a1] text-white' : 'text-slate-400'}`}>తె</span>
+                    </span>
+                  </button>
                 </div>
 
                 <div className="border-t border-slate-100 pt-3">

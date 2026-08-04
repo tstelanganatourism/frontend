@@ -92,11 +92,11 @@ export function BulkInventoryModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>From Date</Label>
-              <CustomDatePicker value={fromDate} onChange={setFromDate} dropUp={true} />
+              <CustomDatePicker value={fromDate} onChange={setFromDate} dropUp={true} isAdmin={true} />
             </div>
             <div className="space-y-2 relative">
               <Label>To Date</Label>
-              <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} align="right" dropUp={true} />
+              <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} align="right" dropUp={true} isAdmin={true} />
             </div>
           </div>
           

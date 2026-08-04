@@ -16,7 +16,7 @@ interface RoomHeroProps {
   gallery?: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
 }
 
-const fallbackImage = 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg';
+const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg';
 
 export const RoomHero = ({
   lodgeName,

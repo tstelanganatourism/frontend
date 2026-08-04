@@ -50,16 +50,16 @@ const filters = [
 
 const heroImages = [
   {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432996/5bbee6a1-5edf-46c0-92b5-00b11612644b.png',
-    alt: 'Godavari river horizon at Papikondalu',
+    src: 'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png',
+    alt: 'Official TS Boat Tourism Banner',
   },
   {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779432924/papikondalu-tour-packages-ap-8_w5qssm.jpg',
-    alt: 'Papikondalu river sunset',
+    src: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+    alt: 'Papikondalu river view',
   },
   {
-    src: 'https://res.cloudinary.com/dpdab3e97/image/upload/v1779431964/Papikondalu_1_Day_Tour_65a1_uw2490.jpg',
-    alt: 'Papikondalu one day tour boat route',
+    src: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+    alt: 'Kolluru bamboo huts',
   },
 ];
 
@@ -104,7 +104,7 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
     <article className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,61,86,0.05)] transition duration-300 hover:-translate-y-1 hover:border-[#1a6b7a]/40 hover:shadow-[0_18px_44px_rgba(15,61,86,0.12)]">
       <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
         <Image
-          src={pkg.cover_image_url || 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1778912203/slider4_rikfsq.jpg'}
+          src={pkg.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg'}
           alt={pkg.title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

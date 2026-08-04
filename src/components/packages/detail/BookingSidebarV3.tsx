@@ -11,6 +11,8 @@ import BusWarningModal from '@/components/ui/BusWarningModal';
 import { apiClient } from '@/lib/api';
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
 import { reportBookNowConversion } from '@/components/providers/AnalyticsProvider';
+import { CouponWidget } from '@/components/ui/CouponWidget';
+import { trackFunnelEvent } from '@/lib/activityTracker';
 
 import { toast } from 'sonner';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
@@ -1157,6 +1159,25 @@ export const BookingSidebarV3 = ({
         sessionStorage.setItem('last_checkout_children', String(children));
       }
 
+      // Track CHECKOUT_INITIATED event for admin lead alert
+      const primaryPax = passengers[0] || {};
+      trackFunnelEvent({
+        funnel_stage: 'CHECKOUT_INITIATED',
+        target_type: 'package',
+        target_title: packageSlug || 'Tour Package',
+        variant_title: selectedVariant?.title,
+        travel_date: selectedDate || undefined,
+        adult_count: adults,
+        child_count: children,
+        total_amount: isAgent ? prices.agentPayable : prices.grandTotal,
+        coupon_code: appliedCoupon ? appliedCoupon.code : undefined,
+        customer_name: primaryPax.full_name,
+        customer_phone: primaryPax.phone,
+        customer_email: customerEmail || user?.email || undefined,
+        passengers_data: passengers.map((p: any) => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
+        payment_gateway: selectedGateway,
+      });
+
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
       const { checkout_data } = res.data;
 
@@ -1388,7 +1409,8 @@ export const BookingSidebarV3 = ({
         <div className={layoutMode === 'dialog' ? "flex-1 flex flex-col sm:flex-row overflow-hidden h-full min-h-0" : "space-y-4 p-0 lg:p-5"}>
 
           {/* LEFT / MAIN form panel */}
-          <div className={layoutMode === 'dialog' ? "flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin scrollbar-thumb-slate-300 min-h-0" : "space-y-4"}>
+          <div className={layoutMode === 'dialog' ? "flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 min-h-0" : ""}>
+            <div className={layoutMode === 'dialog' ? "p-4 sm:p-6 space-y-5" : "space-y-4"}>
 
           {/* Suspended Warning */}
           {(isPackageInactive || !isActive) && (
@@ -1581,21 +1603,21 @@ export const BookingSidebarV3 = ({
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-slate-200/90 bg-white p-2 sm:p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
                   <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Adults (11+ yrs)</span>
                   <div className="flex items-center justify-between">
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
                     <span className="text-sm font-black text-slate-900">{adults}</span>
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
                   </div>
                 </div>
-                <div className="rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
-                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Children (4-10 yrs)</span>
+                <div className="rounded-xl border border-slate-200/90 bg-white p-2 sm:p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
+                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Children (4-10)</span>
                   <div className="flex items-center justify-between">
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
                     <span className="text-sm font-black text-slate-900">{children}</span>
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className="h-7 w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
+                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
                   </div>
                 </div>
               </div>
@@ -1679,7 +1701,7 @@ export const BookingSidebarV3 = ({
                   )}
 
                   {selectedTransportMode === 'SEPARATE' && (
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 min-w-0">
                       {separateOptions.map(opt => {
                         const optAvail = transportAvailMap[opt.id];
                         const pOverride = Number(optAvail?.price_override ?? 0);
@@ -1690,10 +1712,10 @@ export const BookingSidebarV3 = ({
                         const vehiclesLeft = optAvail ? optAvail.remaining : 5;
 
                         return (
-                          <div key={opt.id} className={`p-3 rounded-xl border transition-all ${qty > 0 ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white'}`}>
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <span className="block text-[11px] font-black text-slate-850 truncate">{opt.title}</span>
+                          <div key={opt.id} className={`p-3 rounded-xl border transition-all min-w-0 ${qty > 0 ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white'}`}>
+                            <div className="flex items-center justify-between gap-3 min-w-0">
+                              <div className="min-w-0 flex-1 overflow-hidden">
+                                <span className="block text-[11px] font-black text-slate-850 truncate max-w-full" title={opt.title}>{opt.title}</span>
                                 <span className="block text-[9px] font-semibold text-slate-450 mt-0.5">Max {opt.capacity} passengers · <span className="text-[#0d6e75]">₹{formatINR(fixedPrice)}</span></span>
                               </div>
                               <div className="flex items-center gap-1 shrink-0">
@@ -1803,33 +1825,21 @@ export const BookingSidebarV3 = ({
             </div>
           )}
 
-          {/* Block 5: Promo code */}
-          <div className="pt-3 border-t border-slate-100">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 flex items-center gap-1.5">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">5</span>
-              Apply Coupon Code
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                disabled={validatingCoupon || appliedCoupon !== null}
-                placeholder="PROMO CODE"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-black uppercase tracking-wider focus:border-[#0d6e75] focus:outline-none h-10 disabled:bg-slate-50"
-              />
-              {appliedCoupon ? (
-                <button type="button" onClick={handleRemoveCoupon} className="rounded-xl bg-rose-50 border border-rose-200 px-4 text-xs font-black text-rose-600 uppercase tracking-widest h-10 hover:bg-rose-100">Remove</button>
-              ) : (
-                <button type="button" disabled={!couponCode.trim() || validatingCoupon} onClick={handleApplyCoupon} className="rounded-xl bg-[#0d6e75] px-5 text-xs font-black text-white uppercase tracking-widest h-10 hover:bg-[#0b5c62] min-w-[76px] flex items-center justify-center">
-                  {validatingCoupon ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : 'Apply'}
-                </button>
-              )}
-            </div>
-            {couponError && <p className="mt-1.5 text-[11px] font-bold text-rose-600 flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {couponError}</p>}
-            {couponSuccess && <p className="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> {couponSuccess}</p>}
-          </div>
+          {/* Block 5: Promo code — powered by CouponWidget */}
+          <CouponWidget
+            couponCode={couponCode}
+            setCouponCode={setCouponCode}
+            validatingCoupon={validatingCoupon}
+            appliedCoupon={appliedCoupon}
+            couponError={couponError}
+            couponSuccess={couponSuccess}
+            onApply={handleApplyCoupon}
+            onRemove={handleRemoveCoupon}
+            onAutoApply={(code) => applyCouponByCode(code)}
+            stepNumber={5}
+          />
 
+            </div>
           </div>
 
           {/* RIGHT summary panel — hidden on mobile (rendered at bottom on mobile instead) */}

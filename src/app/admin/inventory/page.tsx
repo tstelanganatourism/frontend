@@ -614,11 +614,11 @@ function TransportGenerateModal({
         <div className="max-h-[70vh] overflow-y-auto p-6 space-y-4 custom-scrollbar">
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">From Date</label>
-            <CustomDatePicker value={fromDate} onChange={setFromDate} min={minISO} />
+            <CustomDatePicker value={fromDate} onChange={setFromDate} min={minISO} isAdmin={true} />
           </div>
           <div className="relative z-40">
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">To Date</label>
-            <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} />
+            <CustomDatePicker value={toDate} onChange={setToDate} min={fromDate} isAdmin={true} />
           </div>
 
           <div className="space-y-3 pt-2">

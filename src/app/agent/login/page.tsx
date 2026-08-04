@@ -47,7 +47,7 @@ function AgentLoginContent() {
       <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden bg-[#061d2b]">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431943/papikondalu-tour-packages-ap-1_hje1jh.jpg')" }}
+          style={{ backgroundImage: "url('https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#061d2b]/70 via-[#061d2b]/40 to-[#0f3d56]/55" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#061d2b]/90 via-transparent to-[#061d2b]/30" />

@@ -8,24 +8,32 @@ import { FAQS } from './data';
 
 export default function FAQClient() {
   const [openIds, setOpenIds] = useState<Record<string, boolean>>({
-    '0-0': true, // Keep first one open initially for a welcoming feel
+    '0-0': true,
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
 
   const query = searchQuery.trim().toLowerCase();
 
+  const categoriesList = useMemo(() => {
+    return ['ALL', ...FAQS.map(c => c.category)];
+  }, []);
+
   const visibleFaqs = useMemo(() => {
-    return FAQS.map((category, catIdx) => ({
-      ...category,
-      questions: category.questions
-        .map((faq, qIdx) => ({ ...faq, id: `${catIdx}-${qIdx}` }))
-        .filter((faq) => 
-          !query || 
-          faq.q.toLowerCase().includes(query) || 
-          faq.a.toLowerCase().includes(query)
-        ),
-    })).filter((category) => category.questions.length > 0);
-  }, [query]);
+    return FAQS
+      .filter((cat) => selectedCategory === 'ALL' || cat.category.toLowerCase() === selectedCategory.toLowerCase())
+      .map((category, catIdx) => ({
+        ...category,
+        questions: category.questions
+          .map((faq, qIdx) => ({ ...faq, id: `${catIdx}-${qIdx}` }))
+          .filter((faq) => 
+            !query || 
+            faq.q.toLowerCase().includes(query) || 
+            faq.a.toLowerCase().includes(query)
+          ),
+      }))
+      .filter((category) => category.questions.length > 0);
+  }, [query, selectedCategory]);
 
   const toggleOpen = (id: string) => {
     setOpenIds(prev => ({
@@ -42,16 +50,39 @@ export default function FAQClient() {
         description="Quick answers for bookings, refunds, timings, boat facilities, and Bhadrachalam travel."
         icon={ShieldCheck}
       >
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            value={searchQuery}
-            placeholder="Search booking, refund, timing..."
-            className="w-full rounded-md border border-slate-200 bg-white px-12 py-3.5 text-base font-semibold text-slate-800 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#1598a1] focus:ring-4 focus:ring-[#1598a1]/15"
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={searchQuery}
+              placeholder="Search booking, refund, timing..."
+              className="w-full rounded-md border border-slate-200 bg-white px-12 py-3.5 text-base font-semibold text-slate-800 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#1598a1] focus:ring-4 focus:ring-[#1598a1]/15"
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
+
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {categoriesList.map((cat) => {
+              const isActive = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#0f3d56] text-white shadow-sm'
+                      : 'bg-white/80 text-slate-600 border border-slate-200/80 hover:bg-white hover:text-slate-900'
+                  }`}
+                >
+                  {cat === 'ALL' ? 'All Questions' : cat}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </PublicPageHeader>
 
       {/* Main Single Page Layout Content */}

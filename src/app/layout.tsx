@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Noto_Sans_Telugu, Outfit } from "next/font/google";
 import "./globals.css";
 import TopLoader from '@/components/layout/TopLoader';
 import QueryProvider from '@/components/providers/QueryProvider';
@@ -14,6 +14,7 @@ import InstallPromptModal from '@/components/ui/InstallPromptModal';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap', preload: false });
+const notoTelugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-telugu", weight: ["400", "500", "600", "700", "800", "900"], display: 'swap', preload: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tstelanganatourism.com"),
@@ -49,17 +50,17 @@ export const metadata: Metadata = {
     description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
     siteName: "TS Boat Tourism",
     images: [{
-      url: "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg",
+      url: "https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png",
       width: 1200,
       height: 630,
-      alt: "Papikondalu River Cruise"
+      alt: "TS Boat Tourism | Papikondalu River Cruise"
     }],
   },
   twitter: {
     card: "summary_large_image",
     title: "TS Boat Tourism | Best Bhadrachalam Tours",
     description: "Your premium gateway to the Godavari river, Papikondalu hills and Bhadrachalam travel packages.",
-    images: ["https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg"],
+    images: ["https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png"],
   },
   alternates: {
     canonical: "/",
@@ -128,13 +129,13 @@ export default function RootLayout({
                 "alternateName": "TS Boat Tourism",
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com",
                 "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
-                "image": "https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg",
+                "image": "https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png",
                 "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 99513 69573",
                 "email": "tstelanganatourism@gmail.com",
                 "address": {
                   "@type": "PostalAddress",
-                  "streetAddress": "Om Shanti satram, Kalyana mandapam road, near SBI ATM",
+                  "streetAddress": "Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram",
                   "addressLocality": "Bhadrachalam",
                   "addressRegion": "Telangana",
                   "postalCode": "507111",
@@ -207,7 +208,7 @@ export default function RootLayout({
           }}
         ></script>
       </head>
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} ${outfit.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
         <TopLoader />
         <QueryProvider>
           <AuthProvider>

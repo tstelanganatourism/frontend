@@ -61,8 +61,25 @@ export default function PackagesList({
   const [allPackages, setAllPackages] = React.useState<PackageItem[]>(data?.items || []);
   const [isFetching, setIsFetching] = React.useState(false);
   const [searchVal, setSearchVal] = React.useState('');
-  
-  const currentBrowserSearch = typeof window !== 'undefined' ? window.location.search : '';
+  const [urlQuery, setUrlQuery] = React.useState(typeof window !== 'undefined' ? window.location.search : '');
+
+  // Listen to popstate & custom filter change events for instant reactivity
+  React.useEffect(() => {
+    const handleLocationChange = () => {
+      if (typeof window !== 'undefined') {
+        setUrlQuery(window.location.search);
+        const params = new URLSearchParams(window.location.search);
+        setSearchVal(params.get('q') || '');
+      }
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('app:filter-change', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('app:filter-change', handleLocationChange);
+    };
+  }, []);
 
   // Sync search input with URL parameter 'q'
   React.useEffect(() => {
@@ -70,7 +87,7 @@ export default function PackagesList({
       const params = new URLSearchParams(window.location.search);
       setSearchVal(params.get('q') || '');
     }
-  }, [currentBrowserSearch]);
+  }, [urlQuery]);
 
   // Initial fetch of complete packages dataset (size=100) to ensure full offline client-side search
   React.useEffect(() => {
@@ -100,7 +117,7 @@ export default function PackagesList({
   const filteredItems = React.useMemo(() => {
     if (!allPackages || allPackages.length === 0) return [];
 
-    const params = typeof window !== 'undefined' ? new URLSearchParams(currentBrowserSearch) : new URLSearchParams();
+    const params = typeof window !== 'undefined' ? new URLSearchParams(urlQuery) : new URLSearchParams();
     const query = searchVal.trim().toLowerCase() || params.get('q')?.trim().toLowerCase() || '';
     const isFeatured = params.get('is_featured') === 'true';
     const region = params.get('region');
@@ -175,7 +192,7 @@ export default function PackagesList({
     }
 
     return list;
-  }, [allPackages, searchVal, currentBrowserSearch, isBoatRide, isSightseeing]);
+  }, [allPackages, searchVal, urlQuery, isBoatRide, isSightseeing]);
 
   const activeData = { items: filteredItems, total: filteredItems.length, size: filteredItems.length };
 

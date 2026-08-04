@@ -13,6 +13,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { apiClient } from '@/lib/api';
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
 import { reportBookNowConversion } from '@/components/providers/AnalyticsProvider';
+import { CouponWidget } from '@/components/ui/CouponWidget';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ import {
   IndianRupee,
   MapPin,
   Minus,
+  Phone,
   Plus,
   ShieldCheck,
   Sparkles,
@@ -99,7 +101,7 @@ interface RoomDetailExperienceProps {
   room: RoomDetailViewModel;
 }
 
-const fallbackImage = 'https://res.cloudinary.com/dpdab3e97/image/upload/q_auto/f_auto/v1779431872/maredumilli-13_mdqgmv.jpg';
+const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg';
 const getLocalToday = () => {
   const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1317,10 +1319,44 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 Highlights &amp; Location
               </h2>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                Key property features and interactive map directions
+                Key property features, mandatory reporting hub, and interactive map directions
               </p>
             </div>
-            <div className="p-5 md:p-6">
+            <div className="p-5 md:p-6 space-y-6">
+              {/* Mandatory Guest Reporting Office Banner */}
+              <div className="rounded-2xl border border-amber-300 bg-amber-500/10 p-5 shadow-2xs">
+                <div className="flex flex-col sm:flex-row items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0d6e75] text-white shadow-sm">
+                    <Building2 className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="rounded-full bg-amber-600 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                        MANDATORY FIRST GUEST STOP
+                      </span>
+                      <span className="text-xs font-extrabold text-amber-950">
+                        TS Boat Tourism Main Office (Bhadrachalam)
+                      </span>
+                    </div>
+                    <h4 className="mt-1.5 text-sm font-black text-slate-900">
+                      Must Report Here First Before Reaching Room / Resort
+                    </h4>
+                    <p className="mt-1 text-xs font-bold text-slate-700 leading-relaxed">
+                      All stay guests <strong>MUST first report to our TS Boat Tourism Central Office in Bhadrachalam</strong> prior to check-in. Our team will verify your booking, register Government IDs, issue your official physical room vouchers, and coordinate your resort directions.
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-extrabold text-slate-800">
+                      <div className="flex items-center gap-1.5 text-[#0d6e75]">
+                        <MapPin className="h-4 w-4 shrink-0" />
+                        <span>Om Shanthi Building Sataram, Kalyana Mandapam Road, Bhadrachalam</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-slate-200 text-slate-900">
+                        <Phone className="h-3.5 w-3.5 text-[#0d6e75]" />
+                        <span>+91 99513 69573 / +91 77801 19268</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Left: Highlights list */}
                 <div className="space-y-3">
@@ -1750,7 +1786,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             </div>
 
             {/* Scrollable Form Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin scrollbar-thumb-slate-200">
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 min-h-0">
+              <div className="p-4 sm:p-6 space-y-5">
               {isLodgeInactive ? (
                 <div className="rounded-xl border border-rose-100 bg-rose-500/5 p-4 text-xs text-rose-600 font-bold flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
@@ -1905,9 +1942,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       <span className="grid h-4.5 w-4.5 place-items-center rounded-full bg-[#0d6e75] text-[9px] text-white">4</span>
                       Rooms &amp; Guests
                     </p>
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                       {/* Rooms Counter */}
-                      <div className={`rounded-xl border p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                      <div className={`rounded-xl border p-1.5 sm:p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
                         <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 truncate">Rooms</span>
                         <div className="flex items-center justify-between gap-1">
                           <button
@@ -1933,7 +1970,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       </div>
 
                       {/* Adults Counter */}
-                      <div className={`rounded-xl border p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                      <div className={`rounded-xl border p-1.5 sm:p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
                         <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 truncate">Adults</span>
                         <div className="flex items-center justify-between gap-1">
                           <button
@@ -1964,7 +2001,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       </div>
 
                       {/* Children Counter */}
-                      <div className={`rounded-xl border p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
+                      <div className={`rounded-xl border p-1.5 sm:p-2.5 flex flex-col justify-between ${isLodgeInactive ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200'}`}>
                         <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 truncate">Children</span>
                         <div className="flex items-center justify-between gap-1">
                           <button
@@ -2006,40 +2043,19 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     </div>
                   </div>
 
-                  {/* Coupon Code Section */}
-                  <div className="pt-3 border-t border-slate-100">
-                    <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2 relative">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Have a promo code?"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                          disabled={validatingCoupon || !!appliedCoupon}
-                          className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#0d6e75] focus:bg-white disabled:opacity-60"
-                        />
-                        {appliedCoupon ? (
-                          <button
-                            type="button"
-                            onClick={handleRemoveCoupon}
-                            className="flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-650 transition hover:bg-red-100"
-                          >
-                            Remove
-                          </button>
-                        ) : (
-                          <button
-                            type="submit"
-                            disabled={!couponCode || validatingCoupon}
-                            className="flex w-16 items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:opacity-50"
-                          >
-                            {validatingCoupon ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
-                          </button>
-                        )}
-                      </div>
-                      {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
-                      {couponSuccess && <p className="text-[10px] font-bold text-green-600">{couponSuccess}</p>}
-                    </form>
-                  </div>
+                  {/* Coupon Code Section — powered by CouponWidget */}
+                  <CouponWidget
+                    couponCode={couponCode}
+                    setCouponCode={setCouponCode}
+                    validatingCoupon={validatingCoupon}
+                    appliedCoupon={appliedCoupon}
+                    couponError={couponError}
+                    couponSuccess={couponSuccess}
+                    onApply={() => validateCoupon(couponCode.trim())}
+                    onRemove={handleRemoveCoupon}
+                    onAutoApply={(code) => validateCoupon(code)}
+                    subtotal={stayDetails.totalPrice * roomsCount}
+                  />
 
                   {/* Pricing Details Breakdown */}
                   <div className="rounded-2xl border border-slate-200 bg-[#fafaf7] p-4 space-y-3">
@@ -2191,6 +2207,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 </>
               )}
             </div>
+          </div>
 
             {/* ── Fixed Footer Action Bar Inside Modal (Image 5 Style) ── */}
             {!isLodgeInactive && (
