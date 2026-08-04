@@ -1244,140 +1244,248 @@ export const BookingSidebarV3 = ({
     }
   };
 
-  const renderCalendar = () => {
+  const renderCalendar = (onClose?: () => void) => {
     if (publicLoading && !isAdmin) {
       return (
-        <div className="p-8 w-full flex flex-col items-center justify-center min-h-[220px]">
-          <Loader2 className="h-6 w-6 animate-spin text-[#0d6e75] mb-2" />
-          <p className="text-[10px] font-black text-[#0d6e75]/70 uppercase tracking-widest">Checking seats...</p>
+        <div className="flex flex-col items-center justify-center py-10 gap-3">
+          <div className="relative">
+            <div className="h-10 w-10 rounded-full border-2 border-[#0d6e75]/20 border-t-[#0d6e75] animate-spin" />
+          </div>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Loading fare calendar...</p>
         </div>
       );
     }
 
     const daysInMonth = getDaysInMonth(calYear, calMonth);
     const firstDay = getFirstDayOfMonth(calYear, calMonth);
-    const days = [];
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+    const cells: React.ReactNode[] = [];
+
+    // empty cells
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="w-8 h-8" />);
+      cells.push(<div key={`e-${i}`} />);
     }
 
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(calYear, calMonth, i);
+      const dow = d.getDay();
+      const isWeekend = dow === 0 || dow === 6;
       const dateStr = toYYYYMMDD(d);
-      const isPastDate = dateStr < todayDateStr;
-      const isTodayAfterCutoff = dateStr === todayDateStr && isAfterCutoff;
-      const isPast = isPastDate || isTodayAfterCutoff;
+      const isPast = dateStr < todayDateStr || (dateStr === todayDateStr && isAfterCutoff);
       const isSelected = dateStr === selectedDate;
+      const isToday = dateStr === todayDateStr;
 
-      let dayStatus = 'none';
-      let isDisabled = isPast || !isActive;
+      let dayStatus = 'available';
+      let isDisabled = isPast || (!isAdmin && !isActive);
 
-      if (isAdmin) {
+      if (isPast) {
+        dayStatus = 'past';
+        isDisabled = true;
+      } else if (!isActive && !isAdmin) {
+        dayStatus = 'inactive';
+        isDisabled = true;
+      } else if (isAdmin) {
         dayStatus = 'available';
         isDisabled = false;
       } else if (publicAvailability) {
-        const slot = publicAvailability.dates.find(d => d.date === dateStr && d.variant_id === selectedVariantId);
+        const slot = publicAvailability.dates.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
         if (slot) {
           if (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || slot.status === 'NO_INVENTORY' || slot.available_seats <= 0) {
             dayStatus = 'soldout';
             isDisabled = true;
           } else {
             dayStatus = 'available';
-            if (isTodayAfterCutoff) isDisabled = false;
+            isDisabled = false;
           }
         } else {
-          dayStatus = 'soldout';
-          isDisabled = true;
+          dayStatus = 'available';
+          isDisabled = false;
         }
       } else {
-        isDisabled = true;
+        dayStatus = 'available';
+        isDisabled = false;
       }
 
-      let titleText = 'Select travel date';
-      if (isPast) {
-        titleText = 'Past date';
-      } else if (dayStatus === 'soldout') {
-        titleText = 'Bookings closed / Sold out for this date';
-      } else if (dayStatus === 'available') {
-        titleText = 'Available for booking';
+      // per-date fare
+      let fare: number | null = null;
+      if (!isPast && !isDisabled) {
+        const slot = publicAvailability?.dates?.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
+        if (slot) {
+          if (isStudentPackage) {
+            fare = Number(slot.effective_student_price ?? slot.student_price ?? 0) || null;
+          } else {
+            fare = Number(slot.effective_adult_price ?? slot.adult_price ?? 0) || null;
+          }
+        }
+        if (!fare || fare <= 0) {
+          if (isStudentPackage) {
+            fare = isSpecialUser ? 1 : (
+              isWeekend && selectedVariant?.weekend_student_price
+                ? positiveNumber(selectedVariant.weekend_student_price)
+                : (positiveNumber(selectedVariant?.student_price) || positiveNumber(startingPrice))
+            );
+          } else {
+            fare = isSpecialUser ? 1 : (
+              isWeekend && selectedVariant?.weekend_adult_price
+                ? positiveNumber(selectedVariant.weekend_adult_price)
+                : (positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice))
+            );
+          }
+        }
       }
 
-      days.push(
+      // format fare short: 4500 → ₹4.5K, 11500 → ₹11.5K
+      const formatFare = (n: number) => {
+        if (n >= 1000) return `₹${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
+        return `₹${n}`;
+      };
+
+      const isAvailable = !isDisabled && dayStatus === 'available';
+
+      cells.push(
         <button
           key={i}
           type="button"
           disabled={isDisabled}
-          title={titleText}
+          title={isAvailable ? `Travel on ${dateStr} — ${fare ? formatFare(fare) : 'fares available'} per adult` : dayStatus === 'soldout' ? 'Sold out / Closed' : 'Past date'}
           onClick={() => handleDaySelect(i)}
           className={[
-            // Base: square container that becomes a circle
-            'w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-extrabold transition-all duration-150 select-none relative',
-            // Past / disabled
-            isPast
-              ? 'bg-slate-100/70 text-slate-300 cursor-not-allowed'
-              : isDisabled
-              ? 'text-slate-300 cursor-not-allowed opacity-50'
-              : 'cursor-pointer',
-            // Selected
+            'relative flex flex-col items-center justify-center rounded-lg transition-all duration-150 select-none',
+            'h-[46px] sm:h-[52px] w-full',
             isSelected
-              ? '!bg-[#0d6e75] !text-white font-black shadow-md scale-105 ring-2 ring-[#0d6e75]/20 z-10'
-              : '',
-            // Available (not selected, not past, not disabled)
-            !isSelected && !isPast && dayStatus === 'available'
-              ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 font-black hover:scale-105 cursor-pointer'
-              : '',
-            // Sold-out (not past, just unavailable)
-            !isPast && !isSelected && dayStatus === 'soldout'
-              ? 'text-slate-300 bg-slate-50/80 line-through cursor-not-allowed opacity-60'
-              : '',
-            // Regular available (no slot data yet)
-            !isSelected && !isPast && !isDisabled && dayStatus === 'none'
-              ? 'text-slate-600 hover:bg-slate-100 hover:scale-105 cursor-pointer'
-              : '',
-          ].filter(Boolean).join(' ')}
+              ? 'bg-gradient-to-b from-[#0d6e75] to-[#0a5a61] shadow-lg shadow-[#0d6e75]/30 scale-[1.05] z-10'
+              : isPast || (isDisabled && dayStatus !== 'soldout')
+              ? 'cursor-not-allowed'
+              : isAvailable
+              ? isWeekend
+                ? 'bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 hover:scale-105 cursor-pointer'
+                : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 hover:scale-105 cursor-pointer'
+              : dayStatus === 'soldout'
+              ? 'bg-slate-50 border border-slate-100 cursor-not-allowed'
+              : 'cursor-not-allowed',
+          ].join(' ')}
         >
-          {i}
+          {/* Today indicator dot */}
+          {isToday && !isSelected && (
+            <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[#0d6e75]" />
+          )}
+
+          {/* Date number */}
+          <span className={[
+            'text-[13px] leading-none font-bold',
+            isSelected
+              ? 'text-white font-black'
+              : isPast
+              ? 'text-slate-300'
+              : isDisabled && dayStatus !== 'soldout'
+              ? 'text-slate-300'
+              : dayStatus === 'soldout'
+              ? 'text-slate-300 line-through'
+              : isWeekend
+              ? 'text-amber-700 font-black'
+              : 'text-slate-800 font-black',
+          ].join(' ')}>
+            {i}
+          </span>
+
+          {/* Fare price */}
+          <span className={[
+            'text-[9px] font-semibold leading-none mt-[3px]',
+            isSelected
+              ? 'text-cyan-200'
+              : isPast || (isDisabled && dayStatus !== 'soldout')
+              ? 'text-slate-200'
+              : dayStatus === 'soldout'
+              ? 'text-slate-300'
+              : isWeekend
+              ? 'text-amber-500 font-bold'
+              : 'text-emerald-600 font-bold',
+          ].join(' ')}>
+            {isPast || (isDisabled && dayStatus !== 'soldout')
+              ? ''
+              : dayStatus === 'soldout'
+              ? 'Full'
+              : fare
+              ? formatFare(fare)
+              : ''}
+          </span>
         </button>
       );
     }
 
     return (
       <div className="w-full select-none">
-        {/* Month navigation */}
-        <div className="flex justify-between items-center mb-2.5 px-1">
+
+        {/* ── Header: gradient brand bar with month nav + optional close ── */}
+        <div className="bg-gradient-to-r from-[#0d6e75] to-[#0a5a61] rounded-xl px-3 py-3 mb-3 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={prevMonth}
-            className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors flex items-center justify-center"
+            className="h-7 w-7 shrink-0 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors flex items-center justify-center"
           >
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="font-black text-xs text-slate-800 uppercase tracking-wider">
-            {monthNames[calMonth]} {calYear}
+          <div className="text-center flex-1 min-w-0">
+            <div className="text-white font-black text-sm tracking-wide uppercase">
+              {monthNames[calMonth]} {calYear}
+            </div>
+            <div className="text-cyan-200/80 text-[10px] font-semibold mt-0.5">
+              Select your travel date
+            </div>
           </div>
           <button
             type="button"
             onClick={nextMonth}
-            className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors flex items-center justify-center"
+            className="h-7 w-7 shrink-0 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors flex items-center justify-center"
           >
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-4 w-4" />
           </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-7 w-7 shrink-0 rounded-lg bg-white/20 hover:bg-white/35 text-white transition-colors flex items-center justify-center ml-1"
+              aria-label="Close calendar"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          )}
         </div>
 
-        {/* Day headers */}
-        <div className="grid grid-cols-7 place-items-center mb-1">
-          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-            <div key={d} className="w-8 h-6 flex items-center justify-center text-[9px] font-black text-slate-400 uppercase tracking-wider">
+        {/* ── Day-of-week headers ── */}
+        <div className="grid grid-cols-7 mb-1">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+            <div
+              key={`${d}-${idx}`}
+              className={`text-center text-[10px] font-black uppercase py-1 ${idx === 0 || idx === 6 ? 'text-amber-400' : 'text-slate-400'}`}
+            >
               {d}
             </div>
           ))}
         </div>
 
-        {/* Day cells */}
-        <div className="grid grid-cols-7 place-items-center gap-y-0.5">
-          {days}
+        {/* ── Calendar grid ── */}
+        <div className="grid grid-cols-7 gap-[3px]">
+          {cells}
+        </div>
+
+        {/* ── Legend ── */}
+        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between px-1">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <div className="h-2.5 w-2.5 rounded-sm bg-emerald-100 border border-emerald-300" />
+              <span className="text-[10px] font-semibold text-slate-400">Weekday</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="h-2.5 w-2.5 rounded-sm bg-amber-100 border border-amber-300" />
+              <span className="text-[10px] font-semibold text-slate-400">Weekend</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-2.5 w-2.5 rounded-sm bg-[#0d6e75]" />
+            <span className="text-[10px] font-semibold text-slate-400">Selected</span>
+          </div>
         </div>
       </div>
     );
@@ -1522,15 +1630,17 @@ export const BookingSidebarV3 = ({
               <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isCalendarExpanded ? 'rotate-180 text-[#0d6e75]' : 'text-slate-400'}`} />
             </button>
 
-            {/* Popup Backdrop & Calendar Overlay */}
+            {/* Calendar Modal - fixed centered, never overflows */}
             {isCalendarExpanded && (
               <>
-                <div 
-                  className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-[2px]"
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
                   onClick={() => setIsCalendarExpanded(false)}
                 />
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-[300px] max-w-[calc(100vw-24px)] bg-white border border-slate-200/90 rounded-2xl shadow-xl p-3 animate-in fade-in-50 zoom-in-95 duration-200">
-                  {renderCalendar()}
+                {/* Calendar panel - fixed to center of screen, close X is inside the header */}
+                <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(440px,calc(100vw-20px))] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-3 sm:p-4 animate-in fade-in-50 zoom-in-95 duration-200">
+                  {renderCalendar(() => setIsCalendarExpanded(false))}
                 </div>
               </>
             )}

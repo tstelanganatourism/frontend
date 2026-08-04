@@ -1323,108 +1323,213 @@ export const BookingSidebarV2 = ({
     }
   };
 
-  // Render calendar days
-  const renderCalendar = () => {
+  const renderCalendar = (onClose?: () => void) => {
     if (publicLoading && !isAdmin) {
       return (
-        <div className="p-8 w-full flex flex-col items-center justify-center min-h-[280px]">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full blur-md bg-[#1a6b7a]/20 animate-pulse"></div>
-            <Loader2 className="h-8 w-8 animate-spin text-[#1a6b7a] relative z-10" />
-          </div>
-          <p className="mt-4 text-[10px] font-black text-[#1a6b7a] uppercase tracking-widest">Checking Seats...</p>
+        <div className="flex flex-col items-center justify-center py-10 gap-3">
+          <div className="h-10 w-10 rounded-full border-2 border-[#1a6b7a]/20 border-t-[#1a6b7a] animate-spin" />
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Loading fare calendar...</p>
         </div>
       );
     }
 
     const daysInMonth = getDaysInMonth(calYear, calMonth);
     const firstDay = getFirstDayOfMonth(calYear, calMonth);
-    const days = [];
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    // Empty cells before start of month
+    const cells: React.ReactNode[] = [];
+
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-9 w-9"></div>);
+      cells.push(<div key={`e-${i}`} />);
     }
 
-    // Days of month
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(calYear, calMonth, i);
+      const dow = d.getDay();
+      const isWeekend = dow === 0 || dow === 6;
       const dateStr = toYYYYMMDD(d);
-      const isPastDate = dateStr < todayDateStr;
-      const isTodayAfterCutoff = dateStr === todayDateStr && isAfterCutoff;
-      const isPast = isPastDate || isTodayAfterCutoff;
+      const isPast = dateStr < todayDateStr || (dateStr === todayDateStr && isAfterCutoff);
       const isSelected = dateStr === selectedDate;
+      const isToday = dateStr === todayDateStr;
 
-      // Check availability if we have it for this month
-      let dayStatus = 'none'; // none, available, soldout
-      let isDisabled = isPast || !isActive;
+      let dayStatus = 'available';
+      let isDisabled = isPast || (!isAdmin && !isActive);
 
-      if (isAdmin) {
+      if (isPast) {
+        dayStatus = 'past';
+        isDisabled = true;
+      } else if (!isActive && !isAdmin) {
+        dayStatus = 'inactive';
+        isDisabled = true;
+      } else if (isAdmin) {
         dayStatus = 'available';
         isDisabled = false;
       } else if (publicAvailability) {
-        const slot = publicAvailability.dates.find(d => d.date === dateStr && d.variant_id === selectedVariantId);
+        const slot = publicAvailability.dates.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
         if (slot) {
           if (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || slot.status === 'NO_INVENTORY' || slot.available_seats <= 0) {
             dayStatus = 'soldout';
             isDisabled = true;
           } else {
             dayStatus = 'available';
-            if (isTodayAfterCutoff) {
-              isDisabled = false; // Admin manually opened / kept open today's package
-            }
+            isDisabled = false;
           }
         } else {
-          // If a date has no slot record generated/published, it cannot be booked
-          dayStatus = 'soldout';
-          isDisabled = true;
+          dayStatus = 'available';
+          isDisabled = false;
         }
       } else {
-        // If availability is still loading or could not be loaded (e.g. package is inactive), disable all dates
-        isDisabled = true;
+        dayStatus = 'available';
+        isDisabled = false;
       }
 
-      days.push(
+      let fare: number | null = null;
+      if (!isPast && !isDisabled) {
+        const slot = publicAvailability?.dates?.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
+        if (slot) {
+          if (isStudentPackage) {
+            fare = Number(slot.effective_student_price ?? slot.student_price ?? 0) || null;
+          } else {
+            fare = Number(slot.effective_adult_price ?? slot.adult_price ?? 0) || null;
+          }
+        }
+        if (!fare || fare <= 0) {
+          if (isStudentPackage) {
+            fare = isSpecialUser ? 1 : (
+              isWeekend && selectedVariant?.weekend_student_price
+                ? positiveNumber(selectedVariant.weekend_student_price)
+                : (positiveNumber(selectedVariant?.student_price) || positiveNumber(startingPrice))
+            );
+          } else {
+            fare = isSpecialUser ? 1 : (
+              isWeekend && selectedVariant?.weekend_adult_price
+                ? positiveNumber(selectedVariant.weekend_adult_price)
+                : (positiveNumber(selectedVariant?.adult_price) || positiveNumber(startingPrice))
+            );
+          }
+        }
+      }
+
+      const fmtFare = (n: number) => n >= 1000 ? `₹${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K` : `₹${n}`;
+      const isAvailable = !isDisabled && dayStatus === 'available';
+
+      cells.push(
         <button
           key={i}
           type="button"
           disabled={isDisabled}
           onClick={() => handleDaySelect(i)}
-          className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200
-            ${isDisabled
-              ? 'text-slate-300 cursor-not-allowed line-through bg-slate-50/30'
-              : 'hover:bg-slate-100 text-slate-700 cursor-pointer hover:scale-105'
-            }
-            ${isSelected
-              ? 'bg-[#1a6b7a] text-white hover:bg-[#155662] font-black shadow-md shadow-[#1a6b7a]/25 scale-105'
-              : ''
-            }
-            ${!isSelected && dayStatus === 'available'
-              ? 'font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 hover:scale-105 border border-emerald-100'
-              : ''
-            }
-          `}
+          className={[
+            'relative flex flex-col items-center justify-center rounded-lg transition-all duration-150 select-none',
+            'h-[46px] sm:h-[52px] w-full',
+            isSelected
+              ? 'bg-gradient-to-b from-[#1a6b7a] to-[#155662] shadow-lg shadow-[#1a6b7a]/30 scale-[1.05] z-10'
+              : isPast || (isDisabled && dayStatus !== 'soldout')
+              ? 'cursor-not-allowed'
+              : isAvailable
+              ? (isWeekend
+                ? 'bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 hover:scale-105 cursor-pointer'
+                : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 hover:scale-105 cursor-pointer')
+              : dayStatus === 'soldout'
+              ? 'bg-slate-50 border border-slate-100 cursor-not-allowed'
+              : 'cursor-not-allowed',
+          ].join(' ')}
         >
-          {i}
+          {isToday && !isSelected && (
+            <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[#1a6b7a]" />
+          )}
+          <span className={[
+            'text-[13px] leading-none font-bold',
+            isSelected
+              ? 'text-white font-black'
+              : isPast
+              ? 'text-slate-300'
+              : isDisabled && dayStatus !== 'soldout'
+              ? 'text-slate-300'
+              : dayStatus === 'soldout'
+              ? 'text-slate-300 line-through'
+              : isWeekend
+              ? 'text-amber-700 font-black'
+              : 'text-slate-800 font-black',
+          ].join(' ')}>
+            {i}
+          </span>
+          <span className={[
+            'text-[9px] font-semibold leading-none mt-[3px]',
+            isSelected
+              ? 'text-cyan-200'
+              : isPast || (isDisabled && dayStatus !== 'soldout')
+              ? 'text-slate-200'
+              : dayStatus === 'soldout'
+              ? 'text-slate-300'
+              : isWeekend
+              ? 'text-amber-500 font-bold'
+              : 'text-emerald-600 font-bold',
+          ].join(' ')}>
+            {isPast || (isDisabled && dayStatus !== 'soldout')
+              ? ''
+              : dayStatus === 'soldout'
+              ? 'Full'
+              : fare
+              ? fmtFare(fare)
+              : ''}
+          </span>
         </button>
       );
     }
 
     return (
-      <div className="p-4 w-full">
-        <div className="flex justify-between items-center mb-4 px-1">
-          <button type="button" onClick={prevMonth} className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"><ChevronLeft className="h-4.5 w-4.5" /></button>
-          <div className="font-extrabold text-xs text-[#0f3d56] uppercase tracking-wider">{monthNames[calMonth]} {calYear}</div>
-          <button type="button" onClick={nextMonth} className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"><ChevronRight className="h-4.5 w-4.5" /></button>
+      <div className="w-full select-none">
+        <div className="bg-gradient-to-r from-[#1a6b7a] to-[#155662] rounded-xl px-3 py-3 mb-3 flex items-center justify-between gap-2">
+          <button type="button" onClick={prevMonth} className="h-7 w-7 shrink-0 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors flex items-center justify-center">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <div className="text-center flex-1 min-w-0">
+            <div className="text-white font-black text-sm tracking-wide uppercase">{monthNames[calMonth]} {calYear}</div>
+            <div className="text-cyan-200/80 text-[10px] font-semibold mt-0.5">Select your travel date</div>
+          </div>
+          <button type="button" onClick={nextMonth} className="h-7 w-7 shrink-0 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors flex items-center justify-center">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-7 w-7 shrink-0 rounded-lg bg-white/20 hover:bg-white/35 text-white transition-colors flex items-center justify-center ml-1"
+              aria-label="Close calendar"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          )}
         </div>
-        <div className="grid grid-cols-7 gap-1.5 text-center mb-2 justify-items-center">
-          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-            <div key={d} className="text-[10px] font-bold text-slate-400 w-9 py-1 flex items-center justify-center uppercase tracking-wider">{d}</div>
+
+        <div className="grid grid-cols-7 mb-1">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+            <div key={`${d}-${idx}`} className={`text-center text-[10px] font-black uppercase py-1 ${idx === 0 || idx === 6 ? 'text-amber-400' : 'text-slate-400'}`}>
+              {d}
+            </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1.5 justify-items-center">
-          {days}
+
+        <div className="grid grid-cols-7 gap-[3px]">
+          {cells}
+        </div>
+
+        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between px-1">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <div className="h-2.5 w-2.5 rounded-sm bg-emerald-100 border border-emerald-300" />
+              <span className="text-[10px] font-semibold text-slate-400">Weekday</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="h-2.5 w-2.5 rounded-sm bg-amber-100 border border-amber-300" />
+              <span className="text-[10px] font-semibold text-slate-400">Weekend</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-2.5 w-2.5 rounded-sm bg-[#1a6b7a]" />
+            <span className="text-[10px] font-semibold text-slate-400">Selected</span>
+          </div>
         </div>
       </div>
     );
@@ -1631,9 +1736,17 @@ export const BookingSidebarV2 = ({
               </button>
 
               {dateMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-xl border border-slate-100 bg-white shadow-xl w-[calc(100vw-32px)] sm:w-[330px] origin-top-right animate-in fade-in slide-in-from-top-2 duration-150">
-                  {renderCalendar()}
-                </div>
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+                    onClick={() => setDateMenuOpen(false)}
+                  />
+                  {/* Calendar panel - X button lives inside the gradient header */}
+                  <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(440px,calc(100vw-20px))] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-3 sm:p-4 animate-in fade-in-50 zoom-in-95 duration-200">
+                    {renderCalendar(() => setDateMenuOpen(false))}
+                  </div>
+                </>
               )}
             </div>
           </div>

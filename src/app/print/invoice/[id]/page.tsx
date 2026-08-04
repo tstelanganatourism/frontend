@@ -632,7 +632,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
         <div style={{ width: '100%', marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
-            src="https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png" 
+            src="/images/boat-rides-banner-2026.webp" 
             alt="TS Boat Tourism Banner" 
             style={{ width: '100%', height: 'auto', display: 'block' }} 
           />

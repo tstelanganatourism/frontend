@@ -116,11 +116,11 @@ function AdminLoginContent() {
       {/* ── LEFT PANEL: Brand Content ── */}
       <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden bg-[#061d2b]">
         <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png')" }}
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
+          style={{ backgroundImage: "url('/images/boat-rides-banner-2026.webp')" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f1a]/65 via-[#1a1a2e]/40 to-[#0f0f1a]/60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f1a]/90 via-transparent to-[#0f0f1a]/30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#061d2b]/80 via-[#0a2c42]/55 to-[#0f0f1a]/75" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#061d2b]/95 via-transparent to-[#061d2b]/40" />
 
         <div className="relative z-10 flex flex-col h-full p-12 justify-between">
           {/* Brand */}

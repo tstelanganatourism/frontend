@@ -439,11 +439,14 @@ export default function AdminRoomsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-16 shrink-0 rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
-                          {room.cover_image_url ? (
-                            <img src={room.cover_image_url} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="h-full w-full bg-slate-200 flex items-center justify-center text-xs text-slate-400 font-bold">No Image</div>
-                          )}
+                          <img
+                            src={room.cover_image_url || '/images/stays-banner-2026.webp'}
+                            alt={room.lodge_name}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = '/images/stays-banner-2026.webp';
+                            }}
+                          />
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-900 group-hover:text-[#5ac4d7] transition-colors">{room.lodge_name}</h4>

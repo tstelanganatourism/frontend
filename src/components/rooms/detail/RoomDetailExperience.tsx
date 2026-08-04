@@ -1816,6 +1816,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         availableDates={allAvailableDates}
                         onMonthChange={fetchRoomAvailability}
                         isAdmin={isAdmin}
+                        weekdayPrice={Number(selectedVariant?.weekday_price || room.starting_price || 0)}
+                        weekendPrice={Number(selectedVariant?.weekend_price || selectedVariant?.weekday_price || room.starting_price || 0)}
                         onChange={(val) => {
                           setArrivalDate(val);
                           const sStart = selectedSlot?.slot_start || "";
@@ -1841,6 +1843,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         disabled={isLodgeInactive}
                         availableDates={validDepartureDates}
                         onMonthChange={fetchRoomAvailability}
+                        isAdmin={isAdmin}
+                        weekdayPrice={Number(selectedVariant?.weekday_price || room.starting_price || 0)}
+                        weekendPrice={Number(selectedVariant?.weekend_price || selectedVariant?.weekday_price || room.starting_price || 0)}
                         onChange={setDepartureDate}
                       />
                     </div>
@@ -2406,6 +2411,8 @@ const CustomDatePicker = ({
   availableDates,
   onMonthChange,
   isAdmin,
+  weekdayPrice,
+  weekendPrice,
 }: {
   label: string;
   value: string;
@@ -2417,6 +2424,8 @@ const CustomDatePicker = ({
   availableDates?: Set<string>;
   onMonthChange?: (month: string) => void;
   isAdmin?: boolean;
+  weekdayPrice?: number;
+  weekendPrice?: number;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2521,9 +2530,15 @@ const CustomDatePicker = ({
       const dateStr = toYYYYMMDD(calYear, calMonth, i);
       const isPast = dateStr < minDateStr;
       const isSelected = dateStr === value;
+      const dObj = new Date(calYear, calMonth, i);
+      const dow = dObj.getDay();
+      const isWeekendDay = dow === 0 || dow === 6;
 
       const hasInventory = availableDates ? availableDates.has(dateStr) : false;
       const isDisabled = isPast || (!hasInventory && !isAdmin);
+
+      const dayFare = isWeekendDay ? (weekendPrice || weekdayPrice || 0) : (weekdayPrice || 0);
+      const fmtFare = (n: number) => n >= 1000 ? `₹${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K` : `₹${n}`;
 
       let dateStyle = '';
       if (isSelected) {
@@ -2535,7 +2550,9 @@ const CustomDatePicker = ({
         dateStyle = 'text-slate-400 bg-slate-100/80 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 cursor-pointer';
       } else {
         // Genuine open dates with inventory
-        dateStyle = 'bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200/60 hover:bg-[#0d6e75] hover:text-white hover:border-[#0d6e75] cursor-pointer';
+        dateStyle = isWeekendDay
+          ? 'bg-amber-50 text-amber-900 font-extrabold border border-amber-200/80 hover:bg-[#0d6e75] hover:text-white cursor-pointer'
+          : 'bg-emerald-50 text-emerald-900 font-extrabold border border-emerald-200/80 hover:bg-[#0d6e75] hover:text-white cursor-pointer';
       }
 
       days.push(
@@ -2544,9 +2561,14 @@ const CustomDatePicker = ({
           type="button"
           disabled={isDisabled}
           onClick={() => handleDaySelect(i)}
-          className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${dateStyle}`}
+          className={`h-[44px] w-full rounded-lg flex flex-col items-center justify-center p-0.5 transition-all ${dateStyle}`}
         >
-          {i}
+          <span className="text-[12px] leading-none font-bold">{i}</span>
+          {!isDisabled && dayFare > 0 && (
+            <span className={`text-[9px] font-semibold leading-none mt-1 ${isSelected ? 'text-cyan-100' : isWeekendDay ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold'}`}>
+              {fmtFare(dayFare)}
+            </span>
+          )}
         </button>
       );
     }

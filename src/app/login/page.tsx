@@ -140,11 +140,11 @@ function LoginContent() {
       <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden bg-[#061d2b]">
         {/* Background image */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png')" }}
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
+          style={{ backgroundImage: "url('/images/boat-rides-banner-2026.webp')" }}
         />
         {/* Gradient overlay — light enough so the boat image shows through */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#061d2b]/70 via-[#061d2b]/40 to-[#0f3d56]/55" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#061d2b]/75 via-[#061d2b]/35 to-[#0f3d56]/50" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#061d2b]/90 via-transparent to-[#061d2b]/30" />
 
         {/* Content */}
