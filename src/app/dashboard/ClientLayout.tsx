@@ -56,6 +56,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [imgError, setImgError] = useState(false);
 
+  React.useEffect(() => {
+    setImgError(false);
+  }, [user?.avatar_url]);
+
   const NavContent = () => (
     <div className="flex flex-col h-full">
       {/* ── User Identity Card ── */}

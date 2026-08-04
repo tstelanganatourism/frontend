@@ -74,6 +74,10 @@ export default function PublicNavbar() {
   const showTransparent = isHome && !isScrolled;
 
   useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatar_url]);
+
+  useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -221,19 +225,19 @@ export default function PublicNavbar() {
                           : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
                       }`}
                     >
-                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#1598a1] text-xs font-bold text-white shadow-xs overflow-hidden">
-                        {!avatarError && user?.avatar_url ? (
-                          <Image
+                      <span className="relative grid h-7 w-7 place-items-center rounded-lg bg-[#1598a1] text-xs font-bold text-white shadow-xs overflow-hidden shrink-0">
+                        <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
+                          {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                        {user?.avatar_url && (
+                          <img
                             src={user.avatar_url}
                             alt={user.full_name || 'Profile'}
-                            width={28}
-                            height={28}
-                            unoptimized
-                            className="h-full w-full rounded-lg object-cover"
-                            onError={() => setAvatarError(true)}
+                            className="absolute inset-0 h-full w-full rounded-lg object-cover z-10"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
                           />
-                        ) : (
-                          user?.full_name?.charAt(0).toUpperCase() || 'U'
                         )}
                       </span>
                       <span className="max-w-[90px] truncate">{user?.full_name?.split(' ')[0] || 'Account'}</span>
@@ -249,9 +253,26 @@ export default function PublicNavbar() {
                           transition={{ duration: 0.15 }}
                           className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_22px_60px_rgba(15,35,58,0.16)]"
                         >
-                          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-                            <p className="truncate text-sm font-black text-slate-900">{user?.full_name}</p>
-                            <p className="truncate text-xs font-semibold text-slate-500">{user?.email}</p>
+                          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 flex items-center gap-3">
+                            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-[#1598a1] text-sm font-bold text-white shadow-xs overflow-hidden shrink-0">
+                              <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
+                                {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                              </span>
+                              {user?.avatar_url && (
+                                <img
+                                  src={user.avatar_url}
+                                  alt={user.full_name || 'Profile'}
+                                  className="absolute inset-0 h-full w-full rounded-xl object-cover z-10"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
+                              )}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-black text-slate-900">{user?.full_name}</p>
+                              <p className="truncate text-xs font-semibold text-slate-500">{user?.email}</p>
+                            </div>
                           </div>
                           <AccountLinks userRole={user?.role} onNavigate={closeMenus} />
                           <div className="border-t border-slate-100 p-1.5">
