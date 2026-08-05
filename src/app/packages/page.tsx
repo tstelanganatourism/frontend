@@ -1,4 +1,5 @@
 import PackagesList from './PackagesList';
+import PackageCategoriesGrid from './PackageCategoriesGrid';
 import { apiFetch } from '@/lib/api';
 
 export const metadata = {
@@ -7,6 +8,16 @@ export const metadata = {
   keywords: ["Papikondalu Packages", "Bhadrachalam Tours", "Godavari Boat Rides", "Papikondalu tour packages", "TS Boat Tourism"],
   alternates: { canonical: '/packages' }
 };
+
+async function fetchCategories() {
+  try {
+    const res = await apiFetch('/api/v1/packages/categories', { cache: 'no-store' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
 
 async function fetchInitialPackages(searchParams: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
@@ -34,6 +45,26 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
 
 export default async function PackagesPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const searchParams = await props.searchParams;
-  const { data } = await fetchInitialPackages(searchParams);
+  
+  // If user explicitly wants to view all packages (via "Browse All" link), skip category view
+  const viewAll = searchParams['view'] === 'all';
+  const hasActiveFilter = Boolean(
+    searchParams['q'] || searchParams['type'] || searchParams['region'] || 
+    searchParams['place'] || searchParams['is_featured'] || searchParams['sort']
+  );
+
+  // Fetch categories and packages in parallel
+  const [categories, { data }] = await Promise.all([
+    fetchCategories(),
+    fetchInitialPackages(searchParams),
+  ]);
+
+  // Show category grid if: categories exist AND no active filter AND not "view=all"
+  const showCategories = categories.length > 0 && !hasActiveFilter && !viewAll;
+
+  if (showCategories) {
+    return <PackageCategoriesGrid categories={categories} />;
+  }
+
   return <PackagesList data={data} pathname="/packages" searchParams={searchParams} />;
 }

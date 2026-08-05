@@ -31,6 +31,7 @@ export default function PremiumSelect({
 }: PremiumSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close when clicking outside
@@ -52,6 +53,17 @@ export default function PremiumSelect({
     (opt.label || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleToggle = () => {
+    if (disabled) return;
+    if (!isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      // If space below is less than 280px, open upward
+      setOpenUpward(spaceBelow < 280);
+    }
+    setIsOpen(!isOpen);
+  };
+
   return (
     <div className={`relative w-full ${className}`} ref={containerRef}>
       {label && (
@@ -64,7 +76,7 @@ export default function PremiumSelect({
         type="button"
         disabled={disabled}
         title={selectedOption ? (selectedOption.label?.trim() || 'Unnamed Option') : placeholder}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold text-slate-800 transition-all outline-none text-left cursor-pointer ${
           disabled 
             ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'
@@ -81,8 +93,10 @@ export default function PremiumSelect({
 
       {isOpen && !disabled && (
         <>
-          <div className="fixed inset-0 z-40 cursor-default" onClick={() => { setIsOpen(false); setSearchQuery(''); }} />
-          <div className="absolute left-0 right-0 mt-2 z-50 rounded-xl border border-slate-100 bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 flex flex-col max-h-[300px]">
+          <div className="fixed inset-0 z-[9990] cursor-default" onClick={() => { setIsOpen(false); setSearchQuery(''); }} />
+          <div className={`absolute left-0 right-0 z-[9999] rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-in fade-in duration-150 flex flex-col max-h-[280px] ${
+            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}>
             {/* Search Input */}
             <div className="sticky top-0 bg-white pb-1.5 z-10 px-1 pt-1 shrink-0">
               <div className="relative">
@@ -99,30 +113,32 @@ export default function PremiumSelect({
               </div>
             </div>
 
-            <div className="overflow-y-auto flex-1">
+            {/* Options List */}
+            <div className="overflow-y-auto flex-1 space-y-0.5 pr-0.5 scrollbar-thin scrollbar-thumb-slate-200">
               {filteredOptions.length === 0 ? (
-                <div className="px-4 py-8 text-xs text-slate-400 text-center font-medium">No results found</div>
+                <div className="py-4 text-center text-xs font-semibold text-slate-400">
+                  No options match "{searchQuery}"
+                </div>
               ) : (
-                filteredOptions.map((opt) => {
-                  const isSelected = String(opt.value) === String(value);
+                filteredOptions.map((option) => {
+                  const isSelected = String(option.value) === String(value);
                   return (
                     <button
-                      key={opt.value}
+                      key={String(option.value)}
                       type="button"
-                      title={opt.label?.trim() || 'Unnamed Option'}
                       onClick={() => {
-                        onChange(opt.value);
+                        onChange(option.value);
                         setIsOpen(false);
                         setSearchQuery('');
                       }}
-                      className={`flex flex-row items-center justify-between w-full px-4 py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer text-left mb-1 last:mb-0 ${
+                      className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-xs font-bold transition-colors cursor-pointer text-left ${
                         isSelected
                           ? 'bg-[#5ac4d7]/10 text-[#0f3d56]'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
-                      <span className="whitespace-normal break-words pr-2 leading-relaxed">{opt.label?.trim() || 'Unnamed Option'}</span>
-                      {isSelected && <Check className="h-4 w-4 text-[#0f3d56] shrink-0 ml-2 mt-0.5 self-start" />}
+                      <span className="truncate">{option.label}</span>
+                      {isSelected && <Check className="h-4 w-4 text-[#1598a1] shrink-0" />}
                     </button>
                   );
                 })
@@ -130,10 +146,6 @@ export default function PremiumSelect({
             </div>
           </div>
         </>
-      )}
-
-      {error && (
-        <p className="mt-1.5 text-xs font-semibold text-red-500">{error}</p>
       )}
     </div>
   );

@@ -2,7 +2,7 @@
 
 import React, { useTransition } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { Check, Loader2, Navigation, Layers, SlidersHorizontal } from 'lucide-react';
+import { Check, Loader2, Navigation, Layers, SlidersHorizontal, FolderTree } from 'lucide-react';
 import SortDropdown from '@/components/ui/SortDropdown';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import type { SortOption } from '@/stores/useFilterStore';
@@ -32,6 +32,13 @@ const TYPES = [
   { label: 'Sightseeing', value: 'TRIP' },
 ];
 
+type CategoryItem = {
+  id: number;
+  name: string;
+  slug: string;
+  package_count: number;
+};
+
 export default function PackageFilters({ className, sticky = true }: { className?: string; sticky?: boolean }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -44,20 +51,31 @@ export default function PackageFilters({ className, sticky = true }: { className
   const activeSort = (searchParams.get('sort') as SortOption | null) || 'priority';
   const isFeatured = searchParams.get('is_featured') === 'true';
   const [places, setPlaces] = React.useState<string[]>([]);
+  const [categories, setCategories] = React.useState<CategoryItem[]>([]);
+
+  // Detect if current path is a category detail page
+  const currentCategorySlug = pathname.startsWith('/packages/categories/') 
+    ? pathname.replace('/packages/categories/', '') 
+    : '';
 
   React.useEffect(() => {
-    const fetchPlaces = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch('/api/v1/packages/places/all');
-        if (res.ok) {
-          const data = await res.json();
-          setPlaces(data);
+        const [placesRes, catRes] = await Promise.all([
+          fetch('/api/v1/packages/places/all'),
+          fetch('/api/v1/packages/categories', { cache: 'no-store' }),
+        ]);
+        if (placesRes.ok) {
+          setPlaces(await placesRes.json());
+        }
+        if (catRes.ok) {
+          setCategories(await catRes.json());
         }
       } catch (err) {
-        console.error('Failed to fetch places:', err);
+        console.error('Failed to fetch filter metadata:', err);
       }
     };
-    fetchPlaces();
+    fetchData();
   }, []);
 
   const isBoatRide = pathname === '/boat-rides';
@@ -68,11 +86,10 @@ export default function PackageFilters({ className, sticky = true }: { className
     params.delete('page');
     params.delete('tags');
     const query = params.toString();
-    const newUrl = query ? `${pathname}?${query}` : pathname;
+    const targetPath = pathname.startsWith('/packages/categories/') ? '/packages' : pathname;
+    const newUrl = query ? `${targetPath}?${query}` : `${targetPath}?view=all`;
     if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', newUrl);
-      window.dispatchEvent(new Event('popstate'));
-      window.dispatchEvent(new CustomEvent('app:filter-change', { detail: newUrl }));
+      window.location.href = newUrl;
     }
   };
 
@@ -90,9 +107,7 @@ export default function PackageFilters({ className, sticky = true }: { className
 
   const clearAll = () => {
     if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', pathname);
-      window.dispatchEvent(new Event('popstate'));
-      window.dispatchEvent(new CustomEvent('app:filter-change', { detail: pathname }));
+      window.location.href = '/packages?view=all';
     }
   };
 
@@ -126,6 +141,39 @@ export default function PackageFilters({ className, sticky = true }: { className
           Reset All
         </button>
       </div>
+
+      {/* Tour Categories Selector */}
+      {categories.length > 0 && (
+        <div className="space-y-1.5">
+          <h4 className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+            <FolderTree className="h-3 w-3 text-teal-600" />
+            Tour Category
+          </h4>
+          <div className="relative z-30">
+            <PremiumSelect
+              value={currentCategorySlug}
+              options={[
+                { value: '', label: 'All Categories' },
+                ...categories.map((cat) => ({
+                  value: cat.slug,
+                  label: `${cat.name} (${cat.package_count})`
+                })),
+              ]}
+              onChange={(value) => {
+                if (typeof window !== 'undefined') {
+                  if (value) {
+                    window.location.href = `/packages/categories/${value}`;
+                  } else {
+                    window.location.href = `/packages?view=all`;
+                  }
+                }
+              }}
+              placeholder="Select Category..."
+              disabled={isPending}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Recommended Toggle */}
       <div className="rounded-xl border border-amber-100 bg-amber-50/20 p-2.5 shadow-2xs hover:shadow-xs transition-all">
@@ -181,7 +229,7 @@ export default function PackageFilters({ className, sticky = true }: { className
             <SlidersHorizontal className="h-3 w-3 text-teal-600" />
             Destination
           </h4>
-          <div className="relative z-30">
+          <div className="relative z-20">
             <PremiumSelect
               value={activePlace || ''}
               options={[
@@ -196,12 +244,12 @@ export default function PackageFilters({ className, sticky = true }: { className
         </div>
       )}
 
-      {/* Package Type Category Filter (Segmented Switch) */}
+      {/* Package Type Filter */}
       {!hideTypeFilter && (
         <div className="space-y-2">
           <h4 className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
             <Layers className="h-3 w-3 text-teal-600" />
-            Category
+            Package Type
           </h4>
           <div className="flex gap-1.5 bg-slate-50 p-1 rounded-xl">
             {TYPES.map((type) => {

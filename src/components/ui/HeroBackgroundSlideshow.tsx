@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 
-// ─── Local instant WebP slides + Cloudinary CDN images ───────────────────────
+// ─── Local high-resolution hero background slides ───────────────────────
 const SLIDES = [
   '/images/boat-rides-banner-2026.webp',
   '/images/stays-banner-2026.webp',
   '/images/sightseeing-banner-2026.webp',
-  'https://res.cloudinary.com/r929tquv/image/upload/q_auto,f_auto,w_1920/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
-  'https://res.cloudinary.com/r929tquv/image/upload/q_auto,f_auto,w_1920/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
-  'https://res.cloudinary.com/r929tquv/image/upload/q_auto,f_auto,w_1920/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+  '/home/godavari-hero-banner.jpg',
+  '/home/hero-boat.jpg',
+  '/images/boat_rides_bg.webp',
+  '/images/stays_bg.webp',
 ];
 
 export default function HeroBackgroundSlideshow() {

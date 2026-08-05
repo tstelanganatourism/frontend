@@ -272,23 +272,13 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
       {/* ─── MOBILE BANNER ─── */}
       <section className="block lg:hidden bg-[#07242c] py-6 border-t border-b border-[#1598a1]/25">
         <div className="mx-auto max-w-[1800px] px-4 sm:px-6">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div>
-              <span className={`inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#a7f3f4] ${tc}`}>
-                <ShieldCheck className="h-3 w-3 text-[#1598a1]" />
-                {t.banner.msme}
-              </span>
-              <h2 className={`mt-1 text-lg font-black text-white tracking-tight ${tc}`}>
-                {t.banner.title}
-              </h2>
-            </div>
-          </div>
           <div className="overflow-hidden rounded-xl border border-teal-400/25 bg-[#021c24] p-1.5 shadow-2xl">
             <img
-              src="/images/boat-rides-banner-2026.webp"
-              alt="TS Boat Tourism Official HD Banner"
-              className="w-full h-auto rounded-lg object-contain"
+              src="/ts-boat-tourism-banner.jpg"
+              alt="TS Boat Tourism Official Banner — Discover Divinity, Sail Through Serenity"
+              className="w-full h-auto rounded-lg"
               loading="eager"
+              decoding="async"
             />
           </div>
         </div>

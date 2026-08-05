@@ -1,4 +1,5 @@
 import RoomsList from '../rooms/RoomsList';
+import RoomCategoriesGrid from './RoomCategoriesGrid';
 import { apiFetch } from '@/lib/api';
 
 export const metadata = {
@@ -7,6 +8,16 @@ export const metadata = {
   keywords: ["Papikondalu Bamboo Huts", "Bhadrachalam Stays", "Kolluru Huts Booking", "Riverside Resorts Bhadrachalam", "Bhadrachalam Pilgrim Stays"],
   alternates: { canonical: '/stays' }
 };
+
+async function fetchRoomCategories() {
+  try {
+    const res = await apiFetch('/api/v1/rooms/categories', { cache: 'no-store' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
 
 async function fetchInitialRooms(searchParams: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
@@ -41,7 +52,23 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
 
 export default async function StaysPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const searchParams = await props.searchParams;
-  const { data } = await fetchInitialRooms(searchParams);
+
+  const viewAll = searchParams['view'] === 'all';
+  const hasActiveFilter = Boolean(
+    searchParams['q'] || searchParams['facilities'] || searchParams['is_featured'] || searchParams['sort']
+  );
+
+  const [categories, { data }] = await Promise.all([
+    fetchRoomCategories(),
+    fetchInitialRooms(searchParams),
+  ]);
+
+  const showCategories = categories.length > 0 && !hasActiveFilter && !viewAll;
+
+  if (showCategories) {
+    return <RoomCategoriesGrid categories={categories} />;
+  }
+
   return (
     <>
       <link rel="preload" href="/images/stays-banner-2026.webp" as="image" type="image/webp" fetchPriority="high" />

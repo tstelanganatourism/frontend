@@ -8,6 +8,24 @@ import galleryData from './galleryData.json';
 
 const GALLERY_IMAGES = galleryData;
 
+const FALLBACK_LOCAL_IMAGES = [
+  '/images/boat-rides-banner-2026.webp',
+  '/images/stays-banner-2026.webp',
+  '/images/sightseeing-banner-2026.webp',
+  '/images/bamboo_hut_stay.png',
+  '/images/deluxe_ac_cottage.png',
+  '/images/forest_eco_hut.png',
+  '/images/bogatha-waterfalls.jpg',
+  '/images/gallery_hero_bg.png',
+  '/images/packages_hero_bg.png',
+  '/images/stays_hero_bg.png',
+  '/home/godavari-hero-banner.jpg',
+  '/home/hero-boat.jpg',
+  '/ts-boat-tourism-banner.jpg',
+  '/placeholder-tourism.jpg',
+  '/placeholder-room.jpg',
+];
+
 export default function GalleryPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -96,32 +114,49 @@ export default function GalleryPage() {
 
       {/* Gallery Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-          {GALLERY_IMAGES.map((image, index) => (
-            <div
-              key={index}
-              className="relative group overflow-hidden rounded-3xl cursor-pointer break-inside-avoid shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 bg-slate-200"
-              onClick={() => setSelectedIndex(index)}
-            >
-              <img
-                src={image.url}
-                alt={image.title}
-                loading="lazy"
-                className="w-full h-auto object-cover transform transition-transform duration-1000 ease-out group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-brand-river)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-6">
-                <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <span className="text-white font-bold text-lg mb-1 block">
-                    {image.title}
-                  </span>
-                  <div className="flex items-center gap-2 text-[var(--color-brand-teal)] text-[10px] font-black uppercase tracking-[0.2em]">
-                    <ZoomIn className="h-3.5 w-3.5" />
-                    View Detail
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+          {GALLERY_IMAGES.map((image, index) => {
+            const fallbackSrc = FALLBACK_LOCAL_IMAGES[index % FALLBACK_LOCAL_IMAGES.length];
+            return (
+              <div
+                key={index}
+                className="relative group overflow-hidden rounded-2xl cursor-pointer break-inside-avoid shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-slate-200"
+                onClick={() => setSelectedIndex(index)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={image.url}
+                  alt={image.title}
+                  loading="eager"
+                  decoding="async"
+                  className="w-full block object-cover transform transition-transform duration-700 ease-out group-hover:scale-105 min-h-[160px]"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.dataset.fallback) {
+                      target.dataset.fallback = 'true';
+                      target.src = fallbackSrc;
+                    }
+                  }}
+                />
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0d6e75]/90 via-[#0d6e75]/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-400 flex flex-col justify-end p-4">
+                  <div className="translate-y-3 group-hover:translate-y-0 transition-transform duration-400">
+                    <span className="text-white font-bold text-sm mb-1 block leading-snug">
+                      {image.title}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-cyan-300 text-[9px] font-black uppercase tracking-[0.2em]">
+                      <ZoomIn className="h-3 w-3" />
+                      View Photo
+                    </div>
                   </div>
                 </div>
+                {/* Index badge */}
+                <span className="absolute top-2.5 left-2.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  {index + 1}/{GALLERY_IMAGES.length}
+                </span>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -162,6 +197,14 @@ export default function GalleryPage() {
                 src={GALLERY_IMAGES[selectedIndex].url}
                 alt={GALLERY_IMAGES[selectedIndex].title}
                 className="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-[0_0_150px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-500 min-w-[300px] md:min-w-[65vw]"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallback = FALLBACK_LOCAL_IMAGES[selectedIndex % FALLBACK_LOCAL_IMAGES.length];
+                  if (!target.dataset.fallback) {
+                    target.dataset.fallback = 'true';
+                    target.src = fallback;
+                  }
+                }}
               />
             </div>
 

@@ -19,7 +19,8 @@ import {
   Wifi,
   Wind,
   ChevronDown,
-  Loader2
+  Loader2,
+  FolderPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -288,14 +289,24 @@ export default function AdminRoomsPage() {
           <h1 className="text-3xl font-black text-slate-900">Hotels & Lodges</h1>
           <p className="text-slate-500 mt-1">Manage and configure room inventories and occupancy rules.</p>
         </div>
-        <Link 
-          href="/admin/rooms/create"
-          prefetch={false}
-          className="flex items-center gap-2 self-start rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-slate-800"
-        >
-          <Plus className="h-4 w-4" />
-          Create New Lodge
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/admin/rooms/categories"
+            prefetch={false}
+            className="flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300"
+          >
+            <FolderPlus className="h-4 w-4 text-emerald-600" />
+            Manage Categories
+          </Link>
+          <Link 
+            href="/admin/rooms/create"
+            prefetch={false}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-slate-800"
+          >
+            <Plus className="h-4 w-4" />
+            Create New Lodge
+          </Link>
+        </div>
       </div>
 
       {/* Search & Filters */}
@@ -449,8 +460,20 @@ export default function AdminRoomsPage() {
                           />
                         </div>
                         <div>
-                          <h4 className="font-bold text-slate-900 group-hover:text-[#5ac4d7] transition-colors">{room.lodge_name}</h4>
-                          <p className="text-xs text-slate-400 mt-1 max-w-[200px] truncate">{room.slug}</p>
+                          <h4 className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{room.lodge_name}</h4>
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                            <span className="text-[11px] text-slate-400 max-w-[140px] truncate">{room.slug}</span>
+                            {room.categories && room.categories.length > 0 ? (
+                              room.categories.map((cat: any) => (
+                                <span key={cat.id} className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1">
+                                  <span>{cat.icon || '🛖'}</span>
+                                  <span>{cat.name}</span>
+                                </span>
+                              ))
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-medium">Uncategorized</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>

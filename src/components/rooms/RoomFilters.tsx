@@ -1,18 +1,27 @@
 'use client';
 
 import React, { useTransition } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Check, Filter, Loader2, RotateCcw, Sparkles } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { Check, Filter, Loader2, RotateCcw, Sparkles, FolderTree } from 'lucide-react';
 import type { SortOption } from '@/stores/useFilterStore';
 import SortDropdown from '@/components/ui/SortDropdown';
+import PremiumSelect from '@/components/ui/PremiumSelect';
 import { cn } from '@/lib/utils';
 
 const FACILITIES = [
   'Room Service', 'TV', 'Invertor', 'Car Parking', 'Hot Water', 'A/C', 'Wi-Fi'
 ];
 
+type RoomCategoryItem = {
+  id: number;
+  name: string;
+  slug: string;
+  room_count: number;
+};
+
 export default function RoomFilters({ className, sticky = true }: { className?: string; sticky?: boolean }) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -20,14 +29,34 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   const activeFacilities = searchParams.getAll('facilities');
   const activeSort = (searchParams.get('sort') as SortOption | null) || 'priority';
 
+  const [categories, setCategories] = React.useState<RoomCategoryItem[]>([]);
+
+  // Detect current category slug from path
+  const currentCategorySlug = pathname.startsWith('/stays/categories/')
+    ? pathname.replace('/stays/categories/', '')
+    : '';
+
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/v1/rooms/categories', { cache: 'no-store' });
+        if (res.ok) {
+          setCategories(await res.json());
+        }
+      } catch (err) {
+        console.error('Failed to fetch room categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const pushRoomParams = (params: URLSearchParams) => {
     params.delete('page');
     const query = params.toString();
-    const newUrl = query ? `/stays?${query}` : '/stays';
+    const targetPath = pathname.startsWith('/stays/categories/') ? '/stays' : pathname;
+    const newUrl = query ? `${targetPath}?${query}` : `${targetPath}?view=all`;
     if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', newUrl);
-      window.dispatchEvent(new Event('popstate'));
-      window.dispatchEvent(new CustomEvent('app:filter-change', { detail: newUrl }));
+      window.location.href = newUrl;
     }
   };
 
@@ -57,13 +86,11 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
 
   const clearAll = () => {
     if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', '/stays');
-      window.dispatchEvent(new Event('popstate'));
-      window.dispatchEvent(new CustomEvent('app:filter-change', { detail: '/stays' }));
+      window.location.href = '/stays?view=all';
     }
   };
 
-  const hasActiveFilters = isFeatured || activeFacilities.length > 0 || activeSort !== 'priority';
+  const hasActiveFilters = isFeatured || activeFacilities.length > 0 || activeSort !== 'priority' || Boolean(currentCategorySlug);
 
   return (
     <div
@@ -95,71 +122,114 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
             type="button"
             onClick={clearAll}
             disabled={isPending}
-            className="inline-flex items-center gap-1 text-[11px] font-extrabold text-rose-600 hover:text-rose-700 transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-extrabold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
           >
             <RotateCcw className="h-3 w-3" />
-            Clear
+            Reset All
           </button>
         )}
       </div>
 
-      {/* Recommended Only Filter Toggle */}
-      <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100/80 hover:border-slate-200 transition-colors">
-        <label htmlFor="featured" className="text-xs font-bold text-slate-800 cursor-pointer flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-          Recommended Stays Only
-        </label>
-        <input 
-          id="featured"
-          type="checkbox" 
-          checked={isFeatured}
-          onChange={(e) => setParam('is_featured', e.target.checked ? 'true' : null)}
-          disabled={isPending}
-          className="h-4 w-4 rounded border-slate-300 text-[#0d6e75] focus:ring-[#0d6e75] cursor-pointer"
-        />
-      </div>
+      {/* Stay Categories Selector */}
+      {categories.length > 0 && (
+        <div className="space-y-1.5">
+          <h4 className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+            <FolderTree className="h-3 w-3 text-emerald-600" />
+            Stay Category
+          </h4>
+          <div className="relative z-30">
+            <PremiumSelect
+              value={currentCategorySlug}
+              options={[
+                { value: '', label: 'All Stay Categories' },
+                ...categories.map((cat) => ({
+                  value: cat.slug,
+                  label: `${cat.name} (${cat.room_count})`
+                })),
+              ]}
+              onChange={(value) => {
+                if (typeof window !== 'undefined') {
+                  if (value) {
+                    window.location.href = `/stays/categories/${value}`;
+                  } else {
+                    window.location.href = `/stays?view=all`;
+                  }
+                }
+              }}
+              placeholder="Select Stay Category..."
+              disabled={isPending}
+            />
+          </div>
+        </div>
+      )}
 
-      {/* Facilities Filter Grid */}
-      <div>
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2.5 block">
-          Facilities & Amenities
-        </label>
-        <div className="grid grid-cols-1 gap-1.5">
-          {FACILITIES.map((f) => {
-            const isActive = activeFacilities.includes(f);
+      {/* Featured Switch */}
+      <button
+        type="button"
+        onClick={() => setParam('is_featured', isFeatured ? null : 'true')}
+        disabled={isPending}
+        className={cn(
+          'w-full flex items-center justify-between p-3 rounded-xl border transition-all text-xs font-bold cursor-pointer',
+          isFeatured
+            ? 'bg-amber-500/10 border-amber-400 text-amber-900'
+            : 'bg-slate-50 border-slate-200/80 text-slate-700 hover:bg-slate-100'
+        )}
+      >
+        <span className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          Must Experience Stays
+        </span>
+        <div className={cn(
+          'w-4 h-4 rounded-full border flex items-center justify-center transition-colors',
+          isFeatured ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300'
+        )}>
+          {isFeatured && <Check className="h-3 w-3" />}
+        </div>
+      </button>
+
+      {/* Facilities Checkboxes */}
+      <div className="space-y-2.5">
+        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Facilities</h4>
+        <div className="space-y-1.5">
+          {FACILITIES.map((facility) => {
+            const isChecked = activeFacilities.includes(facility);
             return (
               <button
-                key={f}
+                key={facility}
                 type="button"
-                onClick={() => toggleFacility(f)}
+                onClick={() => toggleFacility(facility)}
                 disabled={isPending}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                  isActive 
-                    ? 'bg-[#0d6e75]/10 text-[#0d6e75] border border-[#0d6e75]/30 shadow-2xs' 
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-slate-100'
-                }`}
+                className={cn(
+                  'w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer',
+                  isChecked
+                    ? 'bg-[#0d6e75]/10 border-[#0d6e75]/40 text-[#0d6e75]'
+                    : 'bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50'
+                )}
               >
-                <span>{f}</span>
-                {isActive && <Check className="h-4 w-4 text-[#0d6e75] stroke-[2.5]" />}
+                <span>{facility}</span>
+                <div className={cn(
+                  'w-4 h-4 rounded border flex items-center justify-center transition-colors',
+                  isChecked ? 'bg-[#0d6e75] border-[#0d6e75] text-white' : 'border-slate-300'
+                )}>
+                  {isChecked && <Check className="h-3 w-3" />}
+                </div>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Sort Option Dropdown */}
-      <div className="pt-4 border-t border-slate-100">
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">
-          Sort Results By
-        </label>
-        <SortDropdown 
+      {/* Sorting */}
+      <div className="border-t border-slate-100 pt-4">
+        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">Sort By</h4>
+        <SortDropdown
           options={[
-            { label: 'Recommended', value: 'priority' },
-            { label: 'Lowest Price First', value: 'price_low' },
-            { label: 'Highest Price First', value: 'price_high' }
+            { label: 'Recommended First', value: 'priority' },
+            { label: 'Price: Low to High', value: 'price_low' },
+            { label: 'Price: High to Low', value: 'price_high' },
           ]}
           value={activeSort}
-          onChange={(value) => setParam('sort', value as SortOption, 'priority')}
+          onChange={(val) => setParam('sort', val as SortOption, 'priority')}
           disabled={isPending}
         />
       </div>

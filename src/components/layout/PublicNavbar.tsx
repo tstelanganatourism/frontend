@@ -184,31 +184,31 @@ export default function PublicNavbar() {
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2 xl:gap-2.5">
-              {/* Language Toggle — Desktop */}
+              {/* Language Toggle — Desktop: premium animated pill switch */}
               <button
                 onClick={toggleLanguage}
                 aria-label={isTelugu ? 'Switch to English' : 'తెలుగుకు మారండి'}
                 title={isTelugu ? 'Switch to English' : 'Switch to Telugu'}
-                className={`hidden nav:inline-flex h-9 items-center gap-0 rounded-full border text-[11px] font-black transition-all overflow-hidden shadow-sm ${
+                className={`hidden nav:inline-flex h-9 w-[72px] items-center rounded-full border p-1 transition-all duration-300 relative overflow-hidden shadow-sm ${
                   showTransparent
-                    ? 'border-cyan-400/50 bg-[#061826]/60 shadow-[0_4px_14px_rgba(0,0,0,0.25)] backdrop-blur-md'
-                    : 'border-slate-200 bg-white'
+                    ? 'border-cyan-400/40 bg-[#061826]/70 shadow-[0_2px_12px_rgba(0,0,0,0.3)] backdrop-blur-md'
+                    : 'border-slate-200 bg-slate-100'
                 }`}
               >
-                <span className={`flex h-full items-center px-3 transition-colors ${
-                  !isTelugu
-                    ? 'bg-[#1598a1] text-white'
-                    : showTransparent ? 'text-white/70 hover:text-white' : 'text-slate-400 hover:text-slate-700'
-                }`}>
-                  EN
-                </span>
-                <span className={`flex h-full items-center px-3 font-telugu transition-colors ${
-                  isTelugu
-                    ? 'bg-[#1598a1] text-white'
-                    : showTransparent ? 'text-white/70 hover:text-white' : 'text-slate-400 hover:text-slate-700'
-                }`}>
-                  తె
-                </span>
+                {/* Sliding indicator */}
+                <span
+                  className={`absolute top-1 h-7 w-8 rounded-full shadow-sm transition-all duration-300 ease-out ${
+                    isTelugu ? 'left-[calc(100%-2.25rem)]' : 'left-1'
+                  } ${
+                    showTransparent ? 'bg-gradient-to-br from-cyan-400 to-[#0d6e75]' : 'bg-gradient-to-br from-[#1598a1] to-[#0d6e75]'
+                  }`}
+                />
+                <span className={`relative z-10 flex-1 text-center text-[11px] font-black transition-colors duration-300 ${
+                  !isTelugu ? 'text-white' : showTransparent ? 'text-white/60' : 'text-slate-400'
+                }`}>EN</span>
+                <span className={`relative z-10 flex-1 text-center text-[11px] font-black font-telugu transition-colors duration-300 ${
+                  isTelugu ? 'text-white' : showTransparent ? 'text-white/60' : 'text-slate-400'
+                }`}>తె</span>
               </button>
 
 
@@ -355,78 +355,105 @@ export default function PublicNavbar() {
                 </div>
               </div>
 
-              <div className="flex flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
-                <div className="grid grid-cols-2 gap-2">
+              {/* Nav Links — Vertical List */}
+              <nav className="flex flex-1 flex-col overflow-y-auto">
+                <ul className="flex flex-col py-2">
                   {navLinks.map((link) => {
                     const isActive = activeLinks[link.name];
                     return (
-                      <Link
-                        key={link.name}
-                        href={link.href}
-                        onClick={closeMenus}
-                        aria-current={isActive ? 'page' : undefined}
-                        className={`flex min-h-16 flex-col items-start justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-black transition-colors ${
-                          isActive ? 'border-[#0f3d56] bg-[#0f3d56] text-white' : 'border-slate-100 bg-white text-[#0f3d56] hover:bg-[#f4faf9]'
-                        }`}
-                      >
-                        <span className={`grid h-8 w-8 place-items-center rounded-md ${isActive ? 'bg-white/12 text-[#8eecee]' : 'bg-[#eef8f8] text-[#1598a1]'}`}>
-                          <link.icon className="h-4.5 w-4.5" />
-                        </span>
-                        {link.name}
-                      </Link>
+                      <li key={link.name}>
+                        <Link
+                          href={link.href}
+                          onClick={closeMenus}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`flex items-center gap-3.5 px-5 py-3.5 text-sm font-black transition-all relative ${
+                            isActive
+                              ? 'bg-[#eef8f8] text-[#0d6e75]'
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-[#0d6e75]'
+                          }`}
+                        >
+                          {/* Active indicator bar */}
+                          {isActive && (
+                            <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-[#1598a1]" />
+                          )}
+                          <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors ${
+                            isActive ? 'bg-[#0d6e75] text-white shadow-sm shadow-[#0d6e75]/30' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            <link.icon className="h-4.5 w-4.5" />
+                          </span>
+                          <span className="flex-1">{link.name}</span>
+                          {isActive && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#1598a1]" />
+                          )}
+                        </Link>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
 
-                <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-                  <Link href="/packages" onClick={closeMenus} className={`flex min-h-12 items-center justify-center rounded-md bg-[#1598a1] px-4 text-sm font-black text-white shadow-[0_12px_28px_rgba(21,152,161,0.18)] ${isTelugu ? 'font-telugu' : ''}`}>
-                    {isTelugu ? 'ఆన్‌లైన్ బుక్' : 'Book Online'}
+                {/* CTA Buttons */}
+                <div className="border-t border-slate-100 px-4 py-3 flex flex-col gap-2.5">
+                  <Link
+                    href="/packages"
+                    onClick={closeMenus}
+                    className={`flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1598a1] to-[#0d6e75] text-sm font-black text-white shadow-[0_6px_20px_rgba(21,152,161,0.35)] transition-all hover:shadow-[0_8px_24px_rgba(21,152,161,0.45)] active:scale-[0.98] ${isTelugu ? 'font-telugu' : ''}`}
+                  >
+                    <Ship className="h-4 w-4" />
+                    {isTelugu ? 'ఆన్‌లైన్ బుక్ చేయండి' : 'Book Online'}
                   </Link>
-                  <a href="tel:+919951369573" className={`flex min-h-12 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-[#0f3d56] ${isTelugu ? 'font-telugu' : ''}`}>
+                  <a
+                    href="tel:+919951369573"
+                    className={`flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-black text-[#0f3d56] transition-all hover:bg-[#eef8f8] ${isTelugu ? 'font-telugu' : ''}`}
+                  >
                     <Phone className="h-4 w-4 text-[#1598a1]" />
                     {isTelugu ? 'కాల్ చేయండి' : 'Call to Book'}
                   </a>
                 </div>
 
-                {/* Language Toggle — Mobile */}
-                <div className="border-t border-slate-100 pt-3">
+                {/* Language Toggle — Mobile: premium toggle switch */}
+                <div className="border-t border-slate-100 px-4 py-3">
                   <button
                     onClick={toggleLanguage}
-                    className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-black text-[#0f3d56] transition-colors hover:bg-[#eef8f8]"
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black text-[#0f3d56] transition-colors hover:bg-[#eef8f8]"
                   >
-                    <span className="flex items-center gap-2">
-                      <span className="text-base">🌐</span>
-                      <span>{isTelugu ? 'Language / భాష' : 'Language / భాష'}</span>
+                    <span className="flex items-center gap-2.5">
+                      <span className="text-lg">🌐</span>
+                      <span className="text-sm font-bold text-slate-600">Language / భాష</span>
                     </span>
-                    <span className="flex items-center gap-0 overflow-hidden rounded-full border border-slate-200">
-                      <span className={`px-2.5 py-1 text-xs font-black transition-colors ${ !isTelugu ? 'bg-[#1598a1] text-white' : 'text-slate-400'}`}>EN</span>
-                      <span className={`px-2.5 py-1 text-xs font-black font-telugu transition-colors ${ isTelugu ? 'bg-[#1598a1] text-white' : 'text-slate-400'}`}>తె</span>
+                    {/* Animated toggle pill */}
+                    <span className="relative inline-flex h-8 w-16 items-center rounded-full border border-slate-200 bg-slate-100 p-1 transition-all">
+                      <span className={`absolute top-1 h-6 w-7 rounded-full bg-gradient-to-br from-[#1598a1] to-[#0d6e75] shadow-sm transition-all duration-300 ease-out ${
+                        isTelugu ? 'left-[calc(100%-1.875rem)]' : 'left-1'
+                      }`} />
+                      <span className={`relative z-10 flex-1 text-center text-[10px] font-black transition-colors ${!isTelugu ? 'text-white' : 'text-slate-400'}`}>EN</span>
+                      <span className={`relative z-10 flex-1 text-center text-[10px] font-black font-telugu transition-colors ${isTelugu ? 'text-white' : 'text-slate-400'}`}>తె</span>
                     </span>
                   </button>
                 </div>
 
-                <div className="border-t border-slate-100 pt-3">
+                {/* Account */}
+                <div className="border-t border-slate-100 px-4 py-3">
                   {!isHydrated ? (
-                    <div className="h-12 animate-pulse rounded-md bg-slate-100" />
+                    <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
                   ) : isAuthenticated ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Link href={dashboardHref} prefetch={false} onClick={closeMenus} className="flex min-h-12 items-center gap-3 rounded-md bg-[#eef8f8] px-3 text-sm font-black text-[#0f3d56]">
+                    <div className="flex gap-2">
+                      <Link href={dashboardHref} prefetch={false} onClick={closeMenus} className="flex flex-1 h-11 items-center justify-center gap-2 rounded-xl bg-[#eef8f8] text-sm font-black text-[#0f3d56] hover:bg-[#d9f2f2] transition-colors">
                         <LayoutDashboard className="h-4.5 w-4.5 text-[#1598a1]" />
                         Dashboard
                       </Link>
-                      <button onClick={() => setIsLogoutModalOpen(true)} className="flex min-h-12 items-center gap-3 rounded-md bg-red-50 px-3 text-left text-sm font-black text-red-600">
+                      <button onClick={() => setIsLogoutModalOpen(true)} className="flex flex-1 h-11 items-center justify-center gap-2 rounded-xl bg-red-50 text-sm font-black text-red-600 hover:bg-red-100 transition-colors">
                         <LogOut className="h-4.5 w-4.5" />
-                        Logout Account
+                        Logout
                       </button>
                     </div>
                   ) : (
-                    <Link href="/login" onClick={closeMenus} className="flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#0f3d56] px-4 text-sm font-black text-white">
+                    <Link href="/login" onClick={closeMenus} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0f3d56] text-sm font-black text-white hover:bg-[#0d3348] transition-colors">
                       <User className="h-4 w-4 text-[#8eecee]" />
                       Account Login
                     </Link>
                   )}
                 </div>
-              </div>
+              </nav>
             </motion.aside>
           </>
         )}

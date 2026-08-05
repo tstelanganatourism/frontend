@@ -94,17 +94,17 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
             </div>
           </section>
 
-          <section className="grid grid-cols-2 gap-4 rounded-md border border-white/10 bg-white/[0.04] p-4">
+          <section className="grid grid-cols-2 gap-4 sm:gap-6 rounded-md border border-white/10 bg-white/[0.04] p-4 sm:p-5">
             <div>
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8eecee]">
                 Explore
               </h3>
-              <nav className="mt-3 grid gap-2.5">
+              <nav className="mt-4 flex flex-col space-y-2.5 sm:space-y-3">
                 {exploreLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-xs font-bold text-white/72 transition-colors hover:text-white"
+                    className="text-xs sm:text-sm font-semibold text-white/80 transition-all duration-200 hover:text-[#8eecee] hover:translate-x-1"
                   >
                     {link.label}
                   </Link>
@@ -114,9 +114,9 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
                 href="https://g.page/r/CcdqZmyXuAhxEAI/review"
                 target="_blank"
                 rel="noreferrer"
-                className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#1598a1] px-3 py-2 text-[11px] font-black text-white transition-colors hover:bg-[#117f87]"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#1598a1] px-3.5 py-2 text-[11px] font-black text-white transition-all hover:bg-[#117f87] shadow-sm hover:shadow-md"
               >
-                <Star className="h-3.5 w-3.5 fill-current" />
+                <Star className="h-3.5 w-3.5 fill-current text-amber-300" />
                 Write Review
               </a>
             </div>
@@ -125,12 +125,12 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8eecee]">
                 Policies
               </h3>
-              <nav className="mt-3 grid gap-2.5">
+              <nav className="mt-4 flex flex-col space-y-2.5 sm:space-y-3">
                 {policyLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-xs font-bold text-white/72 transition-colors hover:text-white"
+                    className="text-xs sm:text-sm font-semibold text-white/80 transition-all duration-200 hover:text-[#8eecee] hover:translate-x-1"
                   >
                     {link.label}
                   </Link>

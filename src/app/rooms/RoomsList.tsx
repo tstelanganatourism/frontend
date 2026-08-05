@@ -31,9 +31,15 @@ type RoomItem = {
 export default function RoomsList({ 
   data, 
   searchParams,
+  categoryName,
+  categorySlug,
+  categoryDescription,
 }: { 
   data?: RoomData; 
   searchParams?: Record<string, string | string[] | undefined>;
+  categoryName?: string;
+  categorySlug?: string;
+  categoryDescription?: string;
 }) {
   const router = useRouter();
   const pathnameHook = usePathname();
@@ -71,21 +77,32 @@ export default function RoomsList({
     }
   }, [urlQuery]);
 
-  // Initial fetch of complete rooms dataset (size=100) for instant client-side search
+  // Update allRooms if initial data changes
+  React.useEffect(() => {
+    if (data?.items) {
+      setAllRooms(data.items);
+    }
+  }, [data]);
+
+  // Fetch complete rooms dataset (filtered to category if categorySlug is present)
   React.useEffect(() => {
     let isMounted = true;
     const fetchAllRooms = async () => {
       try {
         setIsFetching(true);
-        const res = await fetch('/api/v1/rooms?size=100');
+        const fetchUrl = categorySlug
+          ? `/api/v1/rooms/categories/${categorySlug}`
+          : '/api/v1/rooms?size=100';
+        const res = await fetch(fetchUrl);
         if (res.ok && isMounted) {
           const json = await res.json();
-          if (json.items && json.items.length > 0) {
-            setAllRooms(json.items);
+          const items = categorySlug ? (json.rooms || []) : (json.items || []);
+          if (items && items.length > 0) {
+            setAllRooms(items);
           }
         }
       } catch (err) {
-        console.error("Failed to fetch full rooms for client-side search:", err);
+        console.error("Failed to fetch rooms for client-side search:", err);
       } finally {
         if (isMounted) setIsFetching(false);
       }
@@ -93,7 +110,7 @@ export default function RoomsList({
 
     fetchAllRooms();
     return () => { isMounted = false; };
-  }, []);
+  }, [categorySlug]);
 
   // INSTANT Client-Side Search & Filter Engine
   const filteredItems = React.useMemo(() => {
@@ -186,12 +203,12 @@ export default function RoomsList({
             <div className="lg:col-span-7">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-300 backdrop-blur-md shadow-xs">
                 <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                Verified Riverside Lodging
+                {categoryName ? `Stay Category: ${categoryName}` : 'Verified Riverside Lodging'}
               </div>
 
               <h1 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
-                <span className="block text-emerald-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">Bamboo Huts & Resorts</span>
-                <span className="block text-white drop-shadow-sm">Riverside Stays</span>
+                <span className="block text-emerald-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">{categoryName ? 'Category' : 'Bamboo Huts & Resorts'}</span>
+                <span className="block text-white drop-shadow-sm">{categoryName || 'Riverside Stays'}</span>
               </h1>
 
               <div className="flex flex-wrap gap-3 text-[11px] font-bold text-slate-300">

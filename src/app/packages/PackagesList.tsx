@@ -47,10 +47,18 @@ export default function PackagesList({
   data,
   pathname,
   searchParams,
+  categoryName,
+  categorySlug,
+  categoryDescription,
+  categoryBackHref,
 }: {
   data?: PackageData;
   pathname: string;
   searchParams?: Record<string, string | string[] | undefined>;
+  categoryName?: string;
+  categorySlug?: string;
+  categoryDescription?: string;
+  categoryBackHref?: string;
 }) {
   const isBoatRide = pathname === '/boat-rides';
   const isSightseeing = pathname === '/sightseeing';
@@ -89,21 +97,32 @@ export default function PackagesList({
     }
   }, [urlQuery]);
 
-  // Initial fetch of complete packages dataset (size=100) to ensure full offline client-side search
+  // Update allPackages if initial data changes (e.g. category page navigation)
+  React.useEffect(() => {
+    if (data?.items) {
+      setAllPackages(data.items);
+    }
+  }, [data]);
+
+  // Fetch complete packages dataset (filtered to category if categorySlug is present)
   React.useEffect(() => {
     let isMounted = true;
     const fetchAllPackages = async () => {
       try {
         setIsFetching(true);
-        const res = await fetch('/api/v1/packages?size=100');
+        const fetchUrl = categorySlug
+          ? `/api/v1/packages/categories/${categorySlug}`
+          : '/api/v1/packages?size=100';
+        const res = await fetch(fetchUrl);
         if (res.ok && isMounted) {
           const json = await res.json();
-          if (json.items && json.items.length > 0) {
-            setAllPackages(json.items);
+          const items = categorySlug ? (json.packages || []) : (json.items || []);
+          if (items && items.length > 0) {
+            setAllPackages(items);
           }
         }
       } catch (err) {
-        console.error("Failed to fetch full packages for client-side search:", err);
+        console.error("Failed to fetch packages for client-side search:", err);
       } finally {
         if (isMounted) setIsFetching(false);
       }
@@ -111,7 +130,7 @@ export default function PackagesList({
 
     fetchAllPackages();
     return () => { isMounted = false; };
-  }, []);
+  }, [categorySlug]);
 
   // INSTANT Client-Side Search & Filter Engine
   const filteredItems = React.useMemo(() => {
@@ -215,20 +234,22 @@ export default function PackagesList({
     }
   };
 
-  const badgeText = isBoatRide
-    ? 'Official Godavari Cruises'
-    : isSightseeing
-      ? 'Scenic Pilgrimage Journeys'
-      : 'All-in-One Tours & Sightseeing';
+  const badgeText = categoryName
+    ? `Category: ${categoryName}`
+    : isBoatRide
+      ? 'Official Godavari Cruises'
+      : isSightseeing
+        ? 'Scenic Pilgrimage Journeys'
+        : 'All-in-One Tours & Sightseeing';
 
-  const headingPrimary = isBoatRide ? 'Godavari' : isSightseeing ? 'Heritage & Temple' : 'Tours &';
-  const headingSecondary = isBoatRide ? 'Cruises & Rides' : isSightseeing ? 'Sightseeing Tours' : 'Sightseeings';
+  const headingPrimary = categoryName ? 'Category' : isBoatRide ? 'Godavari' : isSightseeing ? 'Heritage & Temple' : 'Tours &';
+  const headingSecondary = categoryName ? categoryName : isBoatRide ? 'Cruises & Rides' : isSightseeing ? 'Sightseeing Tours' : 'Sightseeings';
 
-  const descriptionText = isBoatRide
+  const descriptionText = categoryDescription || (isBoatRide
     ? 'Book scenic Godavari cruise packages through Papikondalu hills with verified reporting, family-friendly planning, and clear local support.'
     : isSightseeing
       ? 'Explore Bhadrachalam temple routes, nature viewpoints, and complete family sightseeing plans with verified local travel support.'
-      : 'Book premium boat rides, river cruises, temple tours, and local sightseeing packages with verified local support.';
+      : 'Book premium boat rides, river cruises, temple tours, and local sightseeing packages with verified local support.');
 
   const resultLabel = isBoatRide ? 'boat ride experiences' : isSightseeing ? 'sightseeing trips' : 'experiences';
 
@@ -397,14 +418,13 @@ export default function PackagesList({
                     </p>
                     <button
                       onClick={() => {
-                        startTransition(() => {
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                          router.replace(pathnameHook, { scroll: true });
-                        });
+                        if (typeof window !== 'undefined') {
+                          window.location.href = '/packages?view=all';
+                        }
                       }}
-                      className="text-xs font-black text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 text-white text-xs font-bold shadow-md hover:bg-teal-700 transition-all cursor-pointer"
                     >
-                      Clear all active filters
+                      Clear All Filters & Show All Packages
                     </button>
                   </div>
                 )}

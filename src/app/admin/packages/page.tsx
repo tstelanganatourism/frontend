@@ -22,7 +22,8 @@ import {
   Clock,
   CheckCircle2,
   Users,
-  Loader2
+  Loader2,
+  FolderPlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -297,14 +298,24 @@ export default function AdminPackagesPage() {
           <h1 className="text-3xl font-black text-slate-900">Tours & Packages</h1>
           <p className="text-slate-500 mt-1">Manage and curate public tour experiences and trips.</p>
         </div>
-        <Link 
-          href="/admin/packages/create"
-          prefetch={false}
-          className="flex items-center gap-2 self-start rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-slate-800"
-        >
-          <Plus className="h-4 w-4" />
-          Create New Package
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/admin/packages/categories"
+            prefetch={false}
+            className="flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300"
+          >
+            <FolderPlus className="h-4 w-4 text-[#1598a1]" />
+            Manage Categories
+          </Link>
+          <Link 
+            href="/admin/packages/create"
+            prefetch={false}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-slate-800"
+          >
+            <Plus className="h-4 w-4" />
+            Create New Package
+          </Link>
+        </div>
       </div>
 
       {/* Search & Filters */}
@@ -454,7 +465,19 @@ export default function AdminPackagesPage() {
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-900 group-hover:text-[#5ac4d7] transition-colors">{pkg.title}</h4>
-                          <p className="text-xs text-slate-400 mt-1 max-w-[200px] truncate">{pkg.slug}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                            <span className="text-[11px] text-slate-400 max-w-[140px] truncate">{pkg.slug}</span>
+                            {pkg.categories && pkg.categories.length > 0 ? (
+                              pkg.categories.map((cat: any) => (
+                                <span key={cat.id} className="px-2 py-0.5 rounded-md bg-[#1598a1]/10 text-[#0f3d56] text-[10px] font-bold border border-[#1598a1]/20 inline-flex items-center gap-1">
+                                  <span>{cat.icon || '📁'}</span>
+                                  <span>{cat.name}</span>
+                                </span>
+                              ))
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-medium">Uncategorized</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
