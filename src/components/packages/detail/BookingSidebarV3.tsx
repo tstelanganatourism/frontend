@@ -1307,11 +1307,13 @@ export const BookingSidebarV3 = ({
         isDisabled = false;
       }
 
-      // per-date fare
+      // per-date fare & seats
       let fare: number | null = null;
+      let availSeats: number | null = null;
       if (!isPast && !isDisabled) {
         const slot = publicAvailability?.dates?.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
         if (slot) {
+          availSeats = Number(slot.available_seats ?? 0);
           if (isStudentPackage) {
             fare = Number(slot.effective_student_price ?? slot.student_price ?? 0) || null;
           } else {
@@ -1348,32 +1350,32 @@ export const BookingSidebarV3 = ({
           key={i}
           type="button"
           disabled={isDisabled}
-          title={isAvailable ? `Travel on ${dateStr} — ${fare ? formatFare(fare) : 'fares available'} per adult` : dayStatus === 'soldout' ? 'Sold out / Closed' : 'Past date'}
+          title={isAvailable ? `Travel on ${dateStr} — ${fare ? formatFare(fare) : 'fares available'}${availSeats !== null ? ` (${availSeats} seats left)` : ''}` : dayStatus === 'soldout' ? 'Sold out / Closed' : 'Past date'}
           onClick={() => handleDaySelect(i)}
           className={[
-            'relative flex flex-col items-center justify-center rounded-lg transition-all duration-150 select-none',
-            'h-[46px] sm:h-[52px] w-full',
+            'relative flex flex-col items-center justify-center rounded-xl p-1 transition-all duration-150 select-none',
+            'min-h-[50px] sm:min-h-[56px] w-full',
             isSelected
-              ? 'bg-gradient-to-b from-[#0d6e75] to-[#0a5a61] shadow-lg shadow-[#0d6e75]/30 scale-[1.05] z-10'
+              ? 'bg-gradient-to-b from-[#0d6e75] to-[#0a5a61] shadow-lg shadow-[#0d6e75]/30 scale-[1.03] z-10'
               : isPast || (isDisabled && dayStatus !== 'soldout')
-              ? 'cursor-not-allowed'
+              ? 'cursor-not-allowed opacity-50 bg-slate-50'
               : isAvailable
               ? isWeekend
-                ? 'bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 hover:scale-105 cursor-pointer'
-                : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 hover:scale-105 cursor-pointer'
+                ? 'bg-amber-50/90 hover:bg-amber-100 border border-amber-200/90 hover:border-amber-400 hover:scale-105 cursor-pointer shadow-2xs'
+                : 'bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-200/90 hover:border-emerald-400 hover:scale-105 cursor-pointer shadow-2xs'
               : dayStatus === 'soldout'
-              ? 'bg-slate-50 border border-slate-100 cursor-not-allowed'
+              ? 'bg-slate-50 border border-slate-200/60 cursor-not-allowed'
               : 'cursor-not-allowed',
           ].join(' ')}
         >
           {/* Today indicator dot */}
           {isToday && !isSelected && (
-            <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[#0d6e75]" />
+            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-[#0d6e75]" />
           )}
 
           {/* Date number */}
           <span className={[
-            'text-[13px] leading-none font-bold',
+            'text-[12px] sm:text-[13px] leading-none font-bold',
             isSelected
               ? 'text-white font-black'
               : isPast
@@ -1391,15 +1393,15 @@ export const BookingSidebarV3 = ({
 
           {/* Fare price */}
           <span className={[
-            'text-[9px] font-semibold leading-none mt-[3px]',
+            'text-[9px] sm:text-[10px] font-semibold leading-none mt-[2px]',
             isSelected
-              ? 'text-cyan-200'
+              ? 'text-cyan-200 font-bold'
               : isPast || (isDisabled && dayStatus !== 'soldout')
               ? 'text-slate-200'
               : dayStatus === 'soldout'
               ? 'text-slate-300'
               : isWeekend
-              ? 'text-amber-500 font-bold'
+              ? 'text-amber-600 font-bold'
               : 'text-emerald-600 font-bold',
           ].join(' ')}>
             {isPast || (isDisabled && dayStatus !== 'soldout')
@@ -1410,6 +1412,22 @@ export const BookingSidebarV3 = ({
               ? formatFare(fare)
               : ''}
           </span>
+
+          {/* Available Seats Pill Tag */}
+          {!isPast && isAvailable && availSeats !== null && availSeats > 0 && (
+            <span className={[
+              'text-[8px] leading-none px-1 py-[1px] rounded-full font-bold mt-[2px] tracking-tight whitespace-nowrap',
+              isSelected
+                ? 'bg-white/20 text-white'
+                : availSeats <= 10
+                ? 'bg-rose-100 text-rose-700 font-extrabold'
+                : availSeats <= 25
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-emerald-100/80 text-emerald-800'
+            ].join(' ')}>
+              {availSeats <= 10 ? `${availSeats} left` : `${availSeats} s`}
+            </span>
+          )}
         </button>
       );
     }
@@ -1466,7 +1484,7 @@ export const BookingSidebarV3 = ({
         </div>
 
         {/* ── Calendar grid ── */}
-        <div className="grid grid-cols-7 gap-[3px]">
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
           {cells}
         </div>
 

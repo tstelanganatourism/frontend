@@ -224,9 +224,9 @@ export const RoomHero = ({
         </div>
 
         {/* Bottom tag bar */}
-        <div className="mt-7 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/35">
-          <Sparkles className="h-3 w-3 text-amber-300" />
-          Premium Bhadrachalam Accommodation · Instant Online Booking
+        <div className="mt-7 inline-flex max-w-full items-center gap-1.5 rounded-2xl sm:rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/45">
+          <Sparkles className="h-3 w-3 text-amber-300 shrink-0" />
+          <span className="truncate">Premium Bhadrachalam Accommodation · Instant Online Booking</span>
         </div>
       </div>
     </section>

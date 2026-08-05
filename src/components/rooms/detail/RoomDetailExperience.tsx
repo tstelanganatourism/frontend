@@ -1064,7 +1064,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   });
 
   return (
-    <main className="bg-[#fafaf7] pb-20 text-slate-900 lg:pb-0">
+    <main className="bg-[#fafaf7] pb-20 text-slate-900 lg:pb-0 overflow-x-hidden w-full max-w-full">
       <RoomHero
         lodgeName={room.lodge_name}
         coverImage={room.cover_image_url}
@@ -1075,11 +1075,11 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         gallery={room.gallery}
       />
 
-      <section className="mx-auto grid w-full max-w-[1600px] gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14">
-        <div className="space-y-8">
+      <section className="mx-auto grid w-full max-w-[1600px] gap-6 sm:gap-10 px-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14 overflow-hidden">
+        <div className="space-y-8 min-w-0 w-full max-w-full">
           {/* Stay Overview Section */}
           <section id="overview" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
-            <div className="border-b border-slate-100 bg-slate-50/80 p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="border-b border-slate-100 bg-slate-50/80 p-4 sm:p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-3 min-w-0">
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0d6e75]/10 border border-[#0d6e75]/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0d6e75]">
                   <Sparkles className="h-3 w-3 text-[#0d6e75]" />
@@ -1101,7 +1101,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Location / Address</p>
-                    <p className="mt-0.5 text-xs font-black text-slate-900 truncate">{room.address || 'Bhadrachalam, Telangana'}</p>
+                    <p className="mt-0.5 text-xs font-black text-slate-900 break-words leading-snug">{room.address || 'Bhadrachalam, Telangana'}</p>
                     <p className="mt-1 text-[10px] font-semibold text-slate-500">Tourist destination route</p>
                   </div>
                 </div>
@@ -1271,7 +1271,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-4 bg-[#fafaf7] p-3.5 rounded-xl border border-slate-200/80 shrink-0">
+                          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 bg-[#fafaf7] p-3.5 rounded-xl border border-slate-200/80 w-full sm:w-auto">
                             <div className="text-left">
                               <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Weekday Fare</p>
                               <p className="text-sm font-black text-[#0d6e75]">{money(variant.weekday_price)}</p>
@@ -1324,12 +1324,12 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             </div>
             <div className="p-5 md:p-6 space-y-6">
               {/* Mandatory Guest Reporting Office Banner */}
-              <div className="rounded-2xl border border-amber-300 bg-amber-500/10 p-5 shadow-2xs">
+              <div className="rounded-2xl border border-amber-300 bg-amber-500/10 p-3.5 sm:p-5 shadow-2xs">
                 <div className="flex flex-col sm:flex-row items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0d6e75] text-white shadow-sm">
                     <Building2 className="h-6 w-6" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="rounded-full bg-amber-600 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
                         MANDATORY FIRST GUEST STOP
@@ -1345,9 +1345,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       All stay guests <strong>MUST first report to our TS Boat Tourism Central Office in Bhadrachalam</strong> prior to check-in. Our team will verify your booking, register Government IDs, issue your official physical room vouchers, and coordinate your resort directions.
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-extrabold text-slate-800">
-                      <div className="flex items-center gap-1.5 text-[#0d6e75]">
+                      <div className="flex items-center gap-1.5 text-[#0d6e75] min-w-0">
                         <MapPin className="h-4 w-4 shrink-0" />
-                        <span>Om Shanthi Building Sataram, Kalyana Mandapam Road, Bhadrachalam</span>
+                        <span className="break-words min-w-0">Om Shanthi Building Sataram, Kalyana Mandapam Road, Bhadrachalam</span>
                       </div>
                       <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-slate-200 text-slate-900">
                         <Phone className="h-3.5 w-3.5 text-[#0d6e75]" />
@@ -1818,6 +1818,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         isAdmin={isAdmin}
                         weekdayPrice={Number(selectedVariant?.weekday_price || room.starting_price || 0)}
                         weekendPrice={Number(selectedVariant?.weekend_price || selectedVariant?.weekday_price || room.starting_price || 0)}
+                        detailedAvailability={detailedAvailability}
+                        selectedVariantId={selectedVariantId || validVariants[0]?.id}
+                        selectedSlotKey={`${selectedSlot?.slot_start?.slice(0, 5) || "12:00"}-${selectedSlot?.slot_end?.slice(0, 5) || "11:00"}`}
                         onChange={(val) => {
                           setArrivalDate(val);
                           const sStart = selectedSlot?.slot_start || "";
@@ -1846,6 +1849,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         isAdmin={isAdmin}
                         weekdayPrice={Number(selectedVariant?.weekday_price || room.starting_price || 0)}
                         weekendPrice={Number(selectedVariant?.weekend_price || selectedVariant?.weekday_price || room.starting_price || 0)}
+                        detailedAvailability={detailedAvailability}
+                        selectedVariantId={selectedVariantId || validVariants[0]?.id}
+                        selectedSlotKey={`${selectedSlot?.slot_start?.slice(0, 5) || "12:00"}-${selectedSlot?.slot_end?.slice(0, 5) || "11:00"}`}
                         onChange={setDepartureDate}
                       />
                     </div>
@@ -2392,7 +2398,6 @@ const InfoTile = ({ icon: Icon, label, value }: { icon: typeof MapPin; label: st
     <p className="mt-1.5 text-xs font-black leading-relaxed text-slate-905">{value}</p>
   </div>
 );
-
 const PriceBlock = ({ label, value, highlight = false }: { label: string; value: number; highlight?: boolean }) => (
   <div>
     <p className="text-[9px] font-black uppercase tracking-wider text-slate-450">{label}</p>
@@ -2407,12 +2412,14 @@ const CustomDatePicker = ({
   onChange,
   placeholder = 'Select Date',
   disabled = false,
-  align = 'left',
   availableDates,
   onMonthChange,
   isAdmin,
   weekdayPrice,
   weekendPrice,
+  detailedAvailability,
+  selectedVariantId,
+  selectedSlotKey,
 }: {
   label: string;
   value: string;
@@ -2426,9 +2433,11 @@ const CustomDatePicker = ({
   isAdmin?: boolean;
   weekdayPrice?: number;
   weekendPrice?: number;
+  detailedAvailability?: Record<string, Record<number, Record<string, number>>>;
+  selectedVariantId?: number | null;
+  selectedSlotKey?: string;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Parse current date or fallback to min or today
   const baseDate = useMemo(() => {
@@ -2445,17 +2454,6 @@ const CustomDatePicker = ({
     setCalYear(baseDate.getFullYear());
     setCalMonth(baseDate.getMonth());
   }, [baseDate]);
-
-  // Click outside listener to close
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -2521,7 +2519,7 @@ const CustomDatePicker = ({
 
     // Empty spacers
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-8 w-8" />);
+      days.push(<div key={`empty-${i}`} />);
     }
 
     const minDateStr = min || getLocalToday();
@@ -2540,19 +2538,11 @@ const CustomDatePicker = ({
       const dayFare = isWeekendDay ? (weekendPrice || weekdayPrice || 0) : (weekdayPrice || 0);
       const fmtFare = (n: number) => n >= 1000 ? `₹${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K` : `₹${n}`;
 
-      let dateStyle = '';
-      if (isSelected) {
-        dateStyle = 'bg-[#0d6e75] text-white shadow-md font-black ring-2 ring-[#0d6e75]/20 scale-105';
-      } else if (isDisabled) {
-        dateStyle = 'text-slate-300 bg-slate-100/60 cursor-not-allowed line-through';
-      } else if (!hasInventory) {
-        // Admin override view for closed / no-inventory dates
-        dateStyle = 'text-slate-400 bg-slate-100/80 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 border border-slate-200 cursor-pointer';
-      } else {
-        // Genuine open dates with inventory
-        dateStyle = isWeekendDay
-          ? 'bg-amber-50 text-amber-900 font-extrabold border border-amber-200/80 hover:bg-[#0d6e75] hover:text-white cursor-pointer'
-          : 'bg-emerald-50 text-emerald-900 font-extrabold border border-emerald-200/80 hover:bg-[#0d6e75] hover:text-white cursor-pointer';
+      // Rooms available count for this cell
+      let availRooms: number | null = null;
+      if (detailedAvailability && selectedVariantId && selectedSlotKey && detailedAvailability[dateStr]?.[selectedVariantId]) {
+        const slotData = detailedAvailability[dateStr][selectedVariantId];
+        availRooms = slotData[selectedSlotKey] ?? Object.values(slotData)[0] ?? null;
       }
 
       days.push(
@@ -2560,13 +2550,51 @@ const CustomDatePicker = ({
           key={i}
           type="button"
           disabled={isDisabled}
+          title={!isDisabled ? `Stay on ${dateStr} — ₹${dayFare}${availRooms !== null ? ` (${availRooms} rooms available)` : ''}` : 'Past / Unavailable date'}
           onClick={() => handleDaySelect(i)}
-          className={`h-[44px] w-full rounded-lg flex flex-col items-center justify-center p-0.5 transition-all ${dateStyle}`}
+          className={[
+            'relative flex flex-col items-center justify-center rounded-xl p-1 transition-all duration-150 select-none',
+            'min-h-[50px] sm:min-h-[56px] w-full',
+            isSelected
+              ? 'bg-gradient-to-b from-[#0d6e75] to-[#0a5a61] text-white shadow-lg shadow-[#0d6e75]/30 scale-[1.03] z-10 font-black'
+              : isDisabled
+              ? 'text-slate-300 bg-slate-50 cursor-not-allowed opacity-50'
+              : isWeekendDay
+              ? 'bg-amber-50/90 text-amber-900 font-extrabold border border-amber-200/90 hover:bg-amber-100 hover:scale-105 cursor-pointer shadow-2xs'
+              : 'bg-emerald-50/90 text-emerald-900 font-extrabold border border-emerald-200/90 hover:bg-emerald-100 hover:scale-105 cursor-pointer shadow-2xs'
+          ].join(' ')}
         >
-          <span className="text-[12px] leading-none font-bold">{i}</span>
+          {/* Date number */}
+          <span className={[
+            'text-[12px] sm:text-[13px] leading-none font-bold',
+            isSelected ? 'text-white font-black' : isWeekendDay ? 'text-amber-800 font-black' : 'text-slate-800 font-black'
+          ].join(' ')}>
+            {i}
+          </span>
+
+          {/* Nightly Price */}
           {!isDisabled && dayFare > 0 && (
-            <span className={`text-[9px] font-semibold leading-none mt-1 ${isSelected ? 'text-cyan-100' : isWeekendDay ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold'}`}>
+            <span className={[
+              'text-[9px] sm:text-[10px] font-semibold leading-none mt-[2px]',
+              isSelected ? 'text-cyan-200 font-bold' : isWeekendDay ? 'text-amber-600 font-bold' : 'text-emerald-600 font-bold'
+            ].join(' ')}>
               {fmtFare(dayFare)}
+            </span>
+          )}
+
+          {/* Rooms Available Pill Tag */}
+          {!isDisabled && availRooms !== null && availRooms > 0 && (
+            <span className={[
+              'text-[8px] leading-none px-1 py-[1px] rounded-full font-bold mt-[2px] tracking-tight whitespace-nowrap',
+              isSelected
+                ? 'bg-white/20 text-white'
+                : availRooms <= 3
+                ? 'bg-rose-100 text-rose-700 font-extrabold'
+                : availRooms <= 8
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-emerald-100/80 text-emerald-800'
+            ].join(' ')}>
+              {availRooms <= 3 ? `${availRooms} left` : `${availRooms} rm`}
             </span>
           )}
         </button>
@@ -2580,14 +2608,14 @@ const CustomDatePicker = ({
     : placeholder;
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className="w-full">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full text-left rounded-lg border px-3.5 py-2.5 shadow-inner transition-all ${disabled
+        onClick={() => setIsOpen(true)}
+        className={`w-full text-left rounded-xl border px-3.5 py-2.5 shadow-xs transition-all ${disabled
             ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-85 text-slate-400'
-            : 'bg-white border-slate-200 cursor-pointer hover:border-slate-350 focus:border-[#0d6e75] focus:outline-none'
+            : 'bg-white border-slate-200 cursor-pointer hover:border-[#0d6e75] focus:border-[#0d6e75] focus:outline-none'
           }`}
       >
         <span className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">
@@ -2599,42 +2627,91 @@ const CustomDatePicker = ({
         </div>
       </button>
 
+      {/* Centered Backdrop Overlay Modal — Matches Packages Calendar UI */}
       {isOpen && (
-        <div className={`absolute ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'} top-[calc(100%+6px)] z-50 rounded-xl border border-slate-150 bg-white p-4 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 w-[calc(100vw-32px)] sm:w-[330px]`}>
-          <div className="flex justify-between items-center mb-3">
-            <button
-              type="button"
-              onClick={prevMonth}
-              className="p-1.5 hover:bg-[#0d6e75]/5 rounded-lg text-slate-400 hover:text-[#0d6e75] transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-450"
-              disabled={(() => {
-                const minD = min ? new Date(min) : new Date();
-                return calYear < minD.getFullYear() || (calYear === minD.getFullYear() && calMonth <= minD.getMonth());
-              })()}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <div className="text-xs font-black text-slate-800 uppercase tracking-wider">
-              {monthNames[calMonth]} {calYear}
-            </div>
-            <button
-              type="button"
-              onClick={nextMonth}
-              className="p-1.5 hover:bg-[#0d6e75]/5 rounded-lg text-slate-400 hover:text-[#0d6e75] transition-all"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsOpen(false); }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
 
-          <div className="grid grid-cols-7 gap-1 text-center mb-2">
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-              <div key={d} className="text-[10px] font-black text-slate-400 uppercase tracking-wider w-8 py-1">
-                {d}
+          {/* Modal Panel - Perfectly Centered */}
+          <div className="relative z-10 w-[min(440px,calc(100vw-24px))] bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 p-3 sm:p-4">
+            
+            {/* Header: Teal Brand Bar */}
+            <div className="bg-gradient-to-r from-[#0d6e75] to-[#0a5a61] rounded-xl px-3.5 py-3 mb-3 flex items-center justify-between gap-2 shadow-sm">
+              <button
+                type="button"
+                onClick={prevMonth}
+                disabled={(() => {
+                  const minD = min ? new Date(min) : new Date();
+                  return calYear < minD.getFullYear() || (calYear === minD.getFullYear() && calMonth <= minD.getMonth());
+                })()}
+                className="h-7 w-7 shrink-0 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors flex items-center justify-center disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <div className="text-center flex-1 min-w-0">
+                <div className="text-white font-black text-sm tracking-wide uppercase">
+                  {monthNames[calMonth]} {calYear}
+                </div>
+                <div className="text-cyan-200/80 text-[10px] font-semibold mt-0.5">
+                  Select {label} Date
+                </div>
               </div>
-            ))}
-          </div>
+              <button
+                type="button"
+                onClick={nextMonth}
+                className="h-7 w-7 shrink-0 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors flex items-center justify-center"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="h-7 w-7 shrink-0 rounded-lg bg-white/20 hover:bg-white/35 text-white transition-colors flex items-center justify-center ml-1"
+                aria-label="Close calendar"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
 
-          <div className="grid grid-cols-7 gap-1 justify-items-center">
-            {renderDays()}
+            {/* Day of week headers */}
+            <div className="grid grid-cols-7 mb-1">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+                <div
+                  key={`${d}-${idx}`}
+                  className={`text-center text-[10px] font-black uppercase py-1 ${idx === 0 || idx === 6 ? 'text-amber-500 font-extrabold' : 'text-slate-400'}`}
+                >
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar grid */}
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+              {renderDays()}
+            </div>
+
+            {/* Legend Footer */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between px-1">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <div className="h-2.5 w-2.5 rounded-sm bg-emerald-100 border border-emerald-300" />
+                  <span className="text-[10px] font-semibold text-slate-400">Weekday</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="h-2.5 w-2.5 rounded-sm bg-amber-100 border border-amber-300" />
+                  <span className="text-[10px] font-semibold text-slate-400">Weekend</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="h-2.5 w-2.5 rounded-sm bg-[#0d6e75]" />
+                <span className="text-[10px] font-semibold text-slate-400">Selected</span>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
