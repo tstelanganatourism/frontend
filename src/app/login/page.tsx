@@ -141,7 +141,7 @@ function LoginContent() {
         {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
-          style={{ backgroundImage: "url('https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp')" }}
+          style={{ backgroundImage: "url('https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png')" }}
         />
         {/* Gradient overlay — light enough so the boat image shows through */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#061d2b]/75 via-[#061d2b]/35 to-[#0f3d56]/50" />

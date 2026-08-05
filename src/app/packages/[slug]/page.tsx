@@ -432,7 +432,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Right Sticky Booking Callout Card with full fare variants, weekday/weekend, transport & add-ons breakdown */}
-        <aside className="hidden lg:block sticky top-[92px] self-start">
+        <aside className="hidden lg:block sticky top-[92px] self-start max-h-[calc(100vh-170px)] overflow-y-auto scrollbar-thin">
           <BookingCalloutCard
             startingPrice={getPositiveStartingPrice(pkg)}
             isStudentPackage={pkg.is_student_package}

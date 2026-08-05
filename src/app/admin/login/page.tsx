@@ -117,7 +117,7 @@ function AdminLoginContent() {
       <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden bg-[#061d2b]">
         <div
           className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
-          style={{ backgroundImage: "url('https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp')" }}
+          style={{ backgroundImage: "url('https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#061d2b]/80 via-[#0a2c42]/55 to-[#0f0f1a]/75" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#061d2b]/95 via-transparent to-[#061d2b]/40" />

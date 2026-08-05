@@ -4,7 +4,7 @@ import { PrintButton } from './PrintButton';
 export const dynamic = 'force-dynamic';
 
 const CO = {
-  bannerUrl: 'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp',
+  bannerUrl: '/ts-boat-tourism-banner.jpg',
   addr1: 'Om Shanti Satram, Kalyana Mandapam Road,',
   addr2: 'Near SBI ATM, Bhadrachalam,',
   addr3: 'Telangana 507111',
@@ -12,6 +12,11 @@ const CO = {
   email: 'tstelanganatourism@gmail.com',
   website: 'www.tstelanganatourism.com',
 };
+
+function cleanImageUrl(url?: string | null): string {
+  if (!url || !url.trim()) return '';
+  return url.replace('/upload/f_auto,q_auto/', '/upload/').replace('http://', 'https://');
+}
 
 type Itinerary = { day_number: number; title: string; description?: string | null; timing?: string | null; duration_at_stop?: string | null; meal_included: boolean; sort_order: number };
 type Inclusion = { label: string };
@@ -96,7 +101,19 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
 
   const byDay = groupByDay(pkg.itinerary || []);
   const durationText = pkg.duration?.trim() || deriveDuration(pkg.itinerary || []);
-  const galleryImgs = (pkg.gallery || []).slice(0, 4);
+  
+  const rawGallery = (pkg.gallery || []).map((g) => g.image_url).filter(Boolean);
+  if (pkg.cover_image_url && !rawGallery.includes(pkg.cover_image_url)) {
+    rawGallery.unshift(pkg.cover_image_url);
+  }
+  let galleryImgs = rawGallery.map(cleanImageUrl).filter(Boolean).slice(0, 8);
+  if (galleryImgs.length === 0) {
+    galleryImgs = [
+      '/home/godavari-hero-banner.jpg',
+      '/home/hero-boat.jpg',
+      '/placeholder-tourism.jpg',
+    ];
+  }
 
   const CSS = `
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
@@ -122,11 +139,11 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
       .no-print { display: none !important; }
     }
     .no-print {
-      display: flex; justify-content: flex-end;
-      padding: 12px 24px; background: #0f172a;
-      width: 210mm; margin: 0 auto;
+      width: 210mm;
+      margin: 0 auto;
+      background: #0f172a;
     }
-    .banner-img { width: 100%; display: block; height: auto; }
+    .banner-img { width: 100%; height: auto; display: block; }
     
     .hero-header {
       background: linear-gradient(135deg, #0f3d56 0%, #1e5878 100%);
@@ -259,12 +276,11 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <PrintButton />
 
       <div className="brochure-container">
         {/* Company Header Banner */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={CO.bannerUrl} alt="Telangana & AP Tourism Partner" className="banner-img" />
+        <img src={CO.bannerUrl} alt="TS Boat Tourism Banner" className="banner-img" loading="eager" fetchPriority="high" />
 
         {/* Hero Package Title */}
         <div className="hero-header">
@@ -492,7 +508,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
               <div className="grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                 {galleryImgs.map((img, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={img.image_url} alt="Gallery" style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                  <img key={i} src={img} alt="Destination Gallery" loading="eager" referrerPolicy="no-referrer" style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
                 ))}
               </div>
             </div>
@@ -521,6 +537,8 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
         </div>
 
       </div>
+
+      <PrintButton />
     </>
   );
 }

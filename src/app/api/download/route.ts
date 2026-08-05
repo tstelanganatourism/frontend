@@ -20,6 +20,11 @@ export async function GET(request: Request) {
     
     if (!response.ok) {
       console.error(`Download proxy fetch failed: ${response.status} ${response.statusText} for URL: ${url}`);
+      // Extract package slug from filename or url fallback to prevent broken 404 screen
+      const slugMatch = filename.replace('-brochure.pdf', '').replace('.pdf', '');
+      if (slugMatch) {
+        return NextResponse.redirect(new URL(`/print/package/${slugMatch}`, request.url));
+      }
       return new NextResponse(`Failed to fetch from url: ${response.status}`, { status: 502 });
     }
 

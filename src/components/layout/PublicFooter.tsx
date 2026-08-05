@@ -11,7 +11,7 @@ import {
   Star,
 } from 'lucide-react';
 
-const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d7603.244137815757!2d80.884021!3d17.66805!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1784614051800!5m2!1sen!2sin';
+const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.622075248225!2d80.8840206!3d17.6680497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1785936445858!5m2!1sen!2sin';
 
 const exploreLinks = [
   { label: 'Packages', href: '/packages' },

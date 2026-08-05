@@ -459,7 +459,7 @@ export default function AgentBookingsLedgerPage() {
               <div className="w-full md:w-56 bg-slate-50 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-100 shrink-0">
                 <div>
                   <span className="text-[10px] font-black tracking-widest uppercase text-slate-400">Reservation ID</span>
-                  <p className="font-extrabold text-[var(--color-brand-river)] mt-0.5">{b.public_id}</p>
+                  <p className="font-extrabold text-[var(--color-brand-river)] mt-0.5 break-all text-xs sm:text-sm">{b.public_id}</p>
                 </div>
                 <div className="mt-4 md:mt-0">
                   {getStatusBadge(b.status)}

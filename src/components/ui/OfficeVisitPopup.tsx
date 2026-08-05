@@ -137,16 +137,23 @@ export function OfficeVisitPopup({
                 <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full border border-[#1A6B7A]/8" />
 
                 <div className="flex items-start gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#1A6B7A]/10 border border-[#1A6B7A]/15 shadow-inner">
-                    <MapPin className="h-7 w-7 text-[#1A6B7A]" />
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#ea580c]/10 border border-[#ea580c]/20 shadow-inner">
+                    <MapPin className="h-7 w-7 text-[#ea580c]" />
                   </div>
                   <div>
-                    <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#1A6B7A]">
-                      {isPartial ? 'Balance Due & Check-In' : 'Action required'}
+                    <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#ea580c]">
+                      ⚠️ MANDATORY FIRST STEP
                     </p>
                     <h2 id="office-popup-title" className="text-xl font-extrabold leading-tight text-[#0F3D56]">
-                      {derivedTargetType === 'ROOM' ? 'Visit our office for stay keys!' : 'Visit our office to confirm your trip!'}
+                      {isPartial ? 'Pay balance & visit our office first!' :
+                        derivedTargetType === 'ROOM' ? 'Visit our office first to collect your room keys!' :
+                        'Visit our office first to get your boarding pass!'}
                     </h2>
+                    <p className="mt-1 text-xs font-semibold text-[#ea580c]">
+                      {derivedTargetType === 'ROOM'
+                        ? 'Without office visit, you cannot check in to the property.'
+                        : 'Without a manual boarding pass, you cannot board the vessel.'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -156,14 +163,14 @@ export function OfficeVisitPopup({
                 {/* Instructions */}
                 <div className="text-sm leading-relaxed text-slate-600">
                   {isPartial ? (
-                    <p>
-                      Your booking is <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/50">partially confirmed</span>. Please pay the remaining balance of <span className="font-bold text-slate-800">₹{remainingBalance}</span> and visit our office to collect your <span className="font-bold text-slate-800">{derivedTargetType === 'ROOM' ? 'lodge keys' : 'manual boarding pass'}</span> with:
-                    </p>
-                  ) : (
-                    <p>
-                      Your booking is <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/50">confirmed online</span>. To receive your <span className="font-bold text-slate-800">{derivedTargetType === 'ROOM' ? 'lodge keys' : 'manual boarding pass'}</span>, please visit our office with:
-                    </p>
-                  )}
+                  <p>
+                    Your booking is <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/50">partially confirmed</span>. Please pay the remaining balance of <span className="font-bold text-slate-800">₹{remainingBalance}</span> and visit our office <span className="font-bold text-[#ea580c]">BEFORE your travel date</span> to collect your <span className="font-bold text-slate-800">{derivedTargetType === 'ROOM' ? 'room keys' : 'manual boarding pass'}</span> with:
+                  </p>
+                ) : (
+                  <p>
+                    Your booking is <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/50">confirmed online</span>. <span className="font-bold text-[#ea580c]">Before your {derivedTargetType === 'ROOM' ? 'check-in date' : 'departure'}</span>, you <span className="font-bold text-slate-800">MUST visit our office</span> to collect your <span className="font-bold text-slate-800">{derivedTargetType === 'ROOM' ? 'room keys / entry authorisation' : 'manual boarding pass'}</span>. Bring:
+                  </p>
+                )}
                 </div>
 
                 <ul className="space-y-2.5">
@@ -175,18 +182,36 @@ export function OfficeVisitPopup({
                   ))}
                 </ul>
 
-                {/* Office address */}
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-4">
-                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Office Address</p>
-                  <p className="text-sm font-semibold text-slate-700 leading-relaxed">{OFFICE_ADDRESS}</p>
+                {/* Office address & Embedded Google Map */}
+                <div className="rounded-2xl border-2 border-[#ea580c]/30 bg-[#fff7ed] px-4 py-4 space-y-3">
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ea580c]">Our Office Address</p>
+                    <p className="text-sm font-semibold text-slate-700 leading-relaxed">{OFFICE_ADDRESS}</p>
+                    <p className="mt-1.5 text-sm font-bold text-slate-800">📞 +91 99513 69573 &nbsp;|&nbsp; +91 77801 19268</p>
+                  </div>
+                  
+                  {/* Embedded Google Map Iframe */}
+                  <div className="w-full h-44 rounded-xl overflow-hidden border border-[#ea580c]/20 shadow-inner">
+                    <iframe
+                      title="TS Boat Tourism Office Location Map"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      loading="lazy"
+                      allowFullScreen
+                      referrerPolicy="no-referrer-when-downgrade"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.622075248225!2d80.8840206!3d17.6680497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1785936445858!5m2!1sen!2sin"
+                    />
+                  </div>
+
                   <a
                     href={GOOGLE_MAPS_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-[#1A6B7A] hover:text-[#0F3D56] transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ea580c] hover:text-[#c2410c] transition-colors"
                   >
                     <MapPin className="h-3.5 w-3.5" />
-                    Open in Google Maps
+                    Open Directions in Google Maps App
                     <ExternalLink className="h-3 w-3 opacity-70" />
                   </a>
                 </div>

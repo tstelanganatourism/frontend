@@ -210,15 +210,14 @@ const getMapEmbedUrl = (rawUrl?: string | null, address?: string | null, lodgeNa
       const match = rawUrl.match(/src="([^"]+)"/);
       if (match?.[1]) return match[1];
     }
-    if (rawUrl.includes('google.com/maps/embed') || rawUrl.includes('maps.google.com/maps?')) return rawUrl;
+    if (rawUrl.includes('google.com/maps/embed')) return rawUrl;
     const coordMatch = rawUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (coordMatch?.[1] && coordMatch?.[2]) {
-      return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&z=15&output=embed`;
+      return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
     }
   }
 
-  const querySource = address || lodgeName;
-  return querySource ? `https://maps.google.com/maps?q=${encodeURIComponent(querySource)}&z=15&output=embed` : '';
+  return `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.622075248225!2d80.8840206!3d17.6680497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1785936445858!5m2!1sen!2sin`;
 };
 
 export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
@@ -423,6 +422,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         newDetailed[d.date][d.variant_id][slotKey] = d.is_closed ? 0 : d.available_rooms;
       }
 
+      console.log(`fetchRoomAvailability success for ${monthStr}: fetched ${dates.length} entries, parsed ${openDates.size} openDates.`);
       setRoomAvailability(prev => ({ ...prev, [monthStr]: openDates }));
       setDetailedAvailability(prev => {
         const next = { ...prev };
@@ -431,7 +431,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         }
         return next;
       });
-    } catch {
+    } catch (err) {
+      console.error(`fetchRoomAvailability error for ${monthStr}:`, err);
       // On error, set empty so calendar disables all dates
       setRoomAvailability(prev => ({ ...prev, [monthStr]: new Set<string>() }));
     } finally {
@@ -454,9 +455,12 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   // Combine all available dates across fetched months into one Set for the pickers
   const allAvailableDates = useMemo(() => {
     const combined = new Set<string>();
-    for (const dates of Object.values(roomAvailability)) {
+    console.log("roomAvailability state changed:", JSON.stringify(Object.keys(roomAvailability)));
+    for (const [month, dates] of Object.entries(roomAvailability)) {
+      console.log(`Month ${month} has ${dates.size} open dates`);
       for (const d of dates) combined.add(d);
     }
+    console.log("combined allAvailableDates size:", combined.size);
     return combined;
   }, [roomAvailability]);
 
@@ -1064,18 +1068,18 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   });
 
   return (
-    <main className="bg-[#fafaf7] pb-20 text-slate-900 lg:pb-0 overflow-x-hidden w-full max-w-full">
+    <main className="bg-[#fafaf7] pb-20 text-slate-900 lg:pb-0 w-full max-w-full">
       <RoomHero
         lodgeName={room.lodge_name}
         coverImage={room.cover_image_url}
-        address={room.address}
+        address="Godavari Riverfront Region, Bhadrachalam"
         isFeatured={room.is_featured}
         startingPrice={price ? price : room.starting_price}
         totalRooms={room.total_rooms ?? undefined}
         gallery={room.gallery}
       />
 
-      <section className="mx-auto grid w-full max-w-[1600px] gap-6 sm:gap-10 px-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-12 lg:py-14 overflow-hidden">
+      <section className="mx-auto grid w-full max-w-[1600px] gap-6 sm:gap-10 px-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] items-start lg:px-12 lg:py-14">
         <div className="space-y-8 min-w-0 w-full max-w-full">
           {/* Stay Overview Section */}
           <section id="overview" className="scroll-mt-[140px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
@@ -1100,9 +1104,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     <MapPin className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Location / Address</p>
-                    <p className="mt-0.5 text-xs font-black text-slate-900 break-words leading-snug">{room.address || 'Bhadrachalam, Telangana'}</p>
-                    <p className="mt-1 text-[10px] font-semibold text-slate-500">Tourist destination route</p>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Location / Region</p>
+                    <p className="mt-0.5 text-xs font-black text-slate-900 break-words leading-snug">Godavari Riverfront Region, Bhadrachalam</p>
+                    <p className="mt-1 text-[10px] font-semibold text-amber-700 font-bold">Report to Central Office first · Exact stay location & property directions issued in ticket voucher upon booking</p>
                   </div>
                 </div>
 
@@ -1420,31 +1424,34 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   )}
                 </div>
 
-                {/* Right: Map */}
+                {/* Right: Central Office Map */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-400">Interactive Location Map</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-400">Reporting Hub Location Map</p>
                     <a
-                      href={`https://maps.google.com/?q=${encodeURIComponent(room.address || room.lodge_name || 'Bhadrachalam')}`}
+                      href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[10px] font-black text-[#0d6e75] hover:underline"
                     >
-                      <span>Open in Google Maps</span>
+                      <span>Open Office Location Map</span>
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
 
                   <div className="relative h-[260px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-inner">
                     <iframe
-                      title={`${room.lodge_name} map`}
-                      src={embedUrl || `https://maps.google.com/maps?q=${encodeURIComponent(room.address || room.lodge_name || 'Bhadrachalam')}&z=14&output=embed`}
+                      title="TS Boat Tourism Central Office Map"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.622075248225!2d80.8840206!3d17.6680497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1785936445858!5m2!1sen!2sin"
                       className="h-full w-full border-0"
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                     />
                   </div>
+                  <p className="text-[10px] font-bold text-slate-500 text-center">
+                    📍 TS Boat Tourism Central Office, Bhadrachalam. All guests report here first to collect physical room vouchers & property directions.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1584,7 +1591,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             </section>
           )}
         </div>
-        <aside className="hidden lg:block lg:pt-1 self-start sticky top-[92px]">
+        <aside className="hidden lg:block lg:pt-1 self-start sticky top-[92px] max-h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin">
           <div className="w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg transition duration-300 hover:shadow-xl">
 
             {/* Header Banner - Matching Packages Image 2 */}
@@ -2144,64 +2151,87 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                         ? finalTotal
                         : Math.min(finalTotal, Math.max(minPayable, parsedCustom));
                       const isPartial = effectivePay < finalTotal;
+                      const balanceDue = finalTotal - effectivePay;
+                      const isAdvSel = customPayAmount !== '';
+
                       return (
-                        <div className="pt-3 border-t border-slate-200/60 space-y-2.5">
+                        <div className="pt-3 border-t border-slate-200/60">
                           {advType !== 'FULL_PAYMENT' ? (
                             <>
-                              <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2">
-                                <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
-                                <p className="text-[10px] font-bold text-amber-700 leading-4">{noticeText}</p>
+                              {/* Section header */}
+                              <div className="flex items-center gap-1.5 mb-2.5">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Payment Option</span>
+                                <div className="flex-1 h-px bg-slate-100" />
+                                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">Advance available</span>
                               </div>
 
-                              <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                                <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => setCustomPayAmount('')}
-                                    className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount === '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
-                                  >
-                                    Full
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                                    className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customPayAmount !== '' ? 'bg-[#0d6e75] text-white shadow-sm' : 'text-slate-500'}`}
-                                  >
-                                    {optionLabel}
-                                  </button>
-                                </div>
+                              {/* Card grid */}
+                              <div className="grid grid-cols-2 gap-2">
+                                {/* FULL PAY card */}
+                                <button
+                                  type="button"
+                                  onClick={() => setCustomPayAmount('')}
+                                  className={`relative flex flex-col items-start text-left rounded-xl border-2 px-3 py-2.5 transition-all duration-150 focus:outline-none ${
+                                    !isAdvSel
+                                      ? 'border-[#0d6e75] bg-[#f0fafa] shadow-sm'
+                                      : 'border-slate-200 bg-white hover:border-slate-300'
+                                  }`}
+                                >
+                                  <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 shrink-0 ${!isAdvSel ? 'border-[#0d6e75]' : 'border-slate-300'}`}>
+                                    {!isAdvSel && <div className="h-1.5 w-1.5 rounded-full bg-[#0d6e75]" />}
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">Full Pay</span>
+                                  <span className={`text-base font-black leading-none ${!isAdvSel ? 'text-[#0d6e75]' : 'text-slate-700'}`}>
+                                    ₹{finalTotal.toLocaleString('en-IN')}
+                                  </span>
+                                  <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Pay now, nothing later</span>
+                                </button>
 
-                                {customPayAmount !== '' ? (
-                                  <div className="flex-1 min-w-[110px] flex items-center gap-1 bg-white border border-[#0d6e75]/40 rounded-lg px-2 py-1 shadow-sm">
-                                    <span className="text-xs font-black text-slate-400">₹</span>
-                                    <input
-                                      type="text"
-                                      inputMode="numeric"
-                                      value={customPayAmount}
-                                      onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                      onBlur={() => {
-                                        const v = parseInt(customPayAmount, 10);
-                                        if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                                        else if (v >= finalTotal) setCustomPayAmount('');
-                                        else setCustomPayAmount(String(v));
-                                      }}
-                                      className="flex-1 bg-transparent text-xs font-black text-slate-800 outline-none w-0 min-w-0"
-                                      placeholder={String(minPayable)}
-                                    />
-                                    <span className="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">now</span>
+                                {/* ADVANCE PAY card */}
+                                <button
+                                  type="button"
+                                  onClick={() => { if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                                  className={`relative flex flex-col items-start text-left rounded-xl border-2 px-3 py-2.5 transition-all duration-150 focus:outline-none ${
+                                    isAdvSel
+                                      ? 'border-amber-500 bg-amber-50 shadow-sm'
+                                      : 'border-slate-200 bg-white hover:border-slate-300'
+                                  }`}
+                                >
+                                  {isAdvSel && (
+                                    <div className="absolute -top-2 right-2 bg-amber-500 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full">
+                                      Selected
+                                    </div>
+                                  )}
+                                  <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 shrink-0 ${isAdvSel ? 'border-amber-500' : 'border-slate-300'}`}>
+                                    {isAdvSel && <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
                                   </div>
-                                ) : (
-                                  <div className="flex-1 text-right shrink-0">
-                                    <span className="text-xs font-black text-[#0d6e75]">₹{finalTotal.toLocaleString('en-IN')}</span>
-                                    <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase tracking-wider">full</span>
-                                  </div>
-                                )}
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">{optionLabel}</span>
+                                  <span className={`text-base font-black leading-none ${isAdvSel ? 'text-amber-700' : 'text-slate-700'}`}>
+                                    ₹{minPayable.toLocaleString('en-IN')}
+                                  </span>
+                                  <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Balance before check-in</span>
+                                </button>
                               </div>
 
-                              {isPartial && (
-                                <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider px-0.5">
-                                  <span>Balance due later</span>
-                                  <span className="font-black text-slate-600">₹{(finalTotal - effectivePay).toLocaleString('en-IN')}</span>
+                              {/* Expanded detail when advance selected */}
+                              {isAdvSel && (
+                                <div className="mt-2 rounded-xl bg-white border border-amber-200 overflow-hidden">
+                                  <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-100">
+                                    <div>
+                                      <div className="text-[9px] font-black uppercase tracking-widest text-amber-600">Pay Now</div>
+                                      <div className="text-lg font-black text-amber-700 mt-0.5">₹{minPayable.toLocaleString('en-IN')}</div>
+                                      <div className="text-[9px] font-semibold text-amber-600">Required Advance</div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-[9px] font-black uppercase tracking-widest text-slate-500">Balance Later</div>
+                                      <div className="text-lg font-black text-slate-700 mt-0.5">₹{balanceDue.toLocaleString('en-IN')}</div>
+                                      <div className="text-[9px] font-semibold text-slate-400">Before check-in</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2 px-3 py-2">
+                                    <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                                    <p className="text-[9px] font-semibold text-amber-700 leading-relaxed">{noticeText}</p>
+                                  </div>
                                 </div>
                               )}
                             </>
@@ -2517,6 +2547,11 @@ const CustomDatePicker = ({
     const firstDay = getFirstDayOfMonth(calYear, calMonth);
     const days = [];
 
+    console.log(`[DatePicker ${label}] renderDays: availableDates size = ${availableDates?.size}, calMonth = ${calMonth}, minDateStr = ${min || getLocalToday()}`);
+    if (availableDates && availableDates.size > 0) {
+      console.log(`[DatePicker ${label}] first 5 availableDates values:`, Array.from(availableDates).slice(0, 5));
+    }
+
     // Empty spacers
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} />);
@@ -2533,6 +2568,9 @@ const CustomDatePicker = ({
       const isWeekendDay = dow === 0 || dow === 6;
 
       const hasInventory = availableDates ? availableDates.has(dateStr) : false;
+      if (i === 6) {
+        console.log(`[DatePicker ${label}] day 6 dateStr = ${dateStr}, isPast = ${isPast}, hasInventory = ${hasInventory}`);
+      }
       const isDisabled = isPast || (!hasInventory && !isAdmin);
 
       const dayFare = isWeekendDay ? (weekendPrice || weekdayPrice || 0) : (weekdayPrice || 0);

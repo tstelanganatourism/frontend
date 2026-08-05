@@ -455,11 +455,11 @@ export default function AdminPackagesPage() {
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-16 shrink-0 rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
                           <img
-                            src={pkg.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp'}
+                            src={pkg.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png'}
                             alt={pkg.title}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = 'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp';
+                              (e.currentTarget as HTMLImageElement).src = 'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png';
                             }}
                           />
                         </div>

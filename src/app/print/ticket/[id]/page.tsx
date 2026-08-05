@@ -71,6 +71,7 @@ interface BookingDetails {
   room_address?: string | null;
   room_map_url?: string | null;
   room_highlights?: { title: string; icon: string }[];
+  hotel_name?: string | null;
   itinerary?: { day_number: number; title: string; timing: string; duration?: string | null; meal_included?: boolean; description: string }[];
   pricing_snapshot?: any;
   has_refreshment_addon?: boolean;
@@ -94,9 +95,20 @@ interface BookingDetails {
   };
 }
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ secret?: string }>;
+function cleanMapUrl(url?: string | null, address?: string | null): string {
+  if (url) {
+    const match = url.match(/src=["']([^"']+)["']/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+  }
+  if (address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
+  return 'https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8';
 }
 
 export default async function PrintTicketPage({ params, searchParams }: PageProps) {
@@ -155,10 +167,10 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
 
   const reportingTime = isRoom ? (booking.room_checkin || 'TBA') : (booking.boarding_point?.departure_time || 'TBA');
   
-  const allocatedHotelName = booking.pricing_snapshot?.hotel_name || 
-                             booking.package_title ||
+  const allocatedHotelName = (isRoom && (booking.hotel_name || booking.package_title)) || 
                              (booking.room_address ? booking.room_address.split(',')[0].trim() : null) || 
-                             'Assigned Luxury Hotel (Details at Check-in)';
+                             booking.package_title ||
+                             'Godavari Riverside Bamboo Huts';
 
   const boardingTitle = isRoom
     ? allocatedHotelName
@@ -856,7 +868,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
       <div style={{ width: '100%', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
-          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp" 
+          src="/ts-boat-tourism-banner.jpg" 
           alt="TS Boat Tourism Banner" 
           style={{ width: '100%', height: 'auto', display: 'block' }} 
         />
@@ -891,12 +903,58 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
             {booking.variant_title && <span className="pkg-ribbon-variant">{booking.variant_title}</span>}
           </div>
 
-          {/* Banner warning notice */}
+          {/* Office visit notice — shown for ALL booking types */}
           {!isRoom && (
-            <div className="banner-warning">
-              <div className="banner-warning-icon">!</div>
-              <div className="banner-warning-text">
-                IMPORTANT BOARDING PASS NOTICE: Visit our Bhadrachalam office at the reporting point to verify this summary ticket and collect your manual boarding pass prior to departure.
+            <div style={{ marginBottom: '14px', background: 'linear-gradient(135deg, #fff7ed 0%, #fff3e0 100%)', border: '2px solid #ea580c', borderRadius: '12px', padding: '14px 18px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span>⚠️ MANDATORY FIRST STEP — BEFORE BOARDING</span>
+              </div>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#7c2d12', lineHeight: 1.5, marginBottom: '8px' }}>
+                You <strong>MUST</strong> visit our <strong>Bhadrachalam Collection Office</strong> first to verify this ticket and collect your <strong>manual boarding pass</strong>. Without a manual boarding pass, <strong>boarding is NOT permitted</strong>.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: '#92400e', lineHeight: 1.5 }}>
+                    📍 DOOR NO: 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
+                    Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana – 507 111
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#92400e', marginTop: '4px' }}>📞 +91 99513 69573 &nbsp;|&nbsp; +91 77801 19268</div>
+                </div>
+                <a
+                  href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ background: '#ea580c', color: '#ffffff', textDecoration: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: 800, fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-block' }}
+                >
+                  📍 Open Google Maps
+                </a>
+              </div>
+            </div>
+          )}
+          {isRoom && (
+            <div style={{ marginBottom: '14px', background: 'linear-gradient(135deg, #fff7ed 0%, #fff3e0 100%)', border: '2px solid #ea580c', borderRadius: '12px', padding: '14px 18px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '6px' }}>
+                ⚠️ MANDATORY FIRST STEP — BEFORE CHECK-IN
+              </div>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#7c2d12', lineHeight: 1.5, marginBottom: '8px' }}>
+                You <strong>MUST</strong> visit our <strong>Bhadrachalam office first</strong> to confirm your booking and collect your <strong>room keys / entry authorisation</strong> before proceeding to the property.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: '#92400e', lineHeight: 1.5 }}>
+                    📍 DOOR NO: 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
+                    Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana – 507 111
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#92400e', marginTop: '4px' }}>📞 +91 99513 69573 &nbsp;|&nbsp; +91 77801 19268</div>
+                </div>
+                <a
+                  href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ background: '#ea580c', color: '#ffffff', textDecoration: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: 800, fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-block' }}
+                >
+                  📍 Open Google Maps
+                </a>
               </div>
             </div>
           )}
@@ -944,6 +1002,38 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
               <div className="info-value" style={{ fontFamily: 'Courier New', fontSize: '13px', fontWeight: 800 }}>{booking.public_id}</div>
             </div>
           </div>
+
+          {/* Hotel / Property Address card — room bookings only */}
+          {isRoom && (booking.room_address || booking.room_map_url) && (
+            <div style={{ marginBottom: '14px', background: '#f0fafa', border: '1.5px solid #b2d8d8', borderRadius: '10px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 900, color: '#0a5a6b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                  🏨 {allocatedHotelName}
+                </div>
+                {booking.room_address && (
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102f3a', lineHeight: 1.5 }}>
+                    {booking.room_address}
+                  </div>
+                )}
+                {booking.room_checkin && (
+                  <div style={{ fontSize: '11px', color: '#415865', marginTop: '6px' }}>
+                    <strong>Check-in:</strong> {booking.room_checkin}
+                    {booking.room_checkout && <> &nbsp;|&nbsp; <strong>Check-out:</strong> {booking.room_checkout}</>}
+                  </div>
+                )}
+              </div>
+              {booking.room_map_url && (
+                <a
+                  href={cleanMapUrl(booking.room_map_url, booking.room_address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'inline-block', background: '#1a6b7a', color: '#ffffff', borderRadius: '8px', padding: '8px 14px', fontWeight: 800, fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
+                >
+                  📍 Open Google Maps
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Passenger Table */}
           <div className="section-header">Passenger Details</div>

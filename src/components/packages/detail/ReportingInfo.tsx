@@ -20,7 +20,7 @@ const TS_BOAT_OFFICE = {
   id: -999,
   title: 'TS Boat Tourism Main Office (Mandatory First Stop)',
   address: 'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111',
-  map_url: 'https://maps.google.com/maps?q=TS+Boat+Tourism+Om+Shanthi+Building+Bhadrachalam&z=16&output=embed',
+  map_url: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.622075248225!2d80.8840206!3d17.6680497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1785936445858!5m2!1sen!2sin',
   direct_map_url: 'https://maps.google.com/?q=Door+No.+10-1-2/1,+Ground+Floor,+Om+Shanthi+Building+Sataram,+Kalyana+Mandapam+Road,+near+SBI+ATM,+Bhadrachalam,+Telangana+507111',
   departure_time: 'Reporting Mandatory 45 Mins Before Travel',
   phone1: '+91 99513 69573',

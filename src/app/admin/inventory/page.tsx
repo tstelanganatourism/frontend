@@ -230,17 +230,7 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
               </button>
             </div>
           </div>
-            <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
-              <div className="flex gap-3">
-                <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
-                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                    Active bookings on this date **will not be affected or deleted** if you close these slots. Closing slots simply blocks any future new reservations from checkout. All existing confirmed bookings remain 100% active and safe.
-                  </p>
-                </div>
-              </div>
-            </div>
+
 
         </div>
 
@@ -368,17 +358,7 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
               {isClosed ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
             </button>
           </div>
-          <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
-            <div className="flex gap-3">
-              <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                  Active room bookings on this date **will not be affected or deleted** if you close these slots. Closing slots simply blocks any future new room reservations. All existing bookings remain 100% active and safe.
-                </p>
-              </div>
-            </div>
-          </div>
+
 
         </div>
         <div className="flex items-center gap-3 border-t border-slate-100 px-6 pb-6 pt-4">
@@ -524,17 +504,7 @@ function TransportEditDrawer({ row, onClose, onSaved }: { row: TransportInventor
             </div>
           </div>
 
-          <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
-            <div className="flex gap-3">
-              <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                  Closing or changing this transport count does not affect existing reservations. It only limits future checkouts for this package.
-                </p>
-              </div>
-            </div>
-          </div>
+
         </div>
 
         {/* Footer Section */}
@@ -935,17 +905,7 @@ function TransportDateManageModal({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
-                <div className="flex gap-3">
-                  <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
-                    <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                      Closing or deleting slots here blocks new reservations but does not cancel existing confirmed bookings.
-                    </p>
-                  </div>
-                </div>
-              </div>
+
             </div>
           )}
         </div>
@@ -1419,19 +1379,7 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
               </div>
             </div>
           )}
-          {hasInventory && (
-            <div className="rounded-2xl border border-sky-100 bg-[#5ac4d7]/5 p-5 shadow-sm">
-              <div className="flex gap-3">
-                <Info className="h-5 w-5 text-[#1a6b7a] shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-xs font-black uppercase tracking-wider text-[#0f3d56]">Booking Safety Policy</p>
-                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                    Active bookings on this date **will not be affected or deleted** if you close these slots. Closing slots simply blocks any future new reservations from checkout. All existing confirmed bookings remain 100% active and safe.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* Footer Section */}

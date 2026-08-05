@@ -72,6 +72,7 @@ interface BookingDetails {
   package_title: string;
   variant_title: string;
   target_type: string;
+  hotel_name?: string | null;
   room_checkin?: string | null;
   room_checkout?: string | null;
   room_checkout_date?: string | null;
@@ -100,6 +101,22 @@ interface BookingDetails {
   pricing_snapshot?: any;
   student_count: number;
   is_rescheduled?: boolean;
+}
+
+function cleanMapUrl(url?: string | null, address?: string | null): string {
+  if (url) {
+    const match = url.match(/src=["']([^"']+)["']/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+  }
+  if (address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
+  return 'https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8';
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -515,7 +532,7 @@ export default function BookingDetailPage() {
     booking.payment_ledger?.some(p => p.payment_method === 'PHONEPE' || p.payment_method === 'CASHFREE' || p.payment_method === 'RAZORPAY')
   );
   const gstNumber = '';
-
+  const displayHotelName = (booking.target_type === 'ROOM' && (booking.hotel_name || booking.package_title)) || null;
 
   return (
     <>
@@ -645,6 +662,59 @@ export default function BookingDetailPage() {
           )}
         </div>
       </div>
+      {/* ── Office Visit FIRST notice — permanent, always visible for active bookings ── */}
+      {(booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED' || booking.status === 'PARTIAL_PAID') && (
+        <div className="rounded-2xl border-2 border-orange-500 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 overflow-hidden shadow-sm">
+          <div className="flex items-start gap-0">
+            {/* Left accent bar */}
+            <div className="w-2 shrink-0 self-stretch bg-orange-500 rounded-l-xl" />
+            <div className="flex-1 px-5 py-4">
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-orange-600 text-lg">⚠️</span>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-orange-600">
+                      Mandatory First Step — Before Your {booking.target_type === 'ROOM' ? 'Check-In' : 'Departure'}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-orange-900 leading-relaxed mb-2">
+                    {booking.target_type === 'ROOM'
+                      ? 'You MUST visit our Bhadrachalam office first to confirm your booking and collect your room keys / entry authorisation before proceeding to the property.'
+                      : 'You MUST visit our Bhadrachalam office first — bring your printed ticket & filled passenger form to collect your manual boarding pass. Without it, boarding is NOT permitted.'}
+                  </p>
+                  <div className="flex flex-col gap-1 text-xs text-orange-800 font-semibold mb-3">
+                    <span>📍 DOOR NO: 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana – 507 111</span>
+                    <span>📞 +91 99513 69573 &nbsp;|&nbsp; +91 77801 19268</span>
+                  </div>
+                  <a
+                    href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
+                  >
+                    <MapPin className="h-3.5 w-3.5" />
+                    Open Google Maps App
+                  </a>
+                </div>
+
+                {/* Embedded Map Container */}
+                <div className="w-full lg:w-72 h-44 rounded-xl overflow-hidden border border-orange-200 shadow-inner shrink-0">
+                  <iframe
+                    title="Bhadrachalam Office Map"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.622075248225!2d80.8840206!3d17.6680497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1785936445858!5m2!1sen!2sin"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Main Ticket Info ── */}
@@ -698,8 +768,17 @@ export default function BookingDetailPage() {
                     </span>
                   )}
                 </div>
-                <h1 className="text-xl font-black text-slate-800 leading-tight">{booking.package_title}</h1>
-                <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">{booking.variant_title}</p>
+                {displayHotelName && (
+                  <h2 className="text-sm font-black text-[var(--color-brand-teal)] uppercase tracking-wider mb-1">
+                    🏢 {displayHotelName}
+                  </h2>
+                )}
+                <h1 className="text-xl font-black text-slate-800 leading-tight">
+                  {booking.target_type === 'ROOM' ? booking.variant_title : booking.package_title}
+                </h1>
+                <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">
+                  {booking.target_type === 'ROOM' ? booking.package_title : booking.variant_title}
+                </p>
               </div>
               <div className="text-left sm:text-right shrink-0">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Booking Ref ID</p>
@@ -791,21 +870,29 @@ export default function BookingDetailPage() {
                 </h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {booking.target_type === 'ROOM' && (
-                    <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm relative">
-                      <span className="text-xs font-bold text-indigo-900 pr-20">{booking.package_title}</span>
-                      <span className="text-[10px] text-indigo-700 font-semibold mt-1">
-                        {booking.variant_title} • Check-in {booking.room_checkin || 'TBA'} • Check-out {booking.room_checkout || 'TBA'}
-                      </span>
+                    <div className="flex flex-col justify-center p-4 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm relative">
+                      <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                        🏢 Room Stay Details
+                      </p>
+                      {displayHotelName && (
+                        <p className="font-extrabold text-indigo-900 text-sm">{displayHotelName}</p>
+                      )}
+                      <p className="font-bold text-indigo-800 text-xs mt-1">
+                        {booking.variant_title || booking.package_title} ({booking.package_title})
+                      </p>
+                      <p className="text-[11px] text-indigo-750 font-semibold mt-1.5">
+                        🗓️ Check-in: {booking.room_checkin || 'TBA'} • Check-out: {booking.room_checkout || 'TBA'}
+                      </p>
                       {booking.room_address && (
-                        <div className="flex items-center justify-between mt-1 pt-1 border-t border-indigo-100/50">
-                          <span className="text-[10px] text-indigo-600 font-semibold leading-relaxed mr-2">{booking.room_address}</span>
+                        <div className="flex items-start justify-between mt-3 pt-2 border-t border-indigo-150/60 gap-4">
+                          <p className="text-[11px] text-indigo-650 font-medium leading-relaxed">{booking.room_address}</p>
                           <a 
-                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.room_address)}`} 
+                            href={cleanMapUrl(booking.room_map_url || booking.pricing_snapshot?.room_map_url || booking.pricing_snapshot?.lodge_map_url, booking.room_address)} 
                             target="_blank" 
                             rel="noreferrer" 
-                            className="flex items-center gap-1 px-2 py-1 bg-white text-indigo-600 rounded text-[9px] font-bold shrink-0 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                            className="flex items-center gap-1 px-2.5 py-1 bg-white text-indigo-600 rounded text-[9.5px] font-bold shrink-0 hover:bg-indigo-100 transition-colors border border-indigo-200"
                           >
-                            <MapPin className="h-2.5 w-2.5" /> Map
+                            <MapPin className="h-2.5 w-2.5" /> View Map
                           </a>
                         </div>
                       )}

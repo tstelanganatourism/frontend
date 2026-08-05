@@ -257,7 +257,7 @@ export default function RoomsList({
 
       {/* Main Listing Layout */}
       <div className="mx-auto max-w-[112rem] px-3 py-7 pb-8 sm:px-5 lg:px-6 lg:pb-16 2xl:px-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] items-start">
           
           {/* FIXED Sidebar Filter */}
           <aside className="hidden lg:block sticky top-[100px] self-start">

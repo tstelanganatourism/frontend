@@ -1967,6 +1967,118 @@ export const BookingSidebarV3 = ({
             stepNumber={5}
           />
 
+          {/* ── Step 6: Payment Option (always visible on all screen sizes) ── */}
+          {selectedDate && (() => {
+            const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+            const advType = advancePaymentType || 'FULL_PAYMENT';
+            const advVal = advancePaymentValue || 0;
+
+            if (advType === 'FULL_PAYMENT') return null;
+
+            const advLabel = advType === 'PERCENTAGE' ? `${advVal}% Advance` : `₹${advVal} Advance`;
+            const balanceDue = finalTotal - effectivePayNow;
+
+            return (
+              <div className="sm:hidden rounded-2xl border-2 border-slate-200 bg-white p-4 space-y-3">
+                {/* Step header */}
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0d6e75] text-white text-[10px] font-black">6</div>
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-700">Payment Option</span>
+                  <div className="flex-1 h-px bg-slate-100" />
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Advance available</span>
+                </div>
+
+                {/* Two full-width cards stacked on mobile, side-by-side on sm+ */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                  {/* FULL PAY card */}
+                  <button
+                    type="button"
+                    onClick={() => { setCustomPayAmount(''); setIsAdvanceSelected(false); }}
+                    className={`relative flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all duration-150 focus:outline-none ${
+                      !isAdvanceSelected
+                        ? 'border-[#0d6e75] bg-[#f0fafa] shadow-md'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                  >
+                    {/* Radio */}
+                    <div className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                      !isAdvanceSelected ? 'border-[#0d6e75]' : 'border-slate-300'
+                    }`}>
+                      {!isAdvanceSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#0d6e75]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 leading-none mb-1">Full Pay</div>
+                      <div className={`text-2xl font-black leading-none tracking-tight ${
+                        !isAdvanceSelected ? 'text-[#0d6e75]' : 'text-slate-800'
+                      }`}>₹{formatINR(finalTotal)}</div>
+                      <div className="text-[10px] font-semibold text-slate-400 mt-1">Pay everything now · no balance later</div>
+                    </div>
+                    {!isAdvanceSelected && (
+                      <div className="shrink-0 bg-[#0d6e75] text-white text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg">Selected</div>
+                    )}
+                  </button>
+
+                  {/* ADVANCE PAY card */}
+                  <button
+                    type="button"
+                    onClick={() => { setIsAdvanceSelected(true); if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                    className={`relative flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all duration-150 focus:outline-none ${
+                      isAdvanceSelected
+                        ? 'border-amber-500 bg-amber-50 shadow-md'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                  >
+                    {/* Radio */}
+                    <div className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                      isAdvanceSelected ? 'border-amber-500' : 'border-slate-300'
+                    }`}>
+                      {isAdvanceSelected && <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 leading-none mb-1">{advLabel}</div>
+                      <div className={`text-2xl font-black leading-none tracking-tight ${
+                        isAdvanceSelected ? 'text-amber-600' : 'text-slate-800'
+                      }`}>₹{formatINR(minPayable)}</div>
+                      <div className="text-[10px] font-semibold text-slate-400 mt-1">Pay advance · balance at boarding</div>
+                    </div>
+                    {isAdvanceSelected && (
+                      <div className="shrink-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg">Selected</div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Expanded detail panel when advance selected */}
+                {isAdvanceSelected && (
+                  <div className="rounded-xl border border-amber-200 overflow-hidden">
+                    <div className="grid grid-cols-2 divide-x divide-amber-100 bg-amber-50">
+                      {/* Pay now */}
+                      <div className="px-4 py-3">
+                        <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">Pay Now</div>
+                        <div className="text-2xl font-black text-amber-700">₹{formatINR(minPayable)}</div>
+                        <div className="text-[10px] font-semibold text-amber-600 mt-1">Required Advance</div>
+                      </div>
+                      {/* Balance */}
+                      <div className="px-4 py-3">
+                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Balance Due</div>
+                        <div className="text-2xl font-black text-slate-700">₹{formatINR(balanceDue)}</div>
+                        <div className="text-[10px] font-semibold text-slate-400 mt-1">At boarding point</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 px-4 py-2.5 bg-white border-t border-amber-100">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[10px] font-semibold text-amber-700 leading-relaxed">
+                        {advType === 'PERCENTAGE'
+                          ? `Pay ${advVal}% advance now to secure your seats. The remaining ₹${formatINR(balanceDue)} is collected at the boarding point on travel day.`
+                          : `Pay ₹${advVal}/person advance now to secure your seats. The remaining ₹${formatINR(balanceDue)} is collected at the boarding point on travel day.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
             </div>
           </div>
 
@@ -2060,68 +2172,83 @@ export const BookingSidebarV3 = ({
                 </div>
               )}
             </div>
-
-            {selectedDate && (() => {
-              const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-              const advType = advancePaymentType || 'FULL_PAYMENT';
-              const advVal = advancePaymentValue || 0;
-              const optionLabel = advType === 'PERCENTAGE' ? `${advVal}% partial pay` : `₹${advVal} partial pay`;
-              const noticeText = advType === 'PERCENTAGE'
-                ? `Secured reservation: Pay ${advVal}% advance now to secure seats, pay balance at boarding.`
-                : `Secured reservation: Pay ₹${advVal}/person advance now to secure seats, pay balance at boarding.`;
-              
-              if (advType === 'FULL_PAYMENT') return null;
-
-              return (
-                <div className="pt-3.5 border-t border-slate-200/60 space-y-2.5">
-                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-100 px-2.5 py-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-[10px] font-bold text-amber-700 leading-normal">{noticeText}</p>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex bg-slate-200/60 rounded-lg p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => { setCustomPayAmount(''); setIsAdvanceSelected(false); }}
-                        className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition ${!isAdvanceSelected ? 'bg-[#0d6e75] text-white shadow-2xs' : 'text-slate-500'}`}
-                      >Full Pay</button>
-                      <button
-                        type="button"
-                        onClick={() => { setIsAdvanceSelected(true); if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                        className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition ${isAdvanceSelected ? 'bg-[#0d6e75] text-white shadow-2xs' : 'text-slate-500'}`}
-                      >{optionLabel}</button>
-                    </div>
-                    {isAdvanceSelected ? (
-                      <div className="flex items-center gap-1 bg-white border border-[#0d6e75]/40 rounded-lg px-2 py-0.5 shadow-2xs min-w-[110px]">
-                        <span className="text-xs font-black text-slate-400">₹</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={customPayAmount}
-                          onChange={(e) => setCustomPayAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                          onBlur={() => {
-                            const v = parseInt(customPayAmount, 10);
-                            if (isNaN(v) || v < minPayable) setCustomPayAmount(String(minPayable));
-                            else if (v >= finalTotal) { setCustomPayAmount(''); setIsAdvanceSelected(false); }
-                            else setCustomPayAmount(String(v));
-                          }}
-                          className="w-full bg-transparent text-xs font-black text-slate-800 outline-none"
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-xs font-black text-[#0d6e75]">₹{formatINR(finalTotal)} total</span>
-                    )}
-                  </div>
-                  {isPartial && (
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      <span>Due later at boarding</span>
-                      <span className="font-black text-slate-650">₹{formatINR(finalTotal - effectivePayNow)}</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
           </div>
+
+          {/* Payment Option for desktop — hidden on mobile (shown in left panel instead) */}
+          {selectedDate && (() => {
+            const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+            const advType = advancePaymentType || 'FULL_PAYMENT';
+            const advVal = advancePaymentValue || 0;
+            if (advType === 'FULL_PAYMENT') return null;
+            const advLabel = advType === 'PERCENTAGE' ? `${advVal}% Advance` : `₹${advVal} Advance`;
+            const balanceDue = finalTotal - effectivePayNow;
+            return (
+              <div className="hidden sm:block mt-3 pt-3 border-t border-slate-200/80">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Payment Option</span>
+                  <div className="flex-1 h-px bg-slate-100" />
+                  <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">Advance available</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setCustomPayAmount(''); setIsAdvanceSelected(false); }}
+                    className={`flex flex-col items-start rounded-xl border-2 px-3 py-2.5 text-left transition-all duration-150 focus:outline-none ${
+                      !isAdvanceSelected ? 'border-[#0d6e75] bg-[#f0fafa] shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 ${!isAdvanceSelected ? 'border-[#0d6e75]' : 'border-slate-300'}`}>
+                      {!isAdvanceSelected && <div className="h-1.5 w-1.5 rounded-full bg-[#0d6e75]" />}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">Full Pay</span>
+                    <span className={`text-base font-black leading-none ${!isAdvanceSelected ? 'text-[#0d6e75]' : 'text-slate-700'}`}>₹{formatINR(finalTotal)}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Pay now, nothing later</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsAdvanceSelected(true); if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                    className={`relative flex flex-col items-start rounded-xl border-2 px-3 py-2.5 text-left transition-all duration-150 focus:outline-none ${
+                      isAdvanceSelected ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    {isAdvanceSelected && (
+                      <div className="absolute -top-2 right-2 bg-amber-500 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full">Selected</div>
+                    )}
+                    <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 ${isAdvanceSelected ? 'border-amber-500' : 'border-slate-300'}`}>
+                      {isAdvanceSelected && <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">{advLabel}</span>
+                    <span className={`text-base font-black leading-none ${isAdvanceSelected ? 'text-amber-700' : 'text-slate-700'}`}>₹{formatINR(minPayable)}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Balance at boarding</span>
+                  </button>
+                </div>
+                {isAdvanceSelected && (
+                  <div className="mt-2 rounded-xl bg-white border border-amber-200 overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-100">
+                      <div>
+                        <div className="text-[9px] font-black uppercase tracking-widest text-amber-600">Pay Now</div>
+                        <div className="text-lg font-black text-amber-700 mt-0.5">₹{formatINR(minPayable)}</div>
+                        <div className="text-[9px] font-semibold text-amber-600">Required Advance</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-500">Balance Later</div>
+                        <div className="text-lg font-black text-slate-700 mt-0.5">₹{formatINR(balanceDue)}</div>
+                        <div className="text-[9px] font-semibold text-slate-400">At boarding</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 px-3 py-2">
+                      <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[9px] font-semibold text-amber-700 leading-relaxed">
+                        {advType === 'PERCENTAGE'
+                          ? `Pay ${advVal}% advance now — remaining ₹${formatINR(balanceDue)} payable at boarding.`
+                          : `Pay ₹${advVal}/person advance now — remaining ₹${formatINR(balanceDue)} payable at boarding.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           </div>
 
@@ -2179,11 +2306,16 @@ export const BookingSidebarV3 = ({
     <div className="sm:hidden shrink-0 border-t border-slate-200 bg-white px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex flex-col min-w-0">
         <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-          {selectedDate ? (isPartial ? 'Advance Payment' : 'Total Due') : 'Starting from'}
+          {!selectedDate ? 'Starting from' : isPartial ? 'Pay Now (Advance)' : 'Total Due'}
         </span>
-        <span className="text-lg font-black text-[#0d6e75] tracking-tight">
+        <span className={`text-xl font-black tracking-tight ${isPartial && selectedDate ? 'text-amber-600' : 'text-[#0d6e75]'}`}>
           ₹{formatINR(selectedDate ? effectivePayNow : (prices.grandTotal || startingPrice || 0))}
         </span>
+        {isPartial && selectedDate && (
+          <span className="text-[9px] font-semibold text-slate-400">
+            + ₹{formatINR((isAgent ? prices.agentPayable : prices.grandTotal) - effectivePayNow)} at boarding
+          </span>
+        )}
       </div>
       <button
         disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)}
@@ -2191,7 +2323,7 @@ export const BookingSidebarV3 = ({
         className={`group flex h-11 max-w-[190px] flex-1 items-center justify-center gap-1.5 rounded-xl px-4 text-[11px] font-black uppercase tracking-wider transition-all ${
           isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
             ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
-            : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md active:scale-[0.98]'
+            : isPartial && selectedDate ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-[0.98]' : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md active:scale-[0.98]'
         }`}
       >
         {isProcessingCheckout ? <Loader2 className="h-4 w-4 animate-spin" /> : (
@@ -2209,16 +2341,21 @@ export const BookingSidebarV3 = ({
     <div className="fixed bottom-[52px] sm:bottom-0 inset-x-0 bg-white border-t border-slate-200/80 px-4 py-2.5 flex items-center justify-between gap-4 z-40 lg:hidden shadow-[0_-12px_32px_rgba(15,61,86,0.14)]">
       <div className="flex flex-col min-w-0">
         <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-          {selectedDate ? (isPartial ? 'Advance Payment' : 'Total Fare') : 'Starting from'}
+          {!selectedDate ? 'Starting from' : isPartial ? 'Pay Now (Advance)' : 'Total Fare'}
         </span>
         <div className="flex items-baseline gap-1 mt-0.5">
-          <span className="text-lg sm:text-xl font-black text-[#0d6e75] tracking-tight">
+          <span className={`text-lg sm:text-xl font-black tracking-tight ${isPartial && selectedDate ? 'text-amber-600' : 'text-[#0d6e75]'}`}>
             ₹{formatINR(selectedDate ? effectivePayNow : (prices.grandTotal || startingPrice || 0))}
           </span>
           {isPartial && selectedDate && (
             <span className="text-[9px] font-bold text-slate-400">({paymentPercentage}%)</span>
           )}
         </div>
+        {isPartial && selectedDate && (
+          <span className="text-[9px] font-semibold text-slate-400">
+            + ₹{formatINR((isAgent ? prices.agentPayable : prices.grandTotal) - effectivePayNow)} balance at boarding
+          </span>
+        )}
       </div>
 
       <button
@@ -2227,7 +2364,7 @@ export const BookingSidebarV3 = ({
         className={`group h-11 shrink-0 rounded-xl px-5 text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
           isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
             ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
-            : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md hover:-translate-y-0.5 active:scale-[0.98]'
+            : isPartial && selectedDate ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:-translate-y-0.5 active:scale-[0.98]' : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md hover:-translate-y-0.5 active:scale-[0.98]'
         }`}
       >
         {isProcessingCheckout ? (
