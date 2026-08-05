@@ -20,7 +20,11 @@ const getApiBaseUrl = () => {
   if (process.env.NODE_ENV === 'development') {
     return 'http://127.0.0.1:8000';
   }
-  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://backend-st7o.onrender.com';
+  const envUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
+  if (envUrl && !envUrl.includes('127.0.0.1') && !envUrl.includes('localhost')) {
+    return envUrl.replace(/\/$/, '');
+  }
+  return 'https://backend-st7o.onrender.com';
 };
 
 export const API_BASE = getApiBaseUrl();
@@ -41,7 +45,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 // ─── Axios instance for Client Components ─────────────────────────────────────
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: typeof window !== 'undefined' ? '' : (process.env.INTERNAL_API_URL || process.env.BACKEND_URL || 'https://backend-st7o.onrender.com'),
+  baseURL: typeof window !== 'undefined' ? '' : API_BASE,
   withCredentials: true, // send HttpOnly refresh cookie
   headers: { 'Content-Type': 'application/json' },
   timeout: 15_000,
