@@ -32,7 +32,7 @@ export default function RoomCategoriesGrid({ categories }: { categories: RoomCat
 
         {/* Photography Background Image */}
         <Image
-          src="/images/stays_hero_bg.png"
+          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917195/ts_boat_tourism/images/apggofcaijeekofdotpa.jpg"
           alt="Stay Categories Canvas Background"
           fill
           sizes="100vw"

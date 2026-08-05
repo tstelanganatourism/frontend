@@ -71,7 +71,7 @@ export default async function StaysPage(props: { searchParams: Promise<Record<st
 
   return (
     <>
-      <link rel="preload" href="/images/stays-banner-2026.webp" as="image" type="image/webp" fetchPriority="high" />
+      <link rel="preload" href="https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp" as="image" type="image/webp" fetchPriority="high" />
       <RoomsList data={data} searchParams={searchParams} />
     </>
   );

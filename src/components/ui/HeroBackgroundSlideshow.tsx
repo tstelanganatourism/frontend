@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 
 // ─── Local high-resolution hero background slides ───────────────────────
 const SLIDES = [
-  '/images/boat-rides-banner-2026.webp',
-  '/images/stays-banner-2026.webp',
-  '/images/sightseeing-banner-2026.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
   '/home/godavari-hero-banner.jpg',
   '/home/hero-boat.jpg',
-  '/images/boat_rides_bg.webp',
-  '/images/stays_bg.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917160/ts_boat_tourism/images/qtfotnjzc08vf9qji54f.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917193/ts_boat_tourism/images/tvyoclvxd9gjgvdxwu0i.webp',
 ];
 
 export default function HeroBackgroundSlideshow() {

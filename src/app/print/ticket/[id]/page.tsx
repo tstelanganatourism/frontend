@@ -856,7 +856,7 @@ export default async function PrintTicketPage({ params, searchParams }: PageProp
       <div style={{ width: '100%', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
-          src="/images/boat-rides-banner-2026.webp" 
+          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp" 
           alt="TS Boat Tourism Banner" 
           style={{ width: '100%', height: 'auto', display: 'block' }} 
         />

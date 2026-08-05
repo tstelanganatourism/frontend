@@ -37,7 +37,7 @@ export default async function BoatRidesPage(props: { searchParams: Promise<Recor
   const { data } = await fetchInitialPackages(searchParams);
   return (
     <>
-      <link rel="preload" href="/images/boat-rides-banner-2026.webp" as="image" type="image/webp" fetchPriority="high" />
+      <link rel="preload" href="https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp" as="image" type="image/webp" fetchPriority="high" />
       <PackagesList data={data} pathname="/boat-rides" searchParams={searchParams} />
     </>
   );

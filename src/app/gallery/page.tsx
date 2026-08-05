@@ -9,16 +9,16 @@ import galleryData from './galleryData.json';
 const GALLERY_IMAGES = galleryData;
 
 const FALLBACK_LOCAL_IMAGES = [
-  '/images/boat-rides-banner-2026.webp',
-  '/images/stays-banner-2026.webp',
-  '/images/sightseeing-banner-2026.webp',
-  '/images/bamboo_hut_stay.png',
-  '/images/deluxe_ac_cottage.png',
-  '/images/forest_eco_hut.png',
-  '/images/bogatha-waterfalls.jpg',
-  '/images/gallery_hero_bg.png',
-  '/images/packages_hero_bg.png',
-  '/images/stays_hero_bg.png',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917152/ts_boat_tourism/images/znc8haggdanx17jwrh0d.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917166/ts_boat_tourism/images/ws1zlbadgrdv7o7ipecf.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917170/ts_boat_tourism/images/pbkmwkocejxedc8dpg12.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917162/ts_boat_tourism/images/tkfjjjah1xk9uloecqc9.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917171/ts_boat_tourism/images/uadyznucdhwm3ti9k6kx.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917174/ts_boat_tourism/images/tndmgituyh1ujvpbb2zb.jpg',
+  'https://res.cloudinary.com/r929tquv/image/upload/v1785917195/ts_boat_tourism/images/apggofcaijeekofdotpa.jpg',
   '/home/godavari-hero-banner.jpg',
   '/home/hero-boat.jpg',
   '/ts-boat-tourism-banner.jpg',
@@ -73,7 +73,7 @@ export default function GalleryPage() {
         
         {/* Rich Photography Background Image */}
         <Image
-          src="/images/gallery_hero_bg.png"
+          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917171/ts_boat_tourism/images/uadyznucdhwm3ti9k6kx.jpg"
           alt="Gallery Hero"
           fill
           className="object-cover opacity-60"

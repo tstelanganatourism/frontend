@@ -50,7 +50,7 @@ const filters = [
 
 const heroImages = [
   {
-    src: '/images/boat-rides-banner-2026.webp',
+    src: 'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp',
     alt: 'Official TS Boat Tourism Banner',
   },
   {
@@ -173,11 +173,9 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
           </button>
           {brochureUrl && (
             <a
-              href={brochureUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`/api/download?url=${encodeURIComponent(brochureUrl)}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}`}
               className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
-              title="Open Direct PDF"
+              title="Download PDF"
             >
               PDF
             </a>
@@ -216,7 +214,7 @@ export default function BrochuresList({ data }: { data?: PackageData }) {
         
         {/* Rich Photography Background Image */}
         <Image
-          src="/images/brochures_hero_bg.png"
+          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917164/ts_boat_tourism/images/gd4pulduucghrnfzel5z.jpg"
           alt="Papikondalu river hills"
           fill
           sizes="100vw"

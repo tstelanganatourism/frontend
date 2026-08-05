@@ -254,10 +254,10 @@ export default function PackagesList({
   const resultLabel = isBoatRide ? 'boat ride experiences' : isSightseeing ? 'sightseeing trips' : 'experiences';
 
   const backgroundImage = isBoatRide
-    ? '/images/boat-rides-banner-2026.webp'
+    ? 'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp'
     : isSightseeing
-      ? '/images/sightseeing-banner-2026.webp'
-      : '/images/packages_hero_bg.png';
+      ? 'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp'
+      : 'https://res.cloudinary.com/r929tquv/image/upload/v1785917174/ts_boat_tourism/images/tndmgituyh1ujvpbb2zb.jpg';
 
   const heroImagePosition = isBoatRide ? 'center 58%' : isSightseeing ? 'center 54%' : 'center';
 

@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
     siteName: "TS Boat Tourism",
     images: [{
-      url: "/images/boat-rides-banner-2026.webp",
+      url: "https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp",
       width: 1200,
       height: 630,
       alt: "TS Boat Tourism | Papikondalu River Cruise"
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "TS Boat Tourism | Best Bhadrachalam Tours",
     description: "Your premium gateway to the Godavari river, Papikondalu hills and Bhadrachalam travel packages.",
-    images: ["/images/boat-rides-banner-2026.webp"],
+    images: ["https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp"],
   },
   alternates: {
     canonical: "/",
@@ -129,7 +129,7 @@ export default function RootLayout({
                 "alternateName": "TS Boat Tourism",
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com",
                 "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
-                "image": "/images/boat-rides-banner-2026.webp",
+                "image": "https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp",
                 "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 99513 69573",
                 "email": "tstelanganatourism@gmail.com",

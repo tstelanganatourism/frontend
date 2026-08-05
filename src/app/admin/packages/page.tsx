@@ -455,11 +455,11 @@ export default function AdminPackagesPage() {
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-16 shrink-0 rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
                           <img
-                            src={pkg.cover_image_url || '/images/boat-rides-banner-2026.webp'}
+                            src={pkg.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp'}
                             alt={pkg.title}
                             className="h-full w-full object-cover"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = '/images/boat-rides-banner-2026.webp';
+                              (e.currentTarget as HTMLImageElement).src = 'https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp';
                             }}
                           />
                         </div>

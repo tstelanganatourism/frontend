@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getHdImageUrl(url: string | null | undefined): string {
-  if (!url || !url.trim()) return "/images/boat-rides-banner-2026.webp";
+  if (!url || !url.trim()) return "https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp";
   if (url.includes("e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6")) {
-    return "/images/boat-rides-banner-2026.webp";
+    return "https://res.cloudinary.com/r929tquv/image/upload/v1785917157/ts_boat_tourism/images/evafz4lgjowhjztykdvz.webp";
   }
   if (url.includes("res.cloudinary.com") && !url.includes("/image/upload/q_") && !url.includes("/image/upload/w_")) {
     return url.replace("/image/upload/", "/image/upload/w_1920,q_auto:best,f_auto/");

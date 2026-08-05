@@ -415,9 +415,11 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
                   </p>
                 </div>
                 <a
-                  href={pkg.brochure_pdf_url || pkg.generated_brochure_url || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={
+                    pkg.brochure_pdf_url || pkg.generated_brochure_url
+                      ? `/api/download?url=${encodeURIComponent(pkg.brochure_pdf_url || pkg.generated_brochure_url || "")}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}`
+                      : '#'
+                  }
                   className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a6b7a] hover:bg-[#13505c] text-white px-6 py-3.5 text-xs font-black uppercase tracking-wider shadow-md transition hover:-translate-y-0.5"
                 >
                   📥 Download Brochure PDF

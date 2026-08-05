@@ -32,7 +32,7 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
 
         {/* Photography Background Image */}
         <Image
-          src="/images/packages_hero_bg.png"
+          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917174/ts_boat_tourism/images/tndmgituyh1ujvpbb2zb.jpg"
           alt="Tour Categories Canvas Background"
           fill
           sizes="100vw"
