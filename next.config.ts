@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
-const backendOrigin = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
+const defaultProdBackend = process.env.RENDER_EXTERNAL_URL ?? "https://backend-st7o.onrender.com";
+const defaultBackend = process.env.NODE_ENV === "production" ? defaultProdBackend : "http://127.0.0.1:8000";
+const backendOrigin = (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || defaultBackend).replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   experimental: {
