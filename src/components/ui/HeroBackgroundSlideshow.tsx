@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 
 // ─── Local high-resolution hero background slides ───────────────────────
 const SLIDES = [
-  'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png',
-  'https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp',
-  'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/w_1600,f_auto,q_auto/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png',
+  'https://res.cloudinary.com/r929tquv/image/upload/w_1600,f_auto,q_auto/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/w_1600,f_auto,q_auto/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
   '/home/godavari-hero-banner.jpg',
   '/home/hero-boat.jpg',
-  'https://res.cloudinary.com/r929tquv/image/upload/v1785917160/ts_boat_tourism/images/qtfotnjzc08vf9qji54f.webp',
-  'https://res.cloudinary.com/r929tquv/image/upload/v1785917193/ts_boat_tourism/images/tvyoclvxd9gjgvdxwu0i.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/w_1600,f_auto,q_auto/v1785917160/ts_boat_tourism/images/qtfotnjzc08vf9qji54f.webp',
+  'https://res.cloudinary.com/r929tquv/image/upload/w_1600,f_auto,q_auto/v1785917193/ts_boat_tourism/images/tvyoclvxd9gjgvdxwu0i.webp',
 ];
 
 export default function HeroBackgroundSlideshow() {
@@ -43,6 +43,7 @@ export default function HeroBackgroundSlideshow() {
               src={src}
               alt="Papikondalu Godavari River Cruise Hero Background"
               loading={i === 0 ? 'eager' : 'lazy'}
+              fetchPriority={i === 0 ? 'high' : 'low'}
               decoding="async"
               className="h-full w-full object-cover object-center transform scale-105 transition-transform duration-10000 ease-out"
             />

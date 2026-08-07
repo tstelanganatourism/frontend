@@ -5,12 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getHdImageUrl(url: string | null | undefined): string {
-  if (!url || !url.trim()) return "https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png";
-  if (url.includes("res.cloudinary.com") && !url.includes("/image/upload/q_") && !url.includes("/image/upload/w_")) {
-    return url.replace("/image/upload/", "/image/upload/w_1920,q_auto:best,f_auto/");
+export function getOptimizedImageUrl(url: string | null | undefined, width: number = 800): string {
+  if (!url || !url.trim()) return "https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png";
+  if (url.includes("res.cloudinary.com") && !url.includes("/image/upload/w_") && !url.includes("/image/upload/f_auto")) {
+    return url.replace("/image/upload/", `/image/upload/w_${width},f_auto,q_auto/`);
   }
   return url;
+}
+
+export function getHdImageUrl(url: string | null | undefined): string {
+  return getOptimizedImageUrl(url, 1200);
 }
 
 export function parseValidationError(err: any): string[] {

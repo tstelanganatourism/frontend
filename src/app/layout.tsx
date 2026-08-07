@@ -93,6 +93,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         {/* Font loading and preloads managed by Next.js */}
         <script
           dangerouslySetInnerHTML={{
