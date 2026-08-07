@@ -281,6 +281,30 @@ export const BookingSidebarV3 = ({
     return () => window.removeEventListener('pageshow', handlePageShow);
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window.location.search.includes('restore_pkg_checkout=true') || sessionStorage.getItem('last_pkg_checkout_auto_open') === 'true')) {
+      const savedDate = sessionStorage.getItem('last_pkg_checkout_date');
+      const savedVariantId = sessionStorage.getItem('last_pkg_checkout_variant_id');
+      const savedAdults = sessionStorage.getItem('last_pkg_checkout_adults');
+      const savedChildren = sessionStorage.getItem('last_pkg_checkout_children');
+
+      if (savedDate) setSelectedDate(savedDate);
+      if (savedVariantId) setSelectedVariantId(Number(savedVariantId));
+      if (savedAdults) setAdults(Number(savedAdults));
+      if (savedChildren) setChildren(Number(savedChildren));
+
+      setShowPassengerModal(true);
+      sessionStorage.removeItem('last_pkg_checkout_auto_open');
+      toast.success("Welcome back! Your package configuration has been restored.");
+
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('restore_pkg_checkout');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      } catch (e) {}
+    }
+  }, []);
+
   // Fetch availability when month changes
   useEffect(() => {
     if (packageSlug) {
@@ -2383,9 +2407,19 @@ export const BookingSidebarV3 = ({
       <ConfirmModal
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
-        onConfirm={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)}
+        onConfirm={() => {
+          if (typeof window !== 'undefined') {
+            if (selectedDate) sessionStorage.setItem('last_pkg_checkout_date', selectedDate);
+            if (selectedVariantId) sessionStorage.setItem('last_pkg_checkout_variant_id', String(selectedVariantId));
+            if (adults) sessionStorage.setItem('last_pkg_checkout_adults', String(adults));
+            if (children) sessionStorage.setItem('last_pkg_checkout_children', String(children));
+            sessionStorage.setItem('last_pkg_checkout_auto_open', 'true');
+          }
+          const redirectUrl = typeof window !== 'undefined' ? window.location.pathname + '?restore_pkg_checkout=true' : '';
+          router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+        }}
         title="Verification Required"
-        message="Please log in to continue booking your tickets."
+        message="Please log in to continue booking your tickets. Your selected travel date, package tier, and passenger choices will be saved and restored."
         confirmText="Proceed to Login"
         cancelText="Cancel"
       />

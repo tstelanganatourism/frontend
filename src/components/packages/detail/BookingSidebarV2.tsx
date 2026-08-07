@@ -2477,9 +2477,19 @@ export const BookingSidebarV2 = ({
       <ConfirmModal
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
-        onConfirm={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)}
+        onConfirm={() => {
+          if (typeof window !== 'undefined') {
+            if (selectedDate) sessionStorage.setItem('last_checkout_date', selectedDate);
+            if (selectedVariantId) sessionStorage.setItem('last_checkout_selected_variant_id', String(selectedVariantId));
+            if (adults) sessionStorage.setItem('last_checkout_adults', String(adults));
+            if (children) sessionStorage.setItem('last_checkout_children', String(children));
+            sessionStorage.setItem('last_checkout_auto_open', 'true');
+          }
+          const redirectUrl = typeof window !== 'undefined' ? window.location.pathname + '?restore_checkout=true' : '';
+          router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+        }}
         title="Verification Required"
-        message="Please log in to continue booking your tickets."
+        message="Please log in to continue booking your tickets. Your selected travel date, package tier, and passenger choices will be saved and restored."
         confirmText="Proceed to Login"
         cancelText="Cancel"
       />

@@ -336,16 +336,17 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('restore_checkout=true')) {
+    if (typeof window !== 'undefined' && (window.location.search.includes('restore_checkout=true') || sessionStorage.getItem('last_checkout_auto_open_modal') === 'true')) {
       const savedCustomPay = sessionStorage.getItem('last_checkout_custom_pay');
       const savedGateway = sessionStorage.getItem('last_checkout_gateway');
       const savedVariantId = sessionStorage.getItem('last_checkout_selected_variant_id');
       const savedArrivalDate = sessionStorage.getItem('last_checkout_arrival_date');
       const savedDepartureDate = sessionStorage.getItem('last_checkout_departure_date');
+      const savedRoomsCount = sessionStorage.getItem('last_checkout_rooms_count');
       const savedGuests = sessionStorage.getItem('last_checkout_guests');
       const savedSlotIndex = sessionStorage.getItem('last_checkout_selected_slot_index');
       
-      if (savedCustomPay !== null) setCustomPayAmount(savedCustomPay);
+      if (savedCustomPay !== null && savedCustomPay !== '') setCustomPayAmount(savedCustomPay);
       if (savedGateway === 'PHONEPE' || savedGateway === 'CASHFREE') {
         setSelectedGateway(savedGateway as 'PHONEPE' | 'CASHFREE');
       }
@@ -358,16 +359,25 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       if (savedDepartureDate) {
         setDepartureDate(savedDepartureDate);
       }
+      if (savedRoomsCount) {
+        setRooms(Number(savedRoomsCount));
+      }
       if (savedGuests) {
         setAdults(Number(savedGuests));
       }
-      if (savedSlotIndex !== null) {
+      if (savedSlotIndex !== null && savedSlotIndex !== undefined && savedSlotIndex !== '') {
         setSelectedSlotIndex(Number(savedSlotIndex));
       }
       
-      // Auto-open passenger details modal
-      setShowPassengerModal(true);
+      // Auto-open reservation configure modal so user resumes seamlessly
+      setIsBookingModalOpen(true);
+      if (savedArrivalDate && savedDepartureDate) {
+        setShowPassengerModal(true);
+      }
       
+      sessionStorage.removeItem('last_checkout_auto_open_modal');
+      toast.success("Welcome back! Your stay configuration has been restored.");
+
       // Clean up search parameters so refresh doesn't pop it open again
       try {
         const url = new URL(window.location.href);
@@ -2312,9 +2322,21 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       <ConfirmModal
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
-        onConfirm={() => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`)}
+        onConfirm={() => {
+          if (typeof window !== 'undefined') {
+            if (selectedVariantId) sessionStorage.setItem('last_checkout_selected_variant_id', String(selectedVariantId));
+            if (arrivalDate) sessionStorage.setItem('last_checkout_arrival_date', arrivalDate);
+            if (departureDate) sessionStorage.setItem('last_checkout_departure_date', departureDate);
+            if (roomsCount) sessionStorage.setItem('last_checkout_rooms_count', String(roomsCount));
+            if (adults) sessionStorage.setItem('last_checkout_guests', String(adults));
+            if (selectedSlotIndex !== null && selectedSlotIndex !== undefined) sessionStorage.setItem('last_checkout_selected_slot_index', String(selectedSlotIndex));
+            sessionStorage.setItem('last_checkout_auto_open_modal', 'true');
+          }
+          const redirectUrl = typeof window !== 'undefined' ? window.location.pathname + '?restore_checkout=true' : '';
+          router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+        }}
         title="Verification Required"
-        message="Please log in to continue booking your reservation."
+        message="Please log in to continue booking your reservation. Your selected dates, room tier, and guest options will be saved and restored."
         confirmText="Proceed to Login"
         cancelText="Cancel"
       />
