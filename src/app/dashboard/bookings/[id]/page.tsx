@@ -77,6 +77,7 @@ interface BookingDetails {
   room_checkout?: string | null;
   room_checkout_date?: string | null;
   room_address?: string | null;
+  room_map_url?: string | null;
   passengers: Passenger[];
   agent_id: number | null;
   agent_name: string | null;

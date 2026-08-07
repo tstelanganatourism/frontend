@@ -7,7 +7,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass all requests through to the network.
-  // An empty fetch handler can intercept requests but cause them to hang/fail in certain browsers or throttled connections.
+  // Only handle same-origin GET requests; let browser handle cross-origin images & API calls directly
+  if (event.request.method !== 'GET') return;
+  try {
+    const url = new URL(event.request.url);
+    if (url.origin !== self.location.origin) return;
+  } catch (e) {
+    return;
+  }
   event.respondWith(fetch(event.request));
 });

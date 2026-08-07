@@ -111,7 +111,13 @@ function cleanMapUrl(url?: string | null, address?: string | null): string {
   return 'https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8';
 }
 
-export default async function PrintTicketPage({ params, searchParams }: PageProps) {
+export default async function PrintTicketPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ secret?: string }>;
+}) {
   const { id } = await params;
   const { secret } = await searchParams;
 

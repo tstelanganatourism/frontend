@@ -64,7 +64,7 @@ const heroImages = [
 ];
 
 function getActiveBrochureUrl(pkg: BrochurePackage) {
-  return pkg.generated_brochure_url || pkg.brochure_pdf_url || '';
+  return pkg.generated_brochure_url || pkg.brochure_pdf_url || `/print/package/${pkg.slug}`;
 }
 
 function formatPrice(value?: number | string | null) {

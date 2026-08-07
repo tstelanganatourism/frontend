@@ -403,30 +403,30 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
           <PackagePolicies policies={pkg.policies} primaryBoarding={pkg.boarding_points?.[0]} />
 
           {/* Visual Brochure Download Panel */}
-          {(pkg.generated_brochure_url || pkg.brochure_pdf_url) && (
-            <section id="brochure" className="scroll-mt-32">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">Offline Planning</p>
-              <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">Official Tour Brochure</h2>
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 transition hover:shadow-md">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-black text-[#0f3d56]">Download PDF Brochure</h3>
-                  <p className="text-xs font-semibold leading-relaxed text-slate-500 max-w-xl">
-                    Get the complete verified travel itinerary, detailed package variants pricing structure, boarding instructions, and rules in a beautifully structured, high-resolution PDF brochure for offline viewing.
-                  </p>
-                </div>
-                <a
-                  href={
-                    pkg.brochure_pdf_url || pkg.generated_brochure_url
-                      ? `/api/download?url=${encodeURIComponent(pkg.brochure_pdf_url || pkg.generated_brochure_url || "")}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}`
-                      : '#'
-                  }
-                  className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a6b7a] hover:bg-[#13505c] text-white px-6 py-3.5 text-xs font-black uppercase tracking-wider shadow-md transition hover:-translate-y-0.5"
-                >
-                  📥 Download Brochure PDF
-                </a>
+          <section id="brochure" className="scroll-mt-32">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f8d7d]">Offline Planning</p>
+            <h2 className="mt-2 text-2xl font-black text-[#102231] sm:text-3xl">Official Tour Brochure</h2>
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 transition hover:shadow-md">
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-[#0f3d56]">Download PDF Brochure</h3>
+                <p className="text-xs font-semibold leading-relaxed text-slate-500 max-w-xl">
+                  Get the complete verified travel itinerary, detailed package variants pricing structure, boarding instructions, and rules in a beautifully structured, high-resolution PDF brochure for offline viewing.
+                </p>
               </div>
-            </section>
-          )}
+              <a
+                href={
+                  pkg.brochure_pdf_url || pkg.generated_brochure_url
+                    ? `/api/download?url=${encodeURIComponent(pkg.brochure_pdf_url || pkg.generated_brochure_url || "")}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}`
+                    : `/print/package/${pkg.slug}`
+                }
+                target={pkg.brochure_pdf_url || pkg.generated_brochure_url ? '_self' : '_blank'}
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a6b7a] hover:bg-[#13505c] text-white px-6 py-3.5 text-xs font-black uppercase tracking-wider shadow-md transition hover:-translate-y-0.5"
+              >
+                📥 Download Brochure PDF
+              </a>
+            </div>
+          </section>
 
           <PackageGallery gallery={pkg.gallery} />
         </div>
