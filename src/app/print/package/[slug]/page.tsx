@@ -61,13 +61,15 @@ interface Pkg {
   extras?: ExtraItem[];
 }
 
+import { apiFetch } from '@/lib/api';
+
 async function getPackage(slug: string): Promise<Pkg | null> {
   try {
-    const backendUrl = process.env.BACKEND_URL ?? 'http://127.0.0.1:8000';
-    const res = await fetch(`${backendUrl}/api/v1/packages/${slug}`, { cache: 'no-store' });
+    const res = await apiFetch(`/api/v1/packages/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
     return res.json();
-  } catch {
+  } catch (e) {
+    console.error(`[getPackage] Error fetching package ${slug}:`, e);
     return null;
   }
 }
