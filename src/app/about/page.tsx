@@ -20,7 +20,10 @@ import {
   Trees, 
   Sun, 
   CheckCircle2, 
-  ChevronRight
+  ChevronRight,
+  Play,
+  X,
+  Camera
 } from 'lucide-react';
 import { useLanguageStore } from '@/stores/languageStore';
 
@@ -167,12 +170,47 @@ const HERITAGE_PLACES: HeritagePlace[] = [
   }
 ];
 
+// Curated 6-photo showcase for the About page media strip
+const MOMENTS_PHOTOS = [
+  {
+    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+    label: 'Papikondalu Gorge'
+  },
+  {
+    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp',
+    label: 'Godavari River'
+  },
+  {
+    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+    label: 'Kolluru Bamboo Huts'
+  },
+  {
+    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1785916631/ts_boat_tourism/heritage/bdbrbzsh2gdxsxefhcvu.jpg',
+    label: 'Bhadrachalam Temple'
+  },
+  {
+    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
+    label: 'Campfire at Huts'
+  },
+  {
+    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1785916639/ts_boat_tourism/heritage/jehnpbngrz8tic8ybfqg.jpg',
+    label: 'Maredumilli Forest'
+  },
+];
+
+// Feature video — replace these URLs after uploading to Cloudinary
+// To add your video: upload to ts_boat_tourism/videos/gallery/ in Cloudinary
+// Then paste the secure_url below
+const FEATURE_VIDEO_URL = 'https://res.cloudinary.com/r929tquv/video/upload/v1786218875/ts_boat_tourism/videos/gallery/dji_0949_1786218854.mp4';
+const FEATURE_VIDEO_POSTER = 'https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill/v1786218875/ts_boat_tourism/videos/gallery/dji_0949_1786218854.jpg';
+
 export default function AboutPage() {
   const language = useLanguageStore((s) => s.language);
   const isTe = language === 'te';
 
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [videoOpen, setVideoOpen] = useState<boolean>(false);
 
   const filteredHeritage = HERITAGE_PLACES.filter(place => {
     const matchesCategory = activeCategory === 'all' || place.category === activeCategory;
@@ -384,6 +422,165 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      {/* 3.5 — OUR MOMENTS: CURATED PHOTO STRIP + FEATURE VIDEO */}
+      <section className="py-14 sm:py-20 bg-white border-b border-slate-200 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* Section header */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-teal-50 border border-teal-100 text-[#1598a1] text-xs font-black uppercase tracking-widest mb-3">
+              <Camera className="w-3.5 h-3.5" />
+              <span>{isTe ? 'మా ప్రయాణ క్షణాలు' : 'Our Moments'}</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0f3d56] leading-tight">
+              {isTe ? 'జ్ఞాపకాలుగా మిగిలే అనుభవాలు' : 'Experiences That Stay With You'}
+            </h2>
+            <p className="text-slate-500 text-sm sm:text-base max-w-2xl mx-auto mt-3 font-medium">
+              {isTe
+                ? 'గోదావరి నది ప్రయాణంలో ప్రతి క్షణం ఒక అపూర్వ జ్ఞాపకం. మా యాత్రికుల అనుభవాలను కెమెరాలో చిత్రీకరించాం.'
+                : 'Every journey on the Godavari is a memory worth capturing. Here are real moments from our tours — the kind no brochure can replicate.'
+              }
+            </p>
+          </div>
+
+          {/* Photo strip — 6 curated photos */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-10">
+            {MOMENTS_PHOTOS.map((photo, i) => (
+              <div
+                key={i}
+                className="relative group overflow-hidden rounded-2xl bg-slate-100 shadow-sm hover:shadow-lg transition-all duration-500"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo.url}
+                  alt={photo.label}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-48 sm:h-56 object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex items-end p-3">
+                  <span className="text-white font-bold text-xs leading-snug">{photo.label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Feature Video block */}
+          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-xl">
+            {/* Poster / background */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={FEATURE_VIDEO_POSTER}
+              alt={isTe ? 'టూర్ హైలైట్ వీడియో' : 'Tour Highlight Video'}
+              className="w-full h-64 sm:h-80 object-cover opacity-60"
+              loading="lazy"
+              decoding="async"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
+
+            {/* Centered content */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              {FEATURE_VIDEO_URL ? (
+                <button
+                  id="about-play-video-btn"
+                  className="group flex flex-col items-center gap-4 cursor-pointer"
+                  onClick={() => setVideoOpen(true)}
+                  aria-label={isTe ? 'వీడియో చూడండి' : 'Watch our tour video'}
+                >
+                  <div className="w-20 h-20 rounded-full bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/25 transition-all duration-300">
+                    <Play className="w-8 h-8 text-white fill-white ml-1" />
+                  </div>
+                  <div>
+                    <p className="text-white font-black text-lg sm:text-2xl tracking-tight">
+                      {isTe ? 'మా టూర్ వీడియో చూడండి' : 'Watch Our Tour Highlight'}
+                    </p>
+                    <p className="text-white/60 text-sm mt-1">
+                      {isTe ? 'పాపికొండలు · భద్రాచలం · కొల్లూరు' : 'Papikondalu · Bhadrachalam · Kolluru'}
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                /* Video not yet uploaded — show CTA */
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                    <Play className="w-7 h-7 text-white/60 fill-white/60 ml-0.5" />
+                  </div>
+                  <p className="text-white/80 font-bold text-base sm:text-xl tracking-tight">
+                    {isTe ? 'వీడియో త్వరలో అందుబాటులోకి వస్తుంది' : 'Tour Video — Coming Soon'}
+                  </p>
+                  <p className="text-white/40 text-xs sm:text-sm">
+                    {isTe ? 'మా అనుభవాల వీడియో పొందుపరుస్తున్నాం' : 'We are producing our cinematic tour highlight reel'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom label bar */}
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-[#0f3d56] to-[#1598a1] px-5 py-3 flex items-center justify-between">
+              <span className="text-white text-xs font-black uppercase tracking-widest">
+                {isTe ? 'టిఎస్ బోట్ టూరిజం అధికారిక వీడియో' : 'TS Boat Tourism — Official Tour Showcase'}
+              </span>
+              <span className="text-white/60 text-[10px] font-bold uppercase">
+                {isTe ? 'HD నాణ్యత' : 'HD Quality'}
+              </span>
+            </div>
+          </div>
+
+          {/* Gallery link CTA */}
+          <div className="mt-8 text-center">
+            <a
+              href="/gallery"
+              id="about-see-full-gallery-btn"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1598a1] text-white font-bold text-sm hover:bg-[#0f7279] transition-all shadow-sm"
+            >
+              <Camera className="w-4 h-4" />
+              <span>{isTe ? 'పూర్తి ఫోటో గ్యాలరీ చూడండి' : 'View Full Photo & Video Gallery'}</span>
+              <ChevronRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Video Lightbox */}
+      {videoOpen && FEATURE_VIDEO_URL && (
+        <div
+          className="fixed inset-0 z-[1000] bg-black/97 backdrop-blur-2xl flex items-center justify-center"
+          style={{ animation: 'fadeInAbout 0.25s ease' }}
+          onClick={() => setVideoOpen(false)}
+          aria-modal
+          role="dialog"
+          aria-label="Tour Video"
+        >
+          <button
+            className="absolute top-5 right-5 z-[1100] p-3 text-white hover:text-[#1598a1] bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full border border-white/10 transition-all cursor-pointer group"
+            onClick={() => setVideoOpen(false)}
+            aria-label="Close video"
+          >
+            <X className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
+          </button>
+          <div
+            className="w-full max-w-4xl mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <video
+              src={FEATURE_VIDEO_URL}
+              poster={FEATURE_VIDEO_POSTER}
+              controls
+              autoPlay
+              playsInline
+              className="w-full rounded-2xl shadow-2xl"
+              style={{ maxHeight: '80vh' }}
+            >
+              <track kind="captions" />
+            </video>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeInAbout { from { opacity: 0 } to { opacity: 1 } }
+      `}</style>
 
       {/* 4. HERITAGE & HISTORY SEARCH AND EXPLORER SECTION */}
       <section className="py-14 sm:py-20 bg-white border-b border-slate-200">

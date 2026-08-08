@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Gallery | Papikondalu & Godavari Tourism Photos',
-  description: 'View breathtaking photos of Papikondalu tours, Godavari river cruises, Maredumilli forest, and Kolluru bamboo huts.',
+  title: 'Photo & Video Gallery | Papikondalu, Godavari & Bhadrachalam Tours',
+  description: 'Explore HD photos and cinematic videos of Papikondalu gorges, Godavari river cruises, Kolluru bamboo huts, Bhadrachalam temple, and Maredumilli rainforest — TS Boat Tourism official gallery.',
+  openGraph: {
+    title: 'Gallery | TS Boat Tourism',
+    description: 'Breathtaking photos and videos from Papikondalu, Bhadrachalam, and Godavari river cruises.',
+    type: 'website',
+  },
 };
 
 export default function GalleryLayout({
