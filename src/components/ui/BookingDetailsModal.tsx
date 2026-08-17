@@ -16,6 +16,11 @@ import {
   getRefreshmentAmount,
   getTransportSelections,
   hasRefreshment,
+  hasFoodAddon,
+  getFoodAmount,
+  hasExtras,
+  getExtrasAmount,
+  getSelectedExtrasList,
 } from '@/lib/bookingDisplay';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
@@ -133,6 +138,7 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
   CASH: 'Cash',
   BANK_TRANSFER: 'Bank Transfer',
   ADMIN_MANUAL: 'Manual (Admin)',
+  AGENT_COMMISSION: 'Paid via Agent',
 };
 
 const PAYMENT_STATUS_STYLE: Record<string, { label: string; cls: string }> = {
@@ -571,6 +577,11 @@ export default function BookingDetailsModal({
   );
   const refreshmentIncluded = booking ? hasRefreshment(booking) : false;
   const refreshmentAmount = booking ? getRefreshmentAmount(booking.pricing_snapshot) : 0;
+  const foodIncluded = booking ? hasFoodAddon(booking.pricing_snapshot) : false;
+  const foodAmount = booking ? getFoodAmount(booking.pricing_snapshot) : 0;
+  const extrasIncluded = booking ? hasExtras(booking.pricing_snapshot) : false;
+  const extrasAmount = booking ? getExtrasAmount(booking.pricing_snapshot) : 0;
+  const selectedExtrasList = booking ? getSelectedExtrasList(booking.pricing_snapshot) : [];
   const baseFare = booking ? getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot) : 0;
   const passengerCount = booking ? (booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count) : 0;
 
@@ -808,7 +819,7 @@ export default function BookingDetailsModal({
                   </div>
 
                   {/* Transport Selections and Addons */}
-                  {(transportSelections.length > 0 || refreshmentIncluded) && (
+                  {(transportSelections.length > 0 || refreshmentIncluded || foodIncluded || extrasIncluded) && (
                     <div>
                       <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
@@ -824,15 +835,42 @@ export default function BookingDetailsModal({
                           </div>
                         ))}
                         {refreshmentIncluded && (
-                          <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 shadow-sm">
-                            <span className="text-xs font-bold text-emerald-800">Refreshments</span>
-                            <span className="text-[10px] text-emerald-600 font-semibold mt-1">
+                          <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-blue-50/50 border border-blue-100 shadow-sm">
+                            <span className="text-xs font-bold text-blue-800">Fresh-Up Room Access</span>
+                            <span className="text-[10px] text-blue-600 font-semibold mt-1">
                               {booking.student_count > 0
                                 ? `Add-on for ${booking.student_count} Students • ${formatCurrency(refreshmentAmount)}`
                                 : `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children • ${formatCurrency(refreshmentAmount)}`
                               }
                             </span>
                           </div>
+                        )}
+                        {foodIncluded && (
+                          <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-amber-50/50 border border-amber-100 shadow-sm">
+                            <span className="text-xs font-bold text-amber-900">Full Catering Package</span>
+                            <span className="text-[10px] text-amber-700 font-semibold mt-1">
+                              Breakfast, Lunch &amp; Dinner Included • {formatCurrency(foodAmount)}
+                            </span>
+                          </div>
+                        )}
+                        {selectedExtrasList.length > 0 ? (
+                          selectedExtrasList.map((extra: any, idx: number) => (
+                            <div key={`extra-pill-${idx}`} className="flex flex-col justify-center p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 shadow-sm">
+                              <span className="text-xs font-bold text-purple-900">{extra.title || extra.name || 'Package Extra'}</span>
+                              <span className="text-[10px] text-purple-700 font-semibold mt-1">
+                                {extra.description || 'Special Add-on Option'} • {formatCurrency(Number(extra.item_total || extra.total_price || extra.price || 0))}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          extrasIncluded && (
+                            <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 shadow-sm">
+                              <span className="text-xs font-bold text-purple-900">Additional Package Extras</span>
+                              <span className="text-[10px] text-purple-700 font-semibold mt-1">
+                                Special Add-ons Selected • {formatCurrency(extrasAmount)}
+                              </span>
+                            </div>
+                          )
                         )}
                       </div>
 
@@ -908,11 +946,41 @@ export default function BookingDetailsModal({
                         ))}
                         {refreshmentIncluded && (
                           <>
-                            <div>Refreshments</div>
+                            <div>Refreshments (AC Room Access)</div>
                             <div className="text-right font-bold text-slate-700">
                               {formatCurrency(refreshmentAmount)}
                             </div>
                           </>
+                        )}
+                        {foodIncluded && (
+                          <>
+                            <div>Catering &amp; Meals Package</div>
+                            <div className="text-right font-bold text-slate-700">
+                              {formatCurrency(foodAmount)}
+                            </div>
+                          </>
+                        )}
+                        {selectedExtrasList.length > 0 ? (
+                          selectedExtrasList.map((extra: any, idx: number) => (
+                            <React.Fragment key={`billing-extra-${idx}`}>
+                              <div className="flex flex-col">
+                                <span>{extra.title || extra.name || 'Package Extra'}</span>
+                                {extra.description && <span className="text-[10px] text-slate-400 font-medium">{extra.description}</span>}
+                              </div>
+                              <div className="text-right font-bold text-slate-700">
+                                {formatCurrency(Number(extra.item_total || extra.total_price || extra.price || 0))}
+                              </div>
+                            </React.Fragment>
+                          ))
+                        ) : (
+                          extrasIncluded && (
+                            <>
+                              <div>Additional Add-On Extras</div>
+                              <div className="text-right font-bold text-slate-700">
+                                {formatCurrency(extrasAmount)}
+                              </div>
+                            </>
+                          )
                         )}
                         {booking.coupon_discount > 0 && (
                           <>
@@ -920,8 +988,14 @@ export default function BookingDetailsModal({
                             <div className="text-right font-black text-rose-600">-{formatCurrency(booking.coupon_discount)}</div>
                           </>
                         )}
-                        <div>GST & Service Taxes</div>
-                        <div className="text-right font-bold text-slate-700">{formatCurrency(booking.gst_amount + booking.gateway_fee)}</div>
+                        <div>GST (5%)</div>
+                        <div className="text-right font-bold text-slate-700">{formatCurrency(booking.gst_amount)}</div>
+                        {booking.gateway_fee > 0 && (
+                          <>
+                            <div>Convenience &amp; Processing Fee</div>
+                            <div className="text-right font-bold text-slate-700">{formatCurrency(booking.gateway_fee)}</div>
+                          </>
+                        )}
                       </div>
                       <div className="border-t border-slate-100 pt-4 flex justify-between items-center text-slate-800">
                         <span className="font-extrabold text-sm">Grand Invoice Total</span>
@@ -1097,19 +1171,19 @@ export default function BookingDetailsModal({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="border-t border-slate-100 p-6 flex flex-col md:flex-row items-center justify-between gap-4 bg-white rounded-b-3xl shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)] relative z-10">
-                  {/* Left: Close & Cancel */}
-                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 w-full md:w-auto">
+                <div className="border-t border-slate-100 p-4 sm:p-5 flex flex-col gap-3 bg-slate-50/50 rounded-b-3xl relative z-10">
+                  {/* Top row: Close & Cancel */}
+                  <div className="flex items-center justify-between gap-2">
                     <button
                       onClick={onClose}
-                      className="px-6 py-3 rounded-2xl text-xs font-black tracking-widest uppercase border-2 border-slate-200 text-slate-600 bg-white hover:bg-slate-100 hover:text-slate-900 transition-all shadow-sm w-full sm:w-auto active:scale-95"
+                      className="px-4 py-2 rounded-xl text-[11px] font-black tracking-wider uppercase border border-slate-200 text-slate-600 bg-white hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-95 cursor-pointer"
                     >
                       Close
                     </button>
                     {booking.status !== 'CANCELLED' && booking.status !== 'REFUNDED' && (
                       <button
                         onClick={() => setIsCancelConfirmOpen(true)}
-                        className="px-6 py-3 rounded-2xl text-xs font-black tracking-wide border-2 border-red-100 text-red-600 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all shadow-sm w-full sm:w-auto active:scale-95"
+                        className="px-3.5 py-2 rounded-xl text-[10px] font-bold tracking-wide border border-red-200 text-red-600 bg-white hover:bg-red-50 hover:text-red-700 transition-all active:scale-95 cursor-pointer"
                       >
                         Cancel Booking
                       </button>
@@ -1118,22 +1192,22 @@ export default function BookingDetailsModal({
                       <button
                         onClick={() => setIsRefundConfirmOpen(true)}
                         disabled={isSubmittingRefund}
-                        className="px-6 py-3 rounded-2xl text-xs font-black tracking-wide border-2 border-emerald-100 text-emerald-600 bg-white hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all shadow-sm w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5"
+                        className="px-3.5 py-2 rounded-xl text-[10px] font-bold tracking-wide border border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50 transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
                       >
-                        {isSubmittingRefund ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <IndianRupee className="h-3.5 w-3.5" />}
+                        {isSubmittingRefund ? <Loader2 className="h-3 w-3 animate-spin" /> : <IndianRupee className="h-3 w-3" />}
                         {isSubmittingRefund ? 'Processing...' : 'Mark as Refunded'}
                       </button>
                     )}
                   </div>
 
-                  {/* Right: Documents */}
-                  <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
+                  {/* Document & Quick Action Grid */}
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end gap-2 w-full">
                     {isAdmin && (
                       <button
                         onClick={handleSendWhatsApp}
-                        className="inline-flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all active:scale-95 w-full sm:w-auto border border-emerald-700 cursor-pointer"
+                        className="inline-flex justify-center items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95 border border-emerald-700 cursor-pointer"
                       >
-                        <MessageCircle className="h-4 w-4" /> Send WhatsApp
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                       </button>
                     )}
 
@@ -1141,16 +1215,16 @@ export default function BookingDetailsModal({
                       <button
                         onClick={handleDownloadInvoice}
                         disabled={isPreparingInvoice}
-                        className={`inline-flex justify-center items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 w-full sm:w-auto border border-slate-700 disabled:opacity-80 disabled:cursor-not-allowed`}
+                        className="inline-flex justify-center items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95 border border-slate-700 disabled:opacity-80 cursor-pointer"
                       >
                         {isPreparingInvoice ? (
                           <>
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                            Preparing Invoice...
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Loading...
                           </>
                         ) : (
                           <>
-                            <ExternalLink className="h-4 w-4" /> View Invoice
+                            <ExternalLink className="h-3.5 w-3.5" /> Invoice
                           </>
                         )}
                       </button>
@@ -1159,16 +1233,16 @@ export default function BookingDetailsModal({
                     <button
                       onClick={handleDownloadTicket}
                       disabled={isPreparingTicket}
-                      className={`inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#0f3d56] to-[#1a5663] hover:from-[#134965] hover:to-[#1e6675] text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#0f3d56]/20 transition-all active:scale-95 w-full sm:w-auto border border-[#0f3d56] disabled:opacity-80 disabled:cursor-not-allowed`}
+                      className="inline-flex justify-center items-center gap-1.5 bg-[#0f3d56] hover:bg-[#134965] text-white px-3.5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95 border border-[#0f3d56] disabled:opacity-80 cursor-pointer"
                     >
                       {isPreparingTicket ? (
                         <>
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          Preparing Ticket...
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Loading...
                         </>
                       ) : (
                         <>
-                          <Ticket className="h-4 w-4" /> View Ticket
+                          <Ticket className="h-3.5 w-3.5" /> Ticket
                         </>
                       )}
                     </button>
@@ -1177,16 +1251,16 @@ export default function BookingDetailsModal({
                       <button
                         onClick={handleDownloadForm}
                         disabled={isPreparingForm}
-                        className={`inline-flex justify-center items-center gap-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm transition-all active:scale-95 w-full sm:w-auto border-2 border-indigo-100 hover:border-indigo-600 disabled:opacity-80 disabled:cursor-not-allowed`}
+                        className="inline-flex justify-center items-center gap-1.5 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-3.5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95 border border-indigo-200 hover:border-indigo-600 disabled:opacity-80 cursor-pointer"
                       >
                         {isPreparingForm ? (
                           <>
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-650 border-t-transparent" />
-                            Preparing Form...
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                            Loading...
                           </>
                         ) : (
                           <>
-                            <FileText className="h-4 w-4" /> Print Form
+                            <FileText className="h-3.5 w-3.5" /> Form
                           </>
                         )}
                       </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ImageIcon, X, ZoomIn, Camera, ChevronLeft, ChevronRight, Play, Ship, MapPin, Sparkles, Film } from 'lucide-react';
+import { ImageIcon, X, ZoomIn, Camera, ChevronLeft, ChevronRight, Play, Ship, MapPin, Sparkles, Film, Home } from 'lucide-react';
 import galleryData from './galleryData.json';
 
 type GalleryItem = {
@@ -16,14 +16,14 @@ type GalleryItem = {
 
 const ALL_ITEMS: GalleryItem[] = galleryData as GalleryItem[];
 
-type Category = 'all' | 'boats' | 'destinations' | 'experiences' | 'videos';
+type Category = 'all' | 'boats' | 'stay' | 'experiences' | 'videos';
 
 const CATEGORIES: { id: Category; label: string; icon: React.ElementType; count: (items: GalleryItem[]) => number }[] = [
-  { id: 'all',          label: 'All Media',      icon: Camera,   count: (items) => items.length },
-  { id: 'videos',       label: 'Drone & Videos', icon: Play,     count: (items) => items.filter(i => i.type === 'video').length },
-  { id: 'boats',        label: 'Our Boats',      icon: Ship,     count: (items) => items.filter(i => i.category === 'boats').length },
-  { id: 'destinations', label: 'Destinations',   icon: MapPin,   count: (items) => items.filter(i => i.category === 'destinations').length },
-  { id: 'experiences',  label: 'Experiences',    icon: Sparkles, count: (items) => items.filter(i => i.category === 'experiences').length },
+  { id: 'all',         label: 'All Media',           icon: Camera,   count: (items) => items.length },
+  { id: 'videos',      label: 'Drone & Videos',      icon: Play,     count: (items) => items.filter(i => i.type === 'video').length },
+  { id: 'boats',       label: 'Our Boats',           icon: Ship,     count: (items) => items.filter(i => i.category === 'boats').length },
+  { id: 'stay',        label: 'Rooms, Huts & Stays', icon: Home,     count: (items) => items.filter(i => i.category === 'stay').length },
+  { id: 'experiences', label: 'Experiences & Places',icon: Sparkles, count: (items) => items.filter(i => i.category === 'experiences').length },
 ];
 
 export default function GalleryPage() {
@@ -319,6 +319,9 @@ export default function GalleryPage() {
                   controls
                   autoPlay
                   playsInline
+                  controlsList="nodownload noremoteplayback"
+                  disablePictureInPicture
+                  onContextMenu={(e) => e.preventDefault()}
                   className="w-full h-auto max-h-[85vh] sm:max-h-[82vh] object-contain rounded-2xl shadow-2xl border border-slate-800 bg-black"
                 >
                   <track kind="captions" />
@@ -331,6 +334,8 @@ export default function GalleryPage() {
                   src={selectedItem.lightboxUrl || selectedItem.url}
                   alt={selectedItem.title}
                   className="w-auto h-auto max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-slate-800"
+                  onContextMenu={(e) => e.preventDefault()}
+                  draggable={false}
                 />
               )}
             </div>
@@ -485,6 +490,8 @@ function PhotoCard({
         decoding="async"
         className={`w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 ease-out ${loaded ? 'opacity-100' : 'opacity-0'}`}
         onLoad={onLoad}
+        onContextMenu={(e) => e.preventDefault()}
+        draggable={false}
       />
 
       {/* Hover Overlay */}

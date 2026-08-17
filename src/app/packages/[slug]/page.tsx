@@ -16,6 +16,7 @@ import { PackagePolicies } from '@/components/packages/detail/PackagePolicies';
 import { BookingDialogV3 } from '@/components/packages/detail/BookingDialogV3';
 import { BookingCalloutCard } from '@/components/packages/detail/BookingCalloutCard';
 import { PackageMeals } from '@/components/packages/detail/PackageMeals';
+import { PackageVideoHero } from '@/components/packages/detail/PackageVideoHero';
 import CouponPopup from '@/components/ui/CouponPopup';
 
 // ISR: revalidate every 12 hours OR instantly when admin triggers /api/revalidate
@@ -65,6 +66,7 @@ type PackageDetail = {
   place?: string | null;
   description?: string | null;
   cover_image_url?: string | null;
+  video_url?: string | null;
   brochure_pdf_url?: string | null;
   generated_brochure_url?: string | null;
   og_image_url?: string | null;
@@ -103,6 +105,11 @@ type PackageDetail = {
   advance_payment_type?: string | null;
   advance_payment_value?: number | null;
   extras?: any[];
+  agent_commission_type?: string | null;
+  agent_commission_percentage?: number | string | null;
+  agent_commission_fixed_amount?: number | string | null;
+  agent_daily_quota?: number | null;
+  agent_is_allowed?: boolean | null;
   variants: Variant[];
   gallery: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
   itinerary: Array<{ id: number; day_number: number; title: string; description?: string | null; icon?: string | null; sort_order: number }>;
@@ -130,7 +137,7 @@ const SITE_ORIGIN = 'https://www.tstelanganatourism.com';
 
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/packages/${slug}`, { next: { revalidate: 43200, tags: ['packages', `package:${slug}`] } });
+    const res = await apiFetch(`/api/v1/packages/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -429,10 +436,19 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
           </section>
 
           <PackageGallery gallery={pkg.gallery} />
+
+          {/* ── Watch the Tour Video ── */}
+          {pkg.video_url && (
+            <PackageVideoHero
+              videoUrl={pkg.video_url}
+              title="Watch the Tour"
+              subtitle={`Experience the full ${pkg.title} journey in one video`}
+            />
+          )}
         </div>
 
         {/* Right Sticky Booking Callout Card with full fare variants, weekday/weekend, transport & add-ons breakdown */}
-        <aside className="hidden lg:block sticky top-[92px] self-start max-h-[calc(100vh-170px)] overflow-y-auto scrollbar-thin">
+        <aside className="hidden lg:block sticky top-[92px] self-start w-full">
           <BookingCalloutCard
             startingPrice={getPositiveStartingPrice(pkg)}
             isStudentPackage={pkg.is_student_package}
@@ -478,6 +494,11 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         advancePaymentType={pkg.advance_payment_type}
         advancePaymentValue={pkg.advance_payment_value}
         extras={pkg.extras}
+        agentCommissionType={pkg.agent_commission_type}
+        agentCommissionPercentage={pkg.agent_commission_percentage}
+        agentCommissionFixedAmount={pkg.agent_commission_fixed_amount}
+        agentDailyQuota={pkg.agent_daily_quota}
+        agentIsAllowed={pkg.agent_is_allowed}
       />
 
       <CouponPopup targetType="PACKAGE" targetId={pkg.id} />

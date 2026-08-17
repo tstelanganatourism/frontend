@@ -11,7 +11,9 @@ export const metadata = {
 
 async function fetchCategories() {
   try {
-    const res = await apiFetch('/api/v1/packages/categories', { cache: 'no-store' });
+    const res = await apiFetch('/api/v1/packages/categories', {
+      next: { revalidate: 43200, tags: ['categories', 'package-categories'] },
+    });
     if (!res.ok) return [];
     return await res.json();
   } catch {

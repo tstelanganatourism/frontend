@@ -70,6 +70,11 @@ interface BookingSidebarV3Props {
   extras?: any[];
   initialVariantId?: number;
   layoutMode?: 'sidebar' | 'dialog';
+  agentCommissionType?: string | null;
+  agentCommissionPercentage?: number | string | null;
+  agentCommissionFixedAmount?: number | string | null;
+  agentDailyQuota?: number | null;
+  agentIsAllowed?: boolean | null;
 }
 
 function todayIST(): Date {
@@ -132,14 +137,14 @@ export const BookingSidebarV3 = ({
   extras = [],
   initialVariantId,
   layoutMode = 'sidebar',
+  agentCommissionType,
+  agentCommissionPercentage,
+  agentCommissionFixedAmount,
+  agentDailyQuota,
+  agentIsAllowed,
 }: BookingSidebarV3Props) => {
   const { isAuthenticated, user } = useAuthStore();
-  const isSpecialUser = useMemo(() => {
-    if (!user) return false;
-    const email = user.email || '';
-    const phone = user.phone_number || '';
-    return email === '2024eb01987@online.bits-pilani.ac.in' || phone === '8886154275';
-  }, [user]);
+  const isSpecialUser = false;
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
   const router = useRouter();
@@ -148,6 +153,31 @@ export const BookingSidebarV3 = ({
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [showBusWarningModal, setShowBusWarningModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+
+  const [commType, setCommType] = useState<string | null>(agentCommissionType || null);
+  const [commPercentage, setCommPercentage] = useState<number | string | null>(agentCommissionPercentage || null);
+  const [commFixedAmount, setCommFixedAmount] = useState<number | string | null>(agentCommissionFixedAmount || null);
+
+  useEffect(() => {
+    setCommType(agentCommissionType || null);
+    setCommPercentage(agentCommissionPercentage || null);
+    setCommFixedAmount(agentCommissionFixedAmount || null);
+
+    if (isAgent) {
+      apiClient.get(`/api/v1/packages/${packageSlug}`)
+        .then((res) => {
+          const pkg = res.data;
+          if (pkg) {
+            setCommType(pkg.agent_commission_type || null);
+            setCommPercentage(pkg.agent_commission_percentage !== undefined && pkg.agent_commission_percentage !== null ? pkg.agent_commission_percentage : null);
+            setCommFixedAmount(pkg.agent_commission_fixed_amount !== undefined && pkg.agent_commission_fixed_amount !== null ? pkg.agent_commission_fixed_amount : null);
+          }
+        })
+        .catch((err) => {
+          console.error('[Sidebar] Failed to load agent commission override:', err);
+        });
+    }
+  }, [agentCommissionType, agentCommissionPercentage, agentCommissionFixedAmount, isAgent, packageSlug]);
 
   const handleAgreeBusWarning = () => {
     setShowBusWarningModal(false);
@@ -244,7 +274,7 @@ export const BookingSidebarV3 = ({
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [pendingCouponCode, setPendingCouponCode] = useState<string | null>(null);
-  const [selectedGateway, setSelectedGateway] = useState<'PHONEPE' | 'CASHFREE'>('PHONEPE');
+  const selectedGateway = 'PHONEPE';
 
   const totalPassengers = isStudentPackage ? adults : (adults + children);
   const isRefreshmentDisabled = totalPassengers < refreshmentsMinPassengers;
@@ -301,7 +331,7 @@ export const BookingSidebarV3 = ({
         const url = new URL(window.location.href);
         url.searchParams.delete('restore_pkg_checkout');
         window.history.replaceState({}, '', url.pathname + url.search);
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -315,7 +345,7 @@ export const BookingSidebarV3 = ({
   // Listen for Live SSE Inventory updates
   useEffect(() => {
     const sse = new ReconnectingEventSource(`${API_BASE}/api/v1/stream/packages/${packageId}`);
-    
+
     const handleUpdate = (e: any) => {
       try {
         const payload = JSON.parse(e.data);
@@ -358,8 +388,12 @@ export const BookingSidebarV3 = ({
 
     const handleTransportUpdate = (e: any) => {
       try {
-        const { fetchPublicAvailability } = useInventoryStore.getState();
-        fetchPublicAvailability(packageSlug, currentMonthStr, false);
+        const payload = JSON.parse(e.data);
+        if (payload) {
+          const { applyTransportSSEPayload, fetchPublicAvailability } = useInventoryStore.getState();
+          applyTransportSSEPayload(payload);
+          fetchPublicAvailability(packageSlug, currentMonthStr, false);
+        }
       } catch (err) {
         console.error('[SSE] Failed to parse transport payload', err);
       }
@@ -407,14 +441,12 @@ export const BookingSidebarV3 = ({
       const savedIncludeFoodOption = sessionStorage.getItem('last_checkout_include_food_option');
       const savedAdults = sessionStorage.getItem('last_checkout_adults');
       const savedChildren = sessionStorage.getItem('last_checkout_children');
-      
+
       if (savedCustomPay !== null) {
         setCustomPayAmount(savedCustomPay);
         if (savedCustomPay !== '') setIsAdvanceSelected(true);
       }
-      if (savedGateway === 'PHONEPE' || savedGateway === 'CASHFREE') {
-        setSelectedGateway(savedGateway as 'PHONEPE' | 'CASHFREE');
-      }
+
       if (savedDate) setSelectedDate(savedDate);
       if (savedVariantId) setSelectedVariantId(Number(savedVariantId));
       if (savedTransportMode) setSelectedTransportMode(savedTransportMode as 'NONE' | 'SHARED' | 'SEPARATE');
@@ -422,20 +454,20 @@ export const BookingSidebarV3 = ({
       if (savedSeparateVehicleQtys) {
         try {
           setSeparateVehicleQtys(JSON.parse(savedSeparateVehicleQtys));
-        } catch (e) {}
+        } catch (e) { }
       }
       if (savedIncludeRefreshments) setIncludeRefreshments(savedIncludeRefreshments === 'true');
       if (savedIncludeFoodOption) setIncludeFoodOption(savedIncludeFoodOption === 'true');
       if (savedAdults) setAdults(Number(savedAdults));
       if (savedChildren) setChildren(Number(savedChildren));
-      
+
       setShowPassengerModal(true);
-      
+
       try {
         const url = new URL(window.location.href);
         url.searchParams.delete('restore_checkout');
         window.history.replaceState({}, '', url.pathname + url.search);
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -534,7 +566,7 @@ export const BookingSidebarV3 = ({
     if (publicLoading) return { kind: 'loading' as const, message: 'Checking seats...' };
     if (!isActive) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
     if (isPackageInactive && !isAdmin) return { kind: 'closed' as const, message: 'Bookings are closed / inactive' };
-    
+
     const slot = selectedSlot || tomorrowSlot;
     const isFallback = !selectedDate;
     const dateLabel = isFallback ? 'for tomorrow' : '';
@@ -587,8 +619,8 @@ export const BookingSidebarV3 = ({
           ? Number(selectedSlot.effective_student_price)
           : (selectedSlot.student_price !== undefined && selectedSlot.student_price !== null ? Number(selectedSlot.student_price) : Number(selectedVariant?.student_price || startingPrice)));
       } else {
-        baseStudent = isWeekend && selectedVariant?.weekend_student_price 
-          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_student_price)) 
+        baseStudent = isWeekend && selectedVariant?.weekend_student_price
+          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_student_price))
           : pureBaseStudent;
       }
     } else {
@@ -596,30 +628,30 @@ export const BookingSidebarV3 = ({
         baseAdult = isSpecialUser ? 1 : ((selectedSlot.effective_adult_price !== undefined && selectedSlot.effective_adult_price !== null)
           ? Number(selectedSlot.effective_adult_price)
           : Number(selectedSlot.adult_price));
-          
+
         baseChild = isSpecialUser ? 1 : ((selectedSlot.effective_child_price !== undefined && selectedSlot.effective_child_price !== null)
           ? Number(selectedSlot.effective_child_price)
           : Number(selectedSlot.child_price));
       } else {
-        baseAdult = isWeekend && selectedVariant?.weekend_adult_price 
-          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_adult_price)) 
+        baseAdult = isWeekend && selectedVariant?.weekend_adult_price
+          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_adult_price))
           : pureBaseAdult;
-          
-        baseChild = isWeekend && selectedVariant?.weekend_child_price 
-          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_child_price)) 
+
+        baseChild = isWeekend && selectedVariant?.weekend_child_price
+          ? (isSpecialUser ? 1 : positiveNumber(selectedVariant.weekend_child_price))
           : pureBaseChild;
       }
     }
 
-    const pureBaseSubtotal = isStudentPackage 
+    const pureBaseSubtotal = isStudentPackage
       ? (adults * pureBaseStudent)
       : (adults * pureBaseAdult) + (children * pureBaseChild);
-    
+
     let weekendSurchargeSubtotal = 0;
     let expectedEffAdult = pureBaseAdult;
     let expectedEffChild = pureBaseChild;
     let expectedEffStudent = pureBaseStudent;
-    
+
     if (isWeekend) {
       if (isStudentPackage) {
         expectedEffStudent = positiveNumber(selectedVariant?.weekend_student_price) || pureBaseStudent;
@@ -657,11 +689,11 @@ export const BookingSidebarV3 = ({
     const baseSubtotal = isStudentPackage
       ? (adults * baseStudent)
       : (adults * baseAdult) + (children * baseChild);
-    
+
     // Transport Pricing
     let transportSubtotal = 0;
-    const transportBreakdown: Array<{title: string; type: string; quantity: number; unitPrice: number; subtotal: number}> = [];
-    
+    const transportBreakdown: Array<{ title: string; type: string; quantity: number; unitPrice: number; subtotal: number }> = [];
+
     if (hasTransport) {
       if (selectedTransportMode === 'SHARED' && selectedSharedOptionId) {
         const tOpt = transportOptions.find(o => o.id === selectedSharedOptionId);
@@ -693,7 +725,7 @@ export const BookingSidebarV3 = ({
         }
       }
     }
-    
+
     // Refreshments
     let refreshmentSubtotal = 0;
     let refAdult = 0;
@@ -728,7 +760,7 @@ export const BookingSidebarV3 = ({
 
     // Extras Options
     let customExtrasSubtotal = 0;
-    const customExtrasBreakdown: Array<{id: number; title: string; subtotal: number}> = [];
+    const customExtrasBreakdown: Array<{ id: number; title: string; subtotal: number }> = [];
     if (extras && extras.length > 0 && selectedExtraIds.length > 0) {
       extras.forEach((ex: any) => {
         if (selectedExtraIds.includes(ex.id)) {
@@ -758,9 +790,13 @@ export const BookingSidebarV3 = ({
     const gatewayFee = Math.round((subtotal + gst) * 0.01);
     const grandTotal = subtotal + gst + gatewayFee;
 
-    const commissionPercentage = user?.commission_percentage ? Number(user.commission_percentage) : 0;
-    const commissionType = user?.commission_type || 'PERCENTAGE';
-    const commissionFixedAmount = user?.commission_fixed_amount ? Number(user.commission_fixed_amount) : 0;
+    const commissionType = (commType || user?.commission_type || 'PERCENTAGE') as 'PERCENTAGE' | 'FIXED_AMOUNT';
+    const commissionPercentage = commPercentage !== undefined && commPercentage !== null
+      ? Number(commPercentage)
+      : (user?.commission_percentage ? Number(user.commission_percentage) : 0);
+    const commissionFixedAmount = commFixedAmount !== undefined && commFixedAmount !== null
+      ? Number(commFixedAmount)
+      : (user?.commission_fixed_amount ? Number(user.commission_fixed_amount) : 0);
 
     let agentDiscount = 0;
     if (isAgent) {
@@ -773,25 +809,25 @@ export const BookingSidebarV3 = ({
     }
     const agentPayable = Math.max(0, grandTotal - agentDiscount);
 
-    return { 
+    return {
       baseAdult, baseChild, baseStudent, baseSubtotal,
       pureBaseSubtotal, weekendSurchargeSubtotal, surgeSubtotal, discountSubtotal,
       transportSubtotal, transportBreakdown,
-      refreshmentSubtotal, 
+      refreshmentSubtotal,
       foodSubtotal,
       customExtrasSubtotal, customExtrasBreakdown,
-      rawSubtotal, discount, subtotal, gst, gatewayFee, 
-      grandTotal, agentDiscount, agentPayable 
+      rawSubtotal, discount, subtotal, gst, gatewayFee,
+      grandTotal, agentDiscount, agentPayable
     };
-  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice, selectedExtraIds, extras, isSpecialUser, isWeekendSelected]);
+  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice, selectedExtraIds, extras, isSpecialUser, isWeekendSelected, commType, commPercentage, commFixedAmount]);
 
   const { minPayable, effectivePayNow, isPartial } = useMemo(() => {
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-    
+
     let minPay = finalTotal;
     const advType = advancePaymentType || 'FULL_PAYMENT';
     const advVal = advancePaymentValue || 0;
-    
+
     if (advType === 'PERCENTAGE') {
       const pct = advVal || 35;
       minPay = Math.ceil(finalTotal * (pct / 100));
@@ -799,12 +835,12 @@ export const BookingSidebarV3 = ({
       const fixedAmt = advVal || 500;
       minPay = Math.min(finalTotal, fixedAmt * totalPassengers);
     }
-    
+
     const parsedCustom = parseInt(customPayAmount, 10);
     const payNow = !isAdvanceSelected
       ? finalTotal
       : (isNaN(parsedCustom) || customPayAmount === '' ? minPay : Math.min(finalTotal, Math.max(minPay, parsedCustom)));
-      
+
     return {
       minPayable: minPay,
       effectivePayNow: payNow,
@@ -814,21 +850,35 @@ export const BookingSidebarV3 = ({
 
   // Adjust custom pay amount when total price changes
   useEffect(() => {
-    if (!isAdvanceSelected) return;
-    setCustomPayAmount(prev => {
-      if (prev === '') return prev;
-      const parsed = parseInt(prev, 10);
-      const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-      if (!isNaN(parsed)) {
-        if (parsed >= finalTotal) {
-          setIsAdvanceSelected(false);
-          return '';
-        }
-        if (parsed < minPayable) return String(minPayable);
+    if (isAdvanceSelected) {
+      setCustomPayAmount(String(minPayable));
+    } else {
+      setCustomPayAmount('');
+    }
+  }, [prices.grandTotal, prices.agentPayable, isAgent, isAdvanceSelected, minPayable]);
+
+  // Auto-adjust Private Cab vehicle quantity dynamically based on total passengers
+  useEffect(() => {
+    if (selectedTransportMode !== 'SEPARATE' || separateOptions.length === 0) return;
+    const totalPax = adults + children;
+    if (totalPax <= 0) return;
+
+    const primaryOpt = separateOptions[0];
+    const cap = positiveNumber(primaryOpt.capacity) || 6;
+    const needed = Math.ceil(totalPax / cap);
+
+    setSeparateVehicleQtys(prev => {
+      const currentCapacity = Object.entries(prev).reduce((sum, [optIdStr, q]) => {
+        const opt = separateOptions.find(o => o.id === Number(optIdStr));
+        return sum + (q || 0) * (positiveNumber(opt?.capacity) || 6);
+      }, 0);
+
+      if (currentCapacity < totalPax) {
+        return { ...prev, [primaryOpt.id]: Math.max(prev[primaryOpt.id] || 0, needed) };
       }
       return prev;
     });
-  }, [prices.grandTotal, prices.agentPayable, isAgent, isAdvanceSelected, minPayable]);
+  }, [selectedTransportMode, adults, children, separateOptions]);
 
   // Live Coupon revalidation
   useEffect(() => {
@@ -955,7 +1005,7 @@ export const BookingSidebarV3 = ({
     };
 
     window.addEventListener('apply-coupon', handleAutoApplyEvent);
-    
+
     const storedCoupon = localStorage.getItem('pending_coupon');
     if (storedCoupon) {
       const trimmedCode = storedCoupon.trim().toUpperCase();
@@ -999,34 +1049,53 @@ export const BookingSidebarV3 = ({
     }, {} as Record<number, any>);
   }, [displaySlot]);
 
+  const getOptAvail = (optId: number) => {
+    const optAvail = transportAvailMap[optId];
+    if (optAvail) return optAvail;
+    const opt = transportOptions.find(o => o.id === optId);
+    if (!opt) return null;
+    const isShared = opt.type === 'SHARED';
+    return {
+      option_id: optId,
+      remaining: isShared ? (opt.capacity || 999) : 99,
+      is_closed: false,
+      price_override: null
+    };
+  };
+
   const sharedCapacityOk = useMemo(() => {
+    if (isAdmin) return true;
     if (selectedTransportMode !== 'SHARED' || !selectedSharedOptionId) return true;
-    const optAvail = transportAvailMap[selectedSharedOptionId];
+    const optAvail = getOptAvail(selectedSharedOptionId);
     if (!optAvail || optAvail.is_closed) return false;
     const totalPax = adults + children;
     return optAvail.remaining >= totalPax;
-  }, [selectedTransportMode, selectedSharedOptionId, adults, children, transportAvailMap]);
+  }, [selectedTransportMode, selectedSharedOptionId, adults, children, transportAvailMap, transportOptions, isAdmin]);
 
-  const separateCapacityOk = useMemo(() => {
-    if (selectedTransportMode !== 'SEPARATE') return true;
-    const totalPax = adults + children;
-    const totalCapacity = separateOptions.reduce((sum, opt) => {
+  const totalSeparateCapacity = useMemo(() => {
+    return separateOptions.reduce((sum, opt) => {
       const qty = separateVehicleQtys[opt.id] || 0;
       return sum + qty * (positiveNumber(opt.capacity) || 1);
     }, 0);
+  }, [separateOptions, separateVehicleQtys]);
+
+  const separateCapacityOk = useMemo(() => {
+    if (isAdmin) return true;
+    if (selectedTransportMode !== 'SEPARATE') return true;
+    const totalPax = adults + children;
     const hasAnyVehicle = Object.values(separateVehicleQtys).some(q => q > 0);
-    if (!hasAnyVehicle) return true;
+    if (!hasAnyVehicle) return false;
 
     for (const opt of separateOptions) {
       const qty = separateVehicleQtys[opt.id] || 0;
       if (qty > 0) {
-        const avail = transportAvailMap[opt.id];
+        const avail = getOptAvail(opt.id);
         if (!avail || avail.is_closed || avail.remaining < qty) return false;
       }
     }
 
-    return totalCapacity >= totalPax;
-  }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children, transportAvailMap]);
+    return totalSeparateCapacity >= totalPax;
+  }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children, transportAvailMap, transportOptions, totalSeparateCapacity, isAdmin]);
 
   const hasTransportSelection = useMemo(() => {
     if (!hasTransport || transportOptions.length === 0) return true;
@@ -1035,10 +1104,10 @@ export const BookingSidebarV3 = ({
     }
     if (selectedTransportMode === 'SEPARATE') {
       const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
-      return totalVehicles > 0;
+      return totalVehicles > 0 && totalSeparateCapacity >= (adults + children);
     }
     return false;
-  }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys]);
+  }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, totalSeparateCapacity, adults, children]);
 
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
@@ -1061,18 +1130,28 @@ export const BookingSidebarV3 = ({
     if (validVariants.length === 0) return 'Updating Fares';
     if (!isAuthenticated) return 'Login to Book';
     if (!selectedDate) return 'Select Travel Date';
-    if (availabilityState.kind === 'unpublished') return 'Schedule Not Opened Yet';
-    if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Bookings Unavailable';
-    if (!separateCapacityOk) return 'Need More Vehicles';
-    if (!sharedCapacityOk) return 'Not Enough Shared Seats';
-    if (hasTransport && transportOptions.length > 0 && !hasTransportSelection) {
-      if (selectedTransportMode === 'SEPARATE') return 'Select Vehicle';
-      return 'Select Transport Option';
+
+    if (!isAdmin && availabilityState.kind === 'unpublished') return 'Schedule Not Opened Yet';
+    if (!isAdmin && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out')) return 'Bookings Unavailable';
+
+    if (hasTransport && transportOptions.length > 0) {
+      if (selectedTransportMode === 'SEPARATE') {
+        const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
+        if (totalVehicles === 0) return 'Select Vehicle';
+        const totalPax = adults + children;
+        if (totalSeparateCapacity < totalPax) return `Need More Seats (${totalSeparateCapacity}/${totalPax})`;
+        if (!isAdmin && !separateCapacityOk) return 'Vehicle Sold Out';
+      }
+      if (selectedTransportMode === 'SHARED') {
+        if (!selectedSharedOptionId) return 'Select Shared Bus';
+        if (!isAdmin && !sharedCapacityOk) return 'Not Enough Shared Seats';
+      }
     }
+
     if (isAdmin) return 'Book Now (Admin)';
     if (availabilityState.kind === 'open') return 'Book Now';
     return 'Bookings Unavailable';
-  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind]);
+  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind, separateVehicleQtys, adults, children, totalSeparateCapacity, selectedSharedOptionId]);
 
   // Handle auto-clear selected date if sold out / closed
   useEffect(() => {
@@ -1085,12 +1164,63 @@ export const BookingSidebarV3 = ({
 
   const handleBookingClick = (e: React.MouseEvent) => {
     if ((isPackageInactive && !isAdmin) || !isActive) return;
+    if (!isAdmin && availabilityState.kind !== 'open') {
+      toast.error(availabilityState.message || 'Schedule has not been opened yet for online booking.');
+      return;
+    }
     if (!isAuthenticated) {
       e.preventDefault();
       setShowLoginPrompt(true);
       return;
     }
-    
+
+    const totalPax = adults + children;
+
+    if (!selectedDate) {
+      toast.error('Please select a travel date first.');
+      return;
+    }
+
+    if (hasTransport && transportOptions.length > 0) {
+      if (selectedTransportMode === 'SEPARATE') {
+        const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
+        if (totalVehicles === 0) {
+          toast.error('Please select at least 1 vehicle or switch to Shared Transport.');
+          return;
+        }
+        if (totalSeparateCapacity < totalPax) {
+          toast.error(`Selected vehicles can seat ${totalSeparateCapacity} passengers, but you have ${totalPax} passengers. Please add more vehicles or switch to Shared Transport.`);
+          return;
+        }
+        if (!separateCapacityOk && !isAdmin) {
+          toast.error('One or more selected vehicles are sold out or unavailable for this date.');
+          return;
+        }
+      }
+      if (selectedTransportMode === 'SHARED') {
+        if (!selectedSharedOptionId) {
+          toast.error('Please select a shared transport option.');
+          return;
+        }
+        if (!sharedCapacityOk && !isAdmin) {
+          const optAvail = getOptAvail(selectedSharedOptionId);
+          if (optAvail && optAvail.is_closed) {
+            toast.error('Shared transport is closed for this date.');
+          } else if (optAvail) {
+            toast.error(`Not enough shared seats. Requested: ${totalPax}, Available: ${optAvail.remaining}`);
+          } else {
+            toast.error('Shared transport is unavailable for this date.');
+          }
+          return;
+        }
+      }
+    }
+
+    if (isBookingDisabled && !isAdmin) {
+      toast.error(ctaText || 'Booking is currently unavailable.');
+      return;
+    }
+
     reportBookNowConversion();
 
     if (is25SeaterSelected) {
@@ -1119,10 +1249,11 @@ export const BookingSidebarV3 = ({
           extra_ids: selectedExtraIds,
           passengers: passengers.map(p => ({
             ...p,
-            aadhaar: p.aadhaar || undefined,
-            phone: p.phone || undefined,
+            age: Number(p.age) || 0,
+            aadhaar: p.aadhaar ? String(p.aadhaar).trim() : undefined,
+            phone: p.phone ? String(p.phone).trim() : undefined,
           })),
-          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined,
+          amount_paid: isAdvanceSelected ? effectivePayNow : (customPayAmount !== '' ? Number(customPayAmount) : prices.grandTotal),
           quick_booking: quickBooking,
           customer_email: customerEmail,
         };
@@ -1211,6 +1342,25 @@ export const BookingSidebarV3 = ({
         return;
       }
 
+      // ── Agent Commission Direct Booking ─────────────────────────────────────
+      // When an agent books, the backend confirms the booking immediately using
+      // their commission as payment. No payment gateway redirect is needed.
+      if (checkout_data.booking_id && res.data.booking_confirmed === true && res.data.payment_method === 'AGENT_COMMISSION') {
+        const commission = checkout_data.agent_commission ?? 0;
+        const due = checkout_data.tourist_due_at_office ?? 0;
+        toast.success(
+          `✅ Booking confirmed! Commission ₹${commission.toFixed(2)} applied. Tourist pays ₹${due.toFixed(2)} at office.`,
+          { duration: 7000 }
+        );
+        setIsProcessingCheckout(false);
+        // Redirect agent to their bookings dashboard to see the confirmed booking
+        setTimeout(() => {
+          router.push(`/agent/dashboard/bookings`);
+        }, 2000);
+        return;
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
       if (checkout_data.gateway === 'CASHFREE') {
         if (!checkout_data.payment_session_id) {
           toast.error("Cashfree session creation failed. Please try again.");
@@ -1230,7 +1380,7 @@ export const BookingSidebarV3 = ({
         const cfMode = (checkout_data.mode === 'production' || checkout_data.mode === 'sandbox')
           ? checkout_data.mode
           : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'sandbox' : 'production');
-        
+
         const cashfree = (window as any).Cashfree({ mode: cfMode });
         cashfree.checkout({
           paymentSessionId: checkout_data.payment_session_id,
@@ -1314,21 +1464,19 @@ export const BookingSidebarV3 = ({
         isDisabled = false;
       } else if (publicAvailability) {
         const slot = publicAvailability.dates.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
-        if (slot) {
-          if (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || slot.status === 'NO_INVENTORY' || slot.available_seats <= 0) {
-            dayStatus = 'soldout';
-            isDisabled = true;
-          } else {
-            dayStatus = 'available';
-            isDisabled = false;
-          }
-        } else {
+        if (slot && slot.status === 'OPEN' && Number(slot.available_seats || 0) > 0) {
           dayStatus = 'available';
           isDisabled = false;
+        } else if (slot && (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT')) {
+          dayStatus = 'soldout';
+          isDisabled = true;
+        } else {
+          dayStatus = 'unpublished';
+          isDisabled = true;
         }
       } else {
-        dayStatus = 'available';
-        isDisabled = false;
+        dayStatus = 'unpublished';
+        isDisabled = true;
       }
 
       // per-date fare & seats
@@ -1382,14 +1530,14 @@ export const BookingSidebarV3 = ({
             isSelected
               ? 'bg-gradient-to-b from-[#0d6e75] to-[#0a5a61] shadow-lg shadow-[#0d6e75]/30 scale-[1.03] z-10'
               : isPast || (isDisabled && dayStatus !== 'soldout')
-              ? 'cursor-not-allowed opacity-50 bg-slate-50'
-              : isAvailable
-              ? isWeekend
-                ? 'bg-amber-50/90 hover:bg-amber-100 border border-amber-200/90 hover:border-amber-400 hover:scale-105 cursor-pointer shadow-2xs'
-                : 'bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-200/90 hover:border-emerald-400 hover:scale-105 cursor-pointer shadow-2xs'
-              : dayStatus === 'soldout'
-              ? 'bg-slate-50 border border-slate-200/60 cursor-not-allowed'
-              : 'cursor-not-allowed',
+                ? 'cursor-not-allowed opacity-50 bg-slate-50'
+                : isAvailable
+                  ? isWeekend
+                    ? 'bg-amber-50/90 hover:bg-amber-100 border border-amber-200/90 hover:border-amber-400 hover:scale-105 cursor-pointer shadow-2xs'
+                    : 'bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-200/90 hover:border-emerald-400 hover:scale-105 cursor-pointer shadow-2xs'
+                  : dayStatus === 'soldout'
+                    ? 'bg-slate-50 border border-slate-200/60 cursor-not-allowed'
+                    : 'cursor-not-allowed',
           ].join(' ')}
         >
           {/* Today indicator dot */}
@@ -1403,14 +1551,14 @@ export const BookingSidebarV3 = ({
             isSelected
               ? 'text-white font-black'
               : isPast
-              ? 'text-slate-300'
-              : isDisabled && dayStatus !== 'soldout'
-              ? 'text-slate-300'
-              : dayStatus === 'soldout'
-              ? 'text-slate-300 line-through'
-              : isWeekend
-              ? 'text-amber-700 font-black'
-              : 'text-slate-800 font-black',
+                ? 'text-slate-300'
+                : isDisabled && dayStatus !== 'soldout'
+                  ? 'text-slate-300'
+                  : dayStatus === 'soldout'
+                    ? 'text-slate-300 line-through'
+                    : isWeekend
+                      ? 'text-amber-700 font-black'
+                      : 'text-slate-800 font-black',
           ].join(' ')}>
             {i}
           </span>
@@ -1421,20 +1569,20 @@ export const BookingSidebarV3 = ({
             isSelected
               ? 'text-cyan-200 font-bold'
               : isPast || (isDisabled && dayStatus !== 'soldout')
-              ? 'text-slate-200'
-              : dayStatus === 'soldout'
-              ? 'text-slate-300'
-              : isWeekend
-              ? 'text-amber-600 font-bold'
-              : 'text-emerald-600 font-bold',
+                ? 'text-slate-200'
+                : dayStatus === 'soldout'
+                  ? 'text-slate-300'
+                  : isWeekend
+                    ? 'text-amber-600 font-bold'
+                    : 'text-emerald-600 font-bold',
           ].join(' ')}>
             {isPast || (isDisabled && dayStatus !== 'soldout')
               ? ''
               : dayStatus === 'soldout'
-              ? 'Full'
-              : fare
-              ? formatFare(fare)
-              : ''}
+                ? 'Full'
+                : fare
+                  ? formatFare(fare)
+                  : ''}
           </span>
 
           {/* Available Seats Pill Tag */}
@@ -1444,10 +1592,10 @@ export const BookingSidebarV3 = ({
               isSelected
                 ? 'bg-white/20 text-white'
                 : availSeats <= 10
-                ? 'bg-rose-100 text-rose-700 font-extrabold'
-                : availSeats <= 25
-                ? 'bg-amber-100 text-amber-800'
-                : 'bg-emerald-100/80 text-emerald-800'
+                  ? 'bg-rose-100 text-rose-700 font-extrabold'
+                  : availSeats <= 25
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-emerald-100/80 text-emerald-800'
             ].join(' ')}>
               {availSeats <= 10 ? `${availSeats} left` : `${availSeats} s`}
             </span>
@@ -1559,883 +1707,980 @@ export const BookingSidebarV3 = ({
         <div className={layoutMode === 'dialog' ? "flex-1 flex flex-col sm:flex-row overflow-hidden h-full min-h-0" : "space-y-4 p-0 lg:p-5"}>
 
           {/* LEFT / MAIN form panel */}
-          <div className={layoutMode === 'dialog' ? "flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 min-h-0" : ""}>
-            <div className={layoutMode === 'dialog' ? "p-4 sm:p-6 space-y-5" : "space-y-4"}>
+          <div className={layoutMode === 'dialog' ? "flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 min-h-0 bg-slate-50/50" : ""}>
+            <div className={layoutMode === 'dialog' ? "p-4 sm:p-6" : ""}>
+              <div className={layoutMode === 'dialog' ? "bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5" : "space-y-4"}>
 
-          {/* Suspended Warning */}
-          {(isPackageInactive || !isActive) && (
-            <div className="rounded-xl border border-rose-100 bg-rose-50/70 p-3.5 text-xs text-rose-700 font-bold flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-black">{!isActive ? 'Bookings Suspended' : 'Online Bookings Suspended'}</p>
-                <p className="text-slate-500 font-medium text-[10px] mt-0.5 leading-relaxed">
-                  Reservations are temporarily suspended. You cannot submit checkout payloads at this time.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Block 1: Choose Variant (Visual selector) */}
-          <div>
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">1</span>
-              Choose Package Variant
-            </label>
-            <div className="grid gap-2">
-              {validVariants.map((variant) => {
-                const isSelected = variant.id === selectedVariantId;
-                const vAdult = isSpecialUser ? 1 : Number(variant.adult_price || 0);
-                const vChild = isSpecialUser ? 1 : Number(variant.child_price || 0);
-                const vStudent = isSpecialUser ? 1 : Number(variant.student_price || 0);
-
-                return (
-                  <button
-                    key={variant.id}
-                    type="button"
-                    onClick={() => setSelectedVariantId(variant.id)}
-                    className={`w-full rounded-xl border text-left p-3 transition-all duration-200 shadow-2xs ${
-                      isSelected
-                        ? 'border-[#0d6e75] bg-[#0d6e75]/5 ring-2 ring-[#0d6e75]/15'
-                        : 'border-slate-200 bg-white hover:border-[#0d6e75]/40 hover:bg-slate-50/50'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="block text-xs font-black text-slate-900">{variant.title}</span>
-                          {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#0d6e75] animate-pulse" />}
-                        </div>
-                        {variant.transport_info && (
-                          <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{variant.transport_info}</span>
-                        )}
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className="block text-xs font-black text-[#0d6e75]">
-                          {isStudentPackage ? `🎓 ₹${formatINR(vStudent)}` : `₹${formatINR(vAdult)} / adult`}
-                        </span>
-                        {!isStudentPackage && (
-                          <span className="block text-[9px] font-bold text-slate-400 mt-0.5">Child: ₹{formatINR(vChild)}</span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Block 2: Date Select (Sleek Compact Calendar Picker) */}
-          <div className="relative pt-3 border-t border-slate-100 z-30">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">2</span>
-                Choose Travel Date
-              </label>
-              {selectedDate && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                  {(() => {
-                    const parts = selectedDate.split('-');
-                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-                  })()}
-                </span>
-              )}
-            </div>
-            
-            <button
-              type="button"
-              onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 text-xs font-bold shadow-2xs ${
-                isCalendarExpanded 
-                  ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75] ring-2 ring-[#0d6e75]/15' 
-                  : selectedDate
-                  ? 'border-emerald-300/80 bg-emerald-50/40 text-slate-800 hover:border-[#0d6e75]/60'
-                  : 'border-slate-200 bg-white hover:border-[#0d6e75]/50 text-slate-600'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="p-1.5 rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
-                  <CalendarDays className="h-4 w-4 shrink-0" />
+              {/* Suspended Warning */}
+              {(isPackageInactive || !isActive) && (
+                <div className="rounded-xl border border-rose-100 bg-rose-50/70 p-3.5 text-xs text-rose-700 font-bold flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-black">{!isActive ? 'Bookings Suspended' : 'Online Bookings Suspended'}</p>
+                    <p className="text-slate-500 font-medium text-[10px] mt-0.5 leading-relaxed">
+                      Reservations are temporarily suspended. You cannot submit checkout payloads at this time.
+                    </p>
+                  </div>
                 </div>
-                <span className="truncate">
-                  {selectedDate 
-                    ? (() => {
+              )}
+
+              {/* Block 1: Choose Variant (Visual selector) */}
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">1</span>
+                  Choose Package Variant
+                </label>
+                <div className="grid gap-2">
+                  {validVariants.map((variant) => {
+                    const isSelected = variant.id === selectedVariantId;
+                    const vAdult = isSpecialUser ? 1 : Number(variant.adult_price || 0);
+                    const vChild = isSpecialUser ? 1 : Number(variant.child_price || 0);
+                    const vStudent = isSpecialUser ? 1 : Number(variant.student_price || 0);
+
+                    return (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => setSelectedVariantId(variant.id)}
+                        className={`w-full rounded-xl border text-left p-3 transition-all duration-200 shadow-2xs ${isSelected
+                          ? 'border-[#0d6e75] bg-[#0d6e75]/5 ring-2 ring-[#0d6e75]/15'
+                          : 'border-slate-200 bg-white hover:border-[#0d6e75]/40 hover:bg-slate-50/50'
+                          }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="block text-xs font-black text-slate-900">{variant.title}</span>
+                              {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#0d6e75] animate-pulse" />}
+                            </div>
+                            {variant.transport_info && (
+                              <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{variant.transport_info}</span>
+                            )}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <span className="block text-xs font-black text-[#0d6e75]">
+                              {isStudentPackage ? `🎓 ₹${formatINR(vStudent)}` : `₹${formatINR(vAdult)} / adult`}
+                            </span>
+                            {!isStudentPackage && (
+                              <span className="block text-[9px] font-bold text-slate-400 mt-0.5">Child: ₹{formatINR(vChild)}</span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Block 2: Date Select (Sleek Compact Calendar Picker) */}
+              <div className="relative pt-3 border-t border-slate-100 z-30">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">2</span>
+                    Choose Travel Date
+                  </label>
+                  {selectedDate && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      {(() => {
                         const parts = selectedDate.split('-');
                         const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                        return d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
-                      })()
-                    : 'Select a Date...'
-                  }
-                </span>
+                        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                      })()}
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 text-xs font-bold shadow-2xs ${isCalendarExpanded
+                    ? 'border-[#0d6e75] bg-[#0d6e75]/5 text-[#0d6e75] ring-2 ring-[#0d6e75]/15'
+                    : selectedDate
+                      ? 'border-emerald-300/80 bg-emerald-50/40 text-slate-800 hover:border-[#0d6e75]/60'
+                      : 'border-slate-200 bg-white hover:border-[#0d6e75]/50 text-slate-600'
+                    }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-1.5 rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
+                      <CalendarDays className="h-4 w-4 shrink-0" />
+                    </div>
+                    <span className="truncate">
+                      {selectedDate
+                        ? (() => {
+                          const parts = selectedDate.split('-');
+                          const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                          return d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+                        })()
+                        : 'Select a Date...'
+                      }
+                    </span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isCalendarExpanded ? 'rotate-180 text-[#0d6e75]' : 'text-slate-400'}`} />
+                </button>
+
+                {/* Calendar Modal - fixed centered, never overflows */}
+                {isCalendarExpanded && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+                      onClick={() => setIsCalendarExpanded(false)}
+                    />
+                    {/* Calendar panel - fixed to center of screen, close X is inside the header */}
+                    <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(440px,calc(100vw-20px))] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-3 sm:p-4 animate-in fade-in-50 zoom-in-95 duration-200">
+                      {renderCalendar(() => setIsCalendarExpanded(false))}
+                    </div>
+                  </>
+                )}
               </div>
-              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isCalendarExpanded ? 'rotate-180 text-[#0d6e75]' : 'text-slate-400'}`} />
-            </button>
 
-            {/* Calendar Modal - fixed centered, never overflows */}
-            {isCalendarExpanded && (
-              <>
-                {/* Backdrop */}
-                <div
-                  className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
-                  onClick={() => setIsCalendarExpanded(false)}
-                />
-                {/* Calendar panel - fixed to center of screen, close X is inside the header */}
-                <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(440px,calc(100vw-20px))] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-3 sm:p-4 animate-in fade-in-50 zoom-in-95 duration-200">
-                  {renderCalendar(() => setIsCalendarExpanded(false))}
+              {/* Availability seat status */}
+              {(selectedDate || (!selectedDate && tomorrowSlot)) && (
+                <div className="text-[11px] font-bold">
+                  {availabilityState.kind === 'loading' ? (
+                    <div className="flex items-center gap-2 text-slate-500 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2"><Loader2 className="h-3.5 w-3.5 animate-spin text-[#0d6e75]" /> {availabilityState.message}</div>
+                  ) : availabilityState.kind === 'closed' ? (
+                    <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200/80 rounded-xl p-2.5">
+                      <XCircle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="block font-black text-rose-900">Bookings Closed</span>
+                        <span className="block text-[10px] font-semibold text-rose-700 mt-0.5">Online reservations for this travel date are closed.</span>
+                      </div>
+                    </div>
+                  ) : availabilityState.kind === 'sold_out' ? (
+                    <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200/80 rounded-xl p-2.5">
+                      <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="block font-black text-rose-900">Sold Out</span>
+                        <span className="block text-[10px] font-semibold text-rose-700 mt-0.5">All seats for this travel date have been fully booked.</span>
+                      </div>
+                    </div>
+                  ) : availabilityState.kind === 'unpublished' ? (
+                    <div className="flex items-start gap-2 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200/80 rounded-xl p-2.5">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="block font-black text-amber-900">Schedule Pending</span>
+                        <span className="block text-[10px] font-semibold text-amber-700 mt-0.5">Schedule has not been opened yet for online booking. Please pick another date or call our team to confirm.</span>
+                      </div>
+                    </div>
+                  ) : availabilityState.kind === 'open' ? (
+                    <div className="flex items-center justify-between text-emerald-800 bg-gradient-to-r from-emerald-50 to-teal-50/60 border border-emerald-200/70 px-3 py-2 rounded-xl shadow-2xs">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span className="text-[11px] font-black">{(availabilityState as any).message}</span>
+                      </div>
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md">Live</span>
+                    </div>
+                  ) : null}
                 </div>
-              </>
-            )}
-          </div>
+              )}
 
-          {/* Availability seat status */}
-          {(selectedDate || (!selectedDate && tomorrowSlot)) && (
-            <div className="text-[11px] font-bold">
-              {availabilityState.kind === 'loading' ? (
-                <div className="flex items-center gap-2 text-slate-500 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2"><Loader2 className="h-3.5 w-3.5 animate-spin text-[#0d6e75]" /> {availabilityState.message}</div>
-              ) : availabilityState.kind === 'closed' ? (
-                <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200/80 rounded-xl p-2.5">
-                  <XCircle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="block font-black text-rose-900">Bookings Closed</span>
-                    <span className="block text-[10px] font-semibold text-rose-700 mt-0.5">Online reservations for this travel date are closed.</span>
-                  </div>
-                </div>
-              ) : availabilityState.kind === 'sold_out' ? (
-                <div className="flex items-start gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200/80 rounded-xl p-2.5">
-                  <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="block font-black text-rose-900">Sold Out</span>
-                    <span className="block text-[10px] font-semibold text-rose-700 mt-0.5">All seats for this travel date have been fully booked.</span>
-                  </div>
-                </div>
-              ) : availabilityState.kind === 'unpublished' ? (
-                <div className="flex items-start gap-2 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200/80 rounded-xl p-2.5">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="block font-black text-amber-900">Schedule Pending</span>
-                    <span className="block text-[10px] font-semibold text-amber-700 mt-0.5">Schedule has not been opened yet for online booking. Please pick another date or call our team to confirm.</span>
-                  </div>
-                </div>
-              ) : availabilityState.kind === 'open' ? (
-                <div className="flex items-center justify-between text-emerald-800 bg-gradient-to-r from-emerald-50 to-teal-50/60 border border-emerald-200/70 px-3 py-2 rounded-xl shadow-2xs">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                    <span className="text-[11px] font-black">{(availabilityState as any).message}</span>
-                  </div>
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md">Live</span>
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          {/* Block 3: Steppers (Modern Ticket Quantity Selector) */}
-          <div className="pt-3 border-t border-slate-100">
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">3</span>
-              Ticket Quantity
-            </label>
-            {isStudentPackage ? (
-              <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50/60 to-amber-100/30 px-3.5 py-2">
-                <span className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">🎓 Students</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={!isActive || (isPackageInactive && !isAdmin)}
-                    onClick={() => setAdults(p => Math.max(1, p - 1))}
-                    className="h-8 w-8 rounded-lg border border-amber-300 bg-white text-amber-900 hover:bg-amber-100 flex items-center justify-center font-black transition-all shadow-2xs active:scale-95 disabled:opacity-50"
-                  >-</button>
-                  <span className="w-8 text-center text-sm font-black text-slate-900">{adults}</span>
-                  <button
-                    type="button"
-                    disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
-                    onClick={() => setAdults(p => p + 1)}
-                    className="h-8 w-8 rounded-lg border border-amber-300 bg-white text-amber-900 hover:bg-amber-100 flex items-center justify-center font-black transition-all shadow-2xs active:scale-95 disabled:opacity-50"
-                  >+</button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-slate-200/90 bg-white p-2 sm:p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
-                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Adults (11+ yrs)</span>
-                  <div className="flex items-center justify-between">
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
-                    <span className="text-sm font-black text-slate-900">{adults}</span>
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200/90 bg-white p-2 sm:p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
-                  <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Children (4-10)</span>
-                  <div className="flex items-center justify-between">
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
-                    <span className="text-sm font-black text-slate-900">{children}</span>
-                    <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Block 4: Add-ons, Transport & Refreshments */}
-          {(hasTransport || hasRefreshments || hasFoodOption || (extras && extras.length > 0)) && (
-            <div className="pt-3 border-t border-slate-100 space-y-2.5">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">4</span>
-                Optional Add-ons & Transport
-              </label>
-              
-              {/* Transport Toggles */}
-              {hasTransport && transportOptions.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    {sharedOptions.length > 0 && (
+              {/* Block 3: Steppers (Modern Ticket Quantity Selector) */}
+              <div className="pt-3 border-t border-slate-100">
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">3</span>
+                  Ticket Quantity
+                </label>
+                {isStudentPackage ? (
+                  <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50/60 to-amber-100/30 px-3.5 py-2">
+                    <span className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">🎓 Students</span>
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => { setSelectedTransportMode('SHARED'); setSeparateVehicleQtys({}); if (!selectedSharedOptionId && sharedOptions.length > 0) setSelectedSharedOptionId(sharedOptions[0].id); }}
-                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${
-                          selectedTransportMode === 'SHARED' ? 'bg-[#0d6e75] border-[#0d6e75] text-white shadow-2xs' : 'bg-white border-slate-200 text-slate-500'
-                        }`}
-                      >🚌 Shared Coach</button>
-                    )}
-                    {separateOptions.length > 0 && (
+                        disabled={!isActive || (isPackageInactive && !isAdmin)}
+                        onClick={() => setAdults(p => Math.max(1, p - 1))}
+                        className="h-8 w-8 rounded-lg border border-amber-300 bg-white text-amber-900 hover:bg-amber-100 flex items-center justify-center font-black transition-all shadow-2xs active:scale-95 disabled:opacity-50"
+                      >-</button>
+                      <span className="w-8 text-center text-sm font-black text-slate-900">{adults}</span>
                       <button
                         type="button"
-                        onClick={() => { setSelectedTransportMode('SEPARATE'); setSelectedSharedOptionId(null); }}
-                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${
-                          selectedTransportMode === 'SEPARATE' ? 'bg-[#0d6e75] border-[#0d6e75] text-white shadow-2xs' : 'bg-white border-slate-200 text-slate-500'
-                        }`}
-                      >🚗 Private Cab</button>
-                    )}
+                        disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults >= Number(selectedSlot?.available_seats))}
+                        onClick={() => setAdults(p => p + 1)}
+                        className="h-8 w-8 rounded-lg border border-amber-300 bg-white text-amber-900 hover:bg-amber-100 flex items-center justify-center font-black transition-all shadow-2xs active:scale-95 disabled:opacity-50"
+                      >+</button>
+                    </div>
                   </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-slate-200/90 bg-white p-2 sm:p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
+                      <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Adults (11+ yrs)</span>
+                      <div className="flex items-center justify-between">
+                        <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setAdults(p => Math.max(1, p - 1))} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
+                        <span className="text-sm font-black text-slate-900">{adults}</span>
+                        <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setAdults(p => p + 1)} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/90 bg-white p-2 sm:p-2.5 shadow-2xs hover:border-slate-300 transition-colors">
+                      <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Children (4-10)</span>
+                      <div className="flex items-center justify-between">
+                        <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin)} onClick={() => setChildren(p => Math.max(0, p - 1))} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">-</button>
+                        <span className="text-sm font-black text-slate-900">{children}</span>
+                        <button type="button" disabled={!isActive || (isPackageInactive && !isAdmin) || (Boolean(selectedDate) && !isAdmin && availabilityState.kind === 'open' && adults + children >= Number(selectedSlot?.available_seats))} onClick={() => setChildren(p => p + 1)} className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-95 flex items-center justify-center font-black transition-all text-slate-700 disabled:opacity-40">+</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-                  {selectedTransportMode === 'SHARED' && (
-                    <div className="grid gap-2">
-                      {sharedOptions.map(opt => {
-                        const optAvail = transportAvailMap[opt.id];
-                        const pOverride = Number(optAvail?.price_override ?? 0);
-                        const tAdultUi = positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price) + pOverride;
-                        const tChildUi = positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price) + pOverride;
-                        const tStudentUi = positiveNumber(isWeekendSelected && opt.weekend_student_price ? opt.weekend_student_price : opt.student_price) + pOverride;
-                        const extraCost = isStudentPackage ? (adults * tStudentUi) : ((adults * tAdultUi) + (children * tChildUi));
-                        const isSelected = selectedSharedOptionId === opt.id;
-                        const hasInventory = Boolean(optAvail) || !selectedDate;
-                        const seatsLeft = optAvail ? optAvail.remaining : 99;
-                        const isDisabledForThis = (!hasInventory || seatsLeft < totalPassengers);
+              {/* Block 4: Add-ons, Transport & Refreshments */}
+              {(hasTransport || hasRefreshments || hasFoodOption || (extras && extras.length > 0)) && (
+                <div className="pt-3 border-t border-slate-100 space-y-2.5">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">4</span>
+                    Optional Add-ons & Transport
+                  </label>
 
-                        return (
-                          <label
-                            key={opt.id}
-                            className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                              isSelected ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white'
-                            } ${isDisabledForThis ? 'opacity-55' : ''}`}
-                          >
-                            <input
-                              type="radio"
-                              name="sharedTransportV3"
-                              checked={isSelected}
-                              disabled={isDisabledForThis}
-                              onChange={() => setSelectedSharedOptionId(opt.id)}
-                              className="mt-0.5 text-[#0d6e75] focus:ring-[#0d6e75]"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <span className="block text-[11px] font-black text-slate-800 leading-snug">{opt.title}</span>
-                              <span className="block text-[9px] font-bold text-slate-400 mt-0.5">
-                                {isStudentPackage ? `₹${formatINR(tStudentUi)} / student` : `₹${formatINR(tAdultUi)} / adult · ₹${formatINR(tChildUi)} / child`}
+                  {/* Transport Toggles */}
+                  {hasTransport && transportOptions.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        {sharedOptions.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedTransportMode('SHARED'); setSeparateVehicleQtys({}); if (!selectedSharedOptionId && sharedOptions.length > 0) setSelectedSharedOptionId(sharedOptions[0].id); }}
+                            className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${selectedTransportMode === 'SHARED' ? 'bg-[#0d6e75] border-[#0d6e75] text-white shadow-2xs' : 'bg-white border-slate-200 text-slate-500'
+                              }`}
+                          >🚌 Shared Coach</button>
+                        )}
+                        {separateOptions.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTransportMode('SEPARATE');
+                              setSelectedSharedOptionId(null);
+                              if (separateOptions.length > 0) {
+                                const primaryOpt = separateOptions[0];
+                                const cap = positiveNumber(primaryOpt.capacity) || 6;
+                                const totalPax = adults + children;
+                                const needed = Math.ceil(totalPax / cap);
+                                setSeparateVehicleQtys({ [primaryOpt.id]: needed });
+                              }
+                            }}
+                            className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${selectedTransportMode === 'SEPARATE' ? 'bg-[#0d6e75] border-[#0d6e75] text-white shadow-2xs' : 'bg-white border-slate-200 text-slate-500'
+                              }`}
+                          >🚗 Private Cab</button>
+                        )}
+                      </div>
+
+                      {selectedTransportMode === 'SHARED' && (
+                        <div className="grid gap-2">
+                          {sharedOptions.map(opt => {
+                            const optAvail = getOptAvail(opt.id);
+                            const pOverride = Number(optAvail?.price_override ?? 0);
+                            const tAdultUi = positiveNumber(isWeekendSelected && opt.weekend_adult_price ? opt.weekend_adult_price : opt.adult_price) + pOverride;
+                            const tChildUi = positiveNumber(isWeekendSelected && opt.weekend_child_price ? opt.weekend_child_price : opt.child_price) + pOverride;
+                            const tStudentUi = positiveNumber(isWeekendSelected && opt.weekend_student_price ? opt.weekend_student_price : opt.student_price) + pOverride;
+                            const extraCost = isStudentPackage ? (adults * tStudentUi) : ((adults * tAdultUi) + (children * tChildUi));
+                            const isSelected = selectedSharedOptionId === opt.id;
+                            const isClosed = optAvail ? optAvail.is_closed : false;
+                            const seatsLeft = optAvail ? optAvail.remaining : (opt.capacity || 999);
+                            const isDisabledForThis = !isAdmin && (isClosed || (seatsLeft < totalPassengers));
+
+                            return (
+                              <label
+                                key={opt.id}
+                                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white'
+                                  } ${isDisabledForThis ? 'opacity-55' : ''}`}
+                              >
+                                <input
+                                  type="radio"
+                                  name="sharedTransportV3"
+                                  checked={isSelected}
+                                  disabled={isDisabledForThis}
+                                  onChange={() => setSelectedSharedOptionId(opt.id)}
+                                  className="mt-0.5 text-[#0d6e75] focus:ring-[#0d6e75]"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <span className="block text-[11px] font-black text-slate-800 leading-snug">{opt.title}</span>
+                                  <span className="block text-[9px] font-bold text-slate-400 mt-0.5">
+                                    {isStudentPackage ? `₹${formatINR(tStudentUi)} / student` : `₹${formatINR(tAdultUi)} / adult · ₹${formatINR(tChildUi)} / child`}
+                                  </span>
+                                  {isDisabledForThis && (
+                                    <span className="block text-[9px] font-bold text-rose-500 mt-0.5">
+                                      {isClosed ? 'Closed for this date' : `Only ${seatsLeft} seats left (needed: ${totalPassengers})`}
+                                    </span>
+                                  )}
+                                </div>
+                                {isSelected && extraCost > 0 && (
+                                  <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(extraCost)}</span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {selectedTransportMode === 'SEPARATE' && (
+                        <div className="grid gap-2 min-w-0">
+                          {separateOptions.map(opt => {
+                            const optAvail = getOptAvail(opt.id);
+                            const pOverride = Number(optAvail?.price_override ?? 0);
+                            const qty = separateVehicleQtys[opt.id] || 0;
+                            const fixedPrice = positiveNumber(isWeekendSelected && opt.weekend_fixed_price ? opt.weekend_fixed_price : opt.fixed_price) + pOverride;
+                            const lineTotal = qty * fixedPrice;
+                            const isClosed = optAvail ? optAvail.is_closed : false;
+                            const vehiclesLeft = optAvail ? optAvail.remaining : 10;
+
+                            return (
+                              <div key={opt.id} className={`p-3 rounded-xl border transition-all min-w-0 ${qty > 0 ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white'}`}>
+                                <div className="flex items-center justify-between gap-3 min-w-0">
+                                  <div className="min-w-0 flex-1 overflow-hidden">
+                                    <span className="block text-[11px] font-black text-slate-850 truncate max-w-full" title={opt.title}>{opt.title}</span>
+                                    <span className="block text-[9px] font-semibold text-slate-450 mt-0.5">Max {opt.capacity} passengers · <span className="text-[#0d6e75]">₹{formatINR(fixedPrice)}</span></span>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const cap = positiveNumber(opt.capacity) || 6;
+                                        const newQty = Math.max(0, qty - 1);
+                                        const newCapacity = totalSeparateCapacity - (qty > 0 ? cap : 0);
+                                        const totalPax = adults + children;
+                                        if (newQty > 0 && newCapacity < totalPax) {
+                                          const minReq = Math.ceil(totalPax / cap);
+                                          toast.error(`${newQty} vehicle(s) (${newCapacity} seats) cannot fit ${totalPax} passengers. Minimum ${minReq} vehicles required.`, { duration: 4000 });
+                                        }
+                                        setSeparateVehicleQtys(p => ({ ...p, [opt.id]: newQty }));
+                                      }}
+                                      className="h-7 w-7 rounded-md border flex items-center justify-center font-bold text-slate-605"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="w-5 text-center text-xs font-black text-slate-850">{qty}</span>
+                                    <button type="button" disabled={!isAdmin && (isClosed || vehiclesLeft <= qty)} onClick={() => setSeparateVehicleQtys(p => ({ ...p, [opt.id]: (p[opt.id] || 0) + 1 }))} className="h-7 w-7 rounded-md border flex items-center justify-center font-bold text-slate-655">+</button>
+                                  </div>
+                                </div>
+                                {qty > 0 && (
+                                  <div className="mt-2 pt-2 border-t border-[#0d6e75]/10 flex justify-between items-center text-[10px] font-black text-[#0d6e75]">
+                                    <span>Vehicle cost ({qty} vehicle{qty > 1 ? 's' : ''})</span>
+                                    <span>+₹{formatINR(lineTotal)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {/* Warning Banner if selected vehicles cannot seat total passengers */}
+                          {Object.values(separateVehicleQtys).some(q => q > 0) && totalSeparateCapacity < totalPassengers && (
+                            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold flex items-start gap-2 mt-1">
+                              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                              <span>
+                                Selected vehicles (capacity: {totalSeparateCapacity}) cannot seat all {totalPassengers} passengers. Please add more vehicles or switch to Shared Coach.
                               </span>
                             </div>
-                            {isSelected && extraCost > 0 && (
-                              <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(extraCost)}</span>
+                          )}
+
+                          {/* Warning Banner if no vehicle selected */}
+                          {Object.values(separateVehicleQtys).every(q => q === 0) && (
+                            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold flex items-center gap-1.5 mt-1">
+                              <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>Please select at least 1 vehicle for private transport.</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Fresh Up Accommodation */}
+                  {hasRefreshments && (
+                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${isRefreshmentDisabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : includeRefreshments ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
+                      }`}>
+                      <input
+                        type="checkbox"
+                        checked={includeRefreshments}
+                        disabled={isRefreshmentDisabled}
+                        onChange={(e) => setIncludeRefreshments(e.target.checked)}
+                        className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
+                      />
+                      <div className="flex-1">
+                        <span className="block text-xs font-black text-slate-800 leading-snug">Add Fresh-Up Room Break</span>
+                        <span className="block text-[9px] font-semibold text-slate-400 mt-1">
+                          {isStudentPackage ? `₹${formatINR(refreshmentStudentPrice || 0)}/Student` : `₹${formatINR(refreshmentAdultPrice || 0)}/Adult · ₹${formatINR(refreshmentChildPrice || 0)}/Child`}
+                        </span>
+                        {isRefreshmentDisabled && (
+                          <span className="block text-[9px] font-bold text-rose-500 mt-1">Requires min. {refreshmentsMinPassengers} passengers</span>
+                        )}
+                      </div>
+                      {includeRefreshments && prices.refreshmentSubtotal > 0 && (
+                        <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(prices.refreshmentSubtotal)}</span>
+                      )}
+                    </label>
+                  )}
+
+                  {/* Food package */}
+                  {hasFoodOption && (
+                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${includeFoodOption ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
+                      }`}>
+                      <input
+                        type="checkbox"
+                        checked={includeFoodOption}
+                        onChange={(e) => setIncludeFoodOption(e.target.checked)}
+                        className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
+                      />
+                      <div className="flex-1">
+                        <span className="block text-xs font-black text-slate-800 leading-snug">Add Meals Package</span>
+                        <span className="block text-[9px] font-semibold text-slate-400 mt-1">
+                          {isStudentPackage ? `₹${formatINR(foodStudentPrice || 0)}/Student` : `₹${formatINR(foodAdultPrice || 0)}/Adult · ₹${formatINR(foodChildPrice || 0)}/Child`}
+                        </span>
+                      </div>
+                      {includeFoodOption && prices.foodSubtotal > 0 && (
+                        <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(prices.foodSubtotal)}</span>
+                      )}
+                    </label>
+                  )}
+
+                  {/* Extras checkbox list */}
+                  {extras && extras.length > 0 && (
+                    <div className="grid gap-2">
+                      {extras.map((ex: any) => {
+                        const isSelected = selectedExtraIds.includes(ex.id);
+                        const exCost = isStudentPackage ? (adults * positiveNumber(ex.student_price)) : ((adults * positiveNumber(ex.adult_price)) + (children * positiveNumber(ex.child_price)));
+                        return (
+                          <label key={ex.id} className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
+                            }`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedExtraIds(p => [...p, ex.id]);
+                                else setSelectedExtraIds(p => p.filter(id => id !== ex.id));
+                              }}
+                              className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="block text-xs font-black text-slate-800 leading-snug">{ex.title}</span>
+                              {ex.description && <span className="block text-[9px] font-medium text-slate-400 mt-0.5 line-clamp-1">{ex.description}</span>}
+                              <span className="block text-[9px] font-semibold text-[#0d6e75] mt-1">
+                                {isStudentPackage ? `₹${formatINR(ex.student_price)}/student` : `₹${formatINR(ex.adult_price)}/adult · ₹${formatINR(ex.child_price)}/child`}
+                              </span>
+                            </div>
+                            {isSelected && exCost > 0 && (
+                              <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(exCost)}</span>
                             )}
                           </label>
                         );
                       })}
                     </div>
                   )}
-
-                  {selectedTransportMode === 'SEPARATE' && (
-                    <div className="grid gap-2 min-w-0">
-                      {separateOptions.map(opt => {
-                        const optAvail = transportAvailMap[opt.id];
-                        const pOverride = Number(optAvail?.price_override ?? 0);
-                        const qty = separateVehicleQtys[opt.id] || 0;
-                        const fixedPrice = positiveNumber(isWeekendSelected && opt.weekend_fixed_price ? opt.weekend_fixed_price : opt.fixed_price) + pOverride;
-                        const lineTotal = qty * fixedPrice;
-                        const hasInventory = Boolean(optAvail) || !selectedDate;
-                        const vehiclesLeft = optAvail ? optAvail.remaining : 5;
-
-                        return (
-                          <div key={opt.id} className={`p-3 rounded-xl border transition-all min-w-0 ${qty > 0 ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white'}`}>
-                            <div className="flex items-center justify-between gap-3 min-w-0">
-                              <div className="min-w-0 flex-1 overflow-hidden">
-                                <span className="block text-[11px] font-black text-slate-850 truncate max-w-full" title={opt.title}>{opt.title}</span>
-                                <span className="block text-[9px] font-semibold text-slate-450 mt-0.5">Max {opt.capacity} passengers · <span className="text-[#0d6e75]">₹{formatINR(fixedPrice)}</span></span>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button type="button" onClick={() => setSeparateVehicleQtys(p => ({ ...p, [opt.id]: Math.max(0, (p[opt.id] || 0) - 1) }))} className="h-7 w-7 rounded-md border flex items-center justify-center font-bold text-slate-605">-</button>
-                                <span className="w-5 text-center text-xs font-black text-slate-850">{qty}</span>
-                                <button type="button" disabled={!hasInventory || vehiclesLeft <= qty} onClick={() => setSeparateVehicleQtys(p => ({ ...p, [opt.id]: Math.min(vehiclesLeft, (p[opt.id] || 0) + 1) }))} className="h-7 w-7 rounded-md border flex items-center justify-center font-bold text-slate-655">+</button>
-                              </div>
-                            </div>
-                            {qty > 0 && (
-                              <div className="mt-2 pt-2 border-t border-[#0d6e75]/10 flex justify-between items-center text-[10px] font-black text-[#0d6e75]">
-                                <span>Vehicle cost ({qty} vehicle{qty > 1 ? 's' : ''})</span>
-                                <span>+₹{formatINR(lineTotal)}</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* Fresh Up Accommodation */}
-              {hasRefreshments && (
-                <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  isRefreshmentDisabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : includeRefreshments ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={includeRefreshments}
-                    disabled={isRefreshmentDisabled}
-                    onChange={(e) => setIncludeRefreshments(e.target.checked)}
-                    className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
-                  />
-                  <div className="flex-1">
-                    <span className="block text-xs font-black text-slate-800 leading-snug">Add Fresh-Up Room Break</span>
-                    <span className="block text-[9px] font-semibold text-slate-400 mt-1">
-                      {isStudentPackage ? `₹${formatINR(refreshmentStudentPrice || 0)}/Student` : `₹${formatINR(refreshmentAdultPrice || 0)}/Adult · ₹${formatINR(refreshmentChildPrice || 0)}/Child`}
-                    </span>
-                    {isRefreshmentDisabled && (
-                      <span className="block text-[9px] font-bold text-rose-500 mt-1">Requires min. {refreshmentsMinPassengers} passengers</span>
+              {/* Block 5: Promo code — powered by CouponWidget */}
+              <CouponWidget
+                couponCode={couponCode}
+                setCouponCode={setCouponCode}
+                validatingCoupon={validatingCoupon}
+                appliedCoupon={appliedCoupon}
+                couponError={couponError}
+                couponSuccess={couponSuccess}
+                onApply={handleApplyCoupon}
+                onRemove={handleRemoveCoupon}
+                onAutoApply={(code) => applyCouponByCode(code)}
+                stepNumber={5}
+              />
+
+              {/* Detailed Pricing Summary Breakdown on Mobile */}
+              {selectedDate && (
+                <div className="sm:hidden rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="text-xs font-black uppercase tracking-widest text-[#0d6e75]">Price Breakdown & Bill Details</span>
+                    <span className="text-[10px] font-bold text-slate-400">Bill Details</span>
+                  </div>
+                  <div className="space-y-1.5 text-xs text-slate-600">
+                    <div className="flex justify-between items-center">
+                      <span>Base Fare {isStudentPackage ? `(${adults} Stud)` : `(${adults} Ad, ${children} Ch)`}</span>
+                      <span className="font-bold text-slate-800">₹{formatINR(prices.pureBaseSubtotal)}</span>
+                    </div>
+                    {prices.weekendSurchargeSubtotal > 0 && (
+                      <div className="flex justify-between items-center text-amber-600 font-medium">
+                        <span>Weekend Charge</span>
+                        <span>+₹{formatINR(prices.weekendSurchargeSubtotal)}</span>
+                      </div>
                     )}
+                    {prices.transportBreakdown.map((item, i) => (
+                      <div key={i} className="flex justify-between items-center text-[#0d6e75] font-semibold">
+                        <span className="truncate">{item.type === 'SEPARATE_VEHICLE' ? `${item.quantity}× ${item.title}` : item.title}</span>
+                        <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
+                      </div>
+                    ))}
+                    {prices.refreshmentSubtotal > 0 && (
+                      <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
+                        <span>Fresh-Up Stay Facility</span>
+                        <span>+₹{formatINR(prices.refreshmentSubtotal)}</span>
+                      </div>
+                    )}
+                    {prices.foodSubtotal > 0 && (
+                      <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
+                        <span>Food & Meals</span>
+                        <span>+₹{formatINR(prices.foodSubtotal)}</span>
+                      </div>
+                    )}
+                    {prices.customExtrasBreakdown && prices.customExtrasBreakdown.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center text-[#0d6e75] font-semibold gap-2">
+                        <span className="truncate">{item.title}</span>
+                        <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
+                      </div>
+                    ))}
+                    {appliedCoupon && (
+                      <div className="flex justify-between items-center text-emerald-600 font-black">
+                        <span>Discount ({appliedCoupon.code})</span>
+                        <span>-₹{formatINR(prices.discount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium pt-1 border-t border-slate-200/60">
+                      <span>GST (5%)</span>
+                      <span>₹{formatINR(prices.gst)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                      <span>Payment Gateway Fee (1%)</span>
+                      <span>₹{formatINR(prices.gatewayFee)}</span>
+                    </div>
+
+                    <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-sm font-black text-slate-900">
+                      <span>Total Amount Due</span>
+                      <span className="text-[#0d6e75] text-base">₹{formatINR(isAgent ? prices.agentPayable : prices.grandTotal)}</span>
+                    </div>
                   </div>
-                  {includeRefreshments && prices.refreshmentSubtotal > 0 && (
-                    <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(prices.refreshmentSubtotal)}</span>
-                  )}
-                </label>
+                </div>
               )}
 
-              {/* Food package */}
-              {hasFoodOption && (
-                <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  includeFoodOption ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={includeFoodOption}
-                    onChange={(e) => setIncludeFoodOption(e.target.checked)}
-                    className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
-                  />
-                  <div className="flex-1">
-                    <span className="block text-xs font-black text-slate-800 leading-snug">Add Meals Package</span>
-                    <span className="block text-[9px] font-semibold text-slate-400 mt-1">
-                      {isStudentPackage ? `₹${formatINR(foodStudentPrice || 0)}/Student` : `₹${formatINR(foodAdultPrice || 0)}/Adult · ₹${formatINR(foodChildPrice || 0)}/Child`}
-                    </span>
-                  </div>
-                  {includeFoodOption && prices.foodSubtotal > 0 && (
-                    <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(prices.foodSubtotal)}</span>
-                  )}
-                </label>
-              )}
+              {/* ── Step 6: Payment Option (always visible on all screen sizes) ── */}
+              {selectedDate && (() => {
+                const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+                const advType = advancePaymentType || 'FULL_PAYMENT';
+                const advVal = advancePaymentValue || 0;
 
-              {/* Extras checkbox list */}
-              {extras && extras.length > 0 && (
-                <div className="grid gap-2">
-                  {extras.map((ex: any) => {
-                    const isSelected = selectedExtraIds.includes(ex.id);
-                    const exCost = isStudentPackage ? (adults * positiveNumber(ex.student_price)) : ((adults * positiveNumber(ex.adult_price)) + (children * positiveNumber(ex.child_price)));
-                    return (
-                      <label key={ex.id} className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                        isSelected ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
-                      }`}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) setSelectedExtraIds(p => [...p, ex.id]);
-                            else setSelectedExtraIds(p => p.filter(id => id !== ex.id));
-                          }}
-                          className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <span className="block text-xs font-black text-slate-800 leading-snug">{ex.title}</span>
-                          {ex.description && <span className="block text-[9px] font-medium text-slate-400 mt-0.5 line-clamp-1">{ex.description}</span>}
-                          <span className="block text-[9px] font-semibold text-[#0d6e75] mt-1">
-                            {isStudentPackage ? `₹${formatINR(ex.student_price)}/student` : `₹${formatINR(ex.adult_price)}/adult · ₹${formatINR(ex.child_price)}/child`}
-                          </span>
+                if (advType === 'FULL_PAYMENT') return null;
+
+                const advLabel = advType === 'PERCENTAGE' ? `${advVal}% Advance` : `₹${advVal} Advance`;
+                const balanceDue = finalTotal - effectivePayNow;
+
+                return (
+                  <div className="sm:hidden rounded-2xl border-2 border-slate-200 bg-white p-4 space-y-3">
+                    {/* Step header */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0d6e75] text-white text-[10px] font-black">6</div>
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-700">Payment Option</span>
+                      <div className="flex-1 h-px bg-slate-100" />
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Advance available</span>
+                    </div>
+
+                    {/* Two full-width cards stacked on mobile, side-by-side on sm+ */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                      {/* FULL PAY card */}
+                      <button
+                        type="button"
+                        onClick={() => { setCustomPayAmount(''); setIsAdvanceSelected(false); }}
+                        className={`relative flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all duration-150 focus:outline-none ${!isAdvanceSelected
+                          ? 'border-[#0d6e75] bg-[#f0fafa] shadow-md'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                          }`}
+                      >
+                        {/* Radio */}
+                        <div className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${!isAdvanceSelected ? 'border-[#0d6e75]' : 'border-slate-300'
+                          }`}>
+                          {!isAdvanceSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#0d6e75]" />}
                         </div>
-                        {isSelected && exCost > 0 && (
-                          <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(exCost)}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 leading-none mb-1">Full Pay</div>
+                          <div className={`text-2xl font-black leading-none tracking-tight ${!isAdvanceSelected ? 'text-[#0d6e75]' : 'text-slate-800'
+                            }`}>₹{formatINR(finalTotal)}</div>
+                          <div className="text-[10px] font-semibold text-slate-400 mt-1">Pay everything now · no balance later</div>
+                        </div>
+                        {!isAdvanceSelected && (
+                          <div className="shrink-0 bg-[#0d6e75] text-white text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg">Selected</div>
                         )}
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+                      </button>
 
-          {/* Block 5: Promo code — powered by CouponWidget */}
-          <CouponWidget
-            couponCode={couponCode}
-            setCouponCode={setCouponCode}
-            validatingCoupon={validatingCoupon}
-            appliedCoupon={appliedCoupon}
-            couponError={couponError}
-            couponSuccess={couponSuccess}
-            onApply={handleApplyCoupon}
-            onRemove={handleRemoveCoupon}
-            onAutoApply={(code) => applyCouponByCode(code)}
-            stepNumber={5}
-          />
-
-          {/* ── Step 6: Payment Option (always visible on all screen sizes) ── */}
-          {selectedDate && (() => {
-            const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-            const advType = advancePaymentType || 'FULL_PAYMENT';
-            const advVal = advancePaymentValue || 0;
-
-            if (advType === 'FULL_PAYMENT') return null;
-
-            const advLabel = advType === 'PERCENTAGE' ? `${advVal}% Advance` : `₹${advVal} Advance`;
-            const balanceDue = finalTotal - effectivePayNow;
-
-            return (
-              <div className="sm:hidden rounded-2xl border-2 border-slate-200 bg-white p-4 space-y-3">
-                {/* Step header */}
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0d6e75] text-white text-[10px] font-black">6</div>
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-700">Payment Option</span>
-                  <div className="flex-1 h-px bg-slate-100" />
-                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Advance available</span>
-                </div>
-
-                {/* Two full-width cards stacked on mobile, side-by-side on sm+ */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-                  {/* FULL PAY card */}
-                  <button
-                    type="button"
-                    onClick={() => { setCustomPayAmount(''); setIsAdvanceSelected(false); }}
-                    className={`relative flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all duration-150 focus:outline-none ${
-                      !isAdvanceSelected
-                        ? 'border-[#0d6e75] bg-[#f0fafa] shadow-md'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                    }`}
-                  >
-                    {/* Radio */}
-                    <div className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
-                      !isAdvanceSelected ? 'border-[#0d6e75]' : 'border-slate-300'
-                    }`}>
-                      {!isAdvanceSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#0d6e75]" />}
+                      {/* ADVANCE PAY card */}
+                      <button
+                        type="button"
+                        onClick={() => { setIsAdvanceSelected(true); if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                        className={`relative flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all duration-150 focus:outline-none ${isAdvanceSelected
+                          ? 'border-amber-500 bg-amber-50 shadow-md'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                          }`}
+                      >
+                        {/* Radio */}
+                        <div className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${isAdvanceSelected ? 'border-amber-500' : 'border-slate-300'
+                          }`}>
+                          {isAdvanceSelected && <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 leading-none mb-1">{advLabel}</div>
+                          <div className={`text-2xl font-black leading-none tracking-tight ${isAdvanceSelected ? 'text-amber-600' : 'text-slate-800'
+                            }`}>₹{formatINR(minPayable)}</div>
+                          <div className="text-[10px] font-semibold text-slate-400 mt-1">Pay advance · balance at boarding</div>
+                        </div>
+                        {isAdvanceSelected && (
+                          <div className="shrink-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg">Selected</div>
+                        )}
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 leading-none mb-1">Full Pay</div>
-                      <div className={`text-2xl font-black leading-none tracking-tight ${
-                        !isAdvanceSelected ? 'text-[#0d6e75]' : 'text-slate-800'
-                      }`}>₹{formatINR(finalTotal)}</div>
-                      <div className="text-[10px] font-semibold text-slate-400 mt-1">Pay everything now · no balance later</div>
-                    </div>
-                    {!isAdvanceSelected && (
-                      <div className="shrink-0 bg-[#0d6e75] text-white text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg">Selected</div>
-                    )}
-                  </button>
 
-                  {/* ADVANCE PAY card */}
-                  <button
-                    type="button"
-                    onClick={() => { setIsAdvanceSelected(true); if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                    className={`relative flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all duration-150 focus:outline-none ${
-                      isAdvanceSelected
-                        ? 'border-amber-500 bg-amber-50 shadow-md'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                    }`}
-                  >
-                    {/* Radio */}
-                    <div className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
-                      isAdvanceSelected ? 'border-amber-500' : 'border-slate-300'
-                    }`}>
-                      {isAdvanceSelected && <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 leading-none mb-1">{advLabel}</div>
-                      <div className={`text-2xl font-black leading-none tracking-tight ${
-                        isAdvanceSelected ? 'text-amber-600' : 'text-slate-800'
-                      }`}>₹{formatINR(minPayable)}</div>
-                      <div className="text-[10px] font-semibold text-slate-400 mt-1">Pay advance · balance at boarding</div>
-                    </div>
+                    {/* Expanded detail panel when advance selected */}
                     {isAdvanceSelected && (
-                      <div className="shrink-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg">Selected</div>
+                      <div className="rounded-xl border border-amber-200 overflow-hidden">
+                        <div className="grid grid-cols-2 divide-x divide-amber-100 bg-amber-50">
+                          {/* Pay now */}
+                          <div className="px-4 py-3">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">Pay Now</div>
+                            <div className="text-2xl font-black text-amber-700">₹{formatINR(minPayable)}</div>
+                            <div className="text-[10px] font-semibold text-amber-600 mt-1">Required Advance</div>
+                          </div>
+                          {/* Balance */}
+                          <div className="px-4 py-3">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Balance Due</div>
+                            <div className="text-2xl font-black text-slate-700">₹{formatINR(balanceDue)}</div>
+                            <div className="text-[10px] font-semibold text-slate-400 mt-1">At boarding point</div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2 px-4 py-2.5 bg-white border-t border-amber-100">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-[10px] font-semibold text-amber-700 leading-relaxed">
+                            {advType === 'PERCENTAGE'
+                              ? `Pay ${advVal}% advance now to secure your seats. The remaining ₹${formatINR(balanceDue)} is collected at the boarding point on travel day.`
+                              : `Pay ₹${advVal}/person advance now to secure your seats. The remaining ₹${formatINR(balanceDue)} is collected at the boarding point on travel day.`}
+                          </p>
+                        </div>
+                      </div>
                     )}
-                  </button>
-                </div>
-
-                {/* Expanded detail panel when advance selected */}
-                {isAdvanceSelected && (
-                  <div className="rounded-xl border border-amber-200 overflow-hidden">
-                    <div className="grid grid-cols-2 divide-x divide-amber-100 bg-amber-50">
-                      {/* Pay now */}
-                      <div className="px-4 py-3">
-                        <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">Pay Now</div>
-                        <div className="text-2xl font-black text-amber-700">₹{formatINR(minPayable)}</div>
-                        <div className="text-[10px] font-semibold text-amber-600 mt-1">Required Advance</div>
-                      </div>
-                      {/* Balance */}
-                      <div className="px-4 py-3">
-                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Balance Due</div>
-                        <div className="text-2xl font-black text-slate-700">₹{formatINR(balanceDue)}</div>
-                        <div className="text-[10px] font-semibold text-slate-400 mt-1">At boarding point</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2 px-4 py-2.5 bg-white border-t border-amber-100">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-[10px] font-semibold text-amber-700 leading-relaxed">
-                        {advType === 'PERCENTAGE'
-                          ? `Pay ${advVal}% advance now to secure your seats. The remaining ₹${formatINR(balanceDue)} is collected at the boarding point on travel day.`
-                          : `Pay ₹${advVal}/person advance now to secure your seats. The remaining ₹${formatINR(balanceDue)} is collected at the boarding point on travel day.`}
-                      </p>
-                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })()}
+                );
+              })()}
 
+              </div>
             </div>
           </div>
 
           {/* RIGHT summary panel — hidden on mobile (rendered at bottom on mobile instead) */}
-          <div className={layoutMode === 'dialog' ? "hidden sm:flex sm:w-[340px] sm:border-l sm:border-slate-200 sm:bg-[#f8fafa] sm:p-6 sm:flex-col sm:justify-between sm:overflow-y-auto shrink-0 scrollbar-thin scrollbar-thumb-slate-200" : "space-y-4"}>
+          <div className={layoutMode === 'dialog' ? "hidden sm:flex sm:w-[390px] sm:border-l sm:border-slate-200 sm:bg-[#f8fafa] sm:p-6 sm:flex-col sm:justify-between sm:overflow-y-auto shrink-0 scrollbar-thin scrollbar-thumb-slate-200" : "space-y-4"}>
             <div className="space-y-4">
 
-          {/* Block 6: Pricing Summary Card */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-            <div className="space-y-2 text-xs text-slate-500">
-              <div className="flex justify-between items-center">
-                <span>Base Fare {isStudentPackage ? `(${adults} Stud)` : `(${adults} Ad, ${children} Ch)`}</span>
-                <span className="font-bold text-slate-800">₹{formatINR(prices.pureBaseSubtotal)}</span>
-              </div>
-              {prices.weekendSurchargeSubtotal > 0 && (
-                <div className="flex justify-between items-center text-amber-600 font-medium">
-                  <span>Weekend Surcharge</span>
-                  <span>+₹{formatINR(prices.weekendSurchargeSubtotal)}</span>
+              {/* Block 6: Pricing Summary Card */}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                <div className="space-y-2 text-xs text-slate-500">
+                  <div className="flex justify-between items-center">
+                    <span>Base Fare {isStudentPackage ? `(${adults} Stud)` : `(${adults} Ad, ${children} Ch)`}</span>
+                    <span className="font-bold text-slate-800">₹{formatINR(prices.pureBaseSubtotal)}</span>
+                  </div>
+                  {prices.weekendSurchargeSubtotal > 0 && (
+                    <div className="flex justify-between items-center text-amber-600 font-medium">
+                      <span>Weekend Surcharge</span>
+                      <span>+₹{formatINR(prices.weekendSurchargeSubtotal)}</span>
+                    </div>
+                  )}
+                  {prices.surgeSubtotal > 0 && (
+                    <div className="flex justify-between items-center text-rose-600 font-medium">
+                      <span>Surge Fee (High Demand)</span>
+                      <span>+₹{formatINR(prices.surgeSubtotal)}</span>
+                    </div>
+                  )}
+                  {prices.discountSubtotal > 0 && (
+                    <div className="flex justify-between items-center text-emerald-600 font-medium">
+                      <span>Special Discount</span>
+                      <span>-₹{formatINR(prices.discountSubtotal)}</span>
+                    </div>
+                  )}
+                  {prices.transportBreakdown.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center text-[#0d6e75] font-semibold">
+                      <span className="truncate">{item.type === 'SEPARATE_VEHICLE' ? `${item.quantity}× ${item.title}` : item.title} (Transport)</span>
+                      <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
+                    </div>
+                  ))}
+                  {prices.refreshmentSubtotal > 0 && (
+                    <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
+                      <span>Fresh-Up Stay add-on</span>
+                      <span>+₹{formatINR(prices.refreshmentSubtotal)}</span>
+                    </div>
+                  )}
+                  {prices.foodSubtotal > 0 && (
+                    <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
+                      <span>Food & Meals Package</span>
+                      <span>+₹{formatINR(prices.foodSubtotal)}</span>
+                    </div>
+                  )}
+                  {prices.customExtrasBreakdown && prices.customExtrasBreakdown.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center text-[#0d6e75] font-semibold gap-2">
+                      <span className="truncate" title={item.title}>{item.title}</span>
+                      <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
+                    </div>
+                  ))}
+                  {appliedCoupon && (
+                    <div className="flex justify-between items-center text-emerald-600 font-black">
+                      <span>Discount ({appliedCoupon.code})</span>
+                      <span>-₹{formatINR(prices.discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                    <span>GST (5%)</span>
+                    <span>₹{formatINR(prices.gst)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                    <span>Gateway Service Fee (1%)</span>
+                    <span>₹{formatINR(prices.gatewayFee)}</span>
+                  </div>
+
+                  {isAgent ? (
+                    <div className="border-t border-slate-200 pt-2.5 space-y-1.5 mt-2">
+                      <div className="flex justify-between text-xs text-slate-450 font-bold">
+                        <span>Total Amount</span>
+                        <span>₹{formatINR(prices.grandTotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-rose-600 font-bold">
+                        <span>Agent commission</span>
+                        <span>-₹{formatINR(prices.agentDiscount)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-slate-900 font-black border-t border-slate-200/60 pt-2">
+                        <span>Agent Payable Net</span>
+                        <span className="text-[#0d6e75] text-base">₹{formatINR(prices.agentPayable)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-slate-200 pt-2.5 flex justify-between items-center text-sm font-black text-slate-900 mt-2">
+                      <span>Total Amount Due</span>
+                      <span className="text-[#0d6e75] text-base">₹{formatINR(prices.grandTotal)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {prices.surgeSubtotal > 0 && (
-                <div className="flex justify-between items-center text-rose-600 font-medium">
-                  <span>Surge Fee (High Demand)</span>
-                  <span>+₹{formatINR(prices.surgeSubtotal)}</span>
-                </div>
-              )}
-              {prices.discountSubtotal > 0 && (
-                <div className="flex justify-between items-center text-emerald-600 font-medium">
-                  <span>Special Discount</span>
-                  <span>-₹{formatINR(prices.discountSubtotal)}</span>
-                </div>
-              )}
-              {prices.transportBreakdown.map((item, i) => (
-                <div key={i} className="flex justify-between items-center text-[#0d6e75] font-semibold">
-                  <span className="truncate">{item.type === 'SEPARATE_VEHICLE' ? `${item.quantity}× ${item.title}` : item.title} (Transport)</span>
-                  <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
-                </div>
-              ))}
-              {prices.refreshmentSubtotal > 0 && (
-                <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
-                  <span>Fresh-Up Stay add-on</span>
-                  <span>+₹{formatINR(prices.refreshmentSubtotal)}</span>
-                </div>
-              )}
-              {prices.foodSubtotal > 0 && (
-                <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
-                  <span>Food & Meals Package</span>
-                  <span>+₹{formatINR(prices.foodSubtotal)}</span>
-                </div>
-              )}
-              {prices.customExtrasBreakdown && prices.customExtrasBreakdown.map((item) => (
-                <div key={item.id} className="flex justify-between items-center text-[#0d6e75] font-semibold gap-2">
-                  <span className="truncate" title={item.title}>{item.title}</span>
-                  <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
-                </div>
-              ))}
-              {appliedCoupon && (
-                <div className="flex justify-between items-center text-emerald-600 font-black">
-                  <span>Discount ({appliedCoupon.code})</span>
-                  <span>-₹{formatINR(prices.discount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
-                <span>GST (5%)</span>
-                <span>₹{formatINR(prices.gst)}</span>
-              </div>
-              <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
-                <span>Gateway Service Fee (1%)</span>
-                <span>₹{formatINR(prices.gatewayFee)}</span>
               </div>
 
-              {isAgent ? (
-                <div className="border-t border-slate-200 pt-2.5 space-y-1.5 mt-2">
-                  <div className="flex justify-between text-xs text-slate-450 font-bold">
-                    <span>Client booking bill</span>
-                    <span>₹{formatINR(prices.grandTotal)}</span>
+              {/* Payment Option for desktop — hidden on mobile (shown in left panel instead) */}
+              {selectedDate && (() => {
+                const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
+                const advType = advancePaymentType || 'FULL_PAYMENT';
+                const advVal = advancePaymentValue || 0;
+                if (advType === 'FULL_PAYMENT') return null;
+                const advLabel = advType === 'PERCENTAGE' ? `${advVal}% Advance` : `₹${advVal} Advance`;
+                const balanceDue = finalTotal - effectivePayNow;
+                return (
+                  <div className="hidden sm:block mt-3 pt-3 border-t border-slate-200/80">
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Payment Option</span>
+                      <div className="flex-1 h-px bg-slate-100" />
+                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">Advance available</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setCustomPayAmount(''); setIsAdvanceSelected(false); }}
+                        className={`flex flex-col items-start rounded-xl border-2 px-3 py-2.5 text-left transition-all duration-150 focus:outline-none ${!isAdvanceSelected ? 'border-[#0d6e75] bg-[#f0fafa] shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                      >
+                        <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 ${!isAdvanceSelected ? 'border-[#0d6e75]' : 'border-slate-300'}`}>
+                          {!isAdvanceSelected && <div className="h-1.5 w-1.5 rounded-full bg-[#0d6e75]" />}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">Full Pay</span>
+                        <span className={`text-base font-black leading-none ${!isAdvanceSelected ? 'text-[#0d6e75]' : 'text-slate-700'}`}>₹{formatINR(finalTotal)}</span>
+                        <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Pay now, nothing later</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsAdvanceSelected(true); if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
+                        className={`relative flex flex-col items-start rounded-xl border-2 px-3 py-2.5 text-left transition-all duration-150 focus:outline-none ${isAdvanceSelected ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                      >
+                        {isAdvanceSelected && (
+                          <div className="absolute -top-2 right-2 bg-amber-500 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full">Selected</div>
+                        )}
+                        <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 ${isAdvanceSelected ? 'border-amber-500' : 'border-slate-300'}`}>
+                          {isAdvanceSelected && <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">{advLabel}</span>
+                        <span className={`text-base font-black leading-none ${isAdvanceSelected ? 'text-amber-700' : 'text-slate-700'}`}>₹{formatINR(minPayable)}</span>
+                        <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Balance at boarding</span>
+                      </button>
+                    </div>
+                    {isAdvanceSelected && (
+                      <div className="mt-2 rounded-xl bg-white border border-amber-200 overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-100">
+                          <div>
+                            <div className="text-[9px] font-black uppercase tracking-widest text-amber-600">Pay Now</div>
+                            <div className="text-lg font-black text-amber-700 mt-0.5">₹{formatINR(minPayable)}</div>
+                            <div className="text-[9px] font-semibold text-amber-600">Required Advance</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-500">Balance Later</div>
+                            <div className="text-lg font-black text-slate-700 mt-0.5">₹{formatINR(balanceDue)}</div>
+                            <div className="text-[9px] font-semibold text-slate-400">At boarding</div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2 px-3 py-2">
+                          <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-[9px] font-semibold text-amber-700 leading-relaxed">
+                            {advType === 'PERCENTAGE'
+                              ? `Pay ${advVal}% advance now — remaining ₹${formatINR(balanceDue)} payable at boarding.`
+                              : `Pay ₹${advVal}/person advance now — remaining ₹${formatINR(balanceDue)} payable at boarding.`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between text-xs text-rose-600 font-bold">
-                    <span>Agent commission rebate</span>
-                    <span>-₹{formatINR(prices.agentDiscount)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-slate-900 font-black border-t border-slate-200/60 pt-2">
-                    <span>Agent Payable Net</span>
-                    <span className="text-[#0d6e75] text-base">₹{formatINR(prices.agentPayable)}</span>
-                  </div>
+                );
+              })()}
+
+            </div>
+
+            <div className="space-y-3 mt-6">
+
+              {/* Min Passengers restriction warning */}
+              {minPassengers > 1 && !isAdmin && totalPassengers < minPassengers && (
+                <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5">
+                  <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                  <p className="text-xs font-bold text-rose-700 leading-relaxed">
+                    Min. reservation requirement of <span className="font-black">{minPassengers} people</span> is not met. Please increase passenger count.
+                  </p>
                 </div>
-              ) : (
-                <div className="border-t border-slate-200 pt-2.5 flex justify-between items-center text-sm font-black text-slate-900 mt-2">
-                  <span>Total Amount Due</span>
-                  <span className="text-[#0d6e75] text-base">₹{formatINR(prices.grandTotal)}</span>
-                </div>
+              )}
+
+              {/* Checkout CTA — shown in right panel (desktop) and inline on dialog mobile */}
+              <button
+                disabled={!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)}
+                onClick={handleBookingClick}
+                className={`group mt-4 relative isolate flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl px-5 text-xs font-black uppercase tracking-wider transition-all duration-200 ${!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
+                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
+                  : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-lg shadow-teal-900/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]'
+                  }`}
+              >
+                {isProcessingCheckout ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : !isActive ? 'BOOKINGS SUSPENDED' : (
+                  <>
+                    {!isBookingDisabled && <span className="absolute inset-y-0 -left-10 w-8 rotate-12 bg-white/20 transition-transform duration-500 group-hover:translate-x-96" />}
+                    {!isBookingDisabled && <Ticket className="h-4.5 w-4.5 shrink-0 stroke-[2.6]" />}
+                    <span>{ctaText}</span>
+                    {!isBookingDisabled && <ArrowRight className="h-4 w-4 shrink-0 stroke-[3] transition-transform duration-200 group-hover:translate-x-1" />}
+                  </>
+                )}
+              </button>
+
+              {brochurePdfUrl && (
+                <a
+                  href={brochurePdfUrl}
+                  onClick={handleDownloadBrochure}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3.5 hidden lg:flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 hover:border-[#0d6e75] bg-white px-4 py-3.5 text-xs font-black text-[#0d6e75] hover:bg-slate-50 transition-colors uppercase tracking-wider h-10"
+                >
+                  📥 Download Brochure PDF
+                </a>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Payment Option for desktop — hidden on mobile (shown in left panel instead) */}
-          {selectedDate && (() => {
-            const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-            const advType = advancePaymentType || 'FULL_PAYMENT';
-            const advVal = advancePaymentValue || 0;
-            if (advType === 'FULL_PAYMENT') return null;
-            const advLabel = advType === 'PERCENTAGE' ? `${advVal}% Advance` : `₹${advVal} Advance`;
-            const balanceDue = finalTotal - effectivePayNow;
-            return (
-              <div className="hidden sm:block mt-3 pt-3 border-t border-slate-200/80">
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Payment Option</span>
-                  <div className="flex-1 h-px bg-slate-100" />
-                  <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">Advance available</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setCustomPayAmount(''); setIsAdvanceSelected(false); }}
-                    className={`flex flex-col items-start rounded-xl border-2 px-3 py-2.5 text-left transition-all duration-150 focus:outline-none ${
-                      !isAdvanceSelected ? 'border-[#0d6e75] bg-[#f0fafa] shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                  >
-                    <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 ${!isAdvanceSelected ? 'border-[#0d6e75]' : 'border-slate-300'}`}>
-                      {!isAdvanceSelected && <div className="h-1.5 w-1.5 rounded-full bg-[#0d6e75]" />}
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">Full Pay</span>
-                    <span className={`text-base font-black leading-none ${!isAdvanceSelected ? 'text-[#0d6e75]' : 'text-slate-700'}`}>₹{formatINR(finalTotal)}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Pay now, nothing later</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setIsAdvanceSelected(true); if (customPayAmount === '') setCustomPayAmount(String(minPayable)); }}
-                    className={`relative flex flex-col items-start rounded-xl border-2 px-3 py-2.5 text-left transition-all duration-150 focus:outline-none ${
-                      isAdvanceSelected ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                  >
-                    {isAdvanceSelected && (
-                      <div className="absolute -top-2 right-2 bg-amber-500 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full">Selected</div>
-                    )}
-                    <div className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center mb-1.5 ${isAdvanceSelected ? 'border-amber-500' : 'border-slate-300'}`}>
-                      {isAdvanceSelected && <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 leading-none mb-1">{advLabel}</span>
-                    <span className={`text-base font-black leading-none ${isAdvanceSelected ? 'text-amber-700' : 'text-slate-700'}`}>₹{formatINR(minPayable)}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 mt-0.5">Balance at boarding</span>
-                  </button>
-                </div>
-                {isAdvanceSelected && (
-                  <div className="mt-2 rounded-xl bg-white border border-amber-200 overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-100">
-                      <div>
-                        <div className="text-[9px] font-black uppercase tracking-widest text-amber-600">Pay Now</div>
-                        <div className="text-lg font-black text-amber-700 mt-0.5">₹{formatINR(minPayable)}</div>
-                        <div className="text-[9px] font-semibold text-amber-600">Required Advance</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-500">Balance Later</div>
-                        <div className="text-lg font-black text-slate-700 mt-0.5">₹{formatINR(balanceDue)}</div>
-                        <div className="text-[9px] font-semibold text-slate-400">At boarding</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2 px-3 py-2">
-                      <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-[9px] font-semibold text-amber-700 leading-relaxed">
-                        {advType === 'PERCENTAGE'
-                          ? `Pay ${advVal}% advance now — remaining ₹${formatINR(balanceDue)} payable at boarding.`
-                          : `Pay ₹${advVal}/person advance now — remaining ₹${formatINR(balanceDue)} payable at boarding.`}
-                      </p>
-                    </div>
-                  </div>
+        {/* ── Mobile sticky bar: only in dialog mode (the left panel hides the right panel) ── */}
+        {layoutMode === 'dialog' && (
+          <div className="sm:hidden shrink-0 border-t border-slate-200 bg-white px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                {!selectedDate ? 'Starting from' : isPartial ? 'Pay Now (Advance)' : 'Total Due'}
+              </span>
+              <span className={`text-xl font-black tracking-tight ${isPartial && selectedDate ? 'text-amber-600' : 'text-[#0d6e75]'}`}>
+                ₹{formatINR(selectedDate ? effectivePayNow : (prices.grandTotal || startingPrice || 0))}
+              </span>
+              {isPartial && selectedDate && (
+                <span className="text-[9px] font-semibold text-slate-400">
+                  + ₹{formatINR((isAgent ? prices.agentPayable : prices.grandTotal) - effectivePayNow)} at boarding
+                </span>
+              )}
+            </div>
+            <button
+              disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)}
+              onClick={handleBookingClick}
+              className={`group flex h-11 max-w-[190px] flex-1 items-center justify-center gap-1.5 rounded-xl px-4 text-[11px] font-black uppercase tracking-wider transition-all ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
+                : isPartial && selectedDate ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-[0.98]' : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md active:scale-[0.98]'
+                }`}
+            >
+              {isProcessingCheckout ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <>
+                  {!isBookingDisabled && <Ticket className="h-3.5 w-3.5 shrink-0 stroke-[2.6]" />}
+                  <span>{ctaText}</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ── Page-level mobile sticky bar (only outside dialog, only on mobile < lg screens) ── */}
+        {layoutMode !== 'dialog' && (
+          <div className="fixed bottom-[52px] sm:bottom-0 inset-x-0 bg-white border-t border-slate-200/80 px-4 py-2.5 flex items-center justify-between gap-4 z-40 lg:hidden shadow-[0_-12px_32px_rgba(15,61,86,0.14)]">
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                {!selectedDate ? 'Starting from' : isPartial ? 'Pay Now (Advance)' : 'Total Fare'}
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className={`text-lg sm:text-xl font-black tracking-tight ${isPartial && selectedDate ? 'text-amber-600' : 'text-[#0d6e75]'}`}>
+                  ₹{formatINR(selectedDate ? effectivePayNow : (prices.grandTotal || startingPrice || 0))}
+                </span>
+                {isPartial && selectedDate && (
+                  <span className="text-[9px] font-bold text-slate-400">({paymentPercentage}%)</span>
                 )}
               </div>
-            );
-          })()}
-
-          </div>
-
-          <div className="space-y-3 mt-6">
-
-          {/* Min Passengers restriction warning */}
-          {minPassengers > 1 && !isAdmin && totalPassengers < minPassengers && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5">
-              <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
-              <p className="text-xs font-bold text-rose-700 leading-relaxed">
-                Min. reservation requirement of <span className="font-black">{minPassengers} people</span> is not met. Please increase passenger count.
-              </p>
+              {isPartial && selectedDate && (
+                <span className="text-[9px] font-semibold text-slate-400">
+                  + ₹{formatINR((isAgent ? prices.agentPayable : prices.grandTotal) - effectivePayNow)} balance at boarding
+                </span>
+              )}
             </div>
-          )}
 
-          {/* Checkout CTA — shown in right panel (desktop) and inline on dialog mobile */}
-          <button
-            disabled={!isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)}
-            onClick={handleBookingClick}
-            className={`group mt-4 relative isolate flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl px-5 text-xs font-black uppercase tracking-wider transition-all duration-200 ${
-              !isActive || isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
+            <button
+              disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)}
+              onClick={handleBookingClick}
+              className={`group h-11 shrink-0 rounded-xl px-5 text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
                 ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
-                : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-lg shadow-teal-900/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]'
-            }`}
-          >
-            {isProcessingCheckout ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : !isActive ? 'BOOKINGS SUSPENDED' : (
-              <>
-                {!isBookingDisabled && <span className="absolute inset-y-0 -left-10 w-8 rotate-12 bg-white/20 transition-transform duration-500 group-hover:translate-x-96" />}
-                {!isBookingDisabled && <Ticket className="h-4.5 w-4.5 shrink-0 stroke-[2.6]" />}
-                <span>{ctaText}</span>
-                {!isBookingDisabled && <ArrowRight className="h-4 w-4 shrink-0 stroke-[3] transition-transform duration-200 group-hover:translate-x-1" />}
-              </>
-            )}
-          </button>
-
-          {brochurePdfUrl && (
-            <a
-              href={brochurePdfUrl}
-              onClick={handleDownloadBrochure}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3.5 hidden lg:flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 hover:border-[#0d6e75] bg-white px-4 py-3.5 text-xs font-black text-[#0d6e75] hover:bg-slate-50 transition-colors uppercase tracking-wider h-10"
+                : isPartial && selectedDate ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:-translate-y-0.5 active:scale-[0.98]' : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md hover:-translate-y-0.5 active:scale-[0.98]'
+                }`}
             >
-              📥 Download Brochure PDF
-            </a>
-          )}
-      </div>
-    </div>
-  </div>
-
-  {/* ── Mobile sticky bar: only in dialog mode (the left panel hides the right panel) ── */}
-  {layoutMode === 'dialog' && (
-    <div className="sm:hidden shrink-0 border-t border-slate-200 bg-white px-4 py-3 flex items-center justify-between gap-3">
-      <div className="flex flex-col min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-          {!selectedDate ? 'Starting from' : isPartial ? 'Pay Now (Advance)' : 'Total Due'}
-        </span>
-        <span className={`text-xl font-black tracking-tight ${isPartial && selectedDate ? 'text-amber-600' : 'text-[#0d6e75]'}`}>
-          ₹{formatINR(selectedDate ? effectivePayNow : (prices.grandTotal || startingPrice || 0))}
-        </span>
-        {isPartial && selectedDate && (
-          <span className="text-[9px] font-semibold text-slate-400">
-            + ₹{formatINR((isAgent ? prices.agentPayable : prices.grandTotal) - effectivePayNow)} at boarding
-          </span>
+              {isProcessingCheckout ? (
+                <Loader2 className="h-4.5 w-4.5 animate-spin" />
+              ) : (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers) ? `Min ${minPassengers} pax` : (
+                <>
+                  <Ticket className="h-3.5 w-3.5 shrink-0 stroke-[2.6]" />
+                  Book Now
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 stroke-[3] transition-transform duration-200 group-hover:translate-x-0.5" />
+                </>
+              )}
+            </button>
+          </div>
         )}
-      </div>
-      <button
-        disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)}
-        onClick={handleBookingClick}
-        className={`group flex h-11 max-w-[190px] flex-1 items-center justify-center gap-1.5 rounded-xl px-4 text-[11px] font-black uppercase tracking-wider transition-all ${
-          isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
-            ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
-            : isPartial && selectedDate ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-[0.98]' : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md active:scale-[0.98]'
-        }`}
-      >
-        {isProcessingCheckout ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-          <>
-            {!isBookingDisabled && <Ticket className="h-3.5 w-3.5 shrink-0 stroke-[2.6]" />}
-            <span>{ctaText}</span>
-          </>
-        )}
-      </button>
-    </div>
-  )}
 
-  {/* ── Page-level mobile sticky bar (only outside dialog, only on mobile < lg screens) ── */}
-  {layoutMode !== 'dialog' && (
-    <div className="fixed bottom-[52px] sm:bottom-0 inset-x-0 bg-white border-t border-slate-200/80 px-4 py-2.5 flex items-center justify-between gap-4 z-40 lg:hidden shadow-[0_-12px_32px_rgba(15,61,86,0.14)]">
-      <div className="flex flex-col min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-          {!selectedDate ? 'Starting from' : isPartial ? 'Pay Now (Advance)' : 'Total Fare'}
-        </span>
-        <div className="flex items-baseline gap-1 mt-0.5">
-          <span className={`text-lg sm:text-xl font-black tracking-tight ${isPartial && selectedDate ? 'text-amber-600' : 'text-[#0d6e75]'}`}>
-            ₹{formatINR(selectedDate ? effectivePayNow : (prices.grandTotal || startingPrice || 0))}
-          </span>
-          {isPartial && selectedDate && (
-            <span className="text-[9px] font-bold text-slate-400">({paymentPercentage}%)</span>
-          )}
-        </div>
-        {isPartial && selectedDate && (
-          <span className="text-[9px] font-semibold text-slate-400">
-            + ₹{formatINR((isAgent ? prices.agentPayable : prices.grandTotal) - effectivePayNow)} balance at boarding
-          </span>
-        )}
-      </div>
+        <ConfirmModal
+          isOpen={showLoginPrompt}
+          onClose={() => setShowLoginPrompt(false)}
+          onConfirm={() => {
+            if (typeof window !== 'undefined') {
+              if (selectedDate) sessionStorage.setItem('last_pkg_checkout_date', selectedDate);
+              if (selectedVariantId) sessionStorage.setItem('last_pkg_checkout_variant_id', String(selectedVariantId));
+              if (adults) sessionStorage.setItem('last_pkg_checkout_adults', String(adults));
+              if (children) sessionStorage.setItem('last_pkg_checkout_children', String(children));
+              sessionStorage.setItem('last_pkg_checkout_auto_open', 'true');
+            }
+            const redirectUrl = typeof window !== 'undefined' ? window.location.pathname + '?restore_pkg_checkout=true' : '';
+            router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+          }}
+          title="Verification Required"
+          message="Please log in to continue booking your tickets. Your selected travel date, package tier, and passenger choices will be saved and restored."
+          confirmText="Proceed to Login"
+          cancelText="Cancel"
+        />
 
-      <button
-        disabled={isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)}
-        onClick={handleBookingClick}
-        className={`group h-11 shrink-0 rounded-xl px-5 text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-          isProcessingCheckout || (!isAdmin && isPackageInactive) || validVariants.length === 0 || (isBookingDisabled && isAuthenticated) || (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers)
-            ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
-            : isPartial && selectedDate ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:-translate-y-0.5 active:scale-[0.98]' : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md hover:-translate-y-0.5 active:scale-[0.98]'
-        }`}
-      >
-        {isProcessingCheckout ? (
-          <Loader2 className="h-4.5 w-4.5 animate-spin" />
-        ) : (!isAdmin && minPassengers > 1 && totalPassengers < minPassengers) ? `Min ${minPassengers} pax` : (
-          <>
-            <Ticket className="h-3.5 w-3.5 shrink-0 stroke-[2.6]" />
-            Book Now
-            <ArrowRight className="h-3.5 w-3.5 shrink-0 stroke-[3] transition-transform duration-200 group-hover:translate-x-0.5" />
-          </>
-        )}
-      </button>
-    </div>
-  )}
+        <CheckoutPassengerModal
+          isOpen={showPassengerModal}
+          onClose={() => setShowPassengerModal(false)}
+          onSubmit={handleCheckoutSubmit}
+          adults={adults}
+          children={isStudentPackage ? 0 : children}
+          isProcessing={isProcessingCheckout}
+          targetType="package"
+          isStudentPackage={isStudentPackage}
+        />
 
-      <ConfirmModal
-        isOpen={showLoginPrompt}
-        onClose={() => setShowLoginPrompt(false)}
-        onConfirm={() => {
-          if (typeof window !== 'undefined') {
-            if (selectedDate) sessionStorage.setItem('last_pkg_checkout_date', selectedDate);
-            if (selectedVariantId) sessionStorage.setItem('last_pkg_checkout_variant_id', String(selectedVariantId));
-            if (adults) sessionStorage.setItem('last_pkg_checkout_adults', String(adults));
-            if (children) sessionStorage.setItem('last_pkg_checkout_children', String(children));
-            sessionStorage.setItem('last_pkg_checkout_auto_open', 'true');
-          }
-          const redirectUrl = typeof window !== 'undefined' ? window.location.pathname + '?restore_pkg_checkout=true' : '';
-          router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
-        }}
-        title="Verification Required"
-        message="Please log in to continue booking your tickets. Your selected travel date, package tier, and passenger choices will be saved and restored."
-        confirmText="Proceed to Login"
-        cancelText="Cancel"
-      />
-
-      <CheckoutPassengerModal
-        isOpen={showPassengerModal}
-        onClose={() => setShowPassengerModal(false)}
-        onSubmit={handleCheckoutSubmit}
-        adults={adults}
-        children={isStudentPackage ? 0 : children}
-        isProcessing={isProcessingCheckout}
-        targetType="package"
-        isStudentPackage={isStudentPackage}
-      />
-
-      <style jsx global>{`
+        <style jsx global>{`
         .rdp-root {
           --rdp-accent-color: #0d6e75;
           --rdp-accent-background-color: #dcfce7;
@@ -2656,12 +2901,12 @@ export const BookingSidebarV3 = ({
         }
       `}</style>
 
-      <BusWarningModal
-        isOpen={showBusWarningModal}
-        onClose={() => setShowBusWarningModal(false)}
-        onConfirm={handleAgreeBusWarning}
-      />
+        <BusWarningModal
+          isOpen={showBusWarningModal}
+          onClose={() => setShowBusWarningModal(false)}
+          onConfirm={handleAgreeBusWarning}
+        />
+      </div>
     </div>
-  </div>
   );
 };

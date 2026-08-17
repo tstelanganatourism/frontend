@@ -260,7 +260,7 @@ export default function RoomsList({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] items-start">
           
           {/* FIXED Sidebar Filter */}
-          <aside className="hidden lg:block sticky top-[100px] self-start">
+          <aside className="hidden lg:block self-start">
             <RoomFilters sticky={true} />
           </aside>
 

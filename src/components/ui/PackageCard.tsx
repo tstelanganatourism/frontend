@@ -62,6 +62,7 @@ interface PackageProps {
     starting_price: number | null;
     is_student_package?: boolean;
     transport_info?: string | null;
+    video_url?: string | null;
     variants?: Array<{
       id: number;
       title: string;
@@ -193,6 +194,13 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
             <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
             Active
           </div>
+          {/* Video available badge */}
+          {pkg.video_url && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md px-2 py-0.5 border border-[#5ac4d7]/40 shadow">
+              <svg className="h-2.5 w-2.5 text-[#5ac4d7]" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+              <span className="text-[7px] font-black uppercase tracking-wider text-[#5ac4d7]">Video</span>
+            </div>
+          )}
         </div>
 
         {/* Full-detail body */}

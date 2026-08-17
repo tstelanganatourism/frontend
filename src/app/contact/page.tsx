@@ -120,7 +120,7 @@ export default function ContactPage() {
                 <h3 className="text-xl font-bold text-[#1e468a] tracking-tight">Official MSME Govt. Registration</h3>
               </div>
               <p className="text-slate-500 text-base leading-relaxed">
-                TS Boat Tourism is an official unit of HARITHA BOAT BOOKING, operated by proprietor KANDHULA DURGA PRASAD, registered under the Ministry of Micro, Small &amp; Medium Enterprises (MSME), Government of India.
+                TS Boat Tourism is an officially registered enterprise, operated by proprietor KANDHULA DURGA PRASAD, registered under the Ministry of Micro, Small &amp; Medium Enterprises (MSME), Government of India.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <span className="inline-flex items-center gap-2 rounded-md bg-[#e9f7f7] border border-[#1598a1]/20 px-4 py-2.5 text-xs font-black text-[#0f3d56]">

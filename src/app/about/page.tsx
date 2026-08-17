@@ -201,8 +201,8 @@ const MOMENTS_PHOTOS = [
 // Feature video — replace these URLs after uploading to Cloudinary
 // To add your video: upload to ts_boat_tourism/videos/gallery/ in Cloudinary
 // Then paste the secure_url below
-const FEATURE_VIDEO_URL = 'https://res.cloudinary.com/r929tquv/video/upload/v1786218875/ts_boat_tourism/videos/gallery/dji_0949_1786218854.mp4';
-const FEATURE_VIDEO_POSTER = 'https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill/v1786218875/ts_boat_tourism/videos/gallery/dji_0949_1786218854.jpg';
+const FEATURE_VIDEO_URL = 'https://res.cloudinary.com/r929tquv/video/upload/v1786268917/ts_boat_tourism/videos/gallery/xvoonmz7yc8ncbyzjypv.mp4';
+const FEATURE_VIDEO_POSTER = 'https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill/v1786268917/ts_boat_tourism/videos/gallery/xvoonmz7yc8ncbyzjypv.jpg';
 
 export default function AboutPage() {
   const language = useLanguageStore((s) => s.language);
@@ -296,9 +296,9 @@ export default function AboutPage() {
 
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
                 {isTe ? (
-                  <>2004 సంవత్సరంలో భద్రాచలంలో ప్రారంభమైన <strong className="text-[#1598a1] font-black">టిఎస్ బోట్ టూరిజం</strong> (హరిత బోట్ బుకింగ్ సమూహం), తెలంగాణ మరియు ఆంధ్రప్రదేశ్‌లలో అగ్రగామి నదీ పర్యాటక సంస్థగా ఎదిగింది.</>
+                  <>2004 సంవత్సరంలో భద్రాచలంలో ప్రారంభమైన <strong className="text-[#1598a1] font-black">టిఎస్ బోట్ టూరిజం</strong> </>
                 ) : (
-                  <>Founded in <strong className="text-slate-900 font-extrabold">2004</strong> in Bhadrachalam, <strong className="text-[#1598a1] font-black">TS Boat Tourism</strong> (operating unit of HARITHA BOAT BOOKING) has grown into the premier travel and river cruise booking service in Telangana and Andhra Pradesh.</>
+                  <>Founded in <strong className="text-slate-900 font-extrabold">2004</strong> in Bhadrachalam, <strong className="text-[#1598a1] font-black">TS Boat Tourism</strong> has grown into the premier travel and river cruise booking service in Telangana and Andhra Pradesh.</>
                 )}
               </p>
 
@@ -569,6 +569,9 @@ export default function AboutPage() {
               controls
               autoPlay
               playsInline
+              controlsList="nodownload noremoteplayback"
+              disablePictureInPicture
+              onContextMenu={(e) => e.preventDefault()}
               className="w-full rounded-2xl shadow-2xl"
               style={{ maxHeight: '80vh' }}
             >
@@ -758,7 +761,7 @@ export default function AboutPage() {
             <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto mt-2 font-medium">
               {isTe
                 ? 'టిఎస్ బోట్ టూరిజం అనేది భారత ప్రభుత్వ సూక్ష్మ, చిన్న మరియు మధ్య తరహా పరిశ్రమల మంత్రిత్వ శాఖ (MSME) కింద నమోదైన హరిత బోట్ బుకింగ్ యొక్క అధికారిక నిర్వహణ విభాగం.'
-                : 'TS Boat Tourism is an officially registered operating unit under HARITHA BOAT BOOKING registered with the Ministry of Micro, Small & Medium Enterprises (Govt. of India).'
+                : 'TS Boat Tourism is an officially registered operating unit with the Ministry of Micro, Small & Medium Enterprises (Govt. of India).'
               }
             </p>
           </div>
@@ -784,9 +787,9 @@ export default function AboutPage() {
                   <dt className="text-[9px] uppercase font-bold text-slate-400">
                     {isTe ? 'సంస్థ పేరు' : 'Name of Enterprise'}
                   </dt>
-                  <dd className="text-base font-black text-[#0f3d56] mt-0.5">HARITHA BOAT BOOKING</dd>
+                  <dd className="text-base font-black text-[#0f3d56] mt-0.5">TS BOAT TOURISM</dd>
                   <dd className="text-[11px] text-[#1598a1] mt-0.5 font-bold">
-                    {isTe ? 'నిర్వహణ విభాగం: టిఎస్ బోట్ టూరిజం' : 'Operating Unit: TS BOAT TOURISM'}
+                    {isTe ? 'నమోదిత పర్యాటక సంస్థ: TS BOAT TOURISM' : 'Registered Enterprise: TS BOAT TOURISM'}
                   </dd>
                 </div>
 

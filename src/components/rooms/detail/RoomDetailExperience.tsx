@@ -18,6 +18,7 @@ import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 
 import { toast } from 'sonner';
 import { RoomHero } from './RoomHero';
+import { RoomVideoHero } from './RoomVideoHero';
 import {
   Sheet, SheetClose, SheetContent, SheetDescription,
   SheetHeader, SheetTitle, SheetTrigger
@@ -80,6 +81,7 @@ export type RoomDetailViewModel = {
   description?: string | null;
   address?: string | null;
   cover_image_url?: string | null;
+  video_url?: string | null;
   map_url?: string | null;
   is_featured: boolean;
   starting_price?: number | null;
@@ -224,17 +226,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
 
-  const isSpecialUser = useMemo(() => {
-    if (!user) return false;
-    const email = user.email || '';
-    const phone = user.phone_number || '';
-    const name = room.lodge_name || '';
-    return (
-      (email === '2024eb01987@online.bits-pilani.ac.in' || phone === '8886154275') &&
-      name.toLowerCase().includes('vashista') &&
-      name.toLowerCase().includes('bhadrachalam')
-    );
-  }, [user, room.lodge_name]);
+  const isSpecialUser = false;
 
   const validVariants = useMemo(
     () =>
@@ -309,7 +301,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [customPayAmount, setCustomPayAmount] = useState<string>(''); // '' = full, else rupee amount
-  const [selectedGateway, setSelectedGateway] = useState<'PHONEPE' | 'CASHFREE'>('PHONEPE');
+  const selectedGateway = 'PHONEPE';
 
   // Proactively fetch latest agent profile/commission to prevent stale session calculations
   useEffect(() => {
@@ -347,9 +339,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       const savedSlotIndex = sessionStorage.getItem('last_checkout_selected_slot_index');
       
       if (savedCustomPay !== null && savedCustomPay !== '') setCustomPayAmount(savedCustomPay);
-      if (savedGateway === 'PHONEPE' || savedGateway === 'CASHFREE') {
-        setSelectedGateway(savedGateway as 'PHONEPE' | 'CASHFREE');
-      }
+
       if (savedVariantId) {
         setSelectedVariantId(Number(savedVariantId));
       }
@@ -1600,12 +1590,23 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </div>
             </section>
           )}
-        </div>
-        <aside className="hidden lg:block lg:pt-1 self-start sticky top-[92px] max-h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin">
-          <div className="w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg transition duration-300 hover:shadow-xl">
 
-            {/* Header Banner - Matching Packages Image 2 */}
-            <div className="flex items-center justify-between bg-[#0d6e75] px-5 py-3.5 text-white">
+          {/* ── Watch the Room Video ── */}
+          {room.video_url && (
+            <div className="px-1">
+              <RoomVideoHero
+                videoUrl={room.video_url}
+                title="Watch the Room"
+                subtitle={`Take a virtual tour of ${room.lodge_name}`}
+              />
+            </div>
+          )}
+        </div>
+        <aside className="hidden lg:block self-start sticky top-[92px] w-full">
+          <div className="w-full max-h-[calc(100dvh-112px)] flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg transition duration-300 hover:shadow-xl">
+
+            {/* Header Banner */}
+            <div className="flex items-center justify-between bg-[#0d6e75] px-5 py-3.5 text-white shrink-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-300" />
                 <span className="text-xs font-black uppercase tracking-widest text-white">Fast Online Booking</span>
@@ -1615,8 +1616,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </span>
             </div>
 
-            {/* Top Price Bar with Book Now Button - Matching Packages Image 2 */}
-            <div className="flex items-center justify-between border-b border-slate-100 p-5 bg-gradient-to-b from-[#0d6e75]/5 to-transparent">
+            {/* Top Price Bar with Book Now Button */}
+            <div className="flex items-center justify-between border-b border-slate-100 p-4 bg-gradient-to-b from-[#0d6e75]/5 to-transparent shrink-0">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Starting Price</p>
                 <p className="mt-0.5 text-2xl font-black text-slate-900">
@@ -1636,80 +1637,85 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </button>
             </div>
 
-            {/* Stay Categories & Tariffs List - Matching Packages Image 2 */}
-            {validVariants.length > 0 && (
-              <div className="p-5 space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Stay Categories &amp; Tariffs</p>
-                <div className="grid gap-3">
-                  {validVariants.map((variant) => {
-                    const isSel = selectedVariantId === variant.id;
-                    return (
-                      <button
-                        key={variant.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedVariantId(variant.id);
-                        }}
-                        className={`w-full rounded-2xl border p-4 text-left transition-all ${
-                          isSel
-                            ? 'border-[#0d6e75] bg-[#0d6e75]/5 ring-2 ring-[#0d6e75]/10 shadow-sm'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">{variant.variant_name}</h4>
-                              {isSel && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-widest shrink-0 whitespace-nowrap">
-                                  ✓ Selected
-                                </span>
+            {/* Scrollable Content Stream */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-300 p-4 space-y-4">
+              {/* Stay Categories & Tariffs List */}
+              {validVariants.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Stay Categories &amp; Tariffs</p>
+                  <div className="grid gap-3">
+                    {validVariants.map((variant) => {
+                      const isSel = selectedVariantId === variant.id;
+                      return (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedVariantId(variant.id);
+                          }}
+                          className={`w-full rounded-2xl border p-3.5 text-left transition-all ${
+                            isSel
+                              ? 'border-[#0d6e75] bg-[#0d6e75]/5 ring-2 ring-[#0d6e75]/10 shadow-sm'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">{variant.variant_name}</h4>
+                                {isSel && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-widest shrink-0 whitespace-nowrap">
+                                    ✓ Selected
+                                  </span>
+                                )}
+                              </div>
+                              {variant.capacity_per_room && (
+                                <p className="text-[10px] font-semibold text-slate-400 mt-1">{variant.capacity_per_room} guests per room</p>
                               )}
                             </div>
-                            {variant.capacity_per_room && (
-                              <p className="text-[10px] font-semibold text-slate-400 mt-1">{variant.capacity_per_room} guests per room</p>
-                            )}
                           </div>
-                        </div>
 
-                        {/* Weekday & Weekend Fares Table - Matching Packages Image 2 */}
-                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-white border border-slate-150 p-2.5 text-center">
-                          <div>
-                            <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">Weekday Fares</p>
-                            <p className="text-xs font-black text-[#0d6e75] mt-0.5">{money(variant.weekday_price)}</p>
+                          {/* Weekday & Weekend Fares Table */}
+                          <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-xl bg-white border border-slate-150 p-2 text-center">
+                            <div>
+                              <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">Weekday Fares</p>
+                              <p className="text-xs font-black text-[#0d6e75] mt-0.5">{money(variant.weekday_price)}</p>
+                            </div>
+                            <div className="border-l border-slate-150 pl-2">
+                              <p className="text-[8px] font-black uppercase tracking-wider text-amber-600">Weekend / Peak</p>
+                              <p className="text-xs font-black text-amber-700 mt-0.5">{money(variant.weekend_price)}</p>
+                            </div>
                           </div>
-                          <div className="border-l border-slate-150 pl-2">
-                            <p className="text-[8px] font-black uppercase tracking-wider text-amber-600">Weekend / Peak</p>
-                            <p className="text-xs font-black text-amber-700 mt-0.5">{money(variant.weekend_price)}</p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Included Stay Amenities */}
+              <div className="space-y-2.5 pt-1">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Included Stay Amenities</p>
+                <div className="space-y-2 text-xs font-semibold text-slate-600">
+                  <div className="flex items-center gap-2.5 rounded-xl border border-slate-150 bg-slate-50/50 p-2.5">
+                    <ShieldCheck className="h-4 w-4 text-[#0d6e75] shrink-0" />
+                    <span>Verified Tourism Lodging &amp; Support</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 rounded-xl border border-slate-150 bg-slate-50/50 p-2.5">
+                    <Clock className="h-4 w-4 text-[#0d6e75] shrink-0" />
+                    <span>Standard Timing: {cleanTime(selectedSlot?.slot_start)} - {cleanTime(selectedSlot?.slot_end)}</span>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Included Stay Amenities - Matching Packages Image 2 */}
-            <div className="px-5 pb-5 space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Included Stay Amenities</p>
-              <div className="space-y-2 text-xs font-semibold text-slate-600">
-                <div className="flex items-center gap-2.5 rounded-xl border border-slate-150 bg-slate-50/50 p-3">
-                  <ShieldCheck className="h-4 w-4 text-[#0d6e75] shrink-0" />
-                  <span>Verified Tourism Lodging &amp; Support</span>
-                </div>
-                <div className="flex items-center gap-2.5 rounded-xl border border-slate-150 bg-slate-50/50 p-3">
-                  <Clock className="h-4 w-4 text-[#0d6e75] shrink-0" />
-                  <span>Standard Timing: {cleanTime(selectedSlot?.slot_start)} - {cleanTime(selectedSlot?.slot_end)}</span>
-                </div>
-              </div>
-
-              {/* Reserve Button */}
+            {/* Reserve Bottom Action */}
+            <div className="p-4 border-t border-slate-100 bg-white shrink-0">
               <button
                 type="button"
                 disabled={isLodgeInactive}
                 onClick={() => setIsBookingModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#0d6e75] py-3.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-[#0b5c62] hover:shadow-lg active:scale-98 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#0d6e75] py-3 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-[#0b5c62] hover:shadow-lg active:scale-98 disabled:opacity-50"
               >
                 <span>Reserve Stay Now</span>
                 <ArrowRight className="h-4 w-4" />
@@ -1719,9 +1725,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         </aside>
       </section>
 
-      {/* Floating Action Bar (Desktop bottom right widget stacked above WhatsApp) - Matching Packages */}
+      {/* Floating Action Bar (Desktop bottom right widget stacked above WhatsApp) */}
       {showFloatingWidget && (
-        <div className="fixed bottom-6 right-6 z-40 hidden lg:flex items-center gap-3 rounded-full bg-[#0d6e75] p-2 pr-5 text-white shadow-2xl transition-all hover:scale-105">
+        <div className="fixed bottom-28 right-8 z-40 hidden lg:flex items-center gap-3 rounded-full bg-[#0d6e75] p-2 pr-5 text-white shadow-2xl transition-all hover:scale-105">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
             <Sparkles className="h-5 w-5 text-amber-300" />
           </div>

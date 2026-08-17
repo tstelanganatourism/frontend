@@ -46,8 +46,7 @@ export async function trackFunnelEvent(payload: FunnelEventPayload): Promise<boo
   if (typeof window === 'undefined') return false;
 
   const sessionId = getOrCreateSessionId();
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  const url = `${apiBase.replace(/\/$/, '')}/api/v1/activity/funnel-event`;
+  const url = '/api/v1/activity/funnel-event';
 
   const bodyData = {
     session_id: sessionId,

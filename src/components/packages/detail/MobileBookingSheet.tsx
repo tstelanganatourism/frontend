@@ -91,12 +91,7 @@ export const MobileBookingSheet = ({
   const isPackageInactive = !publicLoading && (!publicAvailability || !isActive);
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
-  const isSpecialUser = React.useMemo(() => {
-    if (!user) return false;
-    const email = user.email || '';
-    const phone = user.phone_number || '';
-    return email === '2024eb01987@online.bits-pilani.ac.in' || phone === '8886154275';
-  }, [user]);
+  const isSpecialUser = false;
 
   const positiveStartingPrice = isSpecialUser 
     ? 1 
@@ -186,10 +181,10 @@ export const MobileBookingSheet = ({
               <SheetHeader className="mb-4 text-left shrink-0 px-4">
                 <SheetTitle className="text-lg font-black text-[#0d6e75] flex items-center gap-1.5">
                   <Sparkles className="h-4.5 w-4.5 text-amber-500 fill-amber-500" />
-                  Configure Tickets
+                  Select Package & Book
                 </SheetTitle>
                 <SheetDescription className="text-[10px] font-semibold text-slate-400">
-                  Official Telangana & Andhra Boat Tourism reservation portal.
+                  Official Telangana & Andhra Pradesh Boat Tourism booking portal.
                 </SheetDescription>
               </SheetHeader>
               <div className="flex-1 overflow-y-auto pb-6 px-4 scrollbar-none">

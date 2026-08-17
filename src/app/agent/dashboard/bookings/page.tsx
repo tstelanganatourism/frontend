@@ -38,6 +38,8 @@ interface BookingListItem {
   gateway_fee: number;
   total_amount: number;
   remaining_balance: number;
+  paid_amount?: number;
+  agent_commission?: number;
   status: string;
   created_at: string | null;
   package_title: string;
@@ -155,7 +157,8 @@ export default function AgentBookingsLedgerPage() {
     // 3. Status match
     const matchesStatus = 
       statusFilter === 'ALL' || 
-      (statusFilter === 'PENDING' && (b.status === 'PENDING' || b.status === 'PARTIAL_PAID')) ||
+      (statusFilter === 'PENDING' && b.status === 'PENDING') ||
+      (statusFilter === 'PARTIAL_PAID' && b.status === 'PARTIAL_PAID') ||
       (statusFilter === 'FULLY_PAID' && (b.status === 'FULLY_PAID' || b.status === 'CONFIRMED')) ||
       (statusFilter === 'CANCELLED' && b.status === 'CANCELLED');
 
@@ -394,7 +397,8 @@ export default function AgentBookingsLedgerPage() {
               }}
               options={[
                 { value: 'ALL', label: 'All Bookings' },
-                { value: 'FULLY_PAID', label: 'Confirmed' },
+                { value: 'FULLY_PAID', label: 'Fully Paid' },
+                { value: 'PARTIAL_PAID', label: 'Pending Tourist Payment' },
                 { value: 'PENDING', label: 'Pending' },
                 { value: 'CANCELLED', label: 'Cancelled' },
               ]}
@@ -609,15 +613,33 @@ export default function AgentBookingsLedgerPage() {
                       <span className="text-slate-400 font-medium">GST & Fees</span>
                       <p className="font-bold text-slate-700">{money(b.gst_amount + b.gateway_fee)}</p>
                     </div>
+                    {/* Agent commission breakdown */}
+                    {(b.agent_commission ?? 0) > 0 && (
+                      <div>
+                        <span className="text-emerald-600 font-medium">Your Commission</span>
+                        <p className="font-bold text-emerald-600">+{money(b.agent_commission ?? 0)}</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-8 sm:gap-12 border-t sm:border-t-0 pt-4 sm:pt-0">
-                    <div className="text-right min-w-[100px] sm:min-w-[120px]">
-                      <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Tourist Bill</span>
-                      <p className="font-black text-xl text-slate-800 tracking-tight leading-none mt-1">
-                        {money(b.total_amount)}
-                      </p>
-                    </div>
+                    {/* For agent commission bookings, show tourist balance due */}
+                    {(b.agent_commission ?? 0) > 0 && b.status === 'PARTIAL_PAID' ? (
+                      <div className="text-right min-w-[100px] sm:min-w-[120px]">
+                        <span className="text-[10px] text-amber-500 font-black uppercase tracking-wider">Tourist Due at Office</span>
+                        <p className="font-black text-xl text-amber-600 tracking-tight leading-none mt-1">
+                          {money(Math.max(0, b.total_amount - (b.agent_commission ?? 0)))}
+                        </p>
+                        <span className="text-[9px] text-slate-400 font-semibold">Total: {money(b.total_amount)}</span>
+                      </div>
+                    ) : (
+                      <div className="text-right min-w-[100px] sm:min-w-[120px]">
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Tourist Bill</span>
+                        <p className="font-black text-xl text-slate-800 tracking-tight leading-none mt-1">
+                          {money(b.total_amount)}
+                        </p>
+                      </div>
+                    )}
                     
                     <Link 
                       href={`/dashboard/bookings/${b.public_id}`}

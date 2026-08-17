@@ -25,7 +25,10 @@ async function revalidateStorefront(paths: string[], tags?: string[]) {
 
 interface AdminStats {
   packages: number;
-  rooms: number;
+  package_categories: number;
+  rooms?: number;
+  room_categories: number;
+  room_types: number;
   bookings: number;
   users: number;
   total_revenue: number;

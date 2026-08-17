@@ -32,6 +32,7 @@ interface RoomProps {
     starting_weekend_price?: number | null | string;
     address: string | null;
     facilities: string[];
+    video_url?: string | null;
   };
   variant?: 'grid' | 'list' | 'compact';
   priority?: boolean;
@@ -120,6 +121,12 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
             <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
             Active
           </div>
+          {room.video_url && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md px-2 py-0.5 border border-emerald-400/40 shadow">
+              <svg className="h-2.5 w-2.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+              <span className="text-[7px] font-black uppercase tracking-wider text-emerald-400">Video</span>
+            </div>
+          )}
         </div>
 
         {/* Full-detail body */}
@@ -214,6 +221,12 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
             {prices && prices.percentOff > 0 && (
               <div className="absolute right-3 top-3 z-10 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase text-white shadow-lg">
                 {prices.percentOff}% off
+              </div>
+            )}
+            {room.video_url && (
+              <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-2.5 py-1 border border-emerald-400/40 shadow">
+                <svg className="h-3 w-3 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400">Watch Room Video</span>
               </div>
             )}
           </div>

@@ -19,11 +19,13 @@ import {
   BedDouble,
   ChevronDown,
   Image as ImageIcon,
+  Video,
   AlertTriangle,
   X
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import ImageUpload from '@/components/ui/ImageUpload';
+import VideoUpload from '@/components/ui/VideoUpload';
 import { motion, AnimatePresence } from 'framer-motion';
 const RichTextEditor = dynamic(() => import('@/components/ui/RichTextEditor'), { ssr: false });
 import { toast } from 'sonner';
@@ -149,6 +151,7 @@ export default function RoomForm({
   const [mapUrl, setMapUrl] = useState('');
   const [facilities, setFacilities] = useState<string[]>([]);
   const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [totalRooms, setTotalRooms] = useState(1);
   const [slotStart, setSlotStart] = useState('12:00:00');
   const [slotEnd, setSlotEnd] = useState('11:00:00');
@@ -186,6 +189,7 @@ export default function RoomForm({
       setMapUrl(initialData.map_url || '');
       setFacilities(initialData.facilities || []);
       setCoverImageUrl(initialData.cover_image_url || '');
+      setVideoUrl(initialData.video_url || '');
       setTotalRooms(initialData.total_rooms || 1);
       setSlotStart(initialData.slot_start || '12:00:00');
       setSlotEnd(initialData.slot_end || '11:00:00');
@@ -383,6 +387,7 @@ export default function RoomForm({
       map_url: mapUrl || null,
       facilities,
       cover_image_url: coverImageUrl || null,
+      video_url: videoUrl || null,
       total_rooms: Number(totalRooms),
       slot_start: slotStart,
       slot_end: slotEnd,
@@ -823,6 +828,24 @@ export default function RoomForm({
               value={coverImageUrl}
               onChange={setCoverImageUrl}
             />
+
+            {/* ── Primary Highlight Video ───────────────────────────────── */}
+            <div className="bg-gradient-to-br from-[#0f3d56]/5 via-[#1a6b7a]/5 to-[#5ac4d7]/10 rounded-2xl border border-[#5ac4d7]/20 p-4 sm:p-5 shadow-xs relative overflow-hidden">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0f3d56] to-[#5ac4d7] flex items-center justify-center shadow-xs shrink-0">
+                  <Video className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Primary Highlight Video</h3>
+                  <p className="text-[11px] font-semibold text-slate-500">Appears as a "Watch the Room" section on the stay page</p>
+                </div>
+              </div>
+              <VideoUpload
+                label=""
+                value={videoUrl}
+                onChange={(url) => setVideoUrl(url || '')}
+              />
+            </div>
 
             <RichTextEditor
               label="Lodge Description"

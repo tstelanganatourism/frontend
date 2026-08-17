@@ -335,7 +335,7 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
             <p className="text-xs font-black uppercase tracking-widest text-[#0f3d56]">Hotel Allocation for this date</p>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Name</label>
-              <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="e.g. Haritha Lodge Bhadrachalam"
+              <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="e.g. Riverside Lodge Bhadrachalam"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
             </div>
             <div>
@@ -1043,7 +1043,7 @@ function GenerateModal({
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Name</label>
-                <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="e.g. Haritha Lodge Bhadrachalam"
+                <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="e.g. Riverside Lodge Bhadrachalam"
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
               </div>
               <div>
@@ -1301,7 +1301,7 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
                       type="text"
                       value={hotelName}
                       onChange={(e) => setHotelName(e.target.value)}
-                      placeholder="e.g. Haritha Lodge / Resort Name"
+                      placeholder="e.g. Riverside Lodge / Resort Name"
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
                     />
                   </div>

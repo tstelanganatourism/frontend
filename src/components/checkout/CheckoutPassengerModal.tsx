@@ -64,6 +64,18 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
   const [agreedToAadhaarConsent, setAgreedToAadhaarConsent] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
 
+  const [guestNames, setGuestNames] = useState<string[]>(() =>
+    Array.from({ length: totalPassengers - 1 }).map(() => '')
+  );
+
+  const handleGuestNameChange = (index: number, val: string) => {
+    setGuestNames(prev => {
+      const copy = [...prev];
+      copy[index] = val;
+      return copy;
+    });
+  };
+
   useEffect(() => {
     if (isOpen) {
       let restoredPassengers: PassengerInput[] = [];
@@ -90,6 +102,15 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
         setPassengerMode(savedQuick ? 'quick' : 'full');
         if (savedQuick) {
           setQuickPassenger(restoredPassengers[0]);
+          const gNames = restoredPassengers.slice(1).map(p => {
+            if (p.full_name.startsWith('Guest Adult') || p.full_name.startsWith('Guest Child') || p.full_name.startsWith('Guest Student') || p.full_name.startsWith('TBA (')) {
+              return '';
+            }
+            return p.full_name;
+          });
+          setGuestNames(gNames);
+        } else {
+          setGuestNames(Array.from({ length: totalPassengers - 1 }).map(() => ''));
         }
         const savedEmail = sessionStorage.getItem('last_checkout_email') || '';
         setCustomerEmail(savedEmail);
@@ -118,6 +139,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
           is_primary: true,
           student_class: '',
         });
+        setGuestNames(Array.from({ length: totalPassengers - 1 }).map(() => ''));
         setAgreedToTerms(false);
         setAgreedToAadhaarConsent(false);
         setCustomerEmail('');
@@ -144,87 +166,95 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
       return;
     }
 
-    if (passengerMode === 'quick') {
-      const passengersPayload: PassengerInput[] = [
-        {
-          ...quickPassenger,
-          age: isStudentPackage ? 0 : (quickPassenger.age || 25),
-          aadhaar: quickPassenger.aadhaar || '',
-          phone: quickPassenger.phone || '',
-          student_class: isStudentPackage ? (quickPassenger.student_class || 'General') : undefined,
+    try {
+      if (passengerMode === 'quick') {
+        const passengersPayload: PassengerInput[] = [
+          {
+            ...quickPassenger,
+            age: isStudentPackage ? 0 : (quickPassenger.age || 25),
+            aadhaar: quickPassenger.aadhaar || '',
+            phone: quickPassenger.phone || '',
+            student_class: isStudentPackage ? (quickPassenger.student_class || 'General') : undefined,
+          }
+        ];
+        if (isStudentPackage) {
+          for (let i = 1; i < adults; i++) {
+            const typedName = guestNames[i - 1]?.trim();
+            passengersPayload.push({
+              full_name: typedName || `Guest Student ${i + 1}`,
+              age: 0,
+              gender: 'MALE',
+              phone: '',
+              aadhaar: '',
+              relationship: '',
+              is_primary: false,
+              student_class: quickPassenger.student_class || 'General',
+            });
+          }
+        } else {
+          for (let i = 1; i < adults; i++) {
+            const typedName = guestNames[i - 1]?.trim();
+            passengersPayload.push({
+              full_name: typedName || `Guest Adult ${i + 1}`,
+              age: 25,
+              gender: 'MALE',
+              phone: '',
+              aadhaar: '',
+              relationship: '',
+              is_primary: false,
+            });
+          }
+          for (let i = 0; i < children; i++) {
+            const guestIdx = (adults - 1) + i;
+            const typedName = guestNames[guestIdx]?.trim();
+            passengersPayload.push({
+              full_name: typedName || `Guest Child ${i + 1}`,
+              age: 7,
+              gender: 'MALE',
+              phone: '',
+              aadhaar: '',
+              relationship: '',
+              is_primary: false,
+            });
+          }
         }
-      ];
-      if (isStudentPackage) {
-        for (let i = 1; i < adults; i++) {
-          passengersPayload.push({
-            full_name: 'TBA (Student)',
-            age: 0,
-            gender: 'MALE',
-            phone: '',
-            aadhaar: '',
-            relationship: '',
-            is_primary: false,
-            student_class: quickPassenger.student_class || 'General',
-          });
-        }
+        // Log funnel event
+        const primaryPax = passengersPayload[0] || {};
+        trackFunnelEvent({
+          funnel_stage: 'PASSENGERS_FILLED',
+          customer_name: primaryPax.full_name,
+          customer_phone: primaryPax.phone,
+          customer_email: customerEmail.trim() || user?.email || undefined,
+          passengers_data: passengersPayload.map(p => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
+          adult_count: adults,
+          child_count: children,
+          target_type: targetType,
+        });
+
+        await onSubmit(passengersPayload, true, customerEmail.trim() || undefined);
       } else {
-        for (let i = 1; i < adults; i++) {
-          passengersPayload.push({
-            full_name: 'TBA (Guest)',
-            age: 25,
-            gender: 'MALE',
-            phone: '',
-            aadhaar: '',
-            relationship: '',
-            is_primary: false,
-          });
-        }
-        for (let i = 0; i < children; i++) {
-          passengersPayload.push({
-            full_name: 'TBA (Guest)',
-            age: 7,
-            gender: 'MALE',
-            phone: '',
-            aadhaar: '',
-            relationship: '',
-            is_primary: false,
-          });
-        }
+        // Clean up ages for student package
+        const cleanPassengers = passengers.map(p => ({
+          ...p,
+          age: isStudentPackage ? 0 : (Number(p.age) || 0),
+        }));
+
+        const primaryPax = cleanPassengers[0] || {};
+        trackFunnelEvent({
+          funnel_stage: 'PASSENGERS_FILLED',
+          customer_name: primaryPax.full_name,
+          customer_phone: primaryPax.phone,
+          customer_email: customerEmail.trim() || user?.email || undefined,
+          passengers_data: cleanPassengers.map(p => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
+          adult_count: adults,
+          child_count: children,
+          target_type: targetType,
+        });
+
+        await onSubmit(cleanPassengers, false, customerEmail.trim() || undefined);
       }
-      // Log funnel event
-      const primaryPax = passengersPayload[0] || {};
-      trackFunnelEvent({
-        funnel_stage: 'PASSENGERS_FILLED',
-        customer_name: primaryPax.full_name,
-        customer_phone: primaryPax.phone,
-        customer_email: customerEmail.trim() || user?.email || undefined,
-        passengers_data: passengersPayload.map(p => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
-        adult_count: adults,
-        child_count: children,
-        target_type: targetType,
-      });
-
-      await onSubmit(passengersPayload, true, customerEmail.trim() || undefined);
-    } else {
-      // Clean up ages for student package
-      const cleanPassengers = passengers.map(p => ({
-        ...p,
-        age: isStudentPackage ? 0 : p.age,
-      }));
-
-      const primaryPax = cleanPassengers[0] || {};
-      trackFunnelEvent({
-        funnel_stage: 'PASSENGERS_FILLED',
-        customer_name: primaryPax.full_name,
-        customer_phone: primaryPax.phone,
-        customer_email: customerEmail.trim() || user?.email || undefined,
-        passengers_data: cleanPassengers.map(p => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
-        adult_count: adults,
-        child_count: children,
-        target_type: targetType,
-      });
-
-      await onSubmit(cleanPassengers, false, customerEmail.trim() || undefined);
+    } catch (err: any) {
+      console.error("Passenger modal submission error:", err);
     }
   };
 
@@ -427,33 +457,71 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                     </div>
                   </div>
 
-                  {/* Auto-generated guests preview */}
+                  {/* Auto-generated guests input fields */}
                   {(totalPassengers > 1) && (
-                    <div className="border-t border-[#1a6b7a]/15 pt-3 mt-1 space-y-1.5">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-generated Guests</p>
-                      {isStudentPackage ? (
-                        Array.from({ length: totalPassengers - 1 }, (_, idx) => (
-                          <div key={`qs-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                            <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
-                            Guest Student {idx + 2}
-                          </div>
-                        ))
-                      ) : (
-                        <>
-                          {Array.from({ length: adults - 1 }, (_, idx) => (
-                            <div key={`qa-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                              <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
-                              Guest Adult {idx + 2}
-                            </div>
-                          ))}
-                          {Array.from({ length: children }, (_, idx) => (
-                            <div key={`qc-${idx}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                              <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
-                              Guest Child {idx + 1}
-                            </div>
-                          ))}
-                        </>
-                      )}
+                    <div className="border-t border-[#1a6b7a]/15 pt-4 mt-2 space-y-3">
+                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Guest Names (Optional)</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {isStudentPackage ? (
+                          Array.from({ length: totalPassengers - 1 }, (_, idx) => {
+                            const guestIdx = idx;
+                            return (
+                              <div key={`qs-${idx}`} className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                                  Guest Student {idx + 2} Name
+                                </label>
+                                <input
+                                  type="text"
+                                  disabled={isProcessing}
+                                  value={guestNames[guestIdx] || ''}
+                                  onChange={(e) => handleGuestNameChange(guestIdx, e.target.value)}
+                                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                                  placeholder="Leave as Guest Student or type name"
+                                />
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <>
+                            {Array.from({ length: adults - 1 }, (_, idx) => {
+                              const guestIdx = idx;
+                              return (
+                                <div key={`qa-${idx}`} className="space-y-1">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                                    Guest Adult {idx + 2} Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    disabled={isProcessing}
+                                    value={guestNames[guestIdx] || ''}
+                                    onChange={(e) => handleGuestNameChange(guestIdx, e.target.value)}
+                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                                    placeholder="Leave as Guest Adult or type name"
+                                  />
+                                </div>
+                              );
+                            })}
+                            {Array.from({ length: children }, (_, idx) => {
+                              const guestIdx = (adults - 1) + idx;
+                              return (
+                                <div key={`qc-${idx}`} className="space-y-1">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                                    Guest Child {idx + 1} Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    disabled={isProcessing}
+                                    value={guestNames[guestIdx] || ''}
+                                    onChange={(e) => handleGuestNameChange(guestIdx, e.target.value)}
+                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
+                                    placeholder="Leave as Guest Child or type name"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

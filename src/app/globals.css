@@ -11,6 +11,22 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── MEDIA PROTECTION ─────────────────────────────────────────────────────── */
+/* Disable drag-to-save and long-press context menu on all gallery images */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none; /* iOS long-press block */
+  pointer-events: auto;        /* keep click events */
+}
+/* Prevent video download overlay on iOS */
+video::-webkit-media-controls-enclosure {
+  overflow: hidden;
+}
+video::-webkit-media-controls-panel {
+  width: calc(100% + 30px);
+}
+
 
 @custom-variant dark (&:is(.dark *));
 

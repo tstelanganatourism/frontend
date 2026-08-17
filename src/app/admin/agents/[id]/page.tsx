@@ -10,7 +10,7 @@ import {
   User, Phone, Mail, Building2, Percent, Calendar, MapPin,
   TrendingUp, Ticket, CheckCircle2, XCircle, Clock, IndianRupee,
   Wallet, FileText, BarChart3, CreditCard, Activity, ChevronLeft,
-  ChevronRight, Loader2, ChevronDown, ChevronUp
+  ChevronRight, Loader2, ChevronDown, ChevronUp, Save
 } from 'lucide-react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { Lock, Eye, EyeOff, RefreshCw } from 'lucide-react';
@@ -107,27 +107,53 @@ export default function AgentDetailPage() {
     return `${year}-${month}-${day}`;
   };
 
+  interface QuotaDraft {
+    daily_quota: number;
+    is_allowed: boolean;
+    commission_type: string;
+    commission_percentage: number | null;
+    commission_fixed_amount: number | null;
+  }
+
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [updatingQuotas, setUpdatingQuotas] = useState<Record<number, boolean>>({});
   const [expandedPackages, setExpandedPackages] = useState<Record<number, boolean>>({});
+  const [quotaDrafts, setQuotaDrafts] = useState<Record<number, QuotaDraft>>({});
 
-  const fetchAgentQuotas = useCallback(async () => {
+  const fetchAgentQuotas = useCallback(async (showLoadingSpinner: boolean = false) => {
     if (!agentId) return;
-    setQuotasLoading(true);
+    if (showLoadingSpinner) setQuotasLoading(true);
     try {
       const res = await apiClient.get(`/api/v1/admin/agents/${agentId}/quotas`);
-      setQuotas(res.data || []);
+      const items = res.data || [];
+      setQuotas(items);
+      setQuotaDrafts(prev => {
+        const next = { ...prev };
+        items.forEach((item: any) => {
+          // Initialize draft for items not currently being edited
+          if (!next[item.package_id]) {
+            next[item.package_id] = {
+              daily_quota: item.daily_quota,
+              is_allowed: item.is_allowed,
+              commission_type: item.commission_type || 'PERCENTAGE',
+              commission_percentage: item.commission_percentage ?? 0,
+              commission_fixed_amount: item.commission_fixed_amount ?? null,
+            };
+          }
+        });
+        return next;
+      });
     } catch (err) {
       console.error('Failed to load quotas:', err);
       toast.error('Failed to load package quotas');
     } finally {
-      setQuotasLoading(false);
+      if (showLoadingSpinner) setQuotasLoading(false);
     }
   }, [agentId]);
 
-  const fetchAgentQuotasUsage = useCallback(async () => {
+  const fetchAgentQuotasUsage = useCallback(async (showLoadingSpinner: boolean = false) => {
     if (!agentId) return;
-    setQuotasUsageLoading(true);
+    if (showLoadingSpinner) setQuotasUsageLoading(true);
     try {
       const res = await apiClient.get(`/api/v1/admin/agents/${agentId}/quotas/usage`, {
         params: {
@@ -139,23 +165,62 @@ export default function AgentDetailPage() {
     } catch (err) {
       console.error('Failed to load quota usage:', err);
     } finally {
-      setQuotasUsageLoading(false);
+      if (showLoadingSpinner) setQuotasUsageLoading(false);
     }
   }, [agentId, selectedDate]);
 
-  const handleUpdateQuota = async (packageId: number, dailyQuota: number, isAllowed: boolean) => {
+  const updateDraft = (packageId: number, fields: Partial<QuotaDraft>) => {
+    setQuotaDrafts(prev => {
+      const current = prev[packageId] || {
+        daily_quota: 10,
+        is_allowed: true,
+        commission_type: 'PERCENTAGE',
+        commission_percentage: 0,
+        commission_fixed_amount: null
+      };
+      return {
+        ...prev,
+        [packageId]: {
+          ...current,
+          ...fields
+        }
+      };
+    });
+  };
+
+  const handleSaveQuota = async (packageId: number) => {
+    const draft = quotaDrafts[packageId];
+    if (!draft) return;
+
     setUpdatingQuotas(prev => ({ ...prev, [packageId]: true }));
     try {
-      await apiClient.put(`/api/v1/admin/agents/${agentId}/quotas`, {
+      const res = await apiClient.put(`/api/v1/admin/agents/${agentId}/quotas`, {
         package_id: packageId,
-        daily_quota: dailyQuota,
-        is_allowed: isAllowed
+        daily_quota: draft.daily_quota,
+        is_allowed: draft.is_allowed,
+        commission_type: draft.commission_type || 'PERCENTAGE',
+        commission_percentage: draft.commission_percentage !== null ? draft.commission_percentage : 0,
+        commission_fixed_amount: draft.commission_fixed_amount !== null ? draft.commission_fixed_amount : null,
       });
-      toast.success('Quota updated successfully');
-      await Promise.all([fetchAgentQuotas(), fetchAgentQuotasUsage()]);
+
+      const updatedItem = res.data;
+      setQuotas(prev => prev.map(q => q.package_id === packageId ? { ...q, ...updatedItem } : q));
+      setQuotaDrafts(prev => ({
+        ...prev,
+        [packageId]: {
+          daily_quota: updatedItem.daily_quota,
+          is_allowed: updatedItem.is_allowed,
+          commission_type: updatedItem.commission_type || 'PERCENTAGE',
+          commission_percentage: updatedItem.commission_percentage ?? 0,
+          commission_fixed_amount: updatedItem.commission_fixed_amount ?? null,
+        }
+      }));
+
+      toast.success('Package quota & commission saved');
+      await fetchAgentQuotasUsage(false);
     } catch (err: any) {
-      console.error('Failed to update quota:', err);
-      toast.error(err.response?.data?.detail || 'Failed to update quota');
+      console.error('Failed to save quota:', err);
+      toast.error(err.response?.data?.detail || 'Failed to save package settings');
     } finally {
       setUpdatingQuotas(prev => ({ ...prev, [packageId]: false }));
     }
@@ -164,13 +229,13 @@ export default function AgentDetailPage() {
   useEffect(() => {
     if (agentId) {
       fetchAgentById(agentId as string);
-      fetchAgentQuotas();
+      fetchAgentQuotas(true);
     }
   }, [agentId, fetchAgentById, fetchAgentQuotas]);
 
   useEffect(() => {
     if (agentId) {
-      fetchAgentQuotasUsage();
+      fetchAgentQuotasUsage(true);
     }
   }, [agentId, selectedDate, fetchAgentQuotasUsage]);
 
@@ -427,7 +492,7 @@ export default function AgentDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/70">
-                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">PNR NUMBER</th>
+                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Booking ID</th>
                     <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Package / Room</th>
                     <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-400">Travel Date</th>
                     <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Amount</th>
@@ -569,54 +634,157 @@ export default function AgentDetailPage() {
               ) : quotas.length === 0 ? (
                 <p className="text-slate-500 text-sm text-center py-8">No packages found.</p>
               ) : (
-                quotas.map((q) => (
-                  <div key={q.package_id} className="p-4 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-slate-800 text-sm">{q.package_title}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {q.is_allowed ? `Daily Limit: ${q.daily_quota} tickets` : 'Booking Suspended'}
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-3">
-                      {/* Allowed Toggle */}
-                      <button
-                        disabled={updatingQuotas[q.package_id]}
-                        onClick={() => handleUpdateQuota(q.package_id, q.daily_quota, !q.is_allowed)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                          q.is_allowed
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                            : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
-                        }`}
-                      >
-                        {updatingQuotas[q.package_id] && (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        )}
-                        {q.is_allowed ? 'Allowed' : 'Suspended'}
-                      </button>
+                quotas.map((q) => {
+                  const draft = quotaDrafts[q.package_id] || {
+                    daily_quota: q.daily_quota,
+                    is_allowed: q.is_allowed,
+                    commission_type: q.commission_type || 'PERCENTAGE',
+                    commission_percentage: q.commission_percentage ?? 0,
+                    commission_fixed_amount: q.commission_fixed_amount ?? null
+                  };
 
-                      {/* Limit Input */}
-                      {q.is_allowed && (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            disabled={updatingQuotas[q.package_id]}
-                            defaultValue={q.daily_quota}
-                            onBlur={(e) => {
-                              const val = parseInt(e.target.value);
-                              if (!isNaN(val) && val >= 0) {
-                                handleUpdateQuota(q.package_id, val, q.is_allowed);
-                              }
-                            }}
-                            className="w-16 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-center text-xs font-bold focus:border-[#5ac4d7] focus:bg-white outline-none transition-all disabled:opacity-50"
-                          />
-                          <span className="text-[11px] text-slate-400 font-bold">pax/day</span>
+                  const isChanged = 
+                    draft.daily_quota !== q.daily_quota ||
+                    draft.is_allowed !== q.is_allowed ||
+                    draft.commission_type !== (q.commission_type || 'PERCENTAGE') ||
+                    Number(draft.commission_percentage || 0) !== Number(q.commission_percentage || 0) ||
+                    Number(draft.commission_fixed_amount || 0) !== Number(q.commission_fixed_amount || 0);
+
+                  return (
+                    <div key={q.package_id} className="p-5 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all flex flex-col gap-4 bg-slate-50/50">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-slate-800 text-sm">{q.package_title}</h4>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-xs text-slate-500 font-medium">
+                              {draft.is_allowed ? `Limit: ${draft.daily_quota} pax/day` : 'Booking Suspended'}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-xs text-[#1e5d88] font-bold">
+                              Saved Rule: {q.commission_type === 'FIXED_AMOUNT' ? `₹${q.commission_fixed_amount || 0}` : `${q.commission_percentage || 0}%`}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3">
+                          {/* Allowed Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => updateDraft(q.package_id, { is_allowed: !draft.is_allowed })}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase transition-all cursor-pointer ${
+                              draft.is_allowed
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                            }`}
+                          >
+                            {draft.is_allowed ? 'Allowed' : 'Suspended'}
+                          </button>
+
+                          {/* Quota Input */}
+                          {draft.is_allowed && (
+                            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                              <span className="text-[11px] text-slate-400 font-bold">Quota:</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={draft.daily_quota}
+                                onChange={(e) => updateDraft(q.package_id, { daily_quota: parseInt(e.target.value) || 0 })}
+                                className="w-14 rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-center text-xs font-bold focus:border-[#5ac4d7] focus:bg-white outline-none transition-all"
+                              />
+                              <span className="text-[11px] text-slate-400 font-medium">pax</span>
+                            </div>
+                          )}
+
+                          {/* Explicit Save Button - Disabled unless modified */}
+                          <button
+                            type="button"
+                            disabled={!isChanged || updatingQuotas[q.package_id]}
+                            onClick={() => handleSaveQuota(q.package_id)}
+                            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                              isChanged
+                                ? 'bg-[#1a6b7a] text-white hover:bg-[#13505c] active:scale-95 shadow-md cursor-pointer ring-2 ring-[#5ac4d7]/40'
+                                : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                            }`}
+                          >
+                            {updatingQuotas[q.package_id] ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Save className="h-3.5 w-3.5" />
+                            )}
+                            <span>{isChanged ? 'Save Changes' : 'Saved'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Commission Configuration Row */}
+                      {draft.is_allowed && (
+                        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-200/60 text-xs">
+                          <span className="font-bold text-slate-600">Commission Rule:</span>
+                          <div className="flex bg-slate-200/70 p-0.5 rounded-xl">
+                            <button
+                              type="button"
+                              onClick={() => updateDraft(q.package_id, { commission_type: 'PERCENTAGE' })}
+                              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                                draft.commission_type === 'PERCENTAGE'
+                                  ? 'bg-white text-slate-900 shadow-sm'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              % Percentage
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateDraft(q.package_id, { commission_type: 'FIXED_AMOUNT' })}
+                              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                                draft.commission_type === 'FIXED_AMOUNT'
+                                  ? 'bg-white text-slate-900 shadow-sm'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              ₹ Fixed Amount
+                            </button>
+                          </div>
+
+                          {draft.commission_type === 'FIXED_AMOUNT' ? (
+                            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                              <span className="text-xs font-bold text-slate-500">₹</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="e.g. 500"
+                                value={draft.commission_fixed_amount ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                  updateDraft(q.package_id, { commission_fixed_amount: val });
+                                }}
+                                className="w-28 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold focus:border-[#5ac4d7] focus:bg-white outline-none transition-all"
+                              />
+                              <span className="text-[11px] text-slate-400 font-medium">per booking</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="e.g. 3.0"
+                                value={draft.commission_percentage ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                  updateDraft(q.package_id, { commission_percentage: val });
+                                }}
+                                className="w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold focus:border-[#5ac4d7] focus:bg-white outline-none transition-all text-center"
+                              />
+                              <span className="text-xs font-bold text-slate-500">%</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           ) : (
@@ -701,7 +869,7 @@ export default function AgentDetailPage() {
                                 <table className="w-full text-left text-xs border-collapse">
                                   <thead>
                                     <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                                      <th className="py-2 px-3">PNR NUMBER</th>
+                                      <th className="py-2 px-3">Booking ID</th>
                                       <th className="py-2 px-3">Customer Name</th>
                                       <th className="py-2 px-3 text-center">Tickets</th>
                                       <th className="py-2 px-3 text-right">Amount</th>

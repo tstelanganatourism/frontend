@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { X, Download } from 'lucide-react';
 
 export default function InstallPromptModal() {
+  const pathname = usePathname();
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+
+  // Never show on print pages
+  const isPrintPage = pathname?.startsWith('/print');
 
   useEffect(() => {
     const isStandaloneMode =
@@ -105,10 +110,10 @@ export default function InstallPromptModal() {
     }
   };
 
-  if (!showPrompt || isStandalone) return null;
+  if (!showPrompt || isStandalone || isPrintPage) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-10 fade-in duration-500 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[340px]">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-10 fade-in duration-500 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[340px] print:hidden">
       <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.14)] border border-slate-200 p-4">
         {/* Dismiss */}
         <button

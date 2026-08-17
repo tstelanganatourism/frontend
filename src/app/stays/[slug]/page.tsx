@@ -35,6 +35,7 @@ type RoomDetail = {
   description?: string | null;
   address?: string | null;
   cover_image_url?: string | null;
+  video_url?: string | null;
   og_image_url?: string | null;
   canonical_url?: string | null;
   meta_title?: string | null;
@@ -55,7 +56,7 @@ type RoomDetail = {
 
 const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/rooms/${slug}`, { next: { revalidate: 43200, tags: ['stays', `stay:${slug}`] } });
+    const res = await apiFetch(`/api/v1/rooms/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
     return res.json();
   } catch {

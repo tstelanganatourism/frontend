@@ -66,6 +66,11 @@ interface BookingSidebarV2Props {
   advancePaymentType?: string | null;
   advancePaymentValue?: number | null;
   extras?: any[];
+  agentCommissionType?: string | null;
+  agentCommissionPercentage?: number | string | null;
+  agentCommissionFixedAmount?: number | string | null;
+  agentDailyQuota?: number | null;
+  agentIsAllowed?: boolean | null;
 }
 
 function todayIST(): Date {
@@ -126,14 +131,14 @@ export const BookingSidebarV2 = ({
   advancePaymentType = 'FULL_PAYMENT',
   advancePaymentValue = 0,
   extras = [],
+  agentCommissionType,
+  agentCommissionPercentage,
+  agentCommissionFixedAmount,
+  agentDailyQuota,
+  agentIsAllowed,
 }: BookingSidebarV2Props) => {
   const { isAuthenticated, user } = useAuthStore();
-  const isSpecialUser = useMemo(() => {
-    if (!user) return false;
-    const email = user.email || '';
-    const phone = user.phone_number || '';
-    return email === '2024eb01987@online.bits-pilani.ac.in' || phone === '8886154275';
-  }, [user]);
+  const isSpecialUser = false;
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
   const router = useRouter();
@@ -142,6 +147,31 @@ export const BookingSidebarV2 = ({
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [showBusWarningModal, setShowBusWarningModal] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+
+  const [commType, setCommType] = useState<string | null>(agentCommissionType || null);
+  const [commPercentage, setCommPercentage] = useState<number | string | null>(agentCommissionPercentage || null);
+  const [commFixedAmount, setCommFixedAmount] = useState<number | string | null>(agentCommissionFixedAmount || null);
+
+  useEffect(() => {
+    setCommType(agentCommissionType || null);
+    setCommPercentage(agentCommissionPercentage || null);
+    setCommFixedAmount(agentCommissionFixedAmount || null);
+
+    if (isAgent) {
+      apiClient.get(`/api/v1/packages/${packageSlug}`)
+        .then((res) => {
+          const pkg = res.data;
+          if (pkg) {
+            setCommType(pkg.agent_commission_type || null);
+            setCommPercentage(pkg.agent_commission_percentage !== undefined && pkg.agent_commission_percentage !== null ? pkg.agent_commission_percentage : null);
+            setCommFixedAmount(pkg.agent_commission_fixed_amount !== undefined && pkg.agent_commission_fixed_amount !== null ? pkg.agent_commission_fixed_amount : null);
+          }
+        })
+        .catch((err) => {
+          console.error('[Sidebar] Failed to load agent commission override:', err);
+        });
+    }
+  }, [agentCommissionType, agentCommissionPercentage, agentCommissionFixedAmount, isAgent, packageSlug]);
 
   const handleAgreeBusWarning = () => {
     setShowBusWarningModal(false);
@@ -818,9 +848,13 @@ export const BookingSidebarV2 = ({
     const grandTotal = subtotal + gst + gatewayFee;
 
     // Agent Commission Calculations
-    const commissionPercentage = user?.commission_percentage ? Number(user.commission_percentage) : 0;
-    const commissionType = user?.commission_type || 'PERCENTAGE';
-    const commissionFixedAmount = user?.commission_fixed_amount ? Number(user.commission_fixed_amount) : 0;
+    const commissionType = (commType || user?.commission_type || 'PERCENTAGE') as 'PERCENTAGE' | 'FIXED_AMOUNT';
+    const commissionPercentage = commPercentage !== undefined && commPercentage !== null
+      ? Number(commPercentage)
+      : (user?.commission_percentage ? Number(user.commission_percentage) : 0);
+    const commissionFixedAmount = commFixedAmount !== undefined && commFixedAmount !== null
+      ? Number(commFixedAmount)
+      : (user?.commission_fixed_amount ? Number(user.commission_fixed_amount) : 0);
 
     let agentDiscount = 0;
     if (isAgent) {
@@ -842,7 +876,7 @@ export const BookingSidebarV2 = ({
       rawSubtotal, discount, subtotal, gst, gatewayFee, 
       grandTotal, agentDiscount, agentPayable 
     };
-  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice]);
+  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice, commType, commPercentage, commFixedAmount]);
 
   const { minPayable, effectivePayNow, isPartial } = useMemo(() => {
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
@@ -871,23 +905,37 @@ export const BookingSidebarV2 = ({
     };
   }, [prices.agentPayable, prices.grandTotal, customPayAmount, isAgent, isAdvanceSelected, advancePaymentType, advancePaymentValue, adults, children]);
 
-  // Adjust custom pay amount when total price changes (e.g., removing a passenger)
+  // Adjust custom pay amount when total price changes
   useEffect(() => {
-    if (!isAdvanceSelected) return;
-    setCustomPayAmount(prev => {
-      if (prev === '') return prev;
-      const parsed = parseInt(prev, 10);
-      const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
-      if (!isNaN(parsed)) {
-        if (parsed >= finalTotal) {
-          setIsAdvanceSelected(false);
-          return '';
-        }
-        if (parsed < minPayable) return String(minPayable);
+    if (isAdvanceSelected) {
+      setCustomPayAmount(String(minPayable));
+    } else {
+      setCustomPayAmount('');
+    }
+  }, [prices.grandTotal, prices.agentPayable, isAgent, isAdvanceSelected, minPayable]);
+
+  // Auto-adjust Private Cab vehicle quantity dynamically based on total passengers
+  useEffect(() => {
+    if (selectedTransportMode !== 'SEPARATE' || separateOptions.length === 0) return;
+    const totalPax = adults + children;
+    if (totalPax <= 0) return;
+
+    const primaryOpt = separateOptions[0];
+    const cap = positiveNumber(primaryOpt.capacity) || 6;
+    const needed = Math.ceil(totalPax / cap);
+
+    setSeparateVehicleQtys(prev => {
+      const currentCapacity = Object.entries(prev).reduce((sum, [optIdStr, q]) => {
+        const opt = separateOptions.find(o => o.id === Number(optIdStr));
+        return sum + (q || 0) * (positiveNumber(opt?.capacity) || 6);
+      }, 0);
+
+      if (currentCapacity < totalPax) {
+        return { ...prev, [primaryOpt.id]: Math.max(prev[primaryOpt.id] || 0, needed) };
       }
       return prev;
     });
-  }, [prices.grandTotal, prices.agentPayable, isAgent, isAdvanceSelected, minPayable]);
+  }, [selectedTransportMode, adults, children, separateOptions]);
 
   // Live recalculation / revalidation when dependencies change
   useEffect(() => {
@@ -1062,34 +1110,53 @@ export const BookingSidebarV2 = ({
     }, {} as Record<number, any>);
   }, [displaySlot]);
 
+  const getOptAvail = (optId: number) => {
+    const optAvail = transportAvailMap[optId];
+    if (optAvail) return optAvail;
+    const opt = transportOptions.find(o => o.id === optId);
+    if (!opt) return null;
+    const isShared = opt.type === 'SHARED';
+    return {
+      option_id: optId,
+      remaining: isShared ? (opt.capacity || 999) : 99,
+      is_closed: false,
+      price_override: null
+    };
+  };
+
   const sharedCapacityOk = useMemo(() => {
+    if (isAdmin) return true;
     if (selectedTransportMode !== 'SHARED' || !selectedSharedOptionId) return true;
-    const optAvail = transportAvailMap[selectedSharedOptionId];
+    const optAvail = getOptAvail(selectedSharedOptionId);
     if (!optAvail || optAvail.is_closed) return false;
     const totalPax = adults + children;
     return optAvail.remaining >= totalPax;
-  }, [selectedTransportMode, selectedSharedOptionId, adults, children, transportAvailMap]);
+  }, [selectedTransportMode, selectedSharedOptionId, adults, children, transportAvailMap, transportOptions, isAdmin]);
 
-  const separateCapacityOk = useMemo(() => {
-    if (selectedTransportMode !== 'SEPARATE') return true;
-    const totalPax = adults + children;
-    const totalCapacity = separateOptions.reduce((sum, opt) => {
+  const totalSeparateCapacity = useMemo(() => {
+    return separateOptions.reduce((sum, opt) => {
       const qty = separateVehicleQtys[opt.id] || 0;
       return sum + qty * (positiveNumber(opt.capacity) || 1);
     }, 0);
+  }, [separateOptions, separateVehicleQtys]);
+
+  const separateCapacityOk = useMemo(() => {
+    if (isAdmin) return true;
+    if (selectedTransportMode !== 'SEPARATE') return true;
+    const totalPax = adults + children;
     const hasAnyVehicle = Object.values(separateVehicleQtys).some(q => q > 0);
-    if (!hasAnyVehicle) return true; // Handled as validation later
+    if (!hasAnyVehicle) return false;
 
     for (const opt of separateOptions) {
       const qty = separateVehicleQtys[opt.id] || 0;
       if (qty > 0) {
-        const avail = transportAvailMap[opt.id];
+        const avail = getOptAvail(opt.id);
         if (!avail || avail.is_closed || avail.remaining < qty) return false;
       }
     }
 
-    return totalCapacity >= totalPax;
-  }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children, transportAvailMap]);
+    return totalSeparateCapacity >= totalPax;
+  }, [selectedTransportMode, separateVehicleQtys, separateOptions, adults, children, transportAvailMap, transportOptions, totalSeparateCapacity, isAdmin]);
 
   const hasTransportSelection = useMemo(() => {
     if (!hasTransport || transportOptions.length === 0) return true;
@@ -1098,10 +1165,10 @@ export const BookingSidebarV2 = ({
     }
     if (selectedTransportMode === 'SEPARATE') {
       const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
-      return totalVehicles > 0;
+      return totalVehicles > 0 && totalSeparateCapacity >= (adults + children);
     }
     return false;
-  }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys]);
+  }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, totalSeparateCapacity, adults, children]);
 
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
@@ -1124,17 +1191,26 @@ export const BookingSidebarV2 = ({
     if (validVariants.length === 0) return 'Fare updating';
     if (!isAuthenticated) return 'Login to Book';
     if (!selectedDate) return 'Select a date';
-    if (!separateCapacityOk) return '⚠ Not enough vehicles/capacity';
-    if (!sharedCapacityOk) return '⚠ Not enough transport seats';
-    if (hasTransport && transportOptions.length > 0 && !hasTransportSelection) {
-      if (selectedTransportMode === 'SEPARATE') return '⚠ Select at least 1 vehicle';
-      return '⚠ Select a transport option';
+
+    if (hasTransport && transportOptions.length > 0) {
+      if (selectedTransportMode === 'SEPARATE') {
+        const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
+        if (totalVehicles === 0) return '⚠ Select at least 1 vehicle';
+        const totalPax = adults + children;
+        if (totalSeparateCapacity < totalPax) return `⚠ Need More Seats (${totalSeparateCapacity}/${totalPax})`;
+        if (!isAdmin && !separateCapacityOk) return '⚠ Vehicle Sold Out';
+      }
+      if (selectedTransportMode === 'SHARED') {
+        if (!selectedSharedOptionId) return '⚠ Select a shared transport option';
+        if (!isAdmin && !sharedCapacityOk) return '⚠ Not enough transport seats';
+      }
     }
+
     if (isAdmin) return 'Book Now (Admin)';
     if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Unavailable';
     if (availabilityState.kind === 'open') return 'Book Now';
     return 'Call to confirm availability';
-  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind]);
+  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind, separateVehicleQtys, adults, children, totalSeparateCapacity, selectedSharedOptionId]);
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal
   useEffect(() => {
@@ -1147,7 +1223,6 @@ export const BookingSidebarV2 = ({
   // Strict Real-Time Locking: Clear invalid selections instantly
   useEffect(() => {
     if (isAdmin) return; // Admins bypass auto-clearing selected invalid dates!
-    // Only auto-clear if we ACTUALLY had a selected date and it just became invalid
     if (selectedDate && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out')) {
       setSelectedDate('');
       toast.error(availabilityState.message || 'Selected date is no longer available.', { duration: 5000 });
@@ -1156,12 +1231,63 @@ export const BookingSidebarV2 = ({
 
   const handleBookingClick = (e: React.MouseEvent) => {
     if ((isPackageInactive && !isAdmin) || !isActive) return;
+    if (!isAdmin && availabilityState.kind !== 'open') {
+      toast.error(availabilityState.message || 'Schedule has not been opened yet for online booking.');
+      return;
+    }
     if (!isAuthenticated) {
       e.preventDefault();
       setShowLoginPrompt(true);
       return;
     }
     
+    const totalPax = adults + children;
+
+    if (!selectedDate) {
+      toast.error('Please select a travel date first.');
+      return;
+    }
+
+    if (hasTransport && transportOptions.length > 0) {
+      if (selectedTransportMode === 'SEPARATE') {
+        const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
+        if (totalVehicles === 0) {
+          toast.error('Please select at least 1 vehicle or switch to Shared Transport.');
+          return;
+        }
+        if (totalSeparateCapacity < totalPax) {
+          toast.error(`Selected vehicles can seat ${totalSeparateCapacity} passengers, but you have ${totalPax} passengers. Please add more vehicles or switch to Shared Transport.`);
+          return;
+        }
+        if (!separateCapacityOk) {
+          toast.error('One or more selected vehicles are sold out or unavailable for this date.');
+          return;
+        }
+      }
+      if (selectedTransportMode === 'SHARED') {
+        if (!selectedSharedOptionId) {
+          toast.error('Please select a shared transport option.');
+          return;
+        }
+        if (!sharedCapacityOk) {
+          const optAvail = getOptAvail(selectedSharedOptionId);
+          if (optAvail && optAvail.is_closed) {
+            toast.error('Shared transport is closed for this date.');
+          } else if (optAvail) {
+            toast.error(`Not enough shared seats. Requested: ${totalPax}, Available: ${optAvail.remaining}`);
+          } else {
+            toast.error('Shared transport is unavailable for this date.');
+          }
+          return;
+        }
+      }
+    }
+
+    if (isBookingDisabled && !isAdmin) {
+      toast.error(ctaText || 'Booking is currently unavailable.');
+      return;
+    }
+
     // Trigger Google Ads conversion event
     reportBookNowConversion();
 
@@ -1188,10 +1314,11 @@ export const BookingSidebarV2 = ({
           include_refreshments: hasRefreshments ? includeRefreshments : false,
           passengers: passengers.map(p => ({
             ...p,
-            aadhaar: p.aadhaar || undefined,
-            phone: p.phone || undefined,
+            age: Number(p.age) || 0,
+            aadhaar: p.aadhaar ? String(p.aadhaar).trim() : undefined,
+            phone: p.phone ? String(p.phone).trim() : undefined,
           })),
-          amount_paid: customPayAmount !== '' ? Number(customPayAmount) : undefined,
+          amount_paid: isAdvanceSelected ? effectivePayNow : (customPayAmount !== '' ? Number(customPayAmount) : prices.grandTotal),
           quick_booking: quickBooking,
           customer_email: customerEmail,
         };
@@ -1366,21 +1493,19 @@ export const BookingSidebarV2 = ({
         isDisabled = false;
       } else if (publicAvailability) {
         const slot = publicAvailability.dates.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
-        if (slot) {
-          if (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || slot.status === 'NO_INVENTORY' || slot.available_seats <= 0) {
-            dayStatus = 'soldout';
-            isDisabled = true;
-          } else {
-            dayStatus = 'available';
-            isDisabled = false;
-          }
-        } else {
+        if (slot && slot.status === 'OPEN' && Number(slot.available_seats || 0) > 0) {
           dayStatus = 'available';
           isDisabled = false;
+        } else if (slot && (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT')) {
+          dayStatus = 'soldout';
+          isDisabled = true;
+        } else {
+          dayStatus = 'unpublished';
+          isDisabled = true;
         }
       } else {
-        dayStatus = 'available';
-        isDisabled = false;
+        dayStatus = 'unpublished';
+        isDisabled = true;
       }
 
       let fare: number | null = null;

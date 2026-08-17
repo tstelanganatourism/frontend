@@ -10,7 +10,9 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const res = await apiFetch(`/api/v1/packages/categories/${slug}`, { cache: 'no-store' });
+    const res = await apiFetch(`/api/v1/packages/categories/${slug}`, {
+      next: { revalidate: 43200, tags: ['categories', `category:${slug}`] }
+    });
     if (!res.ok) return {};
     const cat = await res.json();
     return {
@@ -26,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function fetchCategoryPackages(slug: string) {
   try {
     const res = await apiFetch(`/api/v1/packages/categories/${slug}`, {
-      cache: 'no-store'
+      next: { revalidate: 43200, tags: ['categories', `category:${slug}`] }
     });
     if (!res.ok) return null;
     return await res.json();

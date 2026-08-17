@@ -109,7 +109,7 @@ export const BookingCalloutCard = ({
   const hasTabs = showAddonsTab || showTransportTab;
 
   return (
-    <div className="max-h-[calc(100dvh-116px)] rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-100/50 flex flex-col overflow-hidden">
+    <div className="w-full max-h-[calc(100dvh-112px)] rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 flex flex-col overflow-hidden">
       {/* Top Banner Header */}
       <div className="bg-[#0d6e75] px-5 py-3 text-white flex items-center justify-between shrink-0">
         <span className="text-[11px] font-black uppercase tracking-wider text-white flex items-center gap-1.5">
@@ -151,7 +151,7 @@ export const BookingCalloutCard = ({
       </div>
 
       {/* Content Area - Scrollable Stream */}
-      <div className="p-4 flex-1 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 min-h-0 xl:p-5 xl:space-y-4">
+      <div className="p-4 flex-1 space-y-3 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-300 min-h-0 xl:p-5 xl:space-y-4">
         
         {/* Ticket Variants & Fares */}
         <div className="space-y-4">
@@ -326,19 +326,29 @@ export const BookingCalloutCard = ({
         )}
       </div>
 
-      {/* Brochure CTA Section */}
-      {brochurePdfUrl && (
-        <div className="p-4 bg-slate-50 border-t border-slate-100">
+      {/* Bottom Sticky Action Bar */}
+      <div className="p-3.5 bg-white border-t border-slate-150 shrink-0 space-y-2">
+        <button
+          onClick={handleBookNowClick}
+          type="button"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#0d6e75] hover:bg-[#0b5c62] py-3 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:shadow-lg active:scale-98"
+        >
+          <Ticket className="h-4 w-4 stroke-[2.5]" />
+          <span>Book Selected Package</span>
+          <ArrowRight className="h-4 w-4 stroke-[3]" />
+        </button>
+
+        {brochurePdfUrl && (
           <a
             href={brochurePdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full h-9 border border-slate-200 hover:border-[#0d6e75] bg-white rounded-lg text-[10px] font-black uppercase tracking-wider text-[#0d6e75] hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 shadow-3xs"
+            className="w-full h-8 border border-slate-200 hover:border-[#0d6e75] bg-slate-50 hover:bg-slate-100 rounded-lg text-[9px] font-black uppercase tracking-wider text-[#0d6e75] transition-all flex items-center justify-center gap-1.5"
           >
             📥 Download Brochure PDF
           </a>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

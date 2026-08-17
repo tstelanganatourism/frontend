@@ -11,7 +11,9 @@ export const metadata = {
 
 async function fetchRoomCategories() {
   try {
-    const res = await apiFetch('/api/v1/rooms/categories', { cache: 'no-store' });
+    const res = await apiFetch('/api/v1/rooms/categories', {
+      next: { revalidate: 43200, tags: ['categories', 'room-categories'] },
+    });
     if (!res.ok) return [];
     return await res.json();
   } catch {

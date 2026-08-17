@@ -64,3 +64,6 @@ lighthouse-report.json
 lighthouse-*.json
 
 certificates
+
+# Python scripts
+*.py

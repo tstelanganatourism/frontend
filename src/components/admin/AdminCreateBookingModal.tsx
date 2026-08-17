@@ -88,6 +88,21 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const isStudentPackage = !!selectedPackage?.is_student_package;
 
+  const totalPax = isStudentPackage ? studentCount : (adultCount + childCount);
+  const [guestNames, setGuestNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    setGuestNames(Array.from({ length: Math.max(0, totalPax - 1) }).map(() => ''));
+  }, [totalPax]);
+
+  const handleGuestNameChange = (index: number, val: string) => {
+    setGuestNames(prev => {
+      const copy = [...prev];
+      copy[index] = val;
+      return copy;
+    });
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchDropdownData();
@@ -299,8 +314,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         if (isStudentPackage) {
           // Auto-fill remaining students
           for (let i = 1; i < studentCount; i++) {
+            const typedName = guestNames[i - 1]?.trim();
             passengersPayload.push({
-              full_name: 'quick ticket(not provided)',
+              full_name: typedName || `Guest Student ${i + 1}`,
               age: 0,
               gender: 'MALE',
               phone: undefined,
@@ -313,8 +329,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         } else {
           // Auto-fill remaining adults
           for (let i = 1; i < adultCount; i++) {
+            const typedName = guestNames[i - 1]?.trim();
             passengersPayload.push({
-              full_name: 'quick ticket(not provided)',
+              full_name: typedName || `Guest Adult ${i + 1}`,
               age: 25,
               gender: 'MALE',
               phone: '',
@@ -325,8 +342,10 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           }
           // Auto-fill children
           for (let i = 0; i < childCount; i++) {
+            const guestIdx = (adultCount - 1) + i;
+            const typedName = guestNames[guestIdx]?.trim();
             passengersPayload.push({
-              full_name: 'quick ticket(not provided)',
+              full_name: typedName || `Guest Child ${i + 1}`,
               age: 7,
               gender: 'MALE',
               phone: '',
@@ -537,12 +556,12 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
             )}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-600">{targetType === 'room' ? 'Check-in Date' : 'Travel Date'}</label>
-              <CustomDatePicker label={targetType === 'room' ? 'Check-in' : 'Travel Date'} value={travelDate} onChange={setTravelDate} allowPast={true} />
+              <CustomDatePicker label={targetType === 'room' ? 'Check-in' : 'Travel Date'} value={travelDate} onChange={setTravelDate} allowPast={true} isAdmin={true} />
             </div>
             {targetType === 'room' && (
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-600">Check-out Date</label>
-                <CustomDatePicker label="Check-out Date" value={departureDate} onChange={setDepartureDate} allowPast={true} />
+                <CustomDatePicker label="Check-out Date" value={departureDate} onChange={setDepartureDate} allowPast={true} isAdmin={true} />
               </div>
             )}
             {isStudentPackage ? (
@@ -868,33 +887,68 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                     </div>
                   </div>
 
-                  {/* Auto-generated guests preview */}
+                  {/* Auto-generated guests input fields */}
                   {((isStudentPackage ? studentCount : (adultCount + childCount)) > 1) && (
-                    <div className="border-t border-violet-100 pt-3 mt-1 space-y-1.5">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-generated Guests</p>
-                      {isStudentPackage ? (
-                        Array.from({ length: studentCount - 1 }, (_, i) => (
-                          <div key={`qs-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                            <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
-                            Guest Student {i + 2}
-                          </div>
-                        ))
-                      ) : (
-                        <>
-                          {Array.from({ length: adultCount - 1 }, (_, i) => (
-                            <div key={`qa-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                              <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
-                              Guest Adult {i + 2}
-                            </div>
-                          ))}
-                          {Array.from({ length: childCount }, (_, i) => (
-                            <div key={`qc-${i}`} className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                              <div className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0" />
-                              Guest Child {i + 1}
-                            </div>
-                          ))}
-                        </>
-                      )}
+                    <div className="border-t border-violet-100 pt-4 mt-2 space-y-3">
+                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Guest Names (Optional)</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {isStudentPackage ? (
+                          Array.from({ length: studentCount - 1 }, (_, i) => {
+                            const guestIdx = i;
+                            return (
+                              <div key={`qs-${i}`} className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                                  Guest Student {i + 2} Name
+                                </label>
+                                <input
+                                  type="text"
+                                  value={guestNames[guestIdx] || ''}
+                                  onChange={(e) => handleGuestNameChange(guestIdx, e.target.value)}
+                                  className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none"
+                                  placeholder="Leave as Guest Student or type name"
+                                />
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <>
+                            {Array.from({ length: adultCount - 1 }, (_, i) => {
+                              const guestIdx = i;
+                              return (
+                                <div key={`qa-${i}`} className="space-y-1">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                                    Guest Adult {i + 2} Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={guestNames[guestIdx] || ''}
+                                    onChange={(e) => handleGuestNameChange(guestIdx, e.target.value)}
+                                    className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none"
+                                    placeholder="Leave as Guest Adult or type name"
+                                  />
+                                </div>
+                              );
+                            })}
+                            {Array.from({ length: childCount }, (_, i) => {
+                              const guestIdx = (adultCount - 1) + i;
+                              return (
+                                <div key={`qc-${i}`} className="space-y-1">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                                    Guest Child {i + 1} Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={guestNames[guestIdx] || ''}
+                                    onChange={(e) => handleGuestNameChange(guestIdx, e.target.value)}
+                                    className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none"
+                                    placeholder="Leave as Guest Child or type name"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

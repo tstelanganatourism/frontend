@@ -39,6 +39,11 @@ interface BookingDialogV3Props {
   advancePaymentType?: string | null;
   advancePaymentValue?: number | null;
   extras?: any[];
+  agentCommissionType?: string | null;
+  agentCommissionPercentage?: number | string | null;
+  agentCommissionFixedAmount?: number | string | null;
+  agentDailyQuota?: number | null;
+  agentIsAllowed?: boolean | null;
 }
 
 export const BookingDialogV3 = (props: BookingDialogV3Props) => {
@@ -98,7 +103,7 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
     <>
       {/* ── Desktop Floating Action Widget (Stacked above WhatsApp) ── */}
       <div
-        className={`hidden lg:flex fixed right-8 bottom-28 z-50 flex-col items-end transition-all duration-500 ${
+        className={`hidden lg:flex fixed right-8 bottom-28 z-40 flex-col items-end transition-all duration-500 ${
           showStickyBar && !isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-90 pointer-events-none'
         }`}
       >
@@ -171,7 +176,7 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
           <div className="absolute inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setIsOpen(false)} />
 
           {/* Dialog Panel — slides up on mobile, centers on desktop */}
-          <div className="relative z-10 w-full max-w-full sm:max-w-[940px] sm:mx-auto flex flex-col
+          <div className="relative z-10 w-full max-w-full sm:max-w-[1040px] sm:mx-auto flex flex-col
             h-[90dvh] sm:h-[82vh] sm:max-h-[750px]
             bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl
             animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250">
@@ -181,10 +186,10 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
               <div className="space-y-0.5">
                 <span className="text-[9px] font-black uppercase tracking-widest text-[#c8e6e8] flex items-center gap-1.5">
                   <Sparkles className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  Verified Reservation Portal
+                  Official Booking Portal
                 </span>
                 <h2 className="text-base sm:text-lg font-black text-white leading-tight">
-                  Configure Your Travel Tickets
+                  Select Package & Book Tickets
                 </h2>
               </div>
               <button

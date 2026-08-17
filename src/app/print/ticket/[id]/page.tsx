@@ -11,6 +11,11 @@ import {
   getRefreshmentAmount,
   getTransportSelections,
   hasRefreshment,
+  hasFoodAddon,
+  getFoodAmount,
+  hasExtras,
+  getExtrasAmount,
+  getSelectedExtrasList,
   money,
   type PaymentLedgerEntry,
 } from '@/lib/bookingDisplay';
@@ -73,6 +78,7 @@ interface BookingDetails {
   room_highlights?: { title: string; icon: string }[];
   hotel_name?: string | null;
   itinerary?: { day_number: number; title: string; timing: string; duration?: string | null; meal_included?: boolean; description: string }[];
+  meals?: { id?: number; meal_type?: string; name: string; serving_time?: string | null; description?: string | null; is_vegetarian?: boolean; day_number?: number | null }[];
   pricing_snapshot?: any;
   has_refreshment_addon?: boolean;
   payment_ledger?: PaymentLedgerEntry[];
@@ -161,8 +167,8 @@ export default async function PrintTicketPage({
   const oldTravelDateObj = hasRescheduled ? new Date(booking.postpone_details!.original_travel_date!) : null;
   const oldTravelDateFormatted = oldTravelDateObj
     ? oldTravelDateObj.toLocaleDateString('en-IN', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      }).toUpperCase() + ', ' + oldTravelDateObj.toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase()
+      day: '2-digit', month: 'long', year: 'numeric'
+    }).toUpperCase() + ', ' + oldTravelDateObj.toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase()
     : '';
 
   const isRoom = booking.target_type === 'ROOM';
@@ -172,11 +178,11 @@ export default async function PrintTicketPage({
   if (booking.status === 'REFUNDED') ticketTitle = 'REFUNDED TICKET';
 
   const reportingTime = isRoom ? (booking.room_checkin || 'TBA') : (booking.boarding_point?.departure_time || 'TBA');
-  
-  const allocatedHotelName = (isRoom && (booking.hotel_name || booking.package_title)) || 
-                             (booking.room_address ? booking.room_address.split(',')[0].trim() : null) || 
-                             booking.package_title ||
-                             'Godavari Riverside Bamboo Huts';
+
+  const allocatedHotelName = (isRoom && (booking.hotel_name || booking.package_title)) ||
+    (booking.room_address ? booking.room_address.split(',')[0].trim() : null) ||
+    booking.package_title ||
+    'Godavari Riverside Bamboo Huts';
 
   const boardingTitle = isRoom
     ? allocatedHotelName
@@ -196,9 +202,29 @@ export default async function PrintTicketPage({
   );
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
+  const foodIncluded = hasFoodAddon(booking.pricing_snapshot);
+  const foodAmount = getFoodAmount(booking.pricing_snapshot);
+  const extrasIncluded = hasExtras(booking.pricing_snapshot);
+  const extrasAmount = getExtrasAmount(booking.pricing_snapshot);
+  const selectedExtrasList = getSelectedExtrasList(booking.pricing_snapshot);
   const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
   const capturedPayments = getCapturedPayments(booking.payment_ledger);
   const gstNumber = '';
+
+  const replaceCruiseWithBoat = (text: string) => {
+    if (!text) return text;
+    return text
+      .replace(/river cruise/gi, 'boat ride')
+      .replace(/cruise boarding point/gi, 'boat boarding point')
+      .replace(/luxury cruise boat/gi, 'boat')
+      .replace(/cruise boat/gi, 'boat')
+      .replace(/cruises/gi, 'boats')
+      .replace(/cruise/gi, 'boat')
+      .replace(/Cruises/gi, 'Boats')
+      .replace(/Cruise/gi, 'Boat')
+      .replace(/CRUISES/gi, 'BOATS')
+      .replace(/CRUISE/gi, 'BOAT');
+  };
 
   // Parse itinerary events grouped by day
   type TlEvent = { time: string; title: string; desc: string; meal_included?: boolean };
@@ -206,7 +232,7 @@ export default async function PrintTicketPage({
 
   function parseItineraryStops(itineraryList: any[]): TlDay[] {
     if (!itineraryList || itineraryList.length === 0) return [];
-    
+
     const dayMap = new Map<number, TlEvent[]>();
 
     itineraryList.forEach((stop, idx) => {
@@ -215,7 +241,7 @@ export default async function PrintTicketPage({
 
       const combinedDesc = (stop.description || '').trim();
       const timeStr = stop.timing || '';
-      
+
       // Check if description itself contains embedded timestamps (like 8:00 AM: ...)
       const subParts = combinedDesc
         .split(/(?=\b\d{1,2}:\d{2}\s*(?:AM|PM)\s*[:\-–])/i)
@@ -228,8 +254,8 @@ export default async function PrintTicketPage({
           if (m) {
             dayMap.get(dayNum)!.push({
               time: m[1].trim(),
-              title: stop.title,
-              desc: m[2].trim().replace(/\.\s*$/, '').trim(),
+              title: replaceCruiseWithBoat(stop.title),
+              desc: replaceCruiseWithBoat(m[2].trim().replace(/\.\s*$/, '').trim()),
               meal_included: stop.meal_included
             });
           }
@@ -237,8 +263,8 @@ export default async function PrintTicketPage({
       } else {
         dayMap.get(dayNum)!.push({
           time: timeStr || `Stop #${idx + 1}`,
-          title: stop.title,
-          desc: combinedDesc || stop.title,
+          title: replaceCruiseWithBoat(stop.title),
+          desc: replaceCruiseWithBoat(combinedDesc || stop.title),
           meal_included: stop.meal_included
         });
       }
@@ -251,6 +277,35 @@ export default async function PrintTicketPage({
   }
 
   const parsedItineraryDays: TlDay[] = parseItineraryStops(booking.itinerary || []);
+
+  // Compute dynamic tour duration in days from package title or itinerary
+  const titleMatch = (booking.package_title || '').match(/(\d+)\s*Day/i);
+  const titleDays = titleMatch ? parseInt(titleMatch[1], 10) : 0;
+  const maxItineraryDay = parsedItineraryDays.length > 0
+    ? Math.max(...parsedItineraryDays.map(d => d.dayNumber), parsedItineraryDays.length)
+    : 1;
+  const tourDurationDays = Math.max(titleDays, maxItineraryDay, 1);
+
+  // Detect Admin Direct Booking & Format Admin Booking Timestamp
+  const adminPayment = capturedPayments.find(p =>
+    p.payment_method === 'MANUAL_ADMIN' ||
+    (p.payment_reference_id && p.payment_reference_id.toUpperCase().startsWith('ADMIN'))
+  );
+  const isAdminBooking = !!(
+    adminPayment ||
+    booking.agent_name?.toLowerCase().includes('admin') ||
+    (booking.pricing_snapshot && (booking.pricing_snapshot.booked_by === 'ADMIN' || booking.pricing_snapshot.is_admin_booking)) ||
+    (booking.payment_ledger && booking.payment_ledger.some(p => p.payment_reference_id?.toUpperCase().includes('ADMIN')))
+  );
+
+  const adminBookingDateObj = (adminPayment && adminPayment.created_at)
+    ? new Date(adminPayment.created_at)
+    : (booking.created_at ? new Date(booking.created_at) : new Date());
+
+  const adminBookingTimeFormatted = adminBookingDateObj.toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true
+  }).toUpperCase();
 
   const parts: string[] = [];
   if (booking.student_count > 0) {
@@ -508,7 +563,7 @@ export default async function PrintTicketPage({
         /* Journey and Payment Grid */
         .bottom-sections-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1.15fr;
           gap: 16px;
           margin-bottom: 16px;
           align-items: stretch;
@@ -521,6 +576,7 @@ export default async function PrintTicketPage({
           background: #ffffff;
           display: flex;
           flex-direction: column;
+          height: 100%;
         }
 
         .pay-row {
@@ -596,9 +652,10 @@ export default async function PrintTicketPage({
         /* Timeline styling */
         .timeline-container {
           padding: 10px 12px;
-          max-height: 290px;
-          overflow-y: auto;
           flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
         }
 
         .timeline-event {
@@ -873,10 +930,10 @@ export default async function PrintTicketPage({
       {/* TS Boat Tourism Graphic Banner */}
       <div style={{ width: '100%', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img 
-          src="/ts-boat-tourism-banner.jpg" 
-          alt="TS Boat Tourism Banner" 
-          style={{ width: '100%', height: 'auto', display: 'block' }} 
+        <img
+          src="/ts-boat-tourism-banner.jpg"
+          alt="TS Boat Tourism Banner"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
         />
       </div>
 
@@ -1142,7 +1199,7 @@ export default async function PrintTicketPage({
           <div className="bottom-sections-grid">
             {/* Left: Financial Statement */}
             <div className="summary-card">
-              <div className="section-header">Financial Summary</div>
+              <div className="section-header">💳 Bill &amp; Payment Details</div>
               <div className="pay-row">
                 <span>
                   {isRoom ? 'Accommodation Fare' : 'Base Fare'}
@@ -1150,7 +1207,7 @@ export default async function PrintTicketPage({
                 </span>
                 <span>{money(baseFare, 2)}</span>
               </div>
-              
+
               {transportSelections.map((ts, idx) => (
                 <div className="pay-row" key={`trans-${idx}`}>
                   <span>
@@ -1164,11 +1221,43 @@ export default async function PrintTicketPage({
               {refreshmentIncluded && (
                 <div className="pay-row">
                   <span>
-                    Refreshment Addon
+                    Refreshment Addon (AC Room Access)
                     <span className="pay-row-subtext">{passengerCount} Passengers</span>
                   </span>
                   <span>{refreshmentAmount > 0 ? money(refreshmentAmount, 2) : 'Included'}</span>
                 </div>
+              )}
+
+              {foodIncluded && (
+                <div className="pay-row">
+                  <span>
+                    Catering &amp; Meals Package
+                    <span className="pay-row-subtext">Full Breakfast, Lunch &amp; Dinner Included</span>
+                  </span>
+                  <span>{money(foodAmount, 2)}</span>
+                </div>
+              )}
+
+              {selectedExtrasList.length > 0 ? (
+                selectedExtrasList.map((extra: any, idx: number) => (
+                  <div className="pay-row" key={`extra-row-${idx}`}>
+                    <span>
+                      {extra.title || extra.name || 'Package Extra'}
+                      {extra.description && <span className="pay-row-subtext">{extra.description}</span>}
+                    </span>
+                    <span>{money(extra.item_total || extra.total_price || extra.price || 0, 2)}</span>
+                  </div>
+                ))
+              ) : (
+                extrasIncluded && (
+                  <div className="pay-row">
+                    <span>
+                      Additional Package Extras
+                      <span className="pay-row-subtext">Special Add-ons Selected</span>
+                    </span>
+                    <span>{money(extrasAmount, 2)}</span>
+                  </div>
+                )
               )}
 
               {booking.coupon_discount > 0 && (
@@ -1184,17 +1273,17 @@ export default async function PrintTicketPage({
               </div>
 
               <div className="pay-row">
-                <span>Convenience Gateway Fee</span>
+                <span>Gateway &amp; Processing Fee</span>
                 <span>{money(booking.gateway_fee, 2)}</span>
               </div>
 
               <div className="pay-row grand-total">
-                <span>Total Amount Due</span>
+                <span>Total Bill Amount</span>
                 <span>{money(booking.total_amount, 2)}</span>
               </div>
 
               <div className="pay-row amt-paid">
-                <span>Total Paid Received</span>
+                <span>Total Amount Paid</span>
                 <span>{money(totalPaid, 2)}</span>
               </div>
 
@@ -1208,9 +1297,9 @@ export default async function PrintTicketPage({
                     const pDate = p.created_at ? new Date(p.created_at) : null;
                     const formattedPDate = pDate
                       ? pDate.toLocaleString('en-IN', {
-                          day: '2-digit', month: 'short', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit', hour12: true
-                        }).toUpperCase()
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: true
+                      }).toUpperCase()
                       : travelDateFormatted;
 
                     const lineLabel = capturedPayments.length === 1
@@ -1251,7 +1340,7 @@ export default async function PrintTicketPage({
 
               {booking.remaining_balance > 0 && (
                 <div className="pay-row amt-balance" style={{ marginTop: '8px' }}>
-                  <span>Outstanding Balance</span>
+                  <span>Balance Payable at Boarding</span>
                   <span>{money(booking.remaining_balance, 2)}</span>
                 </div>
               )}
@@ -1264,10 +1353,10 @@ export default async function PrintTicketPage({
             {/* Right: Journey timeline */}
             <div className="summary-card">
               <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span>{isRoom ? 'Stay Timeline' : 'Itinerary & Timeline'}</span>
-                {!isRoom && parsedItineraryDays.length > 0 && (
+                <span>{isRoom ? '🏨 Hotel Check-in & Stay Schedule' : '🗺️ Tour Schedule & Timings'}</span>
+                {!isRoom && (
                   <span style={{ fontSize: '10px', background: '#c8a45a', color: '#0a2351', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>
-                    {parsedItineraryDays.length > 1 ? `${parsedItineraryDays.length} DAYS TOUR` : 'DAY 1 TOUR'}
+                    {tourDurationDays > 1 ? `${tourDurationDays} DAYS TOUR` : '1 DAY TOUR'}
                   </span>
                 )}
               </div>
@@ -1346,32 +1435,268 @@ export default async function PrintTicketPage({
             </div>
           </div>
 
-          {/* Inclusions & Meals Card */}
-          <div style={{ marginTop: '16px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '14px 18px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#0a2351', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>🍱 Package Inclusions & Meals</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '12px', color: '#334155' }}>
-              <div>
-                <strong>Included Meals:</strong><br />
-                {isRoom ? (
-                  <span>Standard Room Accommodation Stay</span>
-                ) : (
-                  <span>Delicious Andhra Style Pure Veg Lunch & Morning Breakfast Served On Board</span>
-                )}
-              </div>
-              <div>
-                <strong>Fresh-Up Room Facility:</strong><br />
-                {booking.has_refreshment_addon ? (
-                  <span style={{ color: '#047857', fontWeight: 700 }}>
-                    ✅ Fresh-Up Room Addon Included (AC Room Access for Washroom, Fresh-up & Short Stay before Boarding for {booking.adult_count + booking.child_count + booking.student_count} Guests)
+          {/* ── DYNAMIC ADD-ONS SECTION ── */}
+          {(() => {
+            const pSnap = booking.pricing_snapshot as any;
+            const hasFoodAddon = !!(pSnap?.has_food_addon && Number(pSnap?.food_subtotal || 0) > 0);
+            const foodAmount = Number(pSnap?.food_subtotal || 0);
+
+            // Build meal list from itinerary
+            const mealDays = (booking.itinerary || []).filter((d: any) => d.meal_included);
+            const hasMeals = mealDays.length > 0;
+
+            const hasTransport = transportSelections.length > 0;
+
+            return (
+              <div style={{ marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                {/* Section Header */}
+                <div style={{ background: '#0a2351', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px' }}>📋</span>
+                  <span style={{ fontSize: '11px', fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                    Booking Add-Ons &amp; Inclusions
                   </span>
-                ) : (
-                  <span style={{ color: '#64748b' }}>Standard Tour (Fresh-up room not included)</span>
-                )}
+                </div>
+
+                {/* Cards Flex Container — stretches cards evenly across rows, zero empty white space */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', background: '#ffffff' }}>
+
+                  {/* 1. SELECTED PACKAGE — always shown */}
+                  <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #c8a45a', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                    <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      🎫 Selected Package
+                    </div>
+                    <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0a2351', lineHeight: 1.3, marginBottom: '3px' }}>
+                      {booking.variant_title || booking.package_title}
+                    </div>
+                    {booking.package_title && booking.variant_title && (
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 500, marginBottom: '6px' }}>
+                        {booking.package_title}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                      <span style={{ fontSize: '8.5px', fontWeight: 800, padding: '2px 7px', background: '#fef3c7', color: '#92400e', borderRadius: '3px', border: '1px solid #fcd34d' }}>
+                        {guestSummary}
+                      </span>
+                      <span style={{ fontSize: '8.5px', fontWeight: 800, padding: '2px 7px', background: '#e0f2fe', color: '#0369a1', borderRadius: '3px' }}>
+                        {isRoom ? '🏨 STAY' : (isBoatRide ? '⛵ BOAT TOUR' : '🌿 PACKAGE')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2. MEALS INCLUDED — always for non-room packages */}
+                  {!isRoom && (
+                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #16a34a', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🍽️ Package Food &amp; Meals Menu
+                      </div>
+
+                      {(() => {
+                        // 1. Try DB meals list from booking
+                        const dbMeals = booking.meals || [];
+                        if (dbMeals.length > 0) {
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {dbMeals.map((m: any, idx: number) => (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                  <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                                  <div>
+                                    <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                                      <span style={{ fontSize: '8.5px', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
+                                        {m.meal_type || 'MEAL'}{m.day_number ? ` · Day ${m.day_number}` : ''}
+                                      </span>
+                                      {m.name}
+                                    </div>
+                                    {m.description && (
+                                      <div style={{ fontSize: '9.5px', color: '#475569', fontWeight: 500, marginTop: '2px', lineHeight: 1.3 }}>
+                                        {m.description}
+                                      </div>
+                                    )}
+                                    {m.serving_time && (
+                                      <div style={{ fontSize: '9px', color: '#0d6e75', fontWeight: 700, marginTop: '1px' }}>
+                                        ⏰ {m.serving_time} · Served On-Board
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        // 2. Dynamic Fallback Meals Menu for Papikondalu / Kolluru Tour Packages
+                        const isMultiDay = tourDurationDays > 1 || (booking.package_title || '').toLowerCase().includes('kolluru');
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                              <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                              <div>
+                                <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                                  <span style={{ fontSize: '8.5px', background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
+                                    BREAKFAST · 08:30 AM
+                                  </span>
+                                  Traditional Idli, Vada &amp; Poori Breakfast
+                                </div>
+                                <div style={{ fontSize: '9.5px', color: '#475569', fontWeight: 500, marginTop: '2px', lineHeight: 1.3 }}>
+                                  Fresh hot breakfast served on boat deck with tea &amp; coffee.
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                              <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                              <div>
+                                <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                                  <span style={{ fontSize: '8.5px', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
+                                    LUNCH · 01:30 PM
+                                  </span>
+                                  Godavari Special Veg &amp; Non-Veg Buffet Lunch
+                                </div>
+                                <div style={{ fontSize: '9.5px', color: '#475569', fontWeight: 500, marginTop: '2px', lineHeight: 1.3 }}>
+                                  Chicken curry, fish fry, sambar, rasam, curd &amp; sweet served hot on-board.
+                                </div>
+                              </div>
+                            </div>
+
+                            {isMultiDay ? (
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                                <div>
+                                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                                    <span style={{ fontSize: '8.5px', background: '#e0e7ff', color: '#3730a3', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
+                                      DINNER · 08:30 PM
+                                    </span>
+                                    Kolluru Campfire Barbecue &amp; Buffet Dinner
+                                  </div>
+                                  <div style={{ fontSize: '9.5px', color: '#475569', fontWeight: 500, marginTop: '2px', lineHeight: 1.3 }}>
+                                    Night dinner by the river bank campfire under stars.
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                                <div>
+                                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                                    <span style={{ fontSize: '8.5px', background: '#ffedd5', color: '#c2410c', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
+                                      SNACKS · 04:30 PM
+                                    </span>
+                                    Hot Tea, Coffee &amp; Evening Refreshment Snacks
+                                  </div>
+                                  <div style={{ fontSize: '9.5px', color: '#475569', fontWeight: 500, marginTop: '2px', lineHeight: 1.3 }}>
+                                    Served on boat deck during return journey.
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* 3. FRESH-UP ROOM — only if selected */}
+                  {refreshmentIncluded && (
+                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #2563eb', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🛁 Fresh-Up Room Add-On
+                      </div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '3px' }}>AC Room Access Included</div>
+                      <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.5, fontWeight: 500, marginBottom: '6px' }}>
+                        Washroom &amp; freshening-up facility with short stay before boarding — for all {passengerCount} guests.
+                      </div>
+                      {refreshmentAmount > 0 && (
+                        <div style={{ fontSize: '11px', fontWeight: 900, color: '#1d4ed8' }}>{money(refreshmentAmount)}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 4. FOOD / CATERING ADDON — only if selected */}
+                  {hasFoodAddon && (
+                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #ea580c', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🥘 Catering &amp; Meals Package
+                      </div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '3px' }}>Full Catering Package Selected</div>
+                      <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.5, fontWeight: 500, marginBottom: '6px' }}>
+                        All meals — breakfast, lunch &amp; dinner — served on board for {guestSummary}.
+                      </div>
+                      <div style={{ fontSize: '11px', fontWeight: 900, color: '#c2410c' }}>{money(foodAmount)}</div>
+                    </div>
+                  )}
+
+                  {/* 5. INDIVIDUAL SELECTED EXTRAS */}
+                  {selectedExtrasList && selectedExtrasList.map((extra: any, idx: number) => (
+                    <div key={`extra-card-${idx}`} style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #9333ea', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        ✨ {extra.title || extra.name || 'Special Package Extra'}
+                      </div>
+                      {extra.description && (
+                        <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.5, fontWeight: 500, marginBottom: '6px' }}>
+                          {extra.description}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '11px', fontWeight: 900, color: '#7e22ce' }}>
+                        {money(extra.item_total || extra.total_price || extra.price || 0)}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 5. TRANSPORT — only if selected */}
+                  {hasTransport && !isRoom && (
+                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #7c3aed', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🚌 Transport Option
+                      </div>
+                      {transportSelections.map((ts, idx) => (
+                        <div key={idx} style={{ marginBottom: idx < transportSelections.length - 1 ? '8px' : 0, paddingBottom: idx < transportSelections.length - 1 ? '8px' : 0, borderBottom: idx < transportSelections.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
+                          <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '2px' }}>
+                            {ts.title || (ts.type === 'SHARED' ? 'Shared Bus Service' : 'Private Vehicle')}
+                          </div>
+                          <div style={{ fontSize: '10px', color: '#475569', fontWeight: 500, lineHeight: 1.5, marginBottom: '4px' }}>
+                            {ts.type === 'SHARED'
+                              ? `Shared transport · ${ts.capacity ? `${ts.capacity}-seat coach` : 'coach'} · ${guestSummary}`
+                              : `${ts.quantity ? `${ts.quantity}× ` : ''}Private ${ts.capacity ? `${ts.capacity}-seater` : 'vehicle'}`}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '8.5px', fontWeight: 800, background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: '3px' }}>
+                              {ts.type === 'SHARED' ? 'SHARED BUS' : 'PRIVATE VEHICLE'}
+                            </span>
+                            {ts.item_total && Number(ts.item_total) > 0 && (
+                              <span style={{ fontSize: '11px', fontWeight: 900, color: '#5b21b6' }}>{money(Number(ts.item_total))}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ROOM ACCOMMODATION INFO */}
+                  {isRoom && (
+                    <div style={{ padding: '12px 14px', borderLeft: '4px solid #0891b2', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#0e7490', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🏨 Accommodation
+                      </div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Room Stay Confirmed</div>
+                      {booking.room_checkin && (
+                        <div style={{ fontSize: '10px', color: '#475569', fontWeight: 600, marginBottom: '4px' }}>
+                          Check-in: <strong>{booking.room_checkin}</strong>
+                          {booking.room_checkout && <> &nbsp;·&nbsp; Check-out: <strong>{booking.room_checkout}</strong></>}
+                        </div>
+                      )}
+                      {booking.room_highlights && booking.room_highlights.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: '4px' }}>
+                          {booking.room_highlights.slice(0, 4).map((hi, i) => (
+                            <span key={i} style={{ fontSize: '8.5px', fontWeight: 700, background: '#ecfdf5', color: '#065f46', padding: '2px 6px', borderRadius: '3px', border: '1px solid #a7f3d0' }}>{hi.title}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Policies Grid */}
           <div className="rules-row" style={{ marginTop: '16px' }}>
@@ -1417,15 +1742,64 @@ export default async function PrintTicketPage({
                 Om Shanti Satram, Kalyana Mandapam Road, Near SBI ATM, Bhadrachalam, Telangana 507111
               </div>
             </div>
-            <a 
-              href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8" 
-              target="_blank" 
+            <a
+              href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8"
+              target="_blank"
               rel="noopener noreferrer"
               style={{ background: '#c8a45a', color: '#0a2351', textDecoration: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: 800, fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
             >
               🗺️ Open Google Maps
             </a>
           </div>
+
+          {/* Admin Direct Booking Audit Verification Stamp */}
+          {isAdminBooking && (
+            <div style={{
+              marginTop: '16px',
+              background: '#f0fdf4',
+              border: '1.5px solid #86efac',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '11px',
+              color: '#065f46'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: '#166534',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 900,
+                  fontSize: '15px'
+                }}>
+                  ✓
+                </div>
+                <div>
+                  <div style={{ color: '#047857', fontSize: '11.5px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                    🛡️ DIRECT ADMIN BOOKING VERIFIED
+                  </div>
+                  <div style={{ fontSize: '9.5px', color: '#166534', fontWeight: 600, marginTop: '2px' }}>
+                    Booked &amp; Confirmed via TS Boat Tourism Central Office Admin Desk
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#047857' }}>
+                  📅 {adminBookingTimeFormatted}
+                </div>
+                {/* <div style={{ fontSize: '8.5px', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>
+                  ADMIN AUTH #TSBOAT-DIRECT
+                </div> */}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

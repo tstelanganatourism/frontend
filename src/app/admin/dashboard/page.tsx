@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAdminStore } from '@/stores/adminStore';
 import { 
@@ -11,12 +11,16 @@ import {
   TrendingUp, 
   ArrowUpRight, 
   Activity,
-  Calendar
+  Calendar,
+  Layers,
+  FolderOpen
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
 
 export default function AdminDashboardPage() {
   const { stats, isLoading, fetchStats } = useAdminStore();
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -28,28 +32,48 @@ export default function AdminDashboardPage() {
       value: stats?.packages || 0, 
       icon: Package, 
       color: 'blue',
-      trend: '+2 this month'
+      trend: 'Manage tours',
+      link: '/admin/packages'
     },
     { 
-      title: 'Total Rooms', 
-      value: stats?.rooms || 0, 
-      icon: Bed, 
+      title: 'Package Categories', 
+      value: stats?.package_categories || 0, 
+      icon: FolderOpen, 
+      color: 'orange',
+      trend: 'Tour category groups',
+      link: '/admin/packages/categories'
+    },
+    { 
+      title: 'Room Categories', 
+      value: stats?.room_categories || 0, 
+      icon: Layers, 
       color: 'emerald',
-      trend: 'All systems live'
+      trend: 'Lodge category groups',
+      link: '/admin/rooms/categories'
+    },
+    { 
+      title: 'Room Types', 
+      value: stats?.room_types || 0, 
+      icon: Bed, 
+      color: 'teal',
+      trend: 'Different stay options',
+      link: '/admin/rooms'
     },
     { 
       title: 'Total Bookings', 
       value: stats?.bookings || 0, 
       icon: Ticket, 
       color: 'purple',
-      trend: '+12% from last week'
+      trend: 'Review transaction ledger',
+      link: '/admin/bookings'
     },
     { 
       title: 'Registered Users', 
       value: stats?.users || 0, 
       icon: Users, 
-      color: 'orange',
-      trend: 'New signups today'
+      color: 'blue',
+      trend: 'Manage registered clients',
+      link: '/admin/users'
     },
   ];
 
@@ -78,30 +102,41 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* KPI Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((card, i) => (
-          <motion.div
-            key={card.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className={`rounded-xl bg-${card.color}-50 p-3 group-hover:scale-110 transition-transform`}>
-                <card.icon className={`h-6 w-6 text-${card.color}-600`} />
-              </div>
-              <TrendingUp className="h-4 w-4 text-slate-400" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{card.title}</p>
-              <h3 className="text-3xl font-black text-slate-900 mt-1">{card.value}</h3>
-              <p className="text-xs font-medium text-slate-400 mt-2 flex items-center gap-1">
-                <ArrowUpRight className="h-3 w-3" /> {card.trend}
-              </p>
-            </div>
-          </motion.div>
-        ))}
+      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        {cards.map((card, i) => {
+          const colorClasses = {
+            blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
+            emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+            teal: { bg: 'bg-teal-50', text: 'text-teal-600' },
+            purple: { bg: 'bg-purple-50', text: 'text-purple-600' },
+            orange: { bg: 'bg-orange-50', text: 'text-orange-600' }
+          }[card.color] || { bg: 'bg-slate-50', text: 'text-slate-600' };
+
+          return (
+            <Link key={card.title} href={card.link} className="block group">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 h-full shadow-sm transition-all group-hover:shadow-md group-hover:border-slate-300"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`rounded-xl ${colorClasses.bg} p-2.5 group-hover:scale-105 transition-transform`}>
+                    <card.icon className={`h-5 w-5 ${colorClasses.text}`} />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-slate-550 transition-colors" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{card.title}</p>
+                  <h3 className="text-2xl font-black text-slate-900 mt-1">{card.value}</h3>
+                  <p className="text-[10px] font-semibold text-slate-400 mt-2 truncate">
+                    {card.trend}
+                  </p>
+                </div>
+              </motion.div>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Main Sections Shells */}
@@ -115,23 +150,33 @@ export default function AdminDashboardPage() {
             </h3>
             <Link href="/admin/bookings" className="text-sm font-bold text-[#5ac4d7] hover:underline">View All</Link>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {stats?.recent_bookings && stats.recent_bookings.length > 0 ? (
               stats.recent_bookings.map((booking: any) => (
-                <div key={booking.id} className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{booking.public_id} - {booking.title}</p>
-                    <p className="text-xs text-slate-400 mt-1">₹{booking.amount?.toLocaleString('en-IN')} • {new Date(booking.created_at).toLocaleString('en-IN')}</p>
+                <div 
+                  key={booking.id} 
+                  onClick={() => setSelectedBookingId(booking.public_id)}
+                  className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-slate-50/80 p-2.5 rounded-2xl transition-all group/row"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-extrabold text-slate-900 truncate group-hover/row:text-[#5ac4d7] transition-colors">
+                      {booking.public_id} - {booking.title}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      ₹{booking.amount?.toLocaleString('en-IN')} • {new Date(booking.created_at).toLocaleString('en-IN')}
+                    </p>
                   </div>
-                  <div className="shrink-0">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                      booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-700' :
-                      booking.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                      booking.status === 'CANCELLED' ? 'bg-rose-100 text-rose-700' :
-                      'bg-slate-100 text-slate-700'
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${
+                      booking.status === 'FULLY_PAID' || booking.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10' :
+                      booking.status === 'PENDING' ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10' :
+                      booking.status === 'PARTIAL_PAID' ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10' :
+                      booking.status === 'CANCELLED' ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-600/10' :
+                      'bg-slate-55 text-slate-700 ring-1 ring-slate-600/10'
                     }`}>
                       {booking.status === 'FULLY_PAID' ? 'CONFIRMED' : booking.status}
                     </span>
+                    <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover/row:translate-x-0.5 group-hover/row:-translate-y-0.5 transition-transform" />
                   </div>
                 </div>
               ))
@@ -185,6 +230,15 @@ export default function AdminDashboardPage() {
         </div>
 
       </div>
+
+      {/* Booking Details Modal popup */}
+      {selectedBookingId && (
+        <BookingDetailsModal
+          isOpen={!!selectedBookingId}
+          onClose={() => setSelectedBookingId(null)}
+          publicId={selectedBookingId}
+        />
+      )}
 
     </div>
   );

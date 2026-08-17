@@ -44,16 +44,46 @@ export function getRefreshmentAmount(pricingSnapshot?: { refreshment_subtotal?: 
   return Number(pricingSnapshot?.refreshment_subtotal || 0);
 }
 
+export function hasFoodAddon(pricingSnapshot?: any) {
+  const amount = Number(pricingSnapshot?.food_amount || pricingSnapshot?.catering_amount || pricingSnapshot?.food_subtotal || 0);
+  return amount > 0 || !!pricingSnapshot?.has_food_addon;
+}
+
+export function getFoodAmount(pricingSnapshot?: any) {
+  return Number(pricingSnapshot?.food_amount || pricingSnapshot?.catering_amount || pricingSnapshot?.food_subtotal || 0);
+}
+
+export function hasExtras(pricingSnapshot?: any) {
+  const amount = Number(pricingSnapshot?.extras_amount || pricingSnapshot?.extras_subtotal || 0);
+  const list = Array.isArray(pricingSnapshot?.selected_extras) ? pricingSnapshot.selected_extras : [];
+  return amount > 0 || list.length > 0;
+}
+
+export function getExtrasAmount(pricingSnapshot?: any) {
+  return Number(pricingSnapshot?.extras_amount || pricingSnapshot?.extras_subtotal || 0);
+}
+
+export function getSelectedExtrasList(pricingSnapshot?: any) {
+  if (Array.isArray(pricingSnapshot?.selected_extras) && pricingSnapshot.selected_extras.length > 0) {
+    return pricingSnapshot.selected_extras;
+  }
+  return [];
+}
+
 export function getTransportAmount(selections: TransportSelection[]) {
   return selections.reduce((sum, item) => sum + Number(item.item_total || 0), 0);
 }
 
 export function getBaseFareExcludingAddons(
   subtotal: number,
-  pricingSnapshot: { transport_selections?: TransportSelection[]; refreshment_subtotal?: number | string | null } | null | undefined,
+  pricingSnapshot: any,
 ) {
   const selections = getTransportSelections(pricingSnapshot);
-  return Math.max(0, Number(subtotal || 0) - getTransportAmount(selections) - getRefreshmentAmount(pricingSnapshot));
+  const transportAmt = getTransportAmount(selections);
+  const refreshAmt = getRefreshmentAmount(pricingSnapshot);
+  const foodAmt = getFoodAmount(pricingSnapshot);
+  const extrasAmt = getExtrasAmount(pricingSnapshot);
+  return Math.max(0, Number(subtotal || 0) - transportAmt - refreshAmt - foodAmt - extrasAmt);
 }
 
 export function describeTransport(item: TransportSelection, adultCount?: number, childCount?: number, studentCount?: number) {
@@ -84,6 +114,7 @@ export function getPaymentMethodLabel(method?: string | null) {
   if (key === 'BANK_TRANSFER') return 'Bank Transfer';
   if (key === 'CASH') return 'Cash';
   if (key === 'ADMIN_MANUAL') return 'Manual (Admin)';
+  if (key === 'AGENT_COMMISSION') return 'Paid via Agent';
   return method || 'Office';
 }
 

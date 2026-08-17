@@ -8,9 +8,14 @@ import {
   describeTransport,
   getBaseFareExcludingAddons,
   getCapturedPayments,
+  getExtrasAmount,
+  getFoodAmount,
   getPaymentMethodLabel,
   getRefreshmentAmount,
+  getSelectedExtrasList,
   getTransportSelections,
+  hasExtras,
+  hasFoodAddon,
   hasRefreshment,
   money,
   type PaymentLedgerEntry,
@@ -33,6 +38,8 @@ interface BookingDetails {
   travel_date: string;
   adult_count: number;
   child_count: number;
+  student_count: number;
+  customer_email?: string | null;
   subtotal_amount: number;
   coupon_discount: number;
   coupon_applied: string | null;
@@ -46,7 +53,10 @@ interface BookingDetails {
   package_title: string;
   variant_title: string;
   target_type?: 'PACKAGE' | 'ROOM';
-  boarding_point?: { title: string; departure_time: string };
+  boarding_point?: { title: string; departure_time: string; address?: string | null; landmark?: string | null; contact_number?: string | null } | null;
+  booked_by_name?: string | null;
+  booked_by_email?: string | null;
+  booked_by_role?: string | null;
   room_checkin?: string | null;
   room_checkout?: string | null;
   room_checkout_date?: string | null;
@@ -55,13 +65,14 @@ interface BookingDetails {
   pricing_snapshot: any;
   has_refreshment_addon?: boolean;
   payment_ledger?: PaymentLedgerEntry[];
-  user: {
-    full_name: string;
-    email: string;
-    phone: string;
-  };
+  user?: {
+    full_name?: string;
+    email?: string;
+    phone?: string;
+  } | null;
   agent_id?: number | null;
   agent_name?: string | null;
+  agent_phone?: string | null;
   agent_gst?: string | null;
   agent_company?: string | null;
   agent_commission?: number | null;
@@ -74,7 +85,6 @@ interface BookingDetails {
     requested_at?: string | null;
     processed_at?: string | null;
   };
-  student_count: number;
 }
 
 interface PageProps {
@@ -128,12 +138,17 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
     day: '2-digit', month: 'short', year: 'numeric'
   }).toUpperCase();
 
-  const halfGst = (booking.gst_amount / 2).toFixed(2);
+  const halfGst = booking.gst_amount / 2;
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
   const passengerCount = booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count;
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
+  const foodIncluded = hasFoodAddon(booking.pricing_snapshot);
+  const foodAmount = getFoodAmount(booking.pricing_snapshot);
+  const extrasIncluded = hasExtras(booking.pricing_snapshot);
+  const extrasAmount = getExtrasAmount(booking.pricing_snapshot);
+  const selectedExtrasList = getSelectedExtrasList(booking.pricing_snapshot);
   const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
   const capturedPayments = getCapturedPayments(booking.payment_ledger);
 
@@ -656,7 +671,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
         {/* DETAILS META GRID */}
         <div className="info-meta-row">
           <div className="company-card">
-            <strong>HARITHA BOAT BOOKING (TS Boat Tourism)</strong><br />
+            <strong>TS BOAT TOURISM</strong><br />
             Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
             Bhadrachalam, Bhadradri Kothagudem, Telangana 507111<br />
             📞 9951369573, 7780119268 | tstelanganatourism@gmail.com<br />
@@ -675,6 +690,22 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <td>: {invoiceDateFormatted}</td>
                 </tr>
                 <tr>
+                  <td>Travel Date</td>
+                  <td>: {travelDateFormatted}</td>
+                </tr>
+                {booking.boarding_point?.departure_time && (
+                  <tr>
+                    <td>Departure Time</td>
+                    <td>: {booking.boarding_point.departure_time}</td>
+                  </tr>
+                )}
+                {booking.boarding_point?.title && (
+                  <tr>
+                    <td>Boarding Point</td>
+                    <td>: {booking.boarding_point.title}</td>
+                  </tr>
+                )}
+                <tr>
                   <td>Place of Supply</td>
                   <td>: Telangana (36)</td>
                 </tr>
@@ -682,6 +713,12 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <td>SAC HSN Code</td>
                   <td>: {hsnCode}</td>
                 </tr>
+                {booking.booked_by_name && (
+                  <tr>
+                    <td>Booked By</td>
+                    <td>: {booking.booked_by_name}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -702,10 +739,48 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                     <td>Contact</td>
                     <td>: {billedPhone}</td>
                   </tr>
+                  {booking.customer_email && (
+                    <tr>
+                      <td>Email</td>
+                      <td style={{ textTransform: 'lowercase' }}>: {booking.customer_email}</td>
+                    </tr>
+                  )}
+                  {booking.boarding_point?.title && (
+                    <tr>
+                      <td>Boarding Point</td>
+                      <td>: {booking.boarding_point.title} {booking.boarding_point.landmark ? `(${booking.boarding_point.landmark})` : ''}</td>
+                    </tr>
+                  )}
                   <tr>
-                    <td>PNR Number</td>
+                    <td>PNR / Ref</td>
                     <td>: {booking.public_id}</td>
                   </tr>
+                  {booking.agent_id && (
+                    <>
+                      <tr>
+                        <td>Agent</td>
+                        <td>: {booking.agent_name || 'N/A'}</td>
+                      </tr>
+                      {booking.agent_phone && (
+                        <tr>
+                          <td>Agent Contact</td>
+                          <td>: {booking.agent_phone}</td>
+                        </tr>
+                      )}
+                      {booking.agent_company && (
+                        <tr>
+                          <td>Company</td>
+                          <td>: {booking.agent_company}</td>
+                        </tr>
+                      )}
+                      {booking.agent_gst && (
+                        <tr>
+                          <td>Agent GST</td>
+                          <td>: {booking.agent_gst}</td>
+                        </tr>
+                      )}
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -755,49 +830,102 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style={{ textAlign: 'center' }}>1</td>
-              <td>
-                <span className="tax-table-line-title">
-                  {booking.package_title} — {booking.variant_title}
-                </span>
-                <span className="tax-table-line-sub">
-                  Travel Date: {travelDateFormatted} | Guests: {guestSummary}
-                </span>
-              </td>
-              <td>{hsnCode}</td>
-              <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
-              <td style={{ textAlign: 'right' }}>5.0%</td>
-              <td style={{ textAlign: 'right' }}>{money(Number(baseFare) * 1.05, 2)}</td>
-            </tr>
+            {(() => {
+              let sNo = 1;
+              return (
+                <>
+                  <tr>
+                    <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                    <td>
+                      <span className="tax-table-line-title">
+                        {booking.package_title} — {booking.variant_title}
+                      </span>
+                      <span className="tax-table-line-sub">
+                        Travel Date: {travelDateFormatted} | Guests: {guestSummary}
+                      </span>
+                    </td>
+                    <td>{hsnCode}</td>
+                    <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
+                    <td style={{ textAlign: 'right' }}>5.0%</td>
+                    <td style={{ textAlign: 'right' }}>{money(Number(baseFare) * 1.05, 2)}</td>
+                  </tr>
 
-            {transportSelections.map((ts, idx) => (
-              <tr key={`trans-${idx}`}>
-                <td style={{ textAlign: 'center' }}>{idx + 2}</td>
-                <td>
-                  <span className="tax-table-line-title">{ts.title}</span>
-                  <span className="tax-table-line-sub">{describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)}</span>
-                </td>
-                <td>996411</td>
-                <td style={{ textAlign: 'right' }}>{money(ts.item_total || 0, 2)}</td>
-                <td style={{ textAlign: 'right' }}>5.0%</td>
-                <td style={{ textAlign: 'right' }}>{money(Number(ts.item_total || 0) * 1.05, 2)}</td>
-              </tr>
-            ))}
+                  {transportSelections.map((ts, idx) => (
+                    <tr key={`trans-${idx}`}>
+                      <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                      <td>
+                        <span className="tax-table-line-title">{ts.title}</span>
+                        <span className="tax-table-line-sub">{describeTransport(ts, booking.adult_count, booking.child_count, booking.student_count)}</span>
+                      </td>
+                      <td>996411</td>
+                      <td style={{ textAlign: 'right' }}>{money(ts.item_total || 0, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>5.0%</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(ts.item_total || 0) * 1.05, 2)}</td>
+                    </tr>
+                  ))}
 
-            {refreshmentIncluded && (
-              <tr>
-                <td style={{ textAlign: 'center' }}>{transportSelections.length + 2}</td>
-                <td>
-                  <span className="tax-table-line-title">Fresh-Up Room Service Addon</span>
-                  <span className="tax-table-line-sub">AC Room access for washroom, fresh-up & short stay ({passengerCount} guests)</span>
-                </td>
-                <td>996331</td>
-                <td style={{ textAlign: 'right' }}>{money(refreshmentAmount, 2)}</td>
-                <td style={{ textAlign: 'right' }}>5.0%</td>
-                <td style={{ textAlign: 'right' }}>{money(Number(refreshmentAmount) * 1.05, 2)}</td>
-              </tr>
-            )}
+                  {refreshmentIncluded && (
+                    <tr>
+                      <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                      <td>
+                        <span className="tax-table-line-title">Fresh-Up Room Service Addon</span>
+                        <span className="tax-table-line-sub">AC Room access for washroom, fresh-up & short stay ({passengerCount} guests)</span>
+                      </td>
+                      <td>996331</td>
+                      <td style={{ textAlign: 'right' }}>{money(refreshmentAmount, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>5.0%</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(refreshmentAmount) * 1.05, 2)}</td>
+                    </tr>
+                  )}
+
+                  {foodIncluded && (
+                    <tr>
+                      <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                      <td>
+                        <span className="tax-table-line-title">{booking.pricing_snapshot?.food_label || booking.pricing_snapshot?.catering_label || 'Catering & Meals Package'}</span>
+                        <span className="tax-table-line-sub">{booking.pricing_snapshot?.food_description || `Meals included for ${passengerCount} guest${passengerCount !== 1 ? 's' : ''}`}</span>
+                      </td>
+                      <td>996332</td>
+                      <td style={{ textAlign: 'right' }}>{money(foodAmount, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>5.0%</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(foodAmount) * 1.05, 2)}</td>
+                    </tr>
+                  )}
+
+                  {selectedExtrasList.length > 0 ? (
+                    selectedExtrasList.map((extra: any, idx: number) => {
+                      const itemVal = Number(extra.item_total ?? extra.total_price ?? extra.price ?? extra.amount ?? 0);
+                      const finalVal = itemVal > 0 ? itemVal : (selectedExtrasList.length === 1 && extrasAmount > 0 ? extrasAmount : 0);
+                      return (
+                        <tr key={`extra-${idx}`}>
+                          <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                          <td>
+                            <span className="tax-table-line-title">{extra.title || extra.name || 'Custom Addon'}</span>
+                            <span className="tax-table-line-sub">{extra.description || `Special package addon for ${passengerCount} guests`}</span>
+                          </td>
+                          <td>999799</td>
+                          <td style={{ textAlign: 'right' }}>{money(finalVal, 2)}</td>
+                          <td style={{ textAlign: 'right' }}>5.0%</td>
+                          <td style={{ textAlign: 'right' }}>{money(Number(finalVal) * 1.05, 2)}</td>
+                        </tr>
+                      );
+                    })
+                  ) : extrasIncluded && (
+                    <tr>
+                      <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                      <td>
+                        <span className="tax-table-line-title">Special Tour Extras & Addons</span>
+                        <span className="tax-table-line-sub">Additional inclusions for tour package</span>
+                      </td>
+                      <td>999799</td>
+                      <td style={{ textAlign: 'right' }}>{money(extrasAmount, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>5.0%</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(extrasAmount) * 1.05, 2)}</td>
+                    </tr>
+                  )}
+                </>
+              );
+            })()}
           </tbody>
         </table>
 
@@ -856,7 +984,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
               <tbody>
                 <tr>
                   <td>Total Taxable Value</td>
-                  <td>{money(Number(baseFare) + transportSelections.reduce((acc, curr) => acc + Number(curr.item_total || 0), 0) + (refreshmentIncluded ? Number(refreshmentAmount) : 0), 2)}</td>
+                  <td>{money(Number(baseFare) + transportSelections.reduce((acc, curr) => acc + Number(curr.item_total || 0), 0) + (refreshmentIncluded ? Number(refreshmentAmount) : 0) + (foodIncluded ? Number(foodAmount) : 0) + (extrasIncluded && selectedExtrasList.length === 0 ? Number(extrasAmount) : selectedExtrasList.reduce((acc: number, e: any) => acc + Number(e.item_total ?? e.total_price ?? e.price ?? e.amount ?? 0), 0)), 2)}</td>
                 </tr>
                 {booking.coupon_discount > 0 && (
                   <tr>
@@ -866,16 +994,18 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                 )}
                 <tr>
                   <td>CGST (2.5%)</td>
-                  <td>₹ {halfGst}</td>
+                  <td>{money(halfGst, 2)}</td>
                 </tr>
                 <tr>
                   <td>SGST (2.5%)</td>
-                  <td>₹ {halfGst}</td>
+                  <td>{money(halfGst, 2)}</td>
                 </tr>
-                <tr>
-                  <td>Gateway Convenience Fee</td>
-                  <td>{money(booking.gateway_fee, 2)}</td>
-                </tr>
+                {booking.gateway_fee > 0 && (
+                  <tr>
+                    <td>Gateway Convenience Fee</td>
+                    <td>{money(booking.gateway_fee, 2)}</td>
+                  </tr>
+                )}
                 <tr className="calc-row-highlight">
                   <td>GRAND INVOICE TOTAL</td>
                   <td>{money(booking.total_amount, 2)}</td>

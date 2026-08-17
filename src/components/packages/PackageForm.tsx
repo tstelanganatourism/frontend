@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Image as ImageIcon,
   FileText,
+  Video,
   X,
   Download,
   Loader2,
@@ -45,6 +46,7 @@ import { toast } from 'sonner';
 import ImageUpload from '@/components/ui/ImageUpload';
 import FileUpload from '@/components/ui/FileUpload';
 import MultiImageUpload from '@/components/ui/MultiImageUpload';
+import VideoUpload from '@/components/ui/VideoUpload';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { apiClient } from '@/lib/api';
 
@@ -108,6 +110,7 @@ export default function PackageForm({
   const [region, setRegion] = useState('AP');
   const [description, setDescription] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [orderPriority, setOrderPriority] = useState(0);
   const [hasTransport, setHasTransport] = useState(false);
   const [hasRefreshments, setHasRefreshments] = useState(false);
@@ -171,6 +174,7 @@ export default function PackageForm({
       setRegion(initialData.region || 'AP');
       setDescription(initialData.description || '');
       setCoverImageUrl(initialData.cover_image_url || '');
+      setVideoUrl(initialData.video_url || '');
       setOrderPriority(initialData.order_priority || 0);
       setHasTransport(initialData.has_transport || false);
       setHasRefreshments(initialData.has_refreshments || false);
@@ -591,6 +595,7 @@ export default function PackageForm({
       region,
       description,
       cover_image_url: coverImageUrl || null,
+      video_url: videoUrl || null,
       brochure_pdf_url: brochurePdfUrl || null,
       order_priority: Number(orderPriority),
       has_transport: hasTransport,
@@ -951,6 +956,24 @@ export default function PackageForm({
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* ── Primary Highlight Video ───────────────────────────────── */}
+            <div className="bg-gradient-to-br from-[#0f3d56]/5 via-[#1a6b7a]/5 to-[#5ac4d7]/10 rounded-2xl border border-[#5ac4d7]/20 p-4 sm:p-5 shadow-xs relative overflow-hidden">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0f3d56] to-[#5ac4d7] flex items-center justify-center shadow-xs shrink-0">
+                  <Video className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Primary Highlight Video</h3>
+                  <p className="text-[11px] font-semibold text-slate-500">Appears as a dedicated "Watch the Tour" section on the public package page</p>
+                </div>
+              </div>
+              <VideoUpload
+                label=""
+                value={videoUrl}
+                onChange={(url) => setVideoUrl(url || '')}
+              />
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2">

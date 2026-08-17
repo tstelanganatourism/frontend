@@ -104,31 +104,31 @@ export default function PackagesList({
     }
   }, [data]);
 
-  // Fetch complete packages dataset (filtered to category if categorySlug is present)
+  // Only fetch full category dataset when browsing a specific category slug.
+  // On the main /packages list, SSR already provides complete data — no extra fetch needed.
   React.useEffect(() => {
+    if (!categorySlug) return; // skip — SSR data is sufficient for non-category pages
+
     let isMounted = true;
-    const fetchAllPackages = async () => {
+    const fetchCategoryPackages = async () => {
       try {
         setIsFetching(true);
-        const fetchUrl = categorySlug
-          ? `/api/v1/packages/categories/${categorySlug}`
-          : '/api/v1/packages?size=100';
-        const res = await fetch(fetchUrl);
+        const res = await fetch(`/api/v1/packages/categories/${categorySlug}`);
         if (res.ok && isMounted) {
           const json = await res.json();
-          const items = categorySlug ? (json.packages || []) : (json.items || []);
+          const items = json.packages || [];
           if (items && items.length > 0) {
             setAllPackages(items);
           }
         }
       } catch (err) {
-        console.error("Failed to fetch packages for client-side search:", err);
+        console.error("Failed to fetch category packages:", err);
       } finally {
         if (isMounted) setIsFetching(false);
       }
     };
 
-    fetchAllPackages();
+    fetchCategoryPackages();
     return () => { isMounted = false; };
   }, [categorySlug]);
 

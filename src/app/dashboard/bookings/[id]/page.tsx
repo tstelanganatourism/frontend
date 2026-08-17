@@ -102,6 +102,7 @@ interface BookingDetails {
   pricing_snapshot?: any;
   student_count: number;
   is_rescheduled?: boolean;
+  invoice_secret?: string | null;
 }
 
 function cleanMapUrl(url?: string | null, address?: string | null): string {
@@ -146,6 +147,7 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
   CASH: 'Cash',
   BANK_TRANSFER: 'Bank Transfer',
   ADMIN_MANUAL: 'Manual (Admin)',
+  AGENT_COMMISSION: 'Paid via Agent',
 };
 
 const PAYMENT_STATUS_STYLE: Record<string, { label: string; cls: string }> = {
@@ -286,6 +288,7 @@ export default function BookingDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isPreparingTicket, setIsPreparingTicket] = useState(false);
   const [isPreparingForm, setIsPreparingForm] = useState(false);
+  const [isPreparingInvoice, setIsPreparingInvoice] = useState(false);
 
   // Guard: only one payment flow can be active at a time
   const isPaymentActiveRef = useRef(false);
@@ -458,6 +461,18 @@ export default function BookingDetailPage() {
     }, 1200);
   };
 
+  const handleDownloadInvoice = () => {
+    if (!booking?.public_id || isPreparingInvoice) return;
+    setIsPreparingInvoice(true);
+    setTimeout(() => {
+      const url = booking.invoice_secret
+        ? `/print/invoice/${booking.public_id}?secret=${booking.invoice_secret}`
+        : `/print/invoice/${booking.public_id}`;
+      window.open(url, '_blank');
+      setIsPreparingInvoice(false);
+    }, 1200);
+  };
+
   const handleDownloadForm = () => {
     if (!booking?.public_id || isPreparingForm) return;
     setIsPreparingForm(true);
@@ -471,8 +486,8 @@ export default function BookingDetailPage() {
   const totalAmount     = booking?.total_amount ?? 0;
   const paidAmount      = booking?.paid_amount ?? 0;
   const remainingAmount = booking?.remaining_balance ?? 0;
-  // For agents: use agent_payable if present, else fall back to public total
-  const displayTotal     = booking?.agent_payable ?? totalAmount;
+  // For agents: use public total to keep progress bars relative to Grand Total
+  const displayTotal     = totalAmount;
   const displayPaid      = paidAmount;
   const displayRemaining = remainingAmount;
   const progressPct = displayTotal > 0 ? Math.min(100, (displayPaid / displayTotal) * 100) : 0;
@@ -603,7 +618,7 @@ export default function BookingDetailPage() {
             <span className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-[10px] sm:text-xs font-bold text-emerald-700">
               <CheckCircle2 className="h-3.5 w-3.5" /> Booking Fully Paid
             </span>
-          ) : remainingAmount > 0 ? (
+          ) : (remainingAmount > 0 && !booking.agent_id) ? (
             <button
               onClick={() => handlePayBalance('PHONEPE')}
               disabled={isProcessingBalance}
@@ -638,6 +653,24 @@ export default function BookingDetailPage() {
             ) : (
               <>
                 <Printer className="h-3.5 w-3.5" /> Ticket
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleDownloadInvoice}
+            disabled={isPreparingInvoice}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors ${
+              isPreparingInvoice ? 'opacity-80 cursor-not-allowed' : ''
+            }`}
+          >
+            {isPreparingInvoice ? (
+              <>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-700 border-t-transparent" />
+                Preparing Invoice...
+              </>
+            ) : (
+              <>
+                <FileText className="h-3.5 w-3.5" /> Invoice
               </>
             )}
           </button>
@@ -1150,10 +1183,10 @@ export default function BookingDetailPage() {
                   <Shield className="h-4 w-4 shrink-0" /> Verified Ticket
                 </div>
               </div>
-            ) : remainingAmount > 0 ? (
+            ) : (remainingAmount > 0 && !booking.agent_id) ? (
               <div className="mt-6 pt-6 border-t border-slate-100 space-y-2.5">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Complete Balance Payment</p>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 gap-2.5">
                   <button
                     onClick={() => handlePayBalance('PHONEPE')}
                     disabled={isProcessingBalance}
@@ -1170,24 +1203,6 @@ export default function BookingDetailPage() {
                       </div>
                     )}
                     <span>PhonePe ({formatINR(remainingAmount)})</span>
-                  </button>
-                  <button
-                    onClick={() => handlePayBalance('CASHFREE')}
-                    disabled={isProcessingBalance}
-                    id="pay-remaining-invoice-cashfree-btn"
-                    className="flex items-center justify-center gap-2 py-3 bg-[#180e4b] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#0f0736] active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#180e4b]/10"
-                  >
-                    {isProcessingBalance ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <svg viewBox="0 0 16 16" className="h-4.5 w-4.5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6.44275 1.03139C5.16931 1.03139 4.1371 2.06361 4.1371 3.33704H12.6944C13.9678 3.33704 15 2.30483 15 1.03139H6.44275Z" fill="#04AB61"/>
-                        <path d="M4.1371 3.33704C4.1371 2.06361 5.16931 1.03139 6.44275 1.03139V9.58886C6.44275 10.8621 5.41054 11.8945 4.1371 11.8945V3.33704Z" fill="#04AB61"/>
-                        <path fillRule="evenodd" clipRule="evenodd" d="M7.17496 4.1055V6.41115H9.86441C11.1378 6.41115 12.1701 5.37893 12.1701 4.1055H7.17496Z" fill="#FBB016"/>
-                        <path d="M1.02623 6.41115C1.02623 5.13793 2.05844 4.1055 3.33188 4.1055V12.663C3.33188 13.9364 2.29966 14.9686 1.02623 14.9686V6.41115Z" fill="#FBB016"/>
-                      </svg>
-                    )}
-                    <span>Cashfree ({formatINR(remainingAmount)})</span>
                   </button>
                 </div>
               </div>

@@ -96,7 +96,7 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
     <div
       className={cn(
         'relative space-y-6 overflow-visible rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all',
-        sticky && 'sticky top-[100px] max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200',
+        sticky && 'sticky top-24 max-h-[calc(100vh-110px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200',
         className
       )}
     >
