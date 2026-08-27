@@ -99,15 +99,15 @@ export default function PackagesList({
 
   // Update allPackages if initial data changes (e.g. category page navigation)
   React.useEffect(() => {
-    if (data?.items) {
+    if (data?.items && data.items.length > 0) {
       setAllPackages(data.items);
+      setIsFetching(false);
     }
   }, [data]);
 
-  // Only fetch full category dataset when browsing a specific category slug.
-  // On the main /packages list, SSR already provides complete data — no extra fetch needed.
+  // Only fetch category dataset if not provided by SSR
   React.useEffect(() => {
-    if (!categorySlug) return; // skip — SSR data is sufficient for non-category pages
+    if (!categorySlug || (data?.items && data.items.length > 0)) return;
 
     let isMounted = true;
     const fetchCategoryPackages = async () => {
@@ -130,7 +130,7 @@ export default function PackagesList({
 
     fetchCategoryPackages();
     return () => { isMounted = false; };
-  }, [categorySlug]);
+  }, [categorySlug, data]);
 
   // INSTANT Client-Side Search & Filter Engine
   const filteredItems = React.useMemo(() => {

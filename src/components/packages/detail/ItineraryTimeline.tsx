@@ -172,7 +172,7 @@ export const ItineraryTimeline = (props: ItineraryTimelineProps) => {
             const steps = parseItineraryLines(day.description);
             const fallbackLines = day.description
               ? day.description
-                  .split(/\n|(?<=\.)\s+(?=\d|[A-Z])/)
+                  .split(/\r?\n/)
                   .map((line) => line.trim())
                   .filter(Boolean)
               : [];
