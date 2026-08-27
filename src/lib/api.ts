@@ -32,7 +32,8 @@ export const API_BASE = getApiBaseUrl();
 // ─── SSR-safe fetch helper (used by Server Components) ────────────────────────
 
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
-  const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const base = getApiBaseUrl();
+  const url = `${base}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   const signal = options.signal ?? AbortSignal.timeout(30_000);
   
   return fetch(url, {

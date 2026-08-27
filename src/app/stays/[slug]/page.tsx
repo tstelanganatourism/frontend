@@ -97,8 +97,10 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
   const room = await fetchRoomDetail(slug);
   if (!room) notFound();
 
-  const heroImage = room.cover_image_url || room.gallery.find((image) => image.is_cover)?.image_url || room.gallery[0]?.image_url;
-  const price = Number(room.starting_price || room.variants[0]?.weekday_price || 0);
+  const gallery = room.gallery || [];
+  const heroImage = room.cover_image_url || gallery.find((image) => image?.is_cover)?.image_url || gallery[0]?.image_url;
+  const variants = room.variants || [];
+  const price = Number(room.starting_price || variants[0]?.weekday_price || 0);
   const canonical = room.canonical_url || `/stays/${room.slug}`;
 
   // Ensure all JSON-LD URLs are absolute — schema.org mandates fully-qualified URLs.
@@ -121,12 +123,12 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
       priceRange: price > 0 ? `₹${price}+` : undefined,
       address: {
         '@type': 'PostalAddress',
-        streetAddress: room.address,
+        streetAddress: room.address || '',
         addressLocality: 'Bhadrachalam',
         addressRegion: 'Telangana',
         addressCountry: 'IN',
       },
-      amenityFeature: room.facilities.map((facility) => ({
+      amenityFeature: (room.facilities || []).map((facility) => ({
         '@type': 'LocationFeatureSpecification',
         name: facility,
         value: true,
