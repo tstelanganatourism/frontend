@@ -55,6 +55,7 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
   const visitingPlaces = (pkg.highlights || []).map((item) => item.title || item.label).filter(Boolean);
   const included = (pkg.inclusions || []).map((item) => item.label || item.title).filter(Boolean);
   const excluded = (pkg.exclusions || []).map((item) => item.label || item.title).filter(Boolean);
+  const primaryBoarding = pkg.boarding_points?.[0];
   const fares = (pkg.variants || []).map((variant) => Number((pkg.is_student_package ? variant.student_price : variant.adult_price) || 0)).filter(Boolean);
   const lowestFare = fares.length ? Math.min(...fares) : 0;
   const activeBrochureUrl = pkg.generated_brochure_url || pkg.brochure_pdf_url;
