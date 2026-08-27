@@ -12,6 +12,7 @@ const getBackendOrigin = () => {
 const backendOrigin = getBackendOrigin();
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['127.0.0.1', 'localhost', '192.168.1.23'],
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'lodash'],
     proxyClientMaxBodySize: '100mb',
