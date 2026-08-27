@@ -75,20 +75,20 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: "https://www.tstelanganatourism.com",
-    title: "TS Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels",
-    description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
+    title: "TS Boat Tourism | Papikondalu Boat Booking, Bhadrachalam & Godavari Packages",
+    description: "Book Papikondalu boat tours, Bhadrachalam temple pilgrimage packages, Godavari river cruises, and Kolluru bamboo hut stays online with TS Boat Tourism.",
     siteName: "TS Boat Tourism",
     images: [{
       url: "https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg",
       width: 1200,
       height: 630,
-      alt: "TS Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels"
+      alt: "TS Boat Tourism | Official Booking Partner"
     }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TS Boat Tourism | Best Bhadrachalam Tours",
-    description: "Your premium gateway to the Godavari river, Papikondalu hills and Bhadrachalam travel packages.",
+    title: "TS Boat Tourism | Papikondalu Boat Booking & Bhadrachalam Packages",
+    description: "Book Papikondalu boat tours, Bhadrachalam temple packages, and Kolluru bamboo hut stays online.",
     images: ["https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg"],
   },
   alternates: {
