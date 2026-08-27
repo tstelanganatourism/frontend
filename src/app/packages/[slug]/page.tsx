@@ -192,7 +192,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       'Papikondalu boat booking',
       'Bhadrachalam tour package',
       'Godavari river cruise booking',
-      ...pkg.tags,
+      ...(pkg.tags || []),
     ],
     openGraph: {
       title,
@@ -237,7 +237,7 @@ function getPositiveStartingPrice(pkg: PackageDetail) {
   const explicit = Number(pkg.starting_price || 0);
   if (explicit > 0) return explicit;
 
-  const variantPrices = pkg.variants
+  const variantPrices = (pkg.variants || [])
     .map((variant) => Number((pkg.is_student_package ? variant.student_price : variant.adult_price) || 0))
     .filter((price) => price > 0);
 
@@ -342,7 +342,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
     },
   ];
 
-  if (pkg.faqs.length) {
+  if (pkg.faqs && pkg.faqs.length) {
     jsonLd.push({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
@@ -367,13 +367,13 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         coverImage={pkg.cover_image_url}
         region={pkg.region}
         type={pkg.type}
-        tags={pkg.tags}
+        tags={pkg.tags || []}
         durationLabel={getDurationLabel(pkg)}
-        boardingPoint={pkg.boarding_points[0]?.title}
+        boardingPoint={pkg.boarding_points?.[0]?.title}
         description={pkg.description}
         startingPrice={getPositiveStartingPrice(pkg)}
-        variantCount={pkg.variants.length}
-        gallery={pkg.gallery}
+        variantCount={(pkg.variants || []).length}
+        gallery={pkg.gallery || []}
         videoUrl={pkg.video_url}
       />
 
@@ -388,16 +388,16 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
 
           <ExperienceOverview pkg={pkg} durationLabel={getDurationLabel(pkg)} />
 
-          <VisitingPlaces highlights={pkg.highlights} />
+          <VisitingPlaces highlights={pkg.highlights || []} />
 
           <ItineraryTimeline
-            days={pkg.itinerary}
+            days={pkg.itinerary || []}
             packageTitle={pkg.title}
             packageType={pkg.type}
             durationLabel={getDurationLabel(pkg)}
-            boardingPoint={pkg.boarding_points[0]?.title}
-            transportInfo={pkg.variants[0]?.transport_info}
-            departureTime={pkg.boarding_points[0]?.departure_time}
+            boardingPoint={pkg.boarding_points?.[0]?.title}
+            transportInfo={pkg.variants?.[0]?.transport_info}
+            departureTime={pkg.boarding_points?.[0]?.departure_time}
           />
 
           <FacilitiesInclusions inclusions={pkg.inclusions} exclusions={pkg.exclusions} />
