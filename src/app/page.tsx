@@ -4,18 +4,22 @@ import HomeContent from '@/components/ui/HomeContent';
 import { apiFetch } from '@/lib/api';
 
 export const metadata: Metadata = {
-  title: 'TS Boat Tourism | Papikondalu Tours, Bhadrachalam & Godavari River Packages',
+  title: 'TS Boat Tourism | Papikondalu Boat Booking, Bhadrachalam & Godavari Packages',
   description:
-    'Book Papikondalu boat tours, Bhadrachalam temple packages, Godavari river cruises, and Kolluru bamboo hut stays with TS Boat Tourism.',
+    'Book Papikondalu boat tours, Bhadrachalam temple pilgrimage packages, Godavari river cruises, Maredumilli trips, and Kolluru bamboo hut stays online with TS Boat Tourism.',
   alternates: { canonical: '/' },
   keywords: [
     'TS Boat Tourism',
     'Papikondalu boat booking',
+    'Papikondalu tour packages',
+    'Bhadrachalam to Papikondalu boat ride',
+    'Rajahmundry to Papikondalu boat booking',
+    'Kolluru bamboo huts booking',
+    'Sirivaka bamboo huts stay',
+    'Maredumilli tour packages',
+    'Papikondalu packages from Hyderabad',
     'Bhadrachalam temple packages',
     'Godavari river cruise',
-    'Papikondalu packages from Hyderabad',
-    'Bhadrachalam to Papikondalu boat ride',
-    'Kolluru bamboo huts booking',
     'boat rides Telangana',
   ],
 };
@@ -163,15 +167,39 @@ export default async function HomePage() {
     '@context': 'https://schema.org',
     '@type': 'TravelAgency',
     name: 'TS Boat Tourism',
+    alternateName: 'TS Telangana Tourism Boat Booking',
     description:
-      'Book Papikondalu boat tours, Bhadrachalam temple trips, Godavari cruises and Kolluru stays.',
+      'Official partner portal for Papikondalu boat tours, Bhadrachalam temple pilgrimage packages, Godavari river cruises, Maredumilli trips, and Kolluru bamboo hut stays.',
     url: 'https://www.tstelanganatourism.com',
+    logo: 'https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg',
+    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg',
+    telephone: '+919951369573',
+    email: 'tstelanganatourism@gmail.com',
+    priceRange: '₹1000 - ₹5500',
     address: {
       '@type': 'PostalAddress',
+      streetAddress: 'Om Shanti Satram, Kalyana Mandapam Road, Near SBI ATM',
       addressLocality: 'Bhadrachalam',
       addressRegion: 'Telangana',
+      postalCode: '507111',
       addressCountry: 'IN',
     },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: '17.6688',
+      longitude: '80.8935',
+    },
+    areaServed: [
+      'Telangana',
+      'Andhra Pradesh',
+      'Hyderabad',
+      'Vijayawada',
+      'Visakhapatnam',
+      'Rajahmundry',
+      'Bhadrachalam',
+      'Khammam',
+      'Warangal',
+    ],
   };
 
   // Run all fetches in parallel for best performance
