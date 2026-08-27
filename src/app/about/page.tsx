@@ -82,7 +82,7 @@ const HERITAGE_PLACES: HeritagePlace[] = [
       'భక్త రామదాసు వైభవం: 17వ శతాబ్దంలో పాల్వంచ తహసీల్దార్ కంచర్ల గోపన్న (భక్త రామదాసు) ప్రభుత్వ రాబడితో ఈ దివ్య ఆలయాన్ని నిర్మించారు. గోల్కొండ నవాబు తానీషా బంధించినప్పుడు శ్రీరామ లక్ష్మణులే స్వయంగా వచ్చి 6 లక్షల బంగారు నాణాలు (రామదాసు మాడలు) చెల్లించి రామదాసును విడిపించారు.',
       'వైభవంగా వేడుకలు: ప్రతి సంవత్సరం శ్రీరామ నవమికి ప్రభుత్వం తరఫున పట్టువస్త్రాలు, ముత్యాల తలంబ్రాల సమర్పణ మరియు ముక్కోటి వైకుంఠ ఏకాదశి ఉత్తర ద్వార దర్శనం అత్యంత వైభవంగా జరుగుతాయి.'
     ],
-    significanceEn: 'One of the holiest Vaishnavite pilgrimage shrines in India where Lord Rama appears with Shankha and Chakra.',
+    significanceEn: 'One of the most sacred Vaishnavite temple shrines in India where Lord Rama appears with Shankha and Chakra.',
     significanceTe: 'శ్రీరాముడు శంఖు చక్ర ధారియై చతుర్భుజ రూపంలో దర్శనమిచ్చే దేశంలోనే ఏకైక వైష్ణవ దివ్యక్షేత్రం.'
   },
   {
@@ -138,7 +138,7 @@ const HERITAGE_PLACES: HeritagePlace[] = [
       'మారీచుడి మాయలేడి ఘట్టం: మారీచుడనే రాక్షసుడు బంగారు లేడిగా వచ్చి సీతాదేవిని ఆకర్షించిన చారిత్రక రామాయణ స్థలం.',
       'రావణాసురుడి అపహరణ: రావణాసురుడు పుష్పక విమానంపై సీతాదేవిని అపహరించిన పవిత్ర క్షేత్రం.'
     ],
-    significanceEn: 'Essential pilgrimage site preserving ancient stone monuments and footprints commemorating Ramayana episodes.',
+    significanceEn: 'Sacred temple site preserving ancient stone monuments and footprints commemorating Ramayana episodes.',
     significanceTe: 'రామాయణ ఘట్టాలకు సజీవ సాక్ష్యంగా నిలిచే పాదముద్రలు మరియు రాతి చిహ్నాలు ఉన్న పుణ్యక్షేత్రం.'
   },
   {
@@ -306,7 +306,7 @@ export default function AboutPage() {
                 {isTe ? (
                   <>పాపికొండలకు ప్రత్యేక ఏసీ బోటు ప్రయాణాలు, కొల్లూరు వెదురు గుడారాల (బ్యాంబూ హట్స్) వసతి, భద్రాచలం-పర్ణశాల ఆధ్యాత్మిక యాత్రలు మరియు మారేడుమిల్లి అడవుల పర్యటనలను సురక్షితంగా నిర్వహిస్తున్నాము.</>
                 ) : (
-                  <>We specialize in curated A/C river cruises to <strong className="text-slate-900 font-extrabold">Papikondalu</strong>, stays at <strong className="text-slate-900 font-extrabold">Kolluru Bamboo Huts</strong>, temple pilgrimage packages to <strong className="text-slate-900 font-extrabold">Bhadrachalam & Parnasala</strong>, and eco-jungle tours to <strong className="text-slate-900 font-extrabold">Maredumilli</strong>.</>
+                  <>We specialize in AC boat tours to <strong className="text-slate-900 font-extrabold">Papikondalu</strong>, stays at <strong className="text-slate-900 font-extrabold">Kolluru Bamboo Huts</strong>, temple packages to <strong className="text-slate-900 font-extrabold">Bhadrachalam & Parnasala</strong>, and forest tours to <strong className="text-slate-900 font-extrabold">Maredumilli</strong>.</>
                 )}
               </p>
 
@@ -388,7 +388,7 @@ export default function AboutPage() {
               { 
                 cap: isTe ? "50 సీట్లు" : "50 Seater", 
                 title: isTe ? "ఇంటిమేట్ ఎక్స్‌ప్లోరర్" : "Intimate Explorer", 
-                desc: isTe ? "చిన్న కుటుంబాలు, ప్రత్యేక భక్తుల బృందాలు మరియు ప్రైవేట్ ప్రయాణాలకు అత్యంత అనుకూలం." : "Designed for small family groups, VIP pilgrimage charters, and private events with personalized service." 
+                desc: isTe ? "చిన్న కుటుంబాలు, ప్రత్యేక భక్తుల బృందాలు మరియు ప్రైవేట్ ప్రయాణాలకు అత్యంత అనుకూలం." : "Designed for small family groups, VIP temple charters, and private events with personalized service." 
               },
               { 
                 cap: isTe ? "100 సీట్లు" : "100 Seater", 

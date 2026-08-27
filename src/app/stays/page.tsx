@@ -3,9 +3,9 @@ import RoomCategoriesGrid from './RoomCategoriesGrid';
 import { apiFetch } from '@/lib/api';
 
 export const metadata = {
-  title: "Premium Riverside Huts & Stays in Bhadrachalam & Kolluru",
-  description: "Book authentic Godavari riverside bamboo huts, luxury forest resorts, and comfortable pilgrimage stays in Bhadrachalam and Kolluru. Instant online booking.",
-  keywords: ["Papikondalu Bamboo Huts", "Bhadrachalam Stays", "Kolluru Huts Booking", "Riverside Resorts Bhadrachalam", "Bhadrachalam Pilgrim Stays"],
+  title: "Bamboo Huts & Stays | Bhadrachalam & Kolluru — TS Boat Tourism",
+  description: "Book Godavari riverside bamboo huts, forest resorts, and comfortable hotel rooms in Bhadrachalam and Kolluru. Instant online booking.",
+  keywords: ["Bhadrachalam Huts", "Kolluru Bamboo Huts", "Godavari Stays", "Bhadrachalam Rooms", "TS Boat Tourism"],
   alternates: { canonical: '/stays' }
 };
 

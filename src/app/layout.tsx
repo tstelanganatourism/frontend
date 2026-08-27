@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: "TS Boat Tourism | Best Papikondalu Tours, Bhadrachalam & Godavari River Packages",
     template: "%s | TS Boat Tourism"
   },
-  description: "Book trusted Papikondalu boat tours, Bhadrachalam pilgrimage packages, Godavari river cruises, and Kolluru bamboo hut stays online with TS Boat Tourism.",
+  description: "Book trusted Papikondalu boat tours, Bhadrachalam temple packages, Godavari boat rides, and Kolluru bamboo hut stays online with TS Boat Tourism.",
   icons: {
     icon: [
       { url: "/icon-192x192.png?v=5", sizes: "192x192", type: "image/png" },
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     "Papikondalu package from Vizag",
     "Bhadrachalam temple packages",
     "Bhadrachalam room booking online",
-    "Godavari river cruise booking",
+    "Godavari river boat booking",
     "Perantapalli temple boat ride",
     "Gandipochamma temple boating point",
     "Pochavaram boating point",
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     "పాపికొండలు బోట్ బుకింగ్",
     "భద్రాచలం పాపికొండలు టూర్",
     "కొల్లూరు వెదురు గుడిసెలు",
-    "గోదావరి రివర్ క్రూయిజ్"
+    "గోదావరి బోట్ టూర్స్"
   ],
   authors: [{ name: "TS Boat Tourism" }],
   creator: "Satvik",
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: "https://www.tstelanganatourism.com",
     title: "TS Boat Tourism | Papikondalu Boat Booking, Bhadrachalam & Godavari Packages",
-    description: "Book Papikondalu boat tours, Bhadrachalam temple pilgrimage packages, Godavari river cruises, and Kolluru bamboo hut stays online with TS Boat Tourism.",
+    description: "Book Papikondalu boat tours, Bhadrachalam temple packages, Godavari boat rides, and Kolluru bamboo hut stays online with TS Boat Tourism.",
     siteName: "TS Boat Tourism",
     images: [{
       url: "https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg",

@@ -285,7 +285,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       description: seoDescription,
       image: absoluteImage,
       url: absoluteCanonical,
-      touristType: ['Family travelers', 'Nature travelers', 'Pilgrimage travelers'],
+      touristType: ['Family travelers', 'Nature travelers', 'Temple visitors'],
       offers: {
         '@type': 'Offer',
         price,

@@ -59,7 +59,7 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed drop-shadow-sm">
-            Select a package category to browse curated boat tours, island camping trips, and temple pilgrimages.
+            Select a package category to browse curated boat tours, island camping trips, and temple tours.
           </p>
         </div>
       </div>

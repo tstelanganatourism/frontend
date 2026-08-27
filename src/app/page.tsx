@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/api';
 export const metadata: Metadata = {
   title: 'TS Boat Tourism | Papikondalu Boat Booking, Bhadrachalam & Godavari Packages',
   description:
-    'Book Papikondalu boat tours, Bhadrachalam temple pilgrimage packages, Godavari river cruises, Maredumilli trips, and Kolluru bamboo hut stays online with TS Boat Tourism.',
+    'Book Papikondalu boat tours, Bhadrachalam temple packages, Godavari boat trips, Maredumilli trips, and Kolluru bamboo hut stays online with TS Boat Tourism.',
   alternates: { canonical: '/' },
   keywords: [
     'TS Boat Tourism',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     'Maredumilli tour packages',
     'Papikondalu packages from Hyderabad',
     'Bhadrachalam temple packages',
-    'Godavari river cruise',
+    'Godavari boat rides',
     'boat rides Telangana',
   ],
 };
@@ -169,7 +169,7 @@ export default async function HomePage() {
     name: 'TS Boat Tourism',
     alternateName: 'TS Telangana Tourism Boat Booking',
     description:
-      'Official partner portal for Papikondalu boat tours, Bhadrachalam temple pilgrimage packages, Godavari river cruises, Maredumilli trips, and Kolluru bamboo hut stays.',
+      'Official partner portal for Papikondalu boat tours, Bhadrachalam temple packages, Godavari boat trips, Maredumilli trips, and Kolluru bamboo hut stays.',
     url: 'https://www.tstelanganatourism.com',
     logo: 'https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg',
     image: 'https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg',

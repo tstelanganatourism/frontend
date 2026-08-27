@@ -237,19 +237,19 @@ export default function PackagesList({
   const badgeText = categoryName
     ? `Category: ${categoryName}`
     : isBoatRide
-      ? 'Official Godavari Cruises'
+      ? 'Godavari Boat Rides'
       : isSightseeing
-        ? 'Scenic Pilgrimage Journeys'
-        : 'All-in-One Tours & Sightseeing';
+        ? 'Temple & Sightseeing Tours'
+        : 'All-in-One Boat & Temple Tours';
 
   const headingPrimary = categoryName ? 'Category' : isBoatRide ? 'Godavari' : isSightseeing ? 'Heritage & Temple' : 'Tours &';
-  const headingSecondary = categoryName ? categoryName : isBoatRide ? 'Cruises & Rides' : isSightseeing ? 'Sightseeing Tours' : 'Sightseeings';
+  const headingSecondary = categoryName ? categoryName : isBoatRide ? 'Boat Rides' : isSightseeing ? 'Sightseeing Tours' : 'Sightseeing';
 
   const descriptionText = categoryDescription || (isBoatRide
-    ? 'Book scenic Godavari cruise packages through Papikondalu hills with verified reporting, family-friendly planning, and clear local support.'
+    ? 'Book scenic Godavari boat ride packages through Papikondalu hills with on-time reporting and friendly local support.'
     : isSightseeing
-      ? 'Explore Bhadrachalam temple routes, nature viewpoints, and complete family sightseeing plans with verified local travel support.'
-      : 'Book premium boat rides, river cruises, temple tours, and local sightseeing packages with verified local support.');
+      ? 'Explore Bhadrachalam temple routes, nature viewpoints, and complete family sightseeing plans with local travel support.'
+      : 'Book trusted boat rides, temple tours, and local sightseeing packages with complete local support.');
 
   const resultLabel = isBoatRide ? 'boat ride experiences' : isSightseeing ? 'sightseeing trips' : 'experiences';
 

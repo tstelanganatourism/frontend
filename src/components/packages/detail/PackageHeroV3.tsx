@@ -100,7 +100,7 @@ export const PackageHeroV3 = ({
   const plainDescription = stripHtml(description)?.replace(/\s+/g, ' ').trim();
   const intro =
     plainDescription ||
-    'A verified pilgrimage and travel experience with clear timings, boarding details, inclusions, and fare options shown before booking.';
+    'A verified boat and temple travel experience with clear timings, boarding details, inclusions, and fare options shown before booking.';
 
   const moveSlide = (direction: 'left' | 'right') => {
     setActiveIdx((prev) => {
