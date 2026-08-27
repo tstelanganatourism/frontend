@@ -32,7 +32,9 @@ export const dynamicParams = true;
  */
 export async function generateStaticParams() {
   try {
-    const res = await apiFetch('/api/v1/packages?size=200&page=1', { cache: 'no-store' });
+    const res = await apiFetch('/api/v1/packages?size=200&page=1', {
+      next: { revalidate: 43200, tags: ['packages'] }
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const items: Array<{ slug: string }> = data?.items ?? [];
@@ -137,7 +139,9 @@ const SITE_ORIGIN = 'https://www.tstelanganatourism.com';
 
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/packages/${slug}`, { cache: 'no-store' });
+    const res = await apiFetch(`/api/v1/packages/${slug}`, {
+      next: { revalidate: 43200, tags: ['packages', `package:${slug}`] }
+    });
     if (!res.ok) return null;
     return res.json();
   } catch {

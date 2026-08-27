@@ -14,7 +14,9 @@ export const dynamicParams = true;
  */
 export async function generateStaticParams() {
   try {
-    const res = await apiFetch('/api/v1/rooms?size=200&page=1', { cache: 'no-store' });
+    const res = await apiFetch('/api/v1/rooms?size=200&page=1', {
+      next: { revalidate: 43200, tags: ['rooms'] }
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const items: Array<{ slug: string }> = data?.items ?? [];
@@ -56,7 +58,9 @@ type RoomDetail = {
 
 const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> => {
   try {
-    const res = await apiFetch(`/api/v1/rooms/${slug}`, { cache: 'no-store' });
+    const res = await apiFetch(`/api/v1/rooms/${slug}`, {
+      next: { revalidate: 43200, tags: ['rooms', `room:${slug}`] }
+    });
     if (!res.ok) return null;
     return res.json();
   } catch {
