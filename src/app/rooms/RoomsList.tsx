@@ -79,17 +79,22 @@ export default function RoomsList({
 
   // Update allRooms if initial data changes
   React.useEffect(() => {
-    if (data?.items) {
+    if (data?.items && data.items.length > 0) {
       setAllRooms(data.items);
+      setIsFetching(false);
     }
   }, [data]);
 
-  // Fetch complete rooms dataset (filtered to category if categorySlug is present)
+  // Fetch complete rooms dataset in background if not provided by SSR
   React.useEffect(() => {
+    if (data?.items && data.items.length > 0 && categorySlug) return;
+
     let isMounted = true;
     const fetchAllRooms = async () => {
       try {
-        setIsFetching(true);
+        if (!data?.items || data.items.length === 0) {
+          setIsFetching(true);
+        }
         const fetchUrl = categorySlug
           ? `/api/v1/rooms/categories/${categorySlug}`
           : '/api/v1/rooms?size=100';
@@ -110,7 +115,7 @@ export default function RoomsList({
 
     fetchAllRooms();
     return () => { isMounted = false; };
-  }, [categorySlug]);
+  }, [categorySlug, data]);
 
   // INSTANT Client-Side Search & Filter Engine
   const filteredItems = React.useMemo(() => {
