@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getHdImageUrl } from '@/lib/utils';
 import { useLightbox } from '@/hooks/useLightbox';
+import { ExperienceVideoPlayer } from '@/components/ui/ExperienceVideoPlayer';
 import {
   BadgeCheck,
   Camera,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   Ship,
   Sparkles,
+  Film,
 } from 'lucide-react';
 
 interface GalleryImage {
@@ -38,6 +40,7 @@ interface PackageHeroV3Props {
   startingPrice?: number | string | null;
   variantCount?: number;
   gallery: GalleryImage[];
+  videoUrl?: string | null;
 }
 
 const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg';
@@ -60,6 +63,7 @@ export const PackageHeroV3 = ({
   startingPrice,
   variantCount = 0,
   gallery = [],
+  videoUrl,
 }: PackageHeroV3Props) => {
   const slides = useMemo(() => {
     const list = [...gallery];
@@ -73,6 +77,7 @@ export const PackageHeroV3 = ({
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [mediaType, setMediaType] = useState<'video' | 'photos'>(videoUrl ? 'video' : 'photos');
 
   const activeSlide = slides[activeIdx] || slides[0];
   const categoryLabel = type === 'TOUR' ? 'Boat Ride' : 'Sightseeing';
@@ -198,94 +203,132 @@ export const PackageHeroV3 = ({
 
           {/* Right Visual Image & Gallery Strips */}
           <div className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
-            <div 
-              className="relative overflow-hidden rounded-xl bg-slate-950"
-              {...lightboxHandlers}
-            >
-              <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:min-h-[380px]">
-                <div className="absolute inset-0 bg-slate-900/10" />
-                <Image
-                  src={activeSlide.image_url}
-                  alt={activeSlide.alt_text || title}
-                  fill
-                  priority
-                  className="object-cover transition-transform duration-500"
-                  sizes="(max-width: 1024px) 100vw, 640px"
-                />
+            {/* Visual Type Selector Tabs */}
+            {videoUrl && (
+              <div className="mb-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 p-1">
                 <button
                   type="button"
-                  onClick={() => setLightboxOpen(true)}
-                  className="absolute inset-0 z-10 cursor-zoom-in"
-                  aria-label="Open photo gallery"
-                />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent p-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-900 shadow-sm">
-                    <Camera className="h-3.5 w-3.5" />
-                    {slides.length} Photos
-                  </span>
-                  {variantCount > 0 ? (
-                    <span className="rounded-full bg-slate-950/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white ring-1 ring-white/10">
-                      {variantCount} Packages
-                    </span>
-                  ) : null}
-                </div>
-                {slides.length > 1 ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveSlide('left');
-                      }}
-                      className="absolute left-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
-                      aria-label="Previous photo"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveSlide('right');
-                      }}
-                      className="absolute right-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
-                      aria-label="Next photo"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </>
-                ) : null}
+                  onClick={() => setMediaType('video')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-black uppercase tracking-wider transition ${
+                    mediaType === 'video'
+                      ? 'bg-[#0d6e75] text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Film className="h-3.5 w-3.5" />
+                  Tour Video
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaType('photos')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-black uppercase tracking-wider transition ${
+                    mediaType === 'photos'
+                      ? 'bg-[#0d6e75] text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  Photos ({slides.length})
+                </button>
               </div>
-            </div>
+            )}
 
-            {slides.length > 1 ? (
-              <div className="mt-2.5 grid grid-cols-4 gap-2 sm:grid-cols-5">
-                {slides.slice(0, 5).map((slide, idx) => (
-                  <button
-                    key={slide.id || idx}
-                    type="button"
-                    onClick={() => setActiveIdx(idx)}
-                    className={`relative aspect-[4/3] overflow-hidden rounded-lg border transition ${
-                      idx === activeIdx
-                        ? 'border-[#0d6e75] ring-2 ring-[#0d6e75]/20'
-                        : 'border-slate-200 opacity-80 hover:opacity-100'
-                    }`}
-                    aria-label={`Show photo ${idx + 1}`}
-                  >
-                    <Image src={slide.image_url || fallbackImage} alt={slide.alt_text || `Photo ${idx + 1}`} fill sizes="120px" className="object-cover" />
-                    {idx === 4 && slides.length > 5 ? (
-                      <span className="absolute inset-0 flex items-center justify-center bg-slate-950/70 text-xs font-black text-white">
-                        +{slides.length - 5}
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
+            {mediaType === 'video' && videoUrl ? (
+              <div className="overflow-hidden rounded-xl">
+                <ExperienceVideoPlayer videoUrl={videoUrl} label={title} />
               </div>
             ) : (
-              <div className="mt-2.5 flex items-center gap-2 rounded-xl bg-teal-500/5 px-3 py-2 text-[11px] font-bold text-[#0d6e75]">
-                <BadgeCheck className="h-4 w-4 text-[#0d6e75]" />
-                More photos will be shared before travel.
-              </div>
+              <>
+                <div 
+                  className="relative overflow-hidden rounded-xl bg-slate-950"
+                  {...lightboxHandlers}
+                >
+                  <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:min-h-[380px]">
+                    <div className="absolute inset-0 bg-slate-900/10" />
+                    <Image
+                      src={activeSlide.image_url}
+                      alt={activeSlide.alt_text || title}
+                      fill
+                      priority
+                      className="object-cover transition-transform duration-500"
+                      sizes="(max-width: 1024px) 100vw, 640px"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLightboxOpen(true)}
+                      className="absolute inset-0 z-10 cursor-zoom-in"
+                      aria-label="Open photo gallery"
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent p-3">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-sm">
+                        <Camera className="h-3.5 w-3.5" />
+                        {slides.length} Photos
+                      </span>
+                      {variantCount > 0 ? (
+                        <span className="rounded-full bg-slate-950/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white ring-1 ring-white/10">
+                          {variantCount} Packages
+                        </span>
+                      ) : null}
+                    </div>
+                    {slides.length > 1 ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveSlide('left');
+                          }}
+                          className="absolute left-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
+                          aria-label="Previous photo"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveSlide('right');
+                          }}
+                          className="absolute right-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
+                          aria-label="Next photo"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+
+                {slides.length > 1 ? (
+                  <div className="mt-2.5 grid grid-cols-4 gap-2 sm:grid-cols-5">
+                    {slides.slice(0, 5).map((slide, idx) => (
+                      <button
+                        key={slide.id || idx}
+                        type="button"
+                        onClick={() => setActiveIdx(idx)}
+                        className={`relative aspect-[4/3] overflow-hidden rounded-lg border transition ${
+                          idx === activeIdx
+                            ? 'border-[#0d6e75] ring-2 ring-[#0d6e75]/20'
+                            : 'border-slate-200 opacity-80 hover:opacity-100'
+                        }`}
+                        aria-label={`Show photo ${idx + 1}`}
+                      >
+                        <Image src={slide.image_url || fallbackImage} alt={slide.alt_text || `Photo ${idx + 1}`} fill sizes="120px" className="object-cover" />
+                        {idx === 4 && slides.length > 5 ? (
+                          <span className="absolute inset-0 flex items-center justify-center bg-slate-950/70 text-xs font-black text-white">
+                            +{slides.length - 5}
+                          </span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2.5 flex items-center gap-2 rounded-xl bg-teal-500/5 px-3 py-2 text-[11px] font-bold text-[#0d6e75]">
+                    <BadgeCheck className="h-4 w-4 text-[#0d6e75]" />
+                    More photos will be shared before travel.
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -14,7 +14,7 @@ import InstallPromptModal from '@/components/ui/InstallPromptModal';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: 'swap' });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 'swap', preload: false });
-const notoTelugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-telugu", weight: ["400", "500", "600", "700", "800", "900"], display: 'swap', preload: false });
+const notoTelugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-telugu", weight: ["400", "700", "900"], display: 'swap', preload: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tstelanganatourism.com"),

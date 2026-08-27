@@ -51,19 +51,22 @@ export const apiClient: AxiosInstance = axios.create({
   timeout: 15_000,
 });
 
-let cachedAuthStore: any = null;
+/** Lazy singleton getter for useAuthStore — resolved once, client-side only */
+let _useAuthStore: typeof import('@/stores/authStore').useAuthStore | null = null;
+const getAuthStore = (): typeof _useAuthStore => {
+  if (typeof window === 'undefined') return null;
+  if (!_useAuthStore) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _useAuthStore = require('@/stores/authStore').useAuthStore;
+  }
+  return _useAuthStore;
+};
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (typeof window !== 'undefined') {
-    if (!cachedAuthStore) {
-      try {
-        cachedAuthStore = require('@/stores/authStore').useAuthStore;
-      } catch (e) {}
-    }
-    const token = cachedAuthStore?.getState?.()?.accessToken;
-    if (token && config.headers) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
+  const store = getAuthStore();
+  const token = store?.getState?.()?.accessToken;
+  if (token && config.headers) {
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
@@ -109,9 +112,9 @@ apiClient.interceptors.response.use(
     // CRITICAL: If auth has not hydrated yet, AuthProvider is already handling the
     // refresh. Queue this request so it gets retried once hydration completes
     // instead of dropping it (which would surface as a false logout).
-    if (typeof window !== 'undefined') {
-      const { useAuthStore } = require('@/stores/authStore');
-      if (!useAuthStore.getState().isHydrated) {
+    {
+      const authStore = getAuthStore();
+      if (authStore && !authStore.getState().isHydrated) {
         return new Promise((resolve, reject) => {
           pendingQueue.push({
             resolve: (token) => {
@@ -145,10 +148,12 @@ apiClient.interceptors.response.use(
       const { data } = await apiClient.post<{ access_token: string; user: any }>('/api/v1/auth/refresh');
       const newToken = data.access_token;
 
-      if (typeof window !== 'undefined') {
-        const { useAuthStore } = require('@/stores/authStore');
-        useAuthStore.getState().updateAccessToken(newToken);
-        useAuthStore.getState().updateUser(data.user);
+      {
+        const authStore = getAuthStore();
+        if (authStore) {
+          authStore.getState().updateAccessToken(newToken);
+          authStore.getState().updateUser(data.user);
+        }
       }
 
       processQueue(null, newToken);
@@ -158,17 +163,18 @@ apiClient.interceptors.response.use(
       processQueue(refreshError, null);
 
       // Only clear auth and redirect to login if the server explicitly rejects the credentials (401/403)
-        const isAuthError = refreshError.response && (refreshError.response.status === 401 || refreshError.response.status === 403);
+      const isAuthError = refreshError.response && (refreshError.response.status === 401 || refreshError.response.status === 403);
 
-      if (isAuthError && typeof window !== 'undefined') {
-        const { useAuthStore } = require('@/stores/authStore');
-        useAuthStore.getState().clearAuth();
-        
-        // Smart redirect based on current route
-        if (window.location.pathname.startsWith('/admin')) {
-          window.location.href = '/admin/login';
-        } else {
-          window.location.href = '/login';
+      if (isAuthError) {
+        const authStore = getAuthStore();
+        if (authStore) {
+          authStore.getState().clearAuth();
+          // Smart redirect based on current route
+          if (window.location.pathname.startsWith('/admin')) {
+            window.location.href = '/admin/login';
+          } else {
+            window.location.href = '/login';
+          }
         }
       }
 

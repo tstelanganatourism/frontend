@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Expand, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { Expand, Pause, Play, Volume2, VolumeX, Sparkles } from 'lucide-react';
 
 interface ExperienceVideoPlayerProps {
   videoUrl: string;
@@ -16,20 +16,23 @@ const formatTime = (seconds: number) => {
 };
 
 /**
- * Shared, download-free presentation player for public package and room videos.
- * The actual media remains protected by the delivery layer; this component removes
- * browser download/PiP affordances from the public viewing experience.
+ * Premium, glassmorphic presentation player for public package and room videos.
+ * Features customizable playback speeds, smooth transition animations, hover controls,
+ * custom progress track, double-click fullscreen, and keyboard accessibility.
  */
 export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [volume, setVolume] = useState(0); // Default to 0 when muted initially
   const [hasStarted, setHasStarted] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [showControls, setShowControls] = useState(false);
 
-  // Start a silent preview only once the player itself is comfortably in view.
+  // Auto-play silent preview when player is scrolled into view
   useEffect(() => {
     const video = videoRef.current;
     const player = playerRef.current;
@@ -38,7 +41,12 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
-        video.play().then(() => setHasStarted(true)).catch(() => {});
+        video.play()
+          .then(() => {
+            setHasStarted(true);
+            setIsPlaying(true);
+          })
+          .catch(() => {});
       },
       { threshold: 0.55 }
     );
@@ -47,19 +55,85 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
     return () => observer.disconnect();
   }, [hasStarted]);
 
+  // Keyboard accessibility listeners
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const video = videoRef.current;
+      if (!video || !playerRef.current) return;
+
+      // Only handle events if focus is inside the player, or body is focused
+      const isFocused = playerRef.current.contains(document.activeElement) || document.activeElement === document.body;
+      if (!isFocused) return;
+
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleMute();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        openFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, isMuted, volume]);
+
   const togglePlay = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (video.paused) video.play().catch(() => {});
-    else video.pause();
+    if (video.paused) {
+      video.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
   };
 
   const toggleMute = () => {
     const video = videoRef.current;
     if (!video) return;
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
+
+    const newMuteState = !video.muted;
+    video.muted = newMuteState;
+    setIsMuted(newMuteState);
+
+    if (newMuteState) {
+      setVolume(0);
+    } else {
+      const targetVol = video.volume > 0 ? video.volume : 0.8;
+      video.volume = targetVol;
+      setVolume(targetVol);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const val = Number(e.target.value);
+    video.volume = val;
+    setVolume(val);
+
+    const muted = val === 0;
+    video.muted = muted;
+    setIsMuted(muted);
+  };
+
+  const cycleSpeed = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const speeds = [1.0, 1.25, 1.5, 2.0];
+    const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+    const nextSpeed = speeds[nextIdx];
+
+    video.playbackRate = nextSpeed;
+    setPlaybackSpeed(nextSpeed);
   };
 
   const seek = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,12 +152,21 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
   const progress = duration ? Math.min((currentTime / duration) * 100, 100) : 0;
 
   return (
-    <div ref={playerRef} className="max-w-4xl rounded-[24px] bg-gradient-to-br from-[#0c4054] via-[#0b6370] to-[#102c3e] p-1 shadow-[0_18px_45px_-25px_rgba(10,73,91,0.65)] sm:rounded-[30px] sm:p-1.5">
-      <div className="group relative isolate overflow-hidden rounded-[20px] bg-[#071d2b] sm:rounded-[25px]" onContextMenu={preventContextMenu}>
+    <div
+      ref={playerRef}
+      tabIndex={0}
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
+      onFocus={() => setShowControls(true)}
+      onBlur={() => setShowControls(false)}
+      className="relative w-full overflow-hidden rounded-[24px] bg-slate-950 shadow-[0_24px_55px_-12px_rgba(7,29,43,0.4)] border border-white/5 outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:rounded-[30px]"
+    >
+      <div className="group relative isolate overflow-hidden w-full aspect-video" onContextMenu={preventContextMenu}>
+        {/* Actual Video */}
         <video
           ref={videoRef}
           src={videoUrl}
-          className="aspect-video w-full cursor-pointer object-cover"
+          className="h-full w-full cursor-pointer object-cover"
           muted={isMuted}
           loop
           playsInline
@@ -93,78 +176,151 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
           disableRemotePlayback
           aria-label={`${label} video`}
           onClick={togglePlay}
+          onDoubleClick={openFullscreen}
           onContextMenu={preventContextMenu}
-          onLoadedMetadata={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
+          onLoadedMetadata={(event) => {
+            setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0);
+            // Sync initial state
+            setIsMuted(event.currentTarget.muted);
+            setVolume(event.currentTarget.muted ? 0 : event.currentTarget.volume);
+          }}
           onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onVolumeChange={(event) => setIsMuted(event.currentTarget.muted)}
+          onVolumeChange={(event) => {
+            setIsMuted(event.currentTarget.muted);
+            if (event.currentTarget.muted) setVolume(0);
+          }}
         />
 
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#071d2b]/50 via-transparent to-[#071d2b]/90" />
+        {/* Dynamic Dark Gradients Overlay */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
 
-        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 sm:left-5 sm:top-5">
-          <span className="h-2 w-2 rounded-full bg-[#7ce1d7] shadow-[0_0_0_4px_rgba(124,225,215,0.15)]" />
-          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/90">Experience preview</span>
+        {/* Premium Floating "Experience Preview" Badge */}
+        <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-full bg-slate-950/60 px-3.5 py-1.5 border border-white/10 backdrop-blur-md transition-all duration-300 group-hover:translate-y-1 sm:left-6 sm:top-6">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400"></span>
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">Experience preview</span>
         </div>
 
+        {/* Premium Floating Sparkle Accent */}
+        <div className="pointer-events-none absolute right-4 top-4 rounded-full bg-slate-950/60 p-2.5 border border-white/10 backdrop-blur-md transition-all duration-300 group-hover:translate-y-1 sm:right-6 sm:top-6">
+          <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
+        </div>
+
+        {/* Centered Large Pulse Play/Pause Button Overlay */}
         {!isPlaying && (
-          <button
-            type="button"
-            onClick={togglePlay}
-            aria-label={`Play ${label} video`}
-            className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-xl backdrop-blur-md transition hover:scale-105 hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:h-16 sm:w-16"
-          >
-            <Play className="ml-0.5 h-6 w-6 fill-current" />
-          </button>
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/20 backdrop-blur-[2px] transition-all duration-300">
+            <button
+              type="button"
+              onClick={togglePlay}
+              aria-label={`Play ${label} video`}
+              className="group/btn relative flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-2xl backdrop-blur-lg transition-all duration-300 hover:scale-110 hover:bg-white/20 hover:border-white/40 focus:outline-none"
+            >
+              {/* Pulsing visual outer rings */}
+              <span className="absolute inset-0 rounded-full bg-white/10 animate-pulse" />
+              <span className="absolute -inset-2 rounded-full bg-white/5 animate-ping opacity-60" />
+              <Play className="ml-1.5 h-9 w-9 fill-current text-white transition-transform duration-300 group-hover/btn:scale-105" />
+            </button>
+          </div>
         )}
 
-        <div className="absolute inset-x-0 bottom-0 p-3 transition-all duration-200 sm:p-4 md:pointer-events-none md:translate-y-3 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100">
-          <div className="rounded-2xl border border-white/15 bg-[#072535]/65 p-2.5 shadow-lg backdrop-blur-md sm:p-3">
-            <input
-              aria-label="Video progress"
-              type="range"
-              min="0"
-              max={duration || 0}
-              step="0.1"
-              value={Math.min(currentTime, duration || 0)}
-              onChange={seek}
-              className="mb-2 block h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/25 accent-[#7ce1d7]"
-              style={{ background: `linear-gradient(to right, #7ce1d7 ${progress}%, rgba(255,255,255,.25) ${progress}%)` }}
-            />
-            <div className="flex items-center justify-between gap-2 text-white">
-              <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Frosted Glass Floating Controls Bar */}
+        <div className={`absolute inset-x-0 bottom-0 p-4 transition-all duration-300 ease-out sm:p-6 ${
+          showControls ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'
+        }`}>
+          <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3.5 shadow-2xl backdrop-blur-xl sm:p-4">
+            
+            {/* Custom Interactive Progress Bar */}
+            <div className="group/progress relative mb-3.5 flex items-center">
+              <input
+                aria-label="Video progress slider"
+                type="range"
+                min="0"
+                max={duration || 0}
+                step="0.1"
+                value={Math.min(currentTime, duration || 0)}
+                onChange={seek}
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-white/20 transition-all duration-150 group-hover/progress:h-2.5 focus:outline-none"
+                style={{
+                  background: `linear-gradient(to right, #2dd4bf 0%, #2dd4bf ${progress}%, rgba(255,255,255,0.2) ${progress}%, rgba(255,255,255,0.2) 100%)`
+                }}
+              />
+            </div>
+
+            {/* Controls Row */}
+            <div className="flex items-center justify-between gap-3 text-white">
+              {/* Play, Pause, Timeline */}
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={togglePlay}
                   aria-label={isPlaying ? `Pause ${label} video` : `Play ${label} video`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0b5361] transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:h-9 sm:w-9"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#0b5361] transition-transform hover:scale-105 active:scale-95 focus:outline-none"
                 >
-                  {isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="ml-0.5 h-3.5 w-3.5 fill-current" />}
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4 fill-current" />
+                  ) : (
+                    <Play className="ml-0.5 h-4 w-4 fill-current" />
+                  )}
                 </button>
-                <span className="text-[10px] font-bold text-white/80 sm:text-xs">
-                  {formatTime(currentTime)} <span className="text-white/45">/</span> {formatTime(duration)}
+                <span className="text-xs font-semibold tabular-nums text-white/90">
+                  {formatTime(currentTime)} <span className="text-white/40">/</span> {formatTime(duration)}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
+
+              {/* Volume Slider, Playback Speed, Fullscreen */}
+              <div className="flex items-center gap-3.5">
+                {/* Volume Section with expanding slider */}
+                <div className="group/volume flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    aria-label={isMuted ? `Unmute ${label} video` : `Mute ${label} video`}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-white/90 transition hover:bg-white/10 focus:outline-none"
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX className="h-4.5 w-4.5" />
+                    ) : (
+                      <Volume2 className="h-4.5 w-4.5" />
+                    )}
+                  </button>
+                  <input
+                    aria-label="Volume slider"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="h-1 w-0 opacity-0 group-hover/volume:w-16 group-hover/volume:opacity-100 transition-all duration-300 bg-white/20 accent-teal-400 rounded-full cursor-pointer"
+                  />
+                </div>
+
+                {/* Cycle Playback Speed Button */}
                 <button
                   type="button"
-                  onClick={toggleMute}
-                  aria-label={isMuted ? `Unmute ${label} video` : `Mute ${label} video`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:h-9 sm:w-9"
+                  onClick={cycleSpeed}
+                  aria-label="Change playback speed"
+                  className="inline-flex h-9 min-w-[50px] items-center justify-center rounded-full bg-white/10 px-2.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-white/20 transition focus:outline-none"
                 >
-                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  {playbackSpeed.toFixed(2)}x
                 </button>
+
+                {/* Fullscreen Button */}
                 <button
                   type="button"
                   onClick={openFullscreen}
                   aria-label="Open video in fullscreen"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:h-9 sm:w-9"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-white/90 transition hover:bg-white/10 focus:outline-none"
                 >
-                  <Expand className="h-4 w-4" />
+                  <Expand className="h-4.5 w-4.5" />
                 </button>
               </div>
             </div>
+
           </div>
         </div>
       </div>

@@ -21,6 +21,7 @@ import {
 } from '@/lib/bookingDisplay';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface Passenger {
   full_name: string;
@@ -82,6 +83,7 @@ interface BookingDetails {
   pricing_snapshot?: any;
   has_refreshment_addon?: boolean;
   payment_ledger?: PaymentLedgerEntry[];
+  cover_image_url?: string | null;
   is_rescheduled?: boolean;
   postpone_details?: {
     status: string;
@@ -357,7 +359,7 @@ export default async function PrintTicketPage({
 
         .ticket-main {
           width: 100%;
-          padding: 24px;
+          padding: 18px 22px;
           position: relative;
         }
         .punch-hole-bottom {
@@ -371,8 +373,8 @@ export default async function PrintTicketPage({
           justify-content: space-between;
           align-items: center;
           border-bottom: 2px solid #0a2351;
-          padding-bottom: 12px;
-          margin-bottom: 16px;
+          padding-bottom: 8px;
+          margin-bottom: 10px;
         }
 
         .brand-section {
@@ -382,8 +384,8 @@ export default async function PrintTicketPage({
         }
 
         .logo-img {
-          width: 48px;
-          height: 48px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           border: 2px solid #c8a45a;
           object-fit: cover;
@@ -393,22 +395,22 @@ export default async function PrintTicketPage({
           font-family: 'Playfair Display', Georgia, serif;
           font-style: italic;
           font-weight: 900;
-          color: #0a2351;
-          font-size: 21px;
+          color: #1a6b7a;
+          font-size: 19px;
           line-height: 1.1;
         }
 
         .brand-subtitle {
           font-size: 10px;
           font-weight: 700;
-          color: #1a6b7a;
+          color: #0a2351;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
 
         .telugu-tag {
           font-family: 'Noto Sans Telugu', sans-serif;
-          font-size: 10px;
+          font-size: 9.5px;
           color: #475569;
           margin-top: 1px;
         }
@@ -420,20 +422,20 @@ export default async function PrintTicketPage({
         .ticket-badge {
           background: #0a2351;
           color: #ffffff;
-          padding: 4px 10px;
+          padding: 3px 8px;
           border-radius: 4px;
-          font-size: 10px;
+          font-size: 9.5px;
           font-weight: 800;
           letter-spacing: 1px;
           text-transform: uppercase;
           display: inline-block;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
 
         .ticket-main-title {
           font-family: 'Playfair Display', Georgia, serif;
           font-style: italic;
-          font-size: 23px;
+          font-size: 21px;
           font-weight: 900;
           color: #c8a45a;
           margin: 0;
@@ -444,17 +446,17 @@ export default async function PrintTicketPage({
         .pkg-ribbon-bar {
           background: linear-gradient(135deg, #0a2351 0%, #1a3a6b 100%);
           color: #ffffff;
-          padding: 8px 16px;
+          padding: 6px 14px;
           border-radius: 6px;
           font-family: 'Outfit', sans-serif;
           font-weight: 800;
-          font-size: 13px;
+          font-size: 12px;
           letter-spacing: 0.5px;
           text-transform: uppercase;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 16px;
+          margin-bottom: 10px;
           box-shadow: 0 4px 10px rgba(10, 35, 81, 0.15);
         }
 
@@ -468,19 +470,19 @@ export default async function PrintTicketPage({
         .info-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-          margin-bottom: 16px;
+          gap: 8px;
+          margin-bottom: 10px;
         }
 
         .info-card {
           border: 1px solid #e2e8f0;
           border-radius: 8px;
-          padding: 8px 12px;
+          padding: 6px 10px;
           background: #f8fafc;
         }
 
         .info-label {
-          font-size: 9px;
+          font-size: 8.5px;
           font-weight: 800;
           color: #d32f2f;
           text-transform: uppercase;
@@ -489,7 +491,7 @@ export default async function PrintTicketPage({
         }
 
         .info-value {
-          font-size: 12px;
+          font-size: 11.5px;
           font-weight: 750;
           color: #0a2351;
         }
@@ -499,10 +501,10 @@ export default async function PrintTicketPage({
           font-family: 'Playfair Display', Georgia, serif;
           font-style: italic;
           font-weight: 900;
-          font-size: 13px;
+          font-size: 12.5px;
           color: #ffffff;
           background: #0a2351;
-          padding: 6px 12px;
+          padding: 5px 10px;
           border-radius: 6px 6px 0 0;
           text-transform: none;
           letter-spacing: 0.5px;
@@ -511,8 +513,8 @@ export default async function PrintTicketPage({
         .pax-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 11px;
-          margin-bottom: 16px;
+          font-size: 10px;
+          margin-bottom: 10px;
         }
 
         .pax-table th {
@@ -520,14 +522,14 @@ export default async function PrintTicketPage({
           color: #475569;
           font-weight: 800;
           text-align: left;
-          padding: 6px 12px;
+          padding: 4px 8px;
           border: 1px solid #cbd5e1;
           text-transform: uppercase;
-          font-size: 9px;
+          font-size: 8.5px;
         }
 
         .pax-table td {
-          padding: 6px 12px;
+          padding: 4px 8px;
           border: 1px solid #cbd5e1;
           color: #1e293b;
           font-weight: 600;
@@ -549,9 +551,9 @@ export default async function PrintTicketPage({
         }
 
         .type-pill {
-          font-size: 8px;
+          font-size: 7.5px;
           font-weight: 900;
-          padding: 2px 6px;
+          padding: 1.5px 5px;
           border-radius: 4px;
           text-transform: uppercase;
         }
@@ -564,8 +566,8 @@ export default async function PrintTicketPage({
         .bottom-sections-grid {
           display: grid;
           grid-template-columns: 1fr 1.15fr;
-          gap: 16px;
-          margin-bottom: 16px;
+          gap: 10px;
+          margin-bottom: 10px;
           align-items: stretch;
         }
 
@@ -877,6 +879,7 @@ export default async function PrintTicketPage({
           body {
             background: #ffffff;
             color: #000000;
+            font-size: 10px;
           }
           .ticket-page-wrapper {
             margin: 0;
@@ -885,19 +888,102 @@ export default async function PrintTicketPage({
             width: 100%;
             max-width: 100%;
           }
-          .punch-hole-top, .punch-hole-bottom {
-            display: none;
+          .ticket-main {
+            padding: 10px 14px;
           }
-          .no-print {
+          .punch-hole-top, .punch-hole-bottom, .no-print, .bottom-nav-card {
             display: none !important;
           }
           .timeline-container {
             max-height: none;
             overflow: visible;
+            padding: 6px 8px !important;
+          }
+          .banner-container {
+            max-height: 100px !important;
+            margin-bottom: 8px !important;
+          }
+          .banner-container img {
+            height: 100px !important;
+          }
+          .ticket-header {
+            padding-bottom: 6px !important;
+            margin-bottom: 8px !important;
+          }
+          .logo-img {
+            width: 38px !important;
+            height: 38px !important;
+          }
+          .brand-title {
+            font-size: 17px !important;
+          }
+          .ticket-main-title {
+            font-size: 19px !important;
+          }
+          .pkg-ribbon-bar {
+            padding: 5px 10px !important;
+            font-size: 11px !important;
+            margin-bottom: 8px !important;
+          }
+          .mandatory-box {
+            padding: 8px 10px !important;
+            margin-bottom: 8px !important;
+          }
+          .info-grid {
+            gap: 6px !important;
+            margin-bottom: 8px !important;
+          }
+          .info-card {
+            padding: 5px 8px !important;
+          }
+          .pax-table {
+            font-size: 9.5px !important;
+            margin-bottom: 8px !important;
+          }
+          .pax-table th, .pax-table td {
+            padding: 3px 6px !important;
+          }
+          .bottom-sections-grid {
+            gap: 8px !important;
+            margin-bottom: 8px !important;
+          }
+          .pay-row {
+            padding: 2px 8px !important;
+            font-size: 9.5px !important;
+          }
+          .timeline-event {
+            margin-bottom: 4px !important;
+          }
+          .addons-section {
+            margin-top: 8px !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .rules-row {
+            gap: 6px !important;
+            margin-top: 8px !important;
+            margin-bottom: 8px !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .rule-card {
+            padding: 5px 7px !important;
+          }
+          .rule-card ul {
+            font-size: 8px !important;
+            padding-left: 10px !important;
+          }
+          .ticket-footer {
+            padding: 6px 10px !important;
+            font-size: 8.5px !important;
+          }
+          .ticket-header, .pkg-ribbon-bar, .mandatory-box, .info-grid, .pax-table, .summary-card, .rules-row, .addons-section {
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
           @page {
             size: A4 portrait;
-            margin: 6mm 8mm;
+            margin: 4mm 6mm;
           }
         }
       ` }} />
@@ -927,16 +1013,6 @@ export default async function PrintTicketPage({
         </div>
       )}
 
-      {/* TS Boat Tourism Graphic Banner */}
-      <div style={{ width: '100%', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/ts-boat-tourism-banner.jpg"
-          alt="TS Boat Tourism Banner"
-          style={{ width: '100%', height: 'auto', display: 'block' }}
-        />
-      </div>
-
       <div className="ticket-container">
         {/* Notch punches */}
         <div className="punch-hole-top" />
@@ -955,7 +1031,7 @@ export default async function PrintTicketPage({
               </div>
             </div>
             <div className="ticket-title-section">
-              <div className="ticket-badge">{booking.status.replace(/_/g, ' ')}</div>
+              <div className="ticket-badge">{booking.status === 'PARTIAL_PAID' ? 'ADVANCE PAID' : booking.status.replace(/_/g, ' ')}</div>
               <h2 className="ticket-main-title">{ticketTitle}</h2>
             </div>
           </div>
@@ -966,9 +1042,25 @@ export default async function PrintTicketPage({
             {booking.variant_title && <span className="pkg-ribbon-variant">{booking.variant_title}</span>}
           </div>
 
+          {/* Primary Uploaded Image Banner */}
+          <div className="banner-container" style={{ width: '100%', marginBottom: '12px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #cbd5e1', maxHeight: '170px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={
+                booking.cover_image_url ||
+                (isRoom
+                  ? "https://res.cloudinary.com/r929tquv/image/upload/v1787375372/a6c05b58-1a2c-4b7b-b834-8f43a6208d0d_mg5sgc.jpg"
+                  : "https://res.cloudinary.com/r929tquv/image/upload/v1786615453/ts_tours/q5v6qzdbkydrzyqk7ygt.png"
+                )
+              }
+              alt={isRoom ? (booking.package_title || "TS Resort & Stays") : (booking.package_title || "TS Boat Tourism")}
+              style={{ width: '100%', height: '170px', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
+
           {/* Office visit notice — shown for ALL booking types */}
           {!isRoom && (
-            <div style={{ marginBottom: '14px', background: 'linear-gradient(135deg, #fff7ed 0%, #fff3e0 100%)', border: '2px solid #ea580c', borderRadius: '12px', padding: '14px 18px' }}>
+            <div className="mandatory-box" style={{ marginBottom: '14px', background: 'linear-gradient(135deg, #fff7ed 0%, #fff3e0 100%)', border: '2px solid #ea580c', borderRadius: '12px', padding: '14px 18px' }}>
               <div style={{ fontSize: '10px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <span>⚠️ MANDATORY FIRST STEP — BEFORE BOARDING</span>
               </div>
@@ -995,7 +1087,7 @@ export default async function PrintTicketPage({
             </div>
           )}
           {isRoom && (
-            <div style={{ marginBottom: '14px', background: 'linear-gradient(135deg, #fff7ed 0%, #fff3e0 100%)', border: '2px solid #ea580c', borderRadius: '12px', padding: '14px 18px' }}>
+            <div className="mandatory-box" style={{ marginBottom: '14px', background: 'linear-gradient(135deg, #fff7ed 0%, #fff3e0 100%)', border: '2px solid #ea580c', borderRadius: '12px', padding: '14px 18px' }}>
               <div style={{ fontSize: '10px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '6px' }}>
                 ⚠️ MANDATORY FIRST STEP — BEFORE CHECK-IN
               </div>
@@ -1346,7 +1438,7 @@ export default async function PrintTicketPage({
               )}
 
               <div className={`status-row ${booking.status === 'FULLY_PAID' ? 'status-paid' : booking.remaining_balance > 0 ? 'status-partial' : 'status-cancelled'}`}>
-                Payment Status: {booking.status.replace(/_/g, ' ')}
+                Payment Status: {booking.status === 'PARTIAL_PAID' ? 'ADVANCE PAID' : booking.status.replace(/_/g, ' ')}
               </div>
             </div>
 
@@ -1448,7 +1540,7 @@ export default async function PrintTicketPage({
             const hasTransport = transportSelections.length > 0;
 
             return (
-              <div style={{ marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+              <div className="addons-section" style={{ marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
                 {/* Section Header */}
                 <div style={{ background: '#0a2351', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '12px' }}>📋</span>
@@ -1733,7 +1825,7 @@ export default async function PrintTicketPage({
           </div>
 
           {/* Interactive Google Maps Office Navigation Card (PDF Navigable) */}
-          <div style={{ marginTop: '16px', background: 'linear-gradient(135deg, #0a2351 0%, #1e3a8a 100%)', borderRadius: '12px', padding: '16px 20px', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '2px solid #c8a45a' }}>
+          <div className="bottom-nav-card" style={{ marginTop: '16px', background: 'linear-gradient(135deg, #0a2351 0%, #1e3a8a 100%)', borderRadius: '12px', padding: '16px 20px', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '2px solid #c8a45a' }}>
             <div style={{ flex: 1, paddingRight: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: 800, color: '#c8a45a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>📍 Bhadrachalam Collection Office Navigation</span>
@@ -1818,7 +1910,7 @@ export default async function PrintTicketPage({
         <div>Support: tstelanganatourism@gmail.com | <a href="https://www.tstelanganatourism.com">www.tstelanganatourism.com</a></div>
       </div>
 
-      <PrintAction showClose />
+      <PrintAction showClose filename={`Ticket_${booking.public_id}`} targetSelector=".ticket-page-wrapper" />
     </div>
   );
 }

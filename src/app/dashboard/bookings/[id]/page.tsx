@@ -169,7 +169,7 @@ function getStatusBadge(status: string) {
     case 'PARTIAL_PAID':
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700 ring-1 ring-inset ring-blue-600/20">
-          <TrendingUp className="h-3.5 w-3.5" /> Partially Paid
+          <TrendingUp className="h-3.5 w-3.5" /> Advance Paid
         </span>
       );
     case 'PENDING':

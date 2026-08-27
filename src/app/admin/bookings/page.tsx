@@ -67,7 +67,7 @@ interface BookingSummary {
 
 const STATUS_CFG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   PENDING:      { label: 'Pending',      color: 'bg-amber-50 text-amber-700 border-amber-200',     icon: Clock },
-  PARTIAL_PAID: { label: 'Part. Paid',   color: 'bg-blue-50 text-blue-700 border-blue-200',        icon: Clock },
+  PARTIAL_PAID: { label: 'Advance Paid', color: 'bg-blue-50 text-blue-700 border-blue-200',        icon: Clock },
   FULLY_PAID:   { label: 'Confirmed',    color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
   CANCELLED:    { label: 'Cancelled',    color: 'bg-red-50 text-red-700 border-red-200',            icon: XCircle },
   REFUNDED:     { label: 'Refunded',     color: 'bg-slate-100 text-slate-600 border-slate-200',     icon: AlertCircle },

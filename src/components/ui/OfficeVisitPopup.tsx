@@ -165,7 +165,7 @@ export function OfficeVisitPopup({
               <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-slate-700 leading-relaxed">
                 {isPartial ? (
                   <p>
-                    Your booking is <span className="font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300/50">partially confirmed</span>. Please visit our Bhadrachalam office <span className="font-bold text-slate-900">BEFORE departure</span> with remaining balance <span className="font-bold text-slate-900">₹{remainingBalance.toLocaleString('en-IN')}</span> and the required documents below.
+                    Your booking is <span className="font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300/50">advance confirmed</span>. Please visit our Bhadrachalam office <span className="font-bold text-slate-900">BEFORE departure</span> with remaining balance <span className="font-bold text-slate-900">₹{remainingBalance.toLocaleString('en-IN')}</span> and the required documents below.
                   </p>
                 ) : (
                   <p>

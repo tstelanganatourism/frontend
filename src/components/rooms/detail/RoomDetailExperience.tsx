@@ -1077,6 +1077,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         startingPrice={price ? price : room.starting_price}
         totalRooms={room.total_rooms ?? undefined}
         gallery={room.gallery}
+        videoUrl={room.video_url}
       />
 
       <section className="mx-auto grid w-full max-w-[1600px] gap-6 sm:gap-10 px-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] items-start lg:px-12 lg:py-14">

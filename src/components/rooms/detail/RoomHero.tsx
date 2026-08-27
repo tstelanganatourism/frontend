@@ -3,8 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getHdImageUrl } from '@/lib/utils';
-import { BedDouble, MapPin, ShieldCheck, Sparkles, ChevronRight, Camera, Star, ChevronLeft, BadgeCheck } from 'lucide-react';
+import { BedDouble, MapPin, ShieldCheck, Sparkles, ChevronRight, Camera, Star, ChevronLeft, BadgeCheck, Film } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { ExperienceVideoPlayer } from '@/components/ui/ExperienceVideoPlayer';
 
 interface RoomHeroProps {
   lodgeName: string;
@@ -14,6 +15,7 @@ interface RoomHeroProps {
   startingPrice?: number | string | null;
   totalRooms?: number;
   gallery?: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
+  videoUrl?: string | null;
 }
 
 const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg';
@@ -26,6 +28,7 @@ export const RoomHero = ({
   startingPrice,
   totalRooms,
   gallery = [],
+  videoUrl,
 }: RoomHeroProps) => {
   const imageUrl = getHdImageUrl(coverImage || fallbackImage);
   const [imgError, setImgError] = useState(false);
@@ -42,6 +45,7 @@ export const RoomHero = ({
   }, [gallery, coverImage, lodgeName]);
 
   const [activeIdx, setActiveIdx] = useState(0);
+  const [mediaType, setMediaType] = useState<'video' | 'photos'>(videoUrl ? 'video' : 'photos');
 
   const moveSlide = (direction: 'left' | 'right') => {
     setActiveIdx((prev) => {
@@ -161,65 +165,101 @@ export const RoomHero = ({
 
           {/* ── Right: Expanded Visual Image Card & Gallery Slider (Matching PackageHeroV3) ── */}
           <div className="rounded-2xl border border-white/15 bg-white/5 p-2.5 backdrop-blur-md shadow-2xl">
-            <div className="relative overflow-hidden rounded-xl bg-slate-950">
-              <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:min-h-[350px]">
-                <Image
-                  src={getHdImageUrl(activeSlide.image_url)}
-                  alt={activeSlide.alt_text || lodgeName}
-                  fill
-                  priority
-                  className="object-cover transition-transform duration-500"
-                  sizes="(max-width: 1024px) 100vw, 460px"
-                />
-                
-                {/* Overlay Footer Badges */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent p-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-900 shadow-sm">
-                    <Camera className="h-3.5 w-3.5 text-[#0d6e75]" />
-                    {slides.length} {slides.length === 1 ? 'Photo' : 'Photos'}
-                  </span>
-                  {totalRooms ? (
-                    <span className="rounded-full bg-slate-950/80 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white ring-1 ring-white/20">
-                      {totalRooms} Rooms Available
+            {/* Visual Type Selector Tabs */}
+            {videoUrl && (
+              <div className="mb-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-900/40 p-1 border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setMediaType('video')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-black uppercase tracking-wider transition ${
+                    mediaType === 'video'
+                      ? 'bg-[#1598a1] text-white shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  <Film className="h-3.5 w-3.5" />
+                  Room Tour
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaType('photos')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-black uppercase tracking-wider transition ${
+                    mediaType === 'photos'
+                      ? 'bg-[#1598a1] text-white shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  Photos ({slides.length})
+                </button>
+              </div>
+            )}
+
+            {mediaType === 'video' && videoUrl ? (
+              <div className="overflow-hidden rounded-xl">
+                <ExperienceVideoPlayer videoUrl={videoUrl} label={lodgeName} />
+              </div>
+            ) : (
+              <>
+                <div className="relative overflow-hidden rounded-xl bg-slate-950">
+                  <Image
+                    src={getHdImageUrl(activeSlide.image_url)}
+                    alt={activeSlide.alt_text || lodgeName}
+                    fill
+                    priority
+                    className="object-cover transition-transform duration-500"
+                    sizes="(max-width: 1024px) 100vw, 460px"
+                  />
+                  
+                  {/* Overlay Footer Badges */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent p-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-900 shadow-sm">
+                      <Camera className="h-3.5 w-3.5 text-[#0d6e75]" />
+                      {slides.length} {slides.length === 1 ? 'Photo' : 'Photos'}
                     </span>
-                  ) : null}
+                    {totalRooms ? (
+                      <span className="rounded-full bg-slate-950/80 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white ring-1 ring-white/20">
+                        {totalRooms} Rooms Available
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* Slider Control Arrows */}
+                  {slides.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveSlide('left');
+                        }}
+                        className="absolute left-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
+                        aria-label="Previous photo"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveSlide('right');
+                        }}
+                        className="absolute right-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
+                        aria-label="Next photo"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
 
-                {/* Slider Control Arrows */}
-                {slides.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveSlide('left');
-                      }}
-                      className="absolute left-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
-                      aria-label="Previous photo"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveSlide('right');
-                      }}
-                      className="absolute right-3 top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md transition hover:scale-105"
-                      aria-label="Next photo"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom Notice Tag */}
-            <div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1598a1]/15 border border-[#1598a1]/30 px-3.5 py-2.5 text-[11px] font-bold text-[#8eecee]">
-              <BadgeCheck className="h-4 w-4 text-[#8eecee] shrink-0" />
-              <span>More photos &amp; room details will be confirmed before travel.</span>
-            </div>
+                {/* Bottom Notice Tag */}
+                <div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#1598a1]/15 border border-[#1598a1]/30 px-3.5 py-2.5 text-[11px] font-bold text-[#8eecee]">
+                  <BadgeCheck className="h-4 w-4 text-[#8eecee] shrink-0" />
+                  <span>More photos &amp; room details will be confirmed before travel.</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

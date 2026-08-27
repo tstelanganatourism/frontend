@@ -232,7 +232,7 @@ export default async function PrintFormPage({
           </div>
         </div>
       </div>
-      <PrintAction showClose />
+      <PrintAction showClose filename={`BoardingForm_${id}`} targetSelector=".form-container" />
     </>
   );
 }

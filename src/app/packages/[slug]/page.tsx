@@ -374,6 +374,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         startingPrice={getPositiveStartingPrice(pkg)}
         variantCount={pkg.variants.length}
         gallery={pkg.gallery}
+        videoUrl={pkg.video_url}
       />
 
       {/* Tabbed Navigation */}

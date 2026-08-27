@@ -4,7 +4,7 @@ import { PrintButton } from './PrintButton';
 export const dynamic = 'force-dynamic';
 
 const CO = {
-  bannerUrl: '/ts-boat-tourism-banner.jpg',
+  bannerUrl: 'https://res.cloudinary.com/r929tquv/image/upload/v1786615453/ts_tours/q5v6qzdbkydrzyqk7ygt.png',
   addr1: 'Om Shanti Satram, Kalyana Mandapam Road,',
   addr2: 'Near SBI ATM, Bhadrachalam,',
   addr3: 'Telangana 507111',

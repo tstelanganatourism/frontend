@@ -245,6 +245,8 @@ video::-webkit-media-controls-panel {
   .promo-marquee {
     animation: promo-marquee 35s linear infinite;
     will-change: transform;
+    transform: translate3d(0, 0, 0);
+    contain: layout style;
   }
 
   .promo-marquee:hover {
@@ -324,6 +326,7 @@ video::-webkit-media-controls-panel {
     .hero-light-sweep,
     .premium-tag-pulse,
     .promo-marquee,
+    .animate-marquee-vertical,
     .home-page-opener,
     .shimmer-surface::after {
       animation: none;
@@ -498,6 +501,9 @@ input:-webkit-autofill:active {
 
 .animate-marquee-vertical {
   animation: marquee-vertical linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  contain: layout style;
 }
 
 .animate-marquee-vertical:hover {

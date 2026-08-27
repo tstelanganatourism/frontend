@@ -126,7 +126,7 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; text: string; ri
   FULLY_PAID:   { label: 'Confirmed',  bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-600/20' },
   CONFIRMED:    { label: 'Confirmed',  bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-600/20' },
   PENDING:      { label: 'Pending',    bg: 'bg-amber-50',   text: 'text-amber-700',   ring: 'ring-amber-600/20' },
-  PARTIAL_PAID: { label: 'Part. Paid', bg: 'bg-blue-50',    text: 'text-blue-700',    ring: 'ring-blue-600/20' },
+  PARTIAL_PAID: { label: 'Advance Paid', bg: 'bg-blue-50',    text: 'text-blue-700',    ring: 'ring-blue-600/20' },
   CANCELLED:    { label: 'Cancelled',  bg: 'bg-red-50',     text: 'text-red-700',     ring: 'ring-red-600/20' },
   REFUNDED:     { label: 'Refunded',   bg: 'bg-slate-50',   text: 'text-slate-700',   ring: 'ring-slate-600/20' },
 };

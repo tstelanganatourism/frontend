@@ -80,48 +80,90 @@ const HERO_SLIDES: HeroSlide[] = [
   },
 ];
 
+// ─── Single slide renderer — only renders the slide at `index` ───────────────
+function SlideMedia({ slide, isActive }: { slide: HeroSlide; isActive: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (isActive) {
+      el.currentTime = 0;
+      const p = el.play();
+      if (p !== undefined) p.catch(() => {});
+    } else {
+      el.pause();
+    }
+  }, [isActive]);
+
+  if (slide.type === 'video') {
+    return (
+      <video
+        ref={videoRef}
+        src={slide.src}
+        poster={slide.poster}
+        autoPlay
+        loop
+        muted
+        playsInline
+        controlsList="nodownload noremoteplayback"
+        disablePictureInPicture
+        onContextMenu={(e) => e.preventDefault()}
+        className="h-full w-full object-cover object-center"
+      />
+    );
+  }
+
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={slide.src}
+      alt={slide.title}
+      loading="eager"
+      fetchPriority={isActive ? 'high' : 'low'}
+      decoding="async"
+      onContextMenu={(e) => e.preventDefault()}
+      draggable={false}
+      className="h-full w-full object-cover object-center transform scale-105 transition-transform duration-10000 ease-out"
+    />
+  );
+}
+
 export default function HeroBackgroundSlideshow() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  // Track which slide indices have been rendered so they stay mounted once loaded
+  const [mountedIndices, setMountedIndices] = useState<Set<number>>(() => new Set([0]));
+
+  const nextIdx = (currentIdx + 1) % HERO_SLIDES.length;
+
+  // Ensure the upcoming slide is pre-mounted before we transition to it
+  useEffect(() => {
+    setMountedIndices((prev) => {
+      if (prev.has(nextIdx)) return prev;
+      const next = new Set(prev);
+      next.add(nextIdx);
+      return next;
+    });
+  }, [nextIdx]);
 
   // Advance slides automatically
   useEffect(() => {
     if (isPaused) return;
-
     const currentSlide = HERO_SLIDES[currentIdx];
-    // Slightly longer duration for videos so user can enjoy the footage
     const slideDuration = currentSlide.type === 'video' ? 8500 : 6500;
-
     const timer = setInterval(() => {
       setCurrentIdx((prev) => (prev + 1) % HERO_SLIDES.length);
     }, slideDuration);
-
     return () => clearInterval(timer);
   }, [currentIdx, isPaused]);
-
-  // Handle video play/pause sync when slide changes
-  useEffect(() => {
-    videoRefs.current.forEach((vEl, idx) => {
-      if (!vEl) return;
-      if (idx === currentIdx) {
-        vEl.currentTime = 0;
-        const playPromise = vEl.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Autoplay policy fallback (silent catch)
-          });
-        }
-      } else {
-        vEl.pause();
-      }
-    });
-  }, [currentIdx]);
 
   const currentSlide = HERO_SLIDES[currentIdx];
 
   const handlePrev = () => {
-    setCurrentIdx((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+    const prev = (currentIdx - 1 + HERO_SLIDES.length) % HERO_SLIDES.length;
+    setMountedIndices((s) => { const n = new Set(s); n.add(prev); return n; });
+    setCurrentIdx(prev);
   };
 
   const handleNext = () => {
@@ -134,8 +176,9 @@ export default function HeroBackgroundSlideshow() {
       aria-hidden="true"
       style={{ zIndex: 0 }}
     >
-      {/* ── SLIDE MEDIA ITEMS ────────────────────────────────────────────── */}
+      {/* ── SLIDE MEDIA ITEMS — only mounted slides are in DOM ─── */}
       {HERO_SLIDES.map((slide, i) => {
+        if (!mountedIndices.has(i)) return null;
         const isActive = i === currentIdx;
         return (
           <div
@@ -144,44 +187,18 @@ export default function HeroBackgroundSlideshow() {
               isActive ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
-            {slide.type === 'video' ? (
-              <video
-                ref={(el) => { videoRefs.current[i] = el; }}
-                src={slide.src}
-                poster={slide.poster}
-                autoPlay
-                loop
-                muted
-                playsInline
-                controlsList="nodownload noremoteplayback"
-                disablePictureInPicture
-                onContextMenu={(e) => e.preventDefault()}
-                className="h-full w-full object-cover object-center"
-              />
-            ) : (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={slide.src}
-                alt={slide.title}
-                loading={i === 0 ? 'eager' : 'lazy'}
-                fetchPriority={i === 0 ? 'high' : 'low'}
-                decoding="async"
-                onContextMenu={(e) => e.preventDefault()}
-                draggable={false}
-                className="h-full w-full object-cover object-center transform scale-105 transition-transform duration-10000 ease-out"
-              />
-            )}
+            <SlideMedia slide={slide} isActive={isActive} />
           </div>
         );
       })}
 
-      {/* ── GRADIENT OVERLAY (BALANCED READABILITY + VISUAL VIBRANCY) ─────── */}
+      {/* ── GRADIENT OVERLAY ─────────────────────────────────────────── */}
       <div
         className="absolute inset-0 bg-gradient-to-b from-[#021c24]/85 via-[#021c24]/50 to-[#021c24]/90 lg:bg-gradient-to-r lg:from-[#021c24]/90 lg:via-[#021c24]/55 lg:to-[#021c24]/30"
         style={{ zIndex: 20 }}
       />
 
-      {/* ── SLIDE BADGE & INDICATORS (BOTTOM LEFT DESKTOP / TOP RIGHT MOBILE) ─ */}
+      {/* ── SLIDE BADGE & INDICATORS ─────────────────────────────────── */}
       <div
         className="absolute bottom-6 left-6 z-30 hidden sm:flex items-center gap-3 bg-black/45 backdrop-blur-md border border-white/15 px-3.5 py-2 rounded-full text-white text-xs font-extrabold shadow-lg"
         style={{ zIndex: 30 }}

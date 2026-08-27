@@ -21,6 +21,9 @@ import {
   type PaymentLedgerEntry,
 } from '@/lib/bookingDisplay';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface Passenger {
   full_name: string;
   age: number;
@@ -65,6 +68,7 @@ interface BookingDetails {
   pricing_snapshot: any;
   has_refreshment_addon?: boolean;
   payment_ledger?: PaymentLedgerEntry[];
+  cover_image_url?: string | null;
   user?: {
     full_name?: string;
     email?: string;
@@ -119,7 +123,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   let booking: BookingDetails | null = null;
   try {
     const url = `/api/v1/bookings/${id}?secret=${expectedSecret}`;
-    const res = await apiFetch(url);
+    const res = await apiFetch(url, { cache: 'no-store' });
     if (res.status === 200) {
       booking = await res.json();
     }
@@ -239,14 +243,14 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             font-style: italic;
             font-size: 25px;
             font-weight: 900;
-            color: #0a2351;
+            color: #1a6b7a;
             line-height: 1.1;
           }
 
           .brand-tagline {
             font-size: 11px;
             font-weight: 700;
-            color: #1a6b7a;
+            color: #0a2351;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
@@ -636,24 +640,67 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             .no-print {
               display: none !important;
             }
+            .banner-container {
+              max-height: 90px !important;
+              margin-bottom: 8px !important;
+            }
+            .banner-container img {
+              height: 90px !important;
+            }
+            .header-row {
+              padding-bottom: 8px !important;
+              margin-bottom: 10px !important;
+            }
+            .logo-img {
+              width: 40px !important;
+              height: 40px !important;
+            }
+            .brand-title {
+              font-size: 20px !important;
+            }
+            .invoice-main-title {
+              font-size: 22px !important;
+            }
+            .info-meta-row {
+              gap: 12px !important;
+              margin-bottom: 10px !important;
+              font-size: 9.5px !important;
+            }
+            .company-card {
+              padding: 8px 10px !important;
+            }
+            .details-row {
+              gap: 12px !important;
+              margin-bottom: 10px !important;
+            }
+            .detail-card-body {
+              padding: 8px 10px !important;
+              font-size: 9.5px !important;
+            }
+            .invoice-table {
+              margin-bottom: 10px !important;
+              font-size: 9.5px !important;
+            }
+            .invoice-table th, .invoice-table td {
+              padding: 4px 6px !important;
+            }
+            .notes-section {
+              margin-top: 8px !important;
+              padding: 8px 10px !important;
+              font-size: 8.5px !important;
+            }
+            .header-row, .info-meta-row, .invoice-table, .detail-grid, .notes-section {
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
             @page {
               size: A4 portrait;
-              margin: 15mm;
+              margin: 5mm 8mm;
             }
           }
         ` }} />
 
-        {/* TS Boat Tourism Graphic Banner */}
-        <div style={{ width: '100%', marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="/ts-boat-tourism-banner.jpg" 
-            alt="TS Boat Tourism Banner" 
-            style={{ width: '100%', height: 'auto', display: 'block' }} 
-          />
-        </div>
-
-        {/* HEADER */}
+        {/* HEADER (FIRST) */}
         <div className="header-row">
           <div className="header-left">
             <img src="/apple-touch-icon.png" className="logo-img" alt="TS Boat Tourism" />
@@ -664,8 +711,38 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           </div>
           <div className="header-right">
             <h1 className="invoice-main-title">TAX INVOICE</h1>
-            <div className="tax-badge">Original for Recipient</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '4px' }}>
+              <div className="tax-badge">Original for Recipient</div>
+              <div style={{
+                background: booking.status === 'FULLY_PAID' ? '#15803d' : (booking.status === 'PARTIAL_PAID' || booking.remaining_balance > 0) ? '#b45309' : '#dc2626',
+                color: '#ffffff',
+                padding: '3px 8px',
+                borderRadius: '4px',
+                fontSize: '10px',
+                fontWeight: 800,
+                letterSpacing: '0.8px',
+                textTransform: 'uppercase'
+              }}>
+                {booking.status === 'FULLY_PAID' ? '✓ FULLY PAID' : (booking.status === 'PARTIAL_PAID' || booking.remaining_balance > 0) ? '✓ ADVANCE PAID' : booking.status}
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Primary Uploaded Banner (BELOW HEADER) */}
+        <div className="banner-container" style={{ width: '100%', marginBottom: '14px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #cbd5e1', maxHeight: '120px' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={
+              booking.cover_image_url ||
+              (isRoom
+                ? "https://res.cloudinary.com/r929tquv/image/upload/v1787375372/a6c05b58-1a2c-4b7b-b834-8f43a6208d0d_mg5sgc.jpg"
+                : "https://res.cloudinary.com/r929tquv/image/upload/v1786615453/ts_tours/q5v6qzdbkydrzyqk7ygt.png"
+              )
+            }
+            alt={isRoom ? (booking.package_title || "TS Resort & Stays") : (booking.package_title || "TS Boat Tourism")}
+            style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} 
+          />
         </div>
 
         {/* DETAILS META GRID */}
@@ -724,93 +801,74 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           </div>
         </div>
 
-        {/* CLIENT DETAILS & STATUS ROW */}
-        <div className="details-row">
+        {/* CLIENT DETAILS (FULL WIDTH CLEAN LAYOUT) */}
+        <div style={{ marginBottom: '12px' }}>
           <div className="detail-card">
             <div className="detail-card-header">Billed To (Recipient)</div>
             <div className="detail-card-body">
-              <table className="billed-table">
-                <tbody>
-                  <tr>
-                    <td>Customer</td>
-                    <td>: {billedName}</td>
-                  </tr>
-                  <tr>
-                    <td>Contact</td>
-                    <td>: {billedPhone}</td>
-                  </tr>
-                  {booking.customer_email && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '6px 20px' }}>
+                <table className="billed-table">
+                  <tbody>
                     <tr>
-                      <td>Email</td>
-                      <td style={{ textTransform: 'lowercase' }}>: {booking.customer_email}</td>
+                      <td>Customer</td>
+                      <td>: <strong>{billedName}</strong></td>
                     </tr>
-                  )}
-                  {booking.boarding_point?.title && (
                     <tr>
-                      <td>Boarding Point</td>
-                      <td>: {booking.boarding_point.title} {booking.boarding_point.landmark ? `(${booking.boarding_point.landmark})` : ''}</td>
+                      <td>Contact</td>
+                      <td>: {billedPhone}</td>
                     </tr>
-                  )}
-                  <tr>
-                    <td>PNR / Ref</td>
-                    <td>: {booking.public_id}</td>
-                  </tr>
-                  {booking.agent_id && (
-                    <>
+                    {booking.customer_email && (
                       <tr>
-                        <td>Agent</td>
-                        <td>: {booking.agent_name || 'N/A'}</td>
+                        <td>Email</td>
+                        <td style={{ textTransform: 'lowercase' }}>: {booking.customer_email}</td>
                       </tr>
-                      {booking.agent_phone && (
-                        <tr>
-                          <td>Agent Contact</td>
-                          <td>: {booking.agent_phone}</td>
-                        </tr>
-                      )}
-                      {booking.agent_company && (
-                        <tr>
-                          <td>Company</td>
-                          <td>: {booking.agent_company}</td>
-                        </tr>
-                      )}
-                      {booking.agent_gst && (
-                        <tr>
-                          <td>Agent GST</td>
-                          <td>: {booking.agent_gst}</td>
-                        </tr>
-                      )}
-                    </>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                    )}
+                    {booking.boarding_point?.title && (
+                      <tr>
+                        <td>Boarding Point</td>
+                        <td>: {booking.boarding_point.title} {booking.boarding_point.landmark ? `(${booking.boarding_point.landmark})` : ''}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
 
-          <div className="detail-card">
-            <div className="detail-card-header">Payment & Verification</div>
-            <div className="detail-card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="status-container">
-                {booking.status === 'FULLY_PAID' ? (
-                  <>
-                    <div className="status-icon paid">✓ FULLY PAID</div>
-                    <div className="status-desc">Booking is active. manual ticket exchange allowed.</div>
-                  </>
-                ) : booking.status === 'PARTIAL_PAID' ? (
-                  <>
-                    <div className="status-icon status-partial">⚠️ PARTIAL PAID</div>
-                    <div className="status-desc">Outstanding balance due before journey departure.</div>
-                  </>
-                ) : booking.status === 'REFUNDED' ? (
-                  <>
-                    <div className="status-icon status-refunded">💸 REFUNDED</div>
-                    <div className="status-desc">The transaction has been fully refunded.</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="status-icon status-cancelled">🚫 CANCELLED</div>
-                    <div className="status-desc">This transaction is cancelled.</div>
-                  </>
-                )}
+                <table className="billed-table">
+                  <tbody>
+                    <tr>
+                      <td>PNR / Booking Ref</td>
+                      <td>: <strong>{booking.public_id}</strong></td>
+                    </tr>
+                    <tr>
+                      <td>Payment Status</td>
+                      <td>: <strong style={{ color: booking.status === 'FULLY_PAID' ? '#15803d' : '#b45309' }}>{booking.status === 'FULLY_PAID' ? 'FULLY PAID' : (booking.status === 'PARTIAL_PAID' || booking.remaining_balance > 0) ? 'ADVANCE PAID' : booking.status}</strong></td>
+                    </tr>
+                    {booking.agent_id ? (
+                      <>
+                        <tr>
+                          <td>Agent Name</td>
+                          <td>: {booking.agent_name || 'N/A'} {booking.agent_company ? `(${booking.agent_company})` : ''}</td>
+                        </tr>
+                        {booking.agent_phone && (
+                          <tr>
+                            <td>Agent Contact</td>
+                            <td>: {booking.agent_phone}</td>
+                          </tr>
+                        )}
+                        {booking.agent_gst && (
+                          <tr>
+                            <td>Agent GST</td>
+                            <td>: {booking.agent_gst}</td>
+                          </tr>
+                        )}
+                      </>
+                    ) : (
+                      <tr>
+                        <td>Booked Via</td>
+                        <td>: {booking.booked_by_name || 'TS Boat Tourism Official Portal'}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1074,7 +1132,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
         </div>
 
       </div>
-      <PrintAction showClose />
+      <PrintAction showClose filename={`Invoice_${booking.public_id}`} targetSelector=".invoice-container" />
     </AdminInvoiceGuard>
   );
 }
