@@ -27,11 +27,11 @@ export const metadata: Metadata = {
   description: "Book trusted Papikondalu boat tours, Bhadrachalam pilgrimage packages, Godavari river cruises, and Kolluru bamboo hut stays online with TS Boat Tourism.",
   icons: {
     icon: [
-      { url: "/icon-192x192.png?v=4", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512x512.png?v=4", sizes: "512x512", type: "image/png" },
+      { url: "/icon-192x192.png?v=5", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png?v=5", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/apple-touch-icon.png?v=4", sizes: "512x512", type: "image/png" },
+      { url: "/apple-touch-icon.png?v=5", sizes: "512x512", type: "image/png" },
     ],
   },
   keywords: ["best Papikondalu tours", "Papikondalu travels", "best tours in TS Bhadrachalam", "Bhadrachalam Tours", "Best River Cruise", "Godavari Tourism", "TS Boat Tourism", "Papikondalu Boating", "Kolluru Bamboo Huts", "Bhadrachalam Temple Stays", "bhadrachalam tourism", "telangana tourism", "boat rides", "AP tourism boat booking bhadrachalam", "AP tourism papikondalu tour packages", "Telangana tourism boat booking", "papikondalu tourism boat tickets", "bhadrachalam to papikondalu boat ride", "papikondalu packages from hyderabad", "papikondalu boating online booking", "kolluru bamboo huts booking", "bhadrachalam temple rooms booking", "bhadrachalam godavari boating list", "rajahmundry to papikondalu boat price", "papikondalu packages from vizag", "papikondalu packages from vijayawada", "ap tourism boat ride cost", "boat rides near me", "tourism boats in telangana"],
@@ -50,17 +50,17 @@ export const metadata: Metadata = {
     description: "Experience the majestic Godavari. Best Papikondalu tours, Bhadrachalam pilgrimage travel and official booking support.",
     siteName: "TS Boat Tourism",
     images: [{
-      url: "https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png",
+      url: "https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg",
       width: 1200,
       height: 630,
-      alt: "TS Boat Tourism | Papikondalu River Cruise"
+      alt: "TS Boat Tourism | Best Papikondalu Tours & Bhadrachalam Travels"
     }],
   },
   twitter: {
     card: "summary_large_image",
     title: "TS Boat Tourism | Best Bhadrachalam Tours",
     description: "Your premium gateway to the Godavari river, Papikondalu hills and Bhadrachalam travel packages.",
-    images: ["https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png"],
+    images: ["https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg"],
   },
   alternates: {
     canonical: "/",
