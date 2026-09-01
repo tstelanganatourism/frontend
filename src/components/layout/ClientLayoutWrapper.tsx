@@ -20,6 +20,7 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
   // Agent pages are storefront-facing and expect the public layout wrapper.
   const isAdminOrAgentPage = pathname?.startsWith('/admin') && !pathname?.endsWith('/login');
   const isPrintPage = pathname?.startsWith('/print');
+  const isPreBookingPage = pathname?.startsWith('/prebooking');
 
   const isBookingPage = !!pathname?.match(/^\/(packages|stays|rooms)\/[^/]+(\/checkout)?\/?$/);
   const isDashboardPage = !!pathname?.match(/^\/(dashboard|admin\/dashboard|agent\/dashboard)/);
