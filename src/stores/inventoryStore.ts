@@ -203,7 +203,9 @@ interface InventoryState {
   bulkActionTransportInventory: (req: any) => Promise<any>;
 
   // Public actions
+  publicMonthCache: Record<string, PublicAvailabilityResponse>;
   fetchPublicAvailability: (slug: string, month: string, force?: boolean) => Promise<void>;
+  prefetchPublicAvailability: (slug: string, month: string) => Promise<void>;
   applySSEPayload: (payload: any) => void;
   applyTransportSSEPayload: (payload: any) => void;
 }
@@ -225,6 +227,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   publicAvailability: null,
   publicLoading: false,
   publicFetchKey: null,
+  publicMonthCache: {},
 
   // ── Package actions ─────────────────────────────────────────────────────────
 
@@ -538,27 +541,60 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
   fetchPublicAvailability: async (slug, month, force = false) => {
     const key = `${slug}:${month}`;
-    const currentKey = get().publicFetchKey;
-    const currentData = get().publicAvailability;
+    const monthCache = get().publicMonthCache;
+    const cached = monthCache[key];
 
-    // Show loading spinner ONLY if changing months or initial fetch with no data
-    if (currentKey !== key || !currentData) {
-      set({ publicLoading: true });
+    // If cached in memory, display immediately (<0.1ms instant!)
+    if (cached && !force) {
+      set({ publicAvailability: cached, publicFetchKey: key, publicLoading: false });
+      // Revalidate in background silently (SWR)
+      apiClient.get<PublicAvailabilityResponse>(
+        `/api/v1/packages/${slug}/availability`,
+        { params: { month } }
+      ).then((res) => {
+        if (res.data) {
+          set((state) => ({
+            publicMonthCache: { ...state.publicMonthCache, [key]: res.data },
+            publicAvailability: state.publicFetchKey === key ? res.data : state.publicAvailability,
+          }));
+        }
+      }).catch(() => {});
+      return;
     }
+
+    // Uncached: show loading state
+    set({ publicLoading: true });
 
     try {
       const res = await apiClient.get<PublicAvailabilityResponse>(
         `/api/v1/packages/${slug}/availability`,
         { params: { month } }
       );
-      set({ publicAvailability: res.data, publicFetchKey: key, publicLoading: false });
+      set((state) => ({
+        publicAvailability: res.data,
+        publicFetchKey: key,
+        publicMonthCache: { ...state.publicMonthCache, [key]: res.data },
+        publicLoading: false,
+      }));
     } catch (err) {
-      if (currentKey !== key) {
-        set({ publicAvailability: null, publicLoading: false });
-      } else {
-        set({ publicLoading: false });
-      }
+      set({ publicLoading: false });
     }
+  },
+
+  prefetchPublicAvailability: async (slug, month) => {
+    const key = `${slug}:${month}`;
+    if (get().publicMonthCache[key]) return;
+    try {
+      const res = await apiClient.get<PublicAvailabilityResponse>(
+        `/api/v1/packages/${slug}/availability`,
+        { params: { month } }
+      );
+      if (res.data) {
+        set((state) => ({
+          publicMonthCache: { ...state.publicMonthCache, [key]: res.data },
+        }));
+      }
+    } catch (_) {}
   },
 
   applySSEPayload: (payload: any) => {

@@ -67,10 +67,23 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore();
   const token = store?.getState?.()?.accessToken;
   if (token && config.headers) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+    if (typeof config.headers.set === 'function') {
+      config.headers.set('Authorization', `Bearer ${token}`);
+    } else {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
   }
   return config;
 });
+
+const setAuthHeader = (req: InternalAxiosRequestConfig, token: string) => {
+  if (!req.headers) return;
+  if (typeof req.headers.set === 'function') {
+    req.headers.set('Authorization', `Bearer ${token}`);
+  } else {
+    req.headers['Authorization'] = `Bearer ${token}`;
+  }
+};
 
 // ─── Response interceptor: refresh on 401 ────────────────────────────────────
 
@@ -119,7 +132,7 @@ apiClient.interceptors.response.use(
         return new Promise((resolve, reject) => {
           pendingQueue.push({
             resolve: (token) => {
-              originalRequest.headers!['Authorization'] = `Bearer ${token}`;
+              setAuthHeader(originalRequest, token);
               resolve(apiClient(originalRequest));
             },
             reject,
@@ -135,7 +148,7 @@ apiClient.interceptors.response.use(
       return new Promise((resolve, reject) => {
         pendingQueue.push({
           resolve: (token) => {
-            originalRequest.headers!['Authorization'] = `Bearer ${token}`;
+            setAuthHeader(originalRequest, token);
             resolve(apiClient(originalRequest));
           },
           reject,
@@ -158,7 +171,7 @@ apiClient.interceptors.response.use(
       }
 
       processQueue(null, newToken);
-      originalRequest.headers!['Authorization'] = `Bearer ${newToken}`;
+      setAuthHeader(originalRequest, newToken);
       return apiClient(originalRequest);
     } catch (refreshError: any) {
       processQueue(refreshError, null);

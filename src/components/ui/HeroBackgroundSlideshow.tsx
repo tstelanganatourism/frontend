@@ -109,6 +109,8 @@ function SlideMedia({ slide, isActive }: { slide: HeroSlide; isActive: boolean }
         controlsList="nodownload noremoteplayback"
         disablePictureInPicture
         onContextMenu={(e) => e.preventDefault()}
+        width={1920}
+        height={1080}
         className="h-full w-full object-cover object-center"
       />
     );
@@ -122,6 +124,8 @@ function SlideMedia({ slide, isActive }: { slide: HeroSlide; isActive: boolean }
       loading="eager"
       fetchPriority={isActive ? 'high' : 'low'}
       decoding="async"
+      width={1920}
+      height={1080}
       onContextMenu={(e) => e.preventDefault()}
       draggable={false}
       className="h-full w-full object-cover object-center transform scale-105 transition-transform duration-10000 ease-out"

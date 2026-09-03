@@ -9,25 +9,15 @@ export const metadata = {
 };
 
 async function fetchBrochurePackages() {
-  const items: BrochurePackage[] = [];
-  let page = 1;
-  let hasNext = true;
-
   try {
-    while (hasNext && page <= 20) {
-      const res = await apiFetch(`/api/v1/packages?page=${page}&size=100`, {
-        next: { revalidate: 43200, tags: ['packages', 'brochures'] }, // 12h
-      });
+    const res = await apiFetch(`/api/v1/packages?size=100`, {
+      next: { revalidate: 43200, tags: ['packages', 'brochures'] },
+    });
 
-      if (!res.ok) break;
+    if (!res.ok) return undefined;
 
-      const data = await res.json();
-      items.push(...(data.items || []));
-      hasNext = Boolean(data.has_next);
-      page += 1;
-    }
-
-    return { items, total: items.length };
+    const data = await res.json();
+    return { items: data.items || [], total: data.total || data.items?.length || 0 };
   } catch {
     return undefined;
   }

@@ -21,20 +21,10 @@ import {
   Globe,
 } from 'lucide-react';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface Package {
-  slug: string;
-  title: string;
-  duration?: string | null;
-  place?: string | null;
-  cover_image_url?: string | null;
-  starting_price?: number | null;
-  type?: string;
-  tags?: string[];
-}
+import { PreBookingPackage } from '../prebookingData';
 
 interface Props {
-  pkg: Package;
+  pkg: PreBookingPackage;
 }
 
 // ── Calendar constants ────────────────────────────────────────────────────────
@@ -48,51 +38,33 @@ function daysInMonth(y: number, m: number) {
 }
 
 const CLOUDINARY_FALLBACKS: Record<string, string> = {
-  'bhadrachalam-to-papikondalu-sirivaka-bamboo-huts-2-days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
-  'bhadrachalam-to-papikondalu-sirivaka-wooden-cottage-2-days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
-  'bhadrachalam-to-papikondalu-maredumilli-2-days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
-  'bhadrachalam-to-papikondalu-one-day-tour':
+  'bhadrachalam-to-papikondalu-one-day-package':
     'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
-  'bhadrachalam-to-papikondalu-boat-rajahmundry-package':
+  'bhadrachalam-to-pochavaram-only-boat-point-package':
     'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
-  'rajahmundry-to-papikondalu-bhadrachalam-package':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1786941607/ts_tours/ou4bikypctyozwhizlic.jpg',
+  'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days':
+    'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+  'bhadrachalam-to-papikondalu-resort-package-2days':
+    'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
 };
 
 const DEFAULT_TOUR_IMAGE =
   'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp';
 
-function getPackageImage(pkg: Package): string {
+function getPackageImage(pkg: PreBookingPackage): string {
   if (pkg.cover_image_url && pkg.cover_image_url.trim() && pkg.cover_image_url.startsWith('http')) {
     return pkg.cover_image_url;
   }
   if (CLOUDINARY_FALLBACKS[pkg.slug]) {
     return CLOUDINARY_FALLBACKS[pkg.slug];
   }
-  const slug = (pkg.slug || '').toLowerCase();
-  const title = (pkg.title || '').toLowerCase();
-  if (slug.includes('bamboo') || title.includes('bamboo') || slug.includes('huts') || title.includes('huts')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg';
-  }
-  if (slug.includes('wooden') || title.includes('wooden') || slug.includes('cottage') || title.includes('cottage')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg';
-  }
-  if (slug.includes('maredumilli') || title.includes('maredumilli') || slug.includes('resort') || title.includes('forest')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg';
-  }
-  if (slug.includes('bhadrachalam') || title.includes('bhadrachalam') || title.includes('temple')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg';
-  }
   return DEFAULT_TOUR_IMAGE;
 }
 
 function getTypeLabel(type?: string) {
-  if (type === 'TOUR') return 'Day Tour';
-  if (type === 'STAY') return 'Overnight Stay';
-  if (type === 'TRIP') return 'Multi-Day Trip';
+  if (type === 'TOUR') return 'Resort Stay';
+  if (type === 'STAY') return 'Resort Stay';
+  if (type === 'TRIP') return 'Boat Tour';
   return 'Tour Package';
 }
 
@@ -400,8 +372,8 @@ function Stepper({
   return (
     <div className="flex items-center justify-between py-2.5">
       <div>
-        <p className="text-sm font-semibold text-[#0F3D56]">{label}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        <p className="text-sm font-bold text-[#0F3D56]">{label}</p>
+        {sub && <p className="text-xs text-gray-600 font-medium mt-0.5">{sub}</p>}
       </div>
       <div className="flex items-center gap-3">
         <button
@@ -438,7 +410,7 @@ function SuccessScreen({
   waUrl,
   name,
 }: {
-  pkg: Package;
+  pkg: PreBookingPackage;
   date: string;
   adults: number;
   children: number;
@@ -619,7 +591,7 @@ function ReservationSummarySidebar({
   children,
   availableSeats,
 }: {
-  pkg: Package;
+  pkg: PreBookingPackage;
   selectedDate: string;
   travelDateDisplay: string;
   adults: number;
@@ -701,6 +673,30 @@ function ReservationSummarySidebar({
               </span>
             </div>
 
+            {/* Live Pricing Breakdown */}
+            <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1.5 text-xs">
+              {pkg.adult_price ? (
+                <div className="flex justify-between text-gray-600">
+                  <span>{adults} Adult{adults > 1 ? 's' : ''} × ₹{pkg.adult_price.toLocaleString('en-IN')}</span>
+                  <span className="font-bold text-[#0F3D56]">₹{(adults * pkg.adult_price).toLocaleString('en-IN')}</span>
+                </div>
+              ) : null}
+              {children > 0 && pkg.child_price ? (
+                <div className="flex justify-between text-gray-600">
+                  <span>{children} Child{children > 1 ? 'ren' : ''} × ₹{pkg.child_price.toLocaleString('en-IN')}</span>
+                  <span className="font-bold text-[#0F3D56]">₹{(children * pkg.child_price).toLocaleString('en-IN')}</span>
+                </div>
+              ) : null}
+              {pkg.adult_price ? (
+                <div className="border-t border-gray-200 pt-1.5 flex justify-between font-extrabold text-[#0F3D56]">
+                  <span>Estimated Total</span>
+                  <span className="text-sm text-[#1598a1]">
+                    ₹{((adults * pkg.adult_price) + (children * (pkg.child_price || 0))).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
             {selectedDate && availableSeats !== null && (
               <div className="flex items-center justify-between text-xs pt-0.5">
                 <span className="text-gray-400 font-medium">Daily Capacity</span>
@@ -719,13 +715,17 @@ function ReservationSummarySidebar({
               Free Reservation Guarantee
             </p>
             <p className="text-base font-black text-[#0F3D56] mt-0.5">
-              100% Free · No Payment Now
+              100% Free · Zero Deposit
             </p>
-            {pkg.starting_price && pkg.starting_price > 0 && (
-              <p className="text-[11px] text-gray-500 mt-1">
-                Estimated tour price: ₹{pkg.starting_price.toLocaleString('en-IN')}/person
+            {pkg.adult_price && pkg.child_price ? (
+              <p className="text-[11px] text-gray-600 mt-1 font-medium">
+                ₹{pkg.adult_price.toLocaleString('en-IN')} / Adult · ₹{pkg.child_price.toLocaleString('en-IN')} / Child
               </p>
-            )}
+            ) : pkg.starting_price && pkg.starting_price > 0 ? (
+              <p className="text-[11px] text-gray-500 mt-1">
+                Tour fare: ₹{pkg.starting_price.toLocaleString('en-IN')}/person
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -1015,7 +1015,7 @@ export default function BookingFlowClient({ pkg }: Props) {
                     <div className="bg-white border border-gray-200 rounded-xl px-4 py-2">
                       <Stepper
                         label="Adults"
-                        sub="12+ years"
+                        sub={pkg.adult_price ? `12+ years · ₹${pkg.adult_price.toLocaleString('en-IN')}/person` : '12+ years'}
                         value={adults}
                         min={1}
                         max={30}
@@ -1025,7 +1025,7 @@ export default function BookingFlowClient({ pkg }: Props) {
                     <div className="bg-white border border-gray-200 rounded-xl px-4 py-2">
                       <Stepper
                         label="Children"
-                        sub="5–11 years"
+                        sub={pkg.child_price ? `5–11 years · ₹${pkg.child_price.toLocaleString('en-IN')}/child` : '5–11 years'}
                         value={children}
                         min={0}
                         max={20}
@@ -1033,8 +1033,26 @@ export default function BookingFlowClient({ pkg }: Props) {
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-3">
-                    Children under 5 years are free · No upfront payment required
+
+                  {pkg.adult_price ? (
+                    <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between flex-wrap gap-2 text-xs">
+                      <div className="flex items-center gap-1 text-gray-500 font-medium">
+                        <span>Estimated Fare:</span>
+                        <span className="text-gray-400">({adults}A{children > 0 ? ` + ${children}C` : ''})</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-extrabold text-[#0F3D56] text-sm sm:text-base">
+                          ₹{((adults * pkg.adult_price) + (children * (pkg.child_price || 0))).toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#1598a1] ml-1.5 bg-[#f0faf9] border border-[#1598a1]/20 px-2 py-0.5 rounded">
+                          Free Reservation
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <p className="text-[10px] text-gray-400 mt-2.5">
+                    Children under 5 years travel free · No advance deposit required
                   </p>
                 </div>
 
@@ -1266,6 +1284,10 @@ export default function BookingFlowClient({ pkg }: Props) {
                       { label: 'Package', value: pkg.title, highlight: true },
                       { label: 'Travel Date', value: travelDateDisplay },
                       { label: 'Travellers', value: paxDisplay },
+                      ...(pkg.adult_price ? [{
+                        label: 'Estimated Fare',
+                        value: `₹${((adults * pkg.adult_price) + (children * (pkg.child_price || 0))).toLocaleString('en-IN')} (Adult: ₹${pkg.adult_price}${pkg.child_price ? `, Child: ₹${pkg.child_price}` : ''})`,
+                      }] : []),
                       { label: 'Name', value: form.name },
                       { label: 'Phone', value: phoneDisplay },
                       { label: 'Email', value: form.email },

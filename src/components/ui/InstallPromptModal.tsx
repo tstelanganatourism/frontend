@@ -25,17 +25,19 @@ export default function InstallPromptModal() {
     const params = new URLSearchParams(window.location.search);
     const forceShow = params.get('force-pwa') === 'true';
 
-    // Dismissed check (expires after 3 days)
-    const dismissedTime = localStorage.getItem('pwa-prompt-dismissed-time');
-    const hasOldDismissed = localStorage.getItem('pwa-prompt-dismissed') === 'true';
-    let isCurrentlyDismissed = false;
+    // Dismissed check
+    const isDev = process.env.NODE_ENV === 'development';
+    const dismissedTime = isDev
+      ? sessionStorage.getItem('pwa-prompt-dismissed')
+      : localStorage.getItem('pwa-prompt-dismissed-time');
 
-    if (dismissedTime) {
+    let isCurrentlyDismissed = false;
+    if (dismissedTime && !isDev) {
       const parsedTime = parseInt(dismissedTime, 10);
-      if (!isNaN(parsedTime) && Date.now() - parsedTime < 3 * 24 * 60 * 60 * 1000) {
+      if (!isNaN(parsedTime) && Date.now() - parsedTime < 24 * 60 * 60 * 1000) {
         isCurrentlyDismissed = true;
       }
-    } else if (hasOldDismissed) {
+    } else if (isDev && dismissedTime === 'true') {
       isCurrentlyDismissed = true;
     }
 
@@ -48,16 +50,13 @@ export default function InstallPromptModal() {
       (window.navigator.maxTouchPoints > 0 && /macintosh/.test(userAgent));
     setIsIOS(isIosDevice);
 
-    if (isIosDevice) {
-      const timer = setTimeout(() => setShowPrompt(true), 2500);
-      return () => clearTimeout(timer);
-    }
+    // Show prompt after a smooth 2.5s delay on all devices (mobile & desktop)
+    const timer = setTimeout(() => setShowPrompt(true), 2500);
 
-    // Android / Chrome
+    // Android / Chrome deferred prompt capture
     const globalPrompt = (window as any).deferredPrompt;
     if (globalPrompt) {
       setDeferredPrompt(globalPrompt);
-      setShowPrompt(true);
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -69,13 +68,17 @@ export default function InstallPromptModal() {
 
     const handleCustomPromptEvent = () => {
       const p = (window as any).deferredPrompt;
-      if (p) { setDeferredPrompt(p); setShowPrompt(true); }
+      if (p) {
+        setDeferredPrompt(p);
+        setShowPrompt(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('deferredpromptavailable', handleCustomPromptEvent);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('deferredpromptavailable', handleCustomPromptEvent);
     };
@@ -83,8 +86,11 @@ export default function InstallPromptModal() {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem('pwa-prompt-dismissed-time', Date.now().toString());
-    localStorage.setItem('pwa-prompt-dismissed', 'true');
+    if (process.env.NODE_ENV === 'development') {
+      sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+    } else {
+      localStorage.setItem('pwa-prompt-dismissed-time', Date.now().toString());
+    }
   };
 
   const handleInstallClick = async () => {
@@ -107,19 +113,22 @@ export default function InstallPromptModal() {
       if (outcome === 'accepted') setShowPrompt(false);
       setDeferredPrompt(null);
       (window as any).deferredPrompt = null;
+    } else {
+      // Direct navigation or fallback for installed state
+      handleDismiss();
     }
   };
 
   if (!showPrompt || isStandalone || isPrintPage) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-10 fade-in duration-500 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[340px] print:hidden">
-      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.14)] border border-slate-200 p-4">
+    <div className="fixed bottom-[4.25rem] left-3 right-3 z-[85] animate-in slide-in-from-bottom-6 fade-in duration-300 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[350px] print:hidden">
+      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_12px_36px_rgba(0,0,0,0.18)] border border-slate-200/90 p-4">
         {/* Dismiss */}
         <button
           onClick={handleDismiss}
           aria-label="Close install prompt"
-          className="absolute right-3 top-3 rounded-full bg-slate-100 p-1.5 text-slate-500 transition-colors hover:bg-slate-200"
+          className="absolute right-3 top-3 z-20 rounded-full bg-slate-100 p-1.5 text-slate-600 transition-colors hover:bg-slate-200 shadow-xs"
         >
           <X className="h-4 w-4" />
         </button>

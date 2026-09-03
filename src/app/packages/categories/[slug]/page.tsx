@@ -7,6 +7,19 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
+export async function generateStaticParams() {
+  try {
+    const res = await apiFetch('/api/v1/packages/categories', {
+      next: { revalidate: 43200, tags: ['categories', 'package-categories'] },
+    });
+    if (!res.ok) return [];
+    const categories = await res.json();
+    return (categories || []).map((cat: { slug: string }) => ({ slug: cat.slug }));
+  } catch {
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {

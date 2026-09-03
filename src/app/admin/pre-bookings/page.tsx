@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
 import {
   CheckCircle2, Circle, MessageSquare, Phone, Mail, Calendar, Users,
   Package, Search, Filter, RefreshCw, ExternalLink, ChevronDown, ChevronUp,
-  StickyNote, AlertTriangle, CheckCheck, X
+  StickyNote, AlertTriangle, CheckCheck, X, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -72,10 +73,14 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
 // ── Row Component ─────────────────────────────────────────────────────────────
 function PreBookingRow({
   pb,
+  accessToken,
   onUpdate,
+  onDelete,
 }: {
   pb: PreBooking;
+  accessToken: string | null;
   onUpdate: (id: number, patch: Partial<PreBooking>) => void;
+  onDelete: (id: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [notes, setNotes] = useState(pb.admin_notes || '');
@@ -84,7 +89,8 @@ function PreBookingRow({
   const patch = useCallback(async (data: Partial<PreBooking>) => {
     setSaving(true);
     try {
-      const res = await apiClient.patch(`/api/v1/admin/pre-bookings/${pb.id}`, data);
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+      const res = await apiClient.patch(`/api/v1/admin/pre-bookings/${pb.id}`, data, { headers });
       onUpdate(pb.id, res.data);
       toast.success('Updated successfully');
     } catch {
@@ -92,7 +98,22 @@ function PreBookingRow({
     } finally {
       setSaving(false);
     }
-  }, [pb.id, onUpdate]);
+  }, [pb.id, onUpdate, accessToken]);
+
+  const handleDelete = useCallback(async () => {
+    if (!window.confirm(`Are you sure you want to delete lead ${pb.ref_id} (${pb.customer_name})?`)) return;
+    setSaving(true);
+    try {
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+      await apiClient.delete(`/api/v1/admin/pre-bookings/${pb.id}`, { headers });
+      onDelete(pb.id);
+      toast.success('Lead deleted');
+    } catch {
+      toast.error('Failed to delete lead');
+    } finally {
+      setSaving(false);
+    }
+  }, [pb.id, pb.ref_id, pb.customer_name, onDelete, accessToken]);
 
   const pax = `${pb.adult_count}A${pb.child_count > 0 ? ` + ${pb.child_count}C` : ''}`;
 
@@ -177,6 +198,15 @@ function PreBookingRow({
             {pb.is_confirmed ? 'Unconfirm' : 'Mark Confirmed'}
           </button>
           <button
+            onClick={handleDelete}
+            disabled={saving}
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg transition-colors border bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            title="Delete Pre-Booking Lead"
+          >
+            <Trash2 className="w-3 h-3" />
+            Delete
+          </button>
+          <button
             onClick={() => setExpanded((p) => !p)}
             className="flex items-center gap-1 text-xs text-slate-400 ml-auto hover:text-slate-600 px-2 py-2"
           >
@@ -230,6 +260,7 @@ function PreBookingRow({
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminPreBookingsPage() {
+  const { isHydrated, accessToken } = useAuthStore();
   const [items, setItems] = useState<PreBooking[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, confirmed: 0, not_contacted: 0 });
   const [loading, setLoading] = useState(true);
@@ -250,9 +281,10 @@ export default function AdminPreBookingsPage() {
       params.set('limit', String(LIMIT));
       params.set('offset', String(offset));
 
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
       const [listRes, statsRes] = await Promise.all([
-        apiClient.get(`/api/v1/admin/pre-bookings?${params.toString()}`),
-        apiClient.get('/api/v1/admin/pre-bookings/stats'),
+        apiClient.get(`/api/v1/admin/pre-bookings?${params.toString()}`, { headers }),
+        apiClient.get('/api/v1/admin/pre-bookings/stats', { headers }),
       ]);
       setItems(listRes.data?.items ?? []);
       setTotal(listRes.data?.total ?? 0);
@@ -263,14 +295,22 @@ export default function AdminPreBookingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterConfirmed, filterContacted, offset]);
+  }, [search, filterConfirmed, filterContacted, offset, accessToken]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (isHydrated) {
+      fetchData();
+    }
+  }, [fetchData, isHydrated, accessToken]);
 
   const handleUpdate = (id: number, patch: Partial<PreBooking>) => {
     setItems((prev) => prev.map((pb) => pb.id === id ? { ...pb, ...patch } : pb));
+  };
+
+  const handleDelete = (id: number) => {
+    setItems((prev) => prev.filter((pb) => pb.id !== id));
+    setTotal((prev) => Math.max(0, prev - 1));
+    fetchData();
   };
 
   const hasFilters = search || filterConfirmed !== 'all' || filterContacted !== 'all';
@@ -393,7 +433,13 @@ export default function AdminPreBookingsPage() {
           </div>
 
           {items.map((pb) => (
-            <PreBookingRow key={pb.id} pb={pb} onUpdate={handleUpdate} />
+            <PreBookingRow
+              key={pb.id}
+              pb={pb}
+              accessToken={accessToken}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       )}

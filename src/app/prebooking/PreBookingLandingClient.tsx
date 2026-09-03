@@ -95,88 +95,48 @@ const FALLBACK_PACKAGES = [
   },
 ];
 
-interface Package {
-  id: string | number;
-  slug: string;
-  title: string;
-  duration?: string | null;
-  place?: string | null;
-  cover_image_url?: string | null;
-  starting_price?: number | null;
-  type?: string;
-  tags?: string[];
-}
+import { PREBOOKING_PACKAGES, PreBookingPackage } from './prebookingData';
 
 interface Props {
-  packages: Package[] | null;
+  packages?: PreBookingPackage[] | null;
 }
 
 const SEASON_LABEL = 'Sep 2026 Season';
 
 const CLOUDINARY_FALLBACKS: Record<string, string> = {
-  'bhadrachalam-to-papikondalu-sirivaka-bamboo-huts-2-days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
-  'bhadrachalam-to-papikondalu-sirivaka-wooden-cottage-2-days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
-  'bhadrachalam-to-papikondalu-maredumilli-2-days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
-  'bhadrachalam-to-papikondalu-one-day-tour':
+  'bhadrachalam-to-papikondalu-one-day-package':
     'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
-  'bhadrachalam-to-papikondalu-boat-rajahmundry-package':
+  'bhadrachalam-to-pochavaram-only-boat-point-package':
     'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
-  'rajahmundry-to-papikondalu-bhadrachalam-package':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1786941607/ts_tours/ou4bikypctyozwhizlic.jpg',
-  'papikondalu-cruise':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
-  'bhadrachalam-tour':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
-  'kolluru-bamboo-huts':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
-  'maredumilli-combo':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
-  'bhadrachalam-rooms':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
-  'godavari-sightseeing':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+  'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days':
+    'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+  'bhadrachalam-to-papikondalu-resort-package-2days':
+    'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
 };
 
 const DEFAULT_TOUR_IMAGE =
   'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp';
 
-function getPackageImage(pkg: Package): string {
+function getPackageImage(pkg: PreBookingPackage): string {
   if (pkg.cover_image_url && pkg.cover_image_url.trim() && pkg.cover_image_url.startsWith('http')) {
     return pkg.cover_image_url;
   }
   if (CLOUDINARY_FALLBACKS[pkg.slug]) {
     return CLOUDINARY_FALLBACKS[pkg.slug];
   }
-  const slug = (pkg.slug || '').toLowerCase();
-  const title = (pkg.title || '').toLowerCase();
-  if (slug.includes('bamboo') || title.includes('bamboo') || slug.includes('huts') || title.includes('huts')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg';
-  }
-  if (slug.includes('wooden') || title.includes('wooden') || slug.includes('cottage') || title.includes('cottage')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg';
-  }
-  if (slug.includes('maredumilli') || title.includes('maredumilli') || slug.includes('resort') || title.includes('forest')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg';
-  }
-  if (slug.includes('bhadrachalam') || title.includes('bhadrachalam') || title.includes('temple')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg';
-  }
   return DEFAULT_TOUR_IMAGE;
 }
 
 function getTypeLabel(type?: string) {
-  if (type === 'TOUR') return 'Day Tour';
-  if (type === 'STAY') return 'Overnight Stay';
-  if (type === 'TRIP') return 'Multi-Day Trip';
-  return 'Package';
+  if (type === 'TOUR') return 'Resort Stay';
+  if (type === 'STAY') return 'Resort Stay';
+  if (type === 'TRIP') return 'Boat Tour';
+  return 'Tour Package';
 }
 
 export default function PreBookingLandingClient({ packages }: Props) {
-  const displayPackages: Package[] =
-    packages && packages.length > 0 ? packages : FALLBACK_PACKAGES;
+  const displayPackages: PreBookingPackage[] =
+    packages && packages.length > 0 ? packages : PREBOOKING_PACKAGES;
 
   return (
     <div className="min-h-screen bg-[#F9F9F7] text-[#0F3D56]">
@@ -303,9 +263,24 @@ export default function PreBookingLandingClient({ packages }: Props) {
                 {/* Footer */}
                 <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
                   <div>
-                    {pkg.starting_price && pkg.starting_price > 0 ? (
+                    {pkg.adult_price && pkg.child_price ? (
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Prices</p>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-sm font-black text-[#0F3D56]">
+                            ₹{pkg.adult_price.toLocaleString('en-IN')}
+                            <span className="text-[10px] font-bold text-gray-400 ml-0.5">/Adult</span>
+                          </span>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-sm font-black text-[#1598a1]">
+                            ₹{pkg.child_price.toLocaleString('en-IN')}
+                            <span className="text-[10px] font-bold text-gray-400 ml-0.5">/Child</span>
+                          </span>
+                        </div>
+                      </div>
+                    ) : pkg.starting_price && pkg.starting_price > 0 ? (
                       <>
-                        <p className="text-[11px] text-gray-400">Starting from</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Package Price</p>
                         <p className="text-base font-black text-[#0F3D56]">
                           ₹{pkg.starting_price.toLocaleString('en-IN')}
                           <span className="text-xs font-normal text-gray-400 ml-1">/ person</span>

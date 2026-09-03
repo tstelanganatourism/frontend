@@ -335,12 +335,17 @@ export const BookingSidebarV3 = ({
     }
   }, []);
 
-  // Fetch availability when month changes
+  // Fetch availability when month changes and prefetch adjacent month
   useEffect(() => {
     if (packageSlug) {
       fetchPublicAvailability(packageSlug, currentMonthStr);
+      
+      // Prefetch next month in background for instant 0ms month transitions
+      const nextMonthDate = new Date(calYear, calMonth + 1, 1);
+      const nextMonthStr = toYYYYMM(nextMonthDate);
+      useInventoryStore.getState().prefetchPublicAvailability(packageSlug, nextMonthStr);
     }
-  }, [packageSlug, currentMonthStr, fetchPublicAvailability]);
+  }, [packageSlug, currentMonthStr, calYear, calMonth, fetchPublicAvailability]);
 
   // Listen for Live SSE Inventory updates
   useEffect(() => {
@@ -1419,7 +1424,8 @@ export const BookingSidebarV3 = ({
   };
 
   const renderCalendar = (onClose?: () => void) => {
-    if (publicLoading && !isAdmin) {
+    const isInitialLoading = publicLoading && !publicAvailability && !isAdmin;
+    if (isInitialLoading) {
       return (
         <div className="flex flex-col items-center justify-center py-10 gap-3">
           <div className="relative">
@@ -1463,20 +1469,23 @@ export const BookingSidebarV3 = ({
         dayStatus = 'available';
         isDisabled = false;
       } else if (publicAvailability) {
-        const slot = publicAvailability.dates.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
-        if (slot && slot.status === 'OPEN' && Number(slot.available_seats || 0) > 0) {
-          dayStatus = 'available';
-          isDisabled = false;
-        } else if (slot && (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT')) {
+        const slot = publicAvailability.dates.find(item => item.date === dateStr && (selectedVariantId ? item.variant_id === selectedVariantId : true));
+        if (slot && (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || (Number(slot.available_seats) === 0 && slot.is_closed))) {
           dayStatus = 'soldout';
           isDisabled = true;
+        } else if (slot && (slot.status === 'OPEN' || slot.status === 'NO_INVENTORY' || Number(slot.available_seats) > 0)) {
+          dayStatus = 'available';
+          isDisabled = false;
+        } else if (!slot && isActive) {
+          dayStatus = 'available';
+          isDisabled = false;
         } else {
           dayStatus = 'unpublished';
           isDisabled = true;
         }
-      } else {
-        dayStatus = 'unpublished';
-        isDisabled = true;
+      } else if (isActive) {
+        dayStatus = 'available';
+        isDisabled = false;
       }
 
       // per-date fare & seats

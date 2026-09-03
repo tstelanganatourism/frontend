@@ -256,6 +256,21 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* High-priority LCP Preloads */}
+      <link
+        rel="preload"
+        href="https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill/v1786268917/ts_boat_tourism/videos/gallery/xvoonmz7yc8ncbyzjypv.jpg"
+        as="image"
+        type="image/jpeg"
+        fetchPriority="high"
+      />
+      <link
+        rel="preload"
+        href="https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1600/v1786273967/200b2b33-a6c8-474a-b9f1-823c5e0c831a_v9mwdp.jpg"
+        as="image"
+        type="image/jpeg"
+        fetchPriority="high"
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

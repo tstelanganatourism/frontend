@@ -1451,7 +1451,8 @@ export const BookingSidebarV2 = ({
   };
 
   const renderCalendar = (onClose?: () => void) => {
-    if (publicLoading && !isAdmin) {
+    const isInitialLoading = publicLoading && !publicAvailability && !isAdmin;
+    if (isInitialLoading) {
       return (
         <div className="flex flex-col items-center justify-center py-10 gap-3">
           <div className="h-10 w-10 rounded-full border-2 border-[#1a6b7a]/20 border-t-[#1a6b7a] animate-spin" />
@@ -1492,20 +1493,23 @@ export const BookingSidebarV2 = ({
         dayStatus = 'available';
         isDisabled = false;
       } else if (publicAvailability) {
-        const slot = publicAvailability.dates.find(item => item.date === dateStr && item.variant_id === selectedVariantId);
-        if (slot && slot.status === 'OPEN' && Number(slot.available_seats || 0) > 0) {
-          dayStatus = 'available';
-          isDisabled = false;
-        } else if (slot && (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT')) {
+        const slot = publicAvailability.dates.find(item => item.date === dateStr && (selectedVariantId ? item.variant_id === selectedVariantId : true));
+        if (slot && (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || (Number(slot.available_seats) === 0 && slot.is_closed))) {
           dayStatus = 'soldout';
           isDisabled = true;
+        } else if (slot && (slot.status === 'OPEN' || slot.status === 'NO_INVENTORY' || Number(slot.available_seats) > 0)) {
+          dayStatus = 'available';
+          isDisabled = false;
+        } else if (!slot && isActive) {
+          dayStatus = 'available';
+          isDisabled = false;
         } else {
           dayStatus = 'unpublished';
           isDisabled = true;
         }
-      } else {
-        dayStatus = 'unpublished';
-        isDisabled = true;
+      } else if (isActive) {
+        dayStatus = 'available';
+        isDisabled = false;
       }
 
       let fare: number | null = null;
