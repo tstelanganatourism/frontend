@@ -3,6 +3,25 @@ import RoomsList from '../../../rooms/RoomsList';
 import { apiFetch } from '@/lib/api';
 import { Metadata } from 'next';
 
+export const revalidate = 43200;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  try {
+    const res = await apiFetch('/api/v1/rooms/categories', {
+      next: { revalidate: 43200, tags: ['categories'] }
+    });
+    if (!res.ok) return [];
+    const categories = await res.json();
+    if (!Array.isArray(categories)) return [];
+    return categories
+      .filter((c: { slug?: string }) => typeof c.slug === 'string' && c.slug.length > 0)
+      .map((c: { slug: string }) => ({ slug: c.slug }));
+  } catch {
+    return [];
+  }
+}
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -13,7 +32,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const res = await apiFetch(`/api/v1/rooms/categories/${slug}`, {
       next: { revalidate: 43200, tags: ['categories', `room-category:${slug}`] }
     });
-    if (!res.ok) return {};
+    if (!res.ok) {
+      return {
+        title: 'Accommodations | TS Boat Tourism',
+        robots: { index: false, follow: false },
+      };
+    }
     const cat = await res.json();
     return {
       title: `${cat.name} | TS Boat Tourism Accommodations`,
@@ -21,7 +45,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       alternates: { canonical: `/stays/categories/${slug}` },
     };
   } catch {
-    return {};
+    return {
+      title: 'Accommodations | TS Boat Tourism',
+    };
   }
 }
 
@@ -30,10 +56,14 @@ async function fetchRoomCategoryData(slug: string) {
     const res = await apiFetch(`/api/v1/rooms/categories/${slug}`, {
       next: { revalidate: 43200, tags: ['categories', `room-category:${slug}`] }
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error(`Failed to fetch room category: HTTP ${res.status}`);
+    }
     return await res.json();
-  } catch {
-    return null;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('HTTP 404')) return null;
+    throw err;
   }
 }
 

@@ -52,8 +52,17 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(props.variants[0]?.id ?? null);
 
   useEffect(() => {
-    const handleScroll = () => setShowStickyBar(window.scrollY > 300);
-    window.addEventListener('scroll', handleScroll);
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setShowStickyBar(window.scrollY > 300);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 

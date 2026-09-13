@@ -48,12 +48,12 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
         className={`w-full max-w-full flex-1 relative ${
           isHome ? 'pt-0' : 'pt-[72px] sm:pt-[76px]'
         } ${
-          isBookingPage ? 'pb-[64px]' : 'pb-[64px] md:pb-0'
+          isBookingPage ? 'pb-[110px] md:pb-0' : 'pb-[64px] md:pb-0'
         }`}
       >
         {children}
       </main>
-      <PublicFooter isDashboard={isDashboardPage} />
+      <PublicFooter isDashboard={isDashboardPage} isBooking={isBookingPage} />
       {showMobileNav && <MobileBottomNav isStacked={false} />}
       {!isBookingPage && <WhatsAppFAB />}
     </>

@@ -142,10 +142,14 @@ const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | n
     const res = await apiFetch(`/api/v1/packages/${slug}`, {
       next: { revalidate: 43200, tags: ['packages', `package:${slug}`] }
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error(`Failed to fetch package ${slug}: HTTP ${res.status}`);
+    }
     return res.json();
-  } catch {
-    return null;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('HTTP 404')) return null;
+    throw err;
   }
 });
 
@@ -177,8 +181,27 @@ function getSeoDescription(pkg: PackageDetail) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const pkg = await fetchPackageDetail(slug);
-  if (!pkg) return { title: 'Package Not Found' };
+  let pkg: PackageDetail | null = null;
+  try {
+    pkg = await fetchPackageDetail(slug);
+  } catch {
+    return {
+      title: 'Tour Package | TS Boat Tourism',
+    };
+  }
+  if (!pkg) {
+    return {
+      title: 'Package Not Found | TS Boat Tourism',
+      robots: {
+        index: false,
+        follow: false,
+        googleBot: {
+          index: false,
+          follow: false,
+        },
+      },
+    };
+  }
 
   const description = getSeoDescription(pkg);
   const title = pkg.meta_title || `${pkg.title} - Tour Package Booking Partner`;

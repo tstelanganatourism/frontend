@@ -1173,8 +1173,8 @@ export const BookingSidebarV2 = ({
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
   const isBookingDisabled =
+    isProcessingCheckout ||
     isSuspended ||
-    !isAuthenticated ||
     (!isAdmin && isPackageInactive) ||
     validVariants.length === 0 ||
     !selectedDate ||
@@ -1189,7 +1189,6 @@ export const BookingSidebarV2 = ({
     if (!isActive) return 'Bookings Suspended';
     if (isPackageInactive && !isAdmin) return 'Bookings Closed / Inactive';
     if (validVariants.length === 0) return 'Fare updating';
-    if (!isAuthenticated) return 'Login to Book';
     if (!selectedDate) return 'Select a date';
 
     if (hasTransport && transportOptions.length > 0) {
@@ -1210,7 +1209,7 @@ export const BookingSidebarV2 = ({
     if (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out') return 'Unavailable';
     if (availabilityState.kind === 'open') return 'Book Now';
     return 'Call to confirm availability';
-  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAuthenticated, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind, separateVehicleQtys, adults, children, totalSeparateCapacity, selectedSharedOptionId]);
+  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind, separateVehicleQtys, adults, children, totalSeparateCapacity, selectedSharedOptionId]);
 
   // Strict Real-Time Locking: Force-close CheckoutPassengerModal
   useEffect(() => {
@@ -1233,11 +1232,6 @@ export const BookingSidebarV2 = ({
     if ((isPackageInactive && !isAdmin) || !isActive) return;
     if (!isAdmin && availabilityState.kind !== 'open') {
       toast.error(availabilityState.message || 'Schedule has not been opened yet for online booking.');
-      return;
-    }
-    if (!isAuthenticated) {
-      e.preventDefault();
-      setShowLoginPrompt(true);
       return;
     }
     
@@ -1497,19 +1491,16 @@ export const BookingSidebarV2 = ({
         if (slot && (slot.status === 'CLOSED' || slot.status === 'SOLD_OUT' || (Number(slot.available_seats) === 0 && slot.is_closed))) {
           dayStatus = 'soldout';
           isDisabled = true;
-        } else if (slot && (slot.status === 'OPEN' || slot.status === 'NO_INVENTORY' || Number(slot.available_seats) > 0)) {
-          dayStatus = 'available';
-          isDisabled = false;
-        } else if (!slot && isActive) {
+        } else if (slot && slot.status === 'OPEN' && Number(slot.available_seats) > 0 && !slot.is_closed) {
           dayStatus = 'available';
           isDisabled = false;
         } else {
           dayStatus = 'unpublished';
           isDisabled = true;
         }
-      } else if (isActive) {
-        dayStatus = 'available';
-        isDisabled = false;
+      } else {
+        dayStatus = 'unpublished';
+        isDisabled = true;
       }
 
       let fare: number | null = null;

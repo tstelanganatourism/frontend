@@ -91,9 +91,6 @@ export const metadata: Metadata = {
     description: "Book Papikondalu boat tours, Bhadrachalam temple packages, and Kolluru bamboo hut stays online.",
     images: ["https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg"],
   },
-  alternates: {
-    canonical: "/",
-  },
   robots: {
     index: true,
     follow: true,
@@ -123,35 +120,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         {/* Font loading and preloads managed by Next.js */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof window !== 'undefined' && window.trustedTypes && !window.trustedTypes.defaultPolicy) {
-                window.trustedTypes.createPolicy('default', {
-                  createHTML: (string) => string,
-                  createScript: (string) => string,
-                  createScriptURL: (string) => string,
-                });
-              }
-            `
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                window.deferredPrompt = e;
-                window.dispatchEvent(new CustomEvent('deferredpromptavailable'));
-              });
-            `
-          }}
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -163,7 +136,7 @@ export default function RootLayout({
                 "alternateName": "TS Boat Tourism",
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com",
                 "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
-                "image": "https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png",
+                "image": "https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_800/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png",
                 "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 99513 69573",
                 "email": "tstelanganatourism@gmail.com",
@@ -242,7 +215,7 @@ export default function RootLayout({
           }}
         ></script>
       </head>
-      <body className={`${inter.variable} ${outfit.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
         <TopLoader />
         <QueryProvider>
           <AuthProvider>

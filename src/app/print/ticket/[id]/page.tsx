@@ -367,52 +367,70 @@ export default async function PrintTicketPage({
           box-shadow: inset 0 3px 5px rgba(0,0,0,0.05);
         }
 
-        /* Header Area */
+        /* Header Area — APTDC-style: left logo | center org | right seal */
         .ticket-header {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 100px 1fr 90px;
           align-items: center;
-          border-bottom: 2px solid #0a2351;
-          padding-bottom: 8px;
-          margin-bottom: 10px;
+          gap: 12px;
+          border-bottom: 2.5px solid #0a2351;
+          padding-bottom: 10px;
+          margin-bottom: 12px;
         }
 
-        .brand-section {
+        .header-logo-left {
           display: flex;
           align-items: center;
-          gap: 10px;
+          justify-content: flex-start;
         }
 
-        .logo-img {
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          border: 2px solid #c8a45a;
-          object-fit: cover;
+        .header-logo-left img {
+          height: 70px;
+          width: auto;
+          object-fit: contain;
         }
 
-        .brand-title {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-style: italic;
+        .header-center {
+          text-align: center;
+          padding: 0 8px;
+        }
+
+        .header-org-name {
+          font-family: 'Outfit', sans-serif;
           font-weight: 900;
-          color: #1a6b7a;
-          font-size: 19px;
-          line-height: 1.1;
-        }
-
-        .brand-subtitle {
-          font-size: 10px;
-          font-weight: 700;
+          font-size: 14px;
           color: #0a2351;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.8px;
+          line-height: 1.2;
+          margin-bottom: 4px;
         }
 
-        .telugu-tag {
-          font-family: 'Noto Sans Telugu', sans-serif;
+        .header-org-address {
           font-size: 9.5px;
-          color: #475569;
-          margin-top: 1px;
+          font-weight: 600;
+          color: #334155;
+          line-height: 1.5;
+          margin-bottom: 3px;
+        }
+
+        .header-org-website {
+          font-size: 9.5px;
+          font-weight: 700;
+          color: #c8181e;
+          text-decoration: none;
+        }
+
+        .header-logo-right {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+        }
+
+        .header-logo-right img {
+          height: 70px;
+          width: 70px;
+          object-fit: contain;
         }
 
         .ticket-title-section {
@@ -440,6 +458,13 @@ export default async function PrintTicketPage({
           color: #c8a45a;
           margin: 0;
           letter-spacing: 0.5px;
+        }
+
+        .telugu-tag {
+          font-family: 'Noto Sans Telugu', sans-serif;
+          font-size: 9.5px;
+          color: #475569;
+          margin-top: 1px;
         }
 
         /* Ribbon bar */
@@ -910,15 +935,21 @@ export default async function PrintTicketPage({
             padding-bottom: 6px !important;
             margin-bottom: 8px !important;
           }
-          .logo-img {
-            width: 38px !important;
-            height: 38px !important;
+          .header-logo-left img {
+            height: 52px !important;
           }
-          .brand-title {
-            font-size: 17px !important;
+          .header-logo-right img {
+            height: 52px !important;
+            width: 52px !important;
           }
-          .ticket-main-title {
-            font-size: 19px !important;
+          .header-org-name {
+            font-size: 11px !important;
+          }
+          .header-org-address {
+            font-size: 8px !important;
+          }
+          .header-org-website {
+            font-size: 8px !important;
           }
           .pkg-ribbon-bar {
             padding: 5px 10px !important;
@@ -1020,17 +1051,35 @@ export default async function PrintTicketPage({
 
         {/* ── MAIN TICKET AREA ── */}
         <div className="ticket-main">
-          {/* Header */}
+          {/* Header — APTDC-style: TS Logo | Center Org Info | AP Gov Seal */}
           <div className="ticket-header">
-            <div className="brand-section">
-              <img src="/apple-touch-icon.png" className="logo-img" alt="TS Logo" />
-              <div>
-                <div className="brand-title">TS BOAT TOURISM</div>
-                <div className="brand-subtitle">Official Booking Platform</div>
-                <div className="telugu-tag">తెలంగాణ పర్యాటక రంగం · విశ్వసనీయమైన సేవలు</div>
-              </div>
+            {/* Left: TS Boat Tourism Logo */}
+            <div className="header-logo-left">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/aptdc-logo.png" alt="TS Boat Tourism" />
             </div>
-            <div className="ticket-title-section">
+
+            {/* Center: Org Name, Address, Website */}
+            <div className="header-center">
+              <div className="header-org-name">TS Boat Tourism</div>
+              <div className="header-org-address">
+                Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
+                Bhadrachalam, Bhadradri Kothagudem Dist, Telangana – 507 111
+              </div>
+              <a href="https://www.tstelanganatourism.com" className="header-org-website">www.tstelanganatourism.com</a>
+            </div>
+
+            {/* Right: Government Seal */}
+            <div className="header-logo-right">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ap-gov-seal.png" alt="Government of Andhra Pradesh" />
+            </div>
+          </div>
+
+          {/* Ticket title + status badge row below header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div className="telugu-tag">తెలంగాణ పర్యాటక రంగం · విశ్వసనీయమైన సేవలు</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className="ticket-badge">{booking.status === 'PARTIAL_PAID' ? 'ADVANCE PAID' : booking.status.replace(/_/g, ' ')}</div>
               <h2 className="ticket-main-title">{ticketTitle}</h2>
             </div>

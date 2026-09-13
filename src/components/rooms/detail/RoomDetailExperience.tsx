@@ -293,8 +293,17 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [showFloatingWidget, setShowFloatingWidget] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setShowFloatingWidget(window.scrollY > 300);
-    window.addEventListener('scroll', handleScroll);
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setShowFloatingWidget(window.scrollY > 300);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -753,12 +762,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const handleBookingClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isLodgeInactive) return;
-    if (!isAuthenticated) {
-      setShowLoginPrompt(true);
-      return;
-    }
     if (!arrivalDate || !departureDate) {
-      toast.error("Please select arrival and departure dates.");
+      toast.error('Please select both arrival and departure dates first.');
       return;
     }
 
@@ -1078,6 +1083,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         totalRooms={room.total_rooms ?? undefined}
         gallery={room.gallery}
         videoUrl={room.video_url}
+        onOpenLightbox={(idx) => {
+          setActiveSlide(idx);
+          setLightboxOpen(true);
+        }}
       />
 
       <section className="mx-auto grid w-full max-w-[1600px] gap-6 sm:gap-10 px-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] items-start lg:px-12 lg:py-14">
@@ -2289,9 +2298,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                   <button
                     onClick={handleBookingClick}
                     disabled={isProcessingCheckout}
-                    className="flex-1 max-w-[280px] rounded-xl py-3.5 px-5 font-black text-white text-xs uppercase tracking-wider bg-[#0d6e75] shadow-md transition hover:bg-[#0b5c62] hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95"
+                    className="flex-1 max-w-[280px] rounded-xl py-3.5 px-5 font-black text-white text-xs uppercase tracking-wider bg-[#0d6e75] shadow-md transition hover:bg-[#0b5c62] hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95 cursor-pointer"
                   >
-                    <span>{isProcessingCheckout ? 'Processing...' : !isAuthenticated ? 'Login to Book' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}</span>
+                    <span>{isProcessingCheckout ? 'Processing...' : isAdmin ? 'Reserve Now (Admin)' : 'Reserve & Pay Now'}</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 )}

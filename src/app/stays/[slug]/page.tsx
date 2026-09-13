@@ -61,17 +61,40 @@ const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> =
     const res = await apiFetch(`/api/v1/rooms/${slug}`, {
       next: { revalidate: 43200, tags: ['rooms', `room:${slug}`] }
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error(`Failed to fetch room ${slug}: HTTP ${res.status}`);
+    }
     return res.json();
-  } catch {
-    return null;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('HTTP 404')) return null;
+    throw err;
   }
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const room = await fetchRoomDetail(slug);
-  if (!room) return { title: 'Stay Not Found' };
+  let room: RoomDetail | null = null;
+  try {
+    room = await fetchRoomDetail(slug);
+  } catch {
+    return {
+      title: 'Accommodations | TS Boat Tourism',
+    };
+  }
+  if (!room) {
+    return {
+      title: 'Stay Not Found | TS Boat Tourism',
+      robots: {
+        index: false,
+        follow: false,
+        googleBot: {
+          index: false,
+          follow: false,
+        },
+      },
+    };
+  }
   const description = room.meta_description || room.description?.replace(/<[^>]+>/g, '').slice(0, 160) || `${room.lodge_name} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
 
   const image = room.og_image_url || room.cover_image_url;

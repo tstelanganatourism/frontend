@@ -4,7 +4,10 @@ import { apiFetch } from '@/lib/api';
 export const metadata = {
   title: "Papikondalu Boat Rides & Godavari River Cruises",
   description: "Book government-approved boat rides, luxury cruises, and day tours through the scenic Papikondalu hills on the Godavari River. Safe and family-friendly.",
-  keywords: ["Papikondalu Boat Rides", "Godavari Cruises", "Papi Hills Boat Booking", "Bhadrachalam Boating", "Rajahmundry Boat Trips"]
+  keywords: ["Papikondalu Boat Rides", "Godavari Cruises", "Papi Hills Boat Booking", "Bhadrachalam Boating", "Rajahmundry Boat Trips"],
+  alternates: {
+    canonical: '/boat-rides',
+  },
 };
 
 async function fetchInitialPackages(searchParams: Record<string, string | string[] | undefined>) {
@@ -37,7 +40,7 @@ export default async function BoatRidesPage(props: { searchParams: Promise<Recor
   const { data } = await fetchInitialPackages(searchParams);
   return (
     <>
-      <link rel="preload" href="https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png" as="image" type="image/png" fetchPriority="high" />
+      <link rel="preload" href="https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_800/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png" as="image" type="image/jpeg" fetchPriority="high" />
       <PackagesList data={data} pathname="/boat-rides" searchParams={searchParams} />
     </>
   );

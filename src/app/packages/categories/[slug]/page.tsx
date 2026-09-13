@@ -7,6 +7,9 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
+export const revalidate = 43200;
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   try {
     const res = await apiFetch('/api/v1/packages/categories', {
@@ -26,6 +29,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const res = await apiFetch(`/api/v1/packages/categories/${slug}`, {
       next: { revalidate: 43200, tags: ['categories', `category:${slug}`] }
     });
+    if (res.status === 404) {
+      return {
+        title: 'Category Not Found | TS Boat Tourism',
+        robots: { index: false, follow: false },
+      };
+    }
     if (!res.ok) return {};
     const cat = await res.json();
     return {
@@ -43,6 +52,7 @@ async function fetchCategoryPackages(slug: string) {
     const res = await apiFetch(`/api/v1/packages/categories/${slug}`, {
       next: { revalidate: 43200, tags: ['categories', `category:${slug}`] }
     });
+    if (res.status === 404) return { notFound: true };
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -54,7 +64,11 @@ export default async function PackageCategoryPage({ params }: Props) {
   const { slug } = await params;
   const categoryData = await fetchCategoryPackages(slug);
 
-  if (!categoryData) notFound();
+  if (categoryData && 'notFound' in categoryData) notFound();
+  if (!categoryData) {
+    // If backend was temporarily unavailable, show graceful retry instead of permanent 404
+    throw new Error(`Failed to load category '${slug}'. Please refresh.`);
+  }
 
   // Shape the data to match PackagesList's expected format
   const listData = {

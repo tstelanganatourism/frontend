@@ -16,6 +16,7 @@ interface RoomHeroProps {
   totalRooms?: number;
   gallery?: Array<{ id: number; image_url: string; alt_text?: string | null; is_cover: boolean }>;
   videoUrl?: string | null;
+  onOpenLightbox?: (index: number) => void;
 }
 
 const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg';
@@ -29,6 +30,7 @@ export const RoomHero = ({
   totalRooms,
   gallery = [],
   videoUrl,
+  onOpenLightbox,
 }: RoomHeroProps) => {
   const imageUrl = getHdImageUrl(coverImage || fallbackImage);
   const [imgError, setImgError] = useState(false);
@@ -201,7 +203,10 @@ export const RoomHero = ({
               </div>
             ) : (
               <>
-                <div className="relative overflow-hidden rounded-xl bg-slate-950">
+                <div 
+                  className="relative aspect-[4/3] w-full sm:aspect-[16/10] min-h-[320px] lg:min-h-[360px] overflow-hidden rounded-xl bg-slate-950 cursor-pointer group"
+                  onClick={() => onOpenLightbox?.(activeIdx)}
+                >
                   <Image
                     src={getHdImageUrl(activeSlide.image_url)}
                     alt={activeSlide.alt_text || lodgeName}

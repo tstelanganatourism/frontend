@@ -4,7 +4,10 @@ import { apiFetch } from '@/lib/api';
 export const metadata = {
   title: "Bhadrachalam & Papikondalu Sightseeing Packages",
   description: "Local sightseeing trips, temple tours, and scenic guided travel around Bhadrachalam and Papikondalu. Local guide included.",
-  keywords: ["Bhadrachalam Sightseeing", "Bhadrachalam Temple Tours", "Papi Hills Sightseeing", "Bhadrachalam Tour Packages"]
+  keywords: ["Bhadrachalam Sightseeing", "Bhadrachalam Temple Tours", "Papi Hills Sightseeing", "Bhadrachalam Tour Packages"],
+  alternates: {
+    canonical: '/sightseeing',
+  },
 };
 
 async function fetchInitialPackages(searchParams: Record<string, string | string[] | undefined>) {

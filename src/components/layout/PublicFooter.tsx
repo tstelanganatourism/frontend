@@ -1,8 +1,10 @@
+'use client';
+
 import React from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  ArrowUpRight,
   Clock,
   Mail,
   MapPin,
@@ -11,7 +13,22 @@ import {
   Star,
 } from 'lucide-react';
 
-const MAP_EMBED_URL = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.622075248225!2d80.8840206!3d17.6680497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9b83aea4343%3A0x7108b8976c666ac7!2sTS%20BOAT%20TOURISM!5e0!3m2!1sen!2sin!4v1785936445858!5m2!1sen!2sin';
+const FooterMapSection = dynamic(() => import('./FooterMapSection'), {
+  ssr: false,
+  loading: () => (
+    <section className="overflow-hidden rounded-md border border-white/10 bg-white/[0.04] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
+      <div className="relative flex h-[15.5rem] w-full flex-col items-center justify-center rounded-md border border-white/10 bg-[#082834]/80 p-6 text-center md:h-[17.5rem] lg:h-full lg:min-h-[18rem]">
+        <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-[#1598a1]/20 text-[#8eecee] shadow-inner">
+          <MapPin className="h-6 w-6 text-[#8eecee]" />
+        </div>
+        <h4 className="text-sm font-bold text-white">Bhadrachalam Tourism Office</h4>
+        <p className="mt-1 max-w-[240px] text-xs text-white/60">
+          Om Shanthi Building, Near Bus Stand &amp; Godavari River Ghats
+        </p>
+      </div>
+    </section>
+  ),
+});
 
 const exploreLinks = [
   { label: 'Packages', href: '/packages' },
@@ -39,13 +56,16 @@ const socialLinks = [
 
 interface PublicFooterProps {
   isDashboard?: boolean;
+  isBooking?: boolean;
 }
 
-export default function PublicFooter({ isDashboard = false }: PublicFooterProps) {
+export default function PublicFooter({ isDashboard = false, isBooking = false }: PublicFooterProps) {
   return (
     <footer
       className={`relative overflow-hidden border-t border-[#1598a1]/20 bg-[#06232e] text-white ${
-        isDashboard
+        isBooking
+          ? 'pb-[calc(8rem_+_env(safe-area-inset-bottom))] md:pb-8'
+          : isDashboard
           ? 'pb-[calc(7rem_+_env(safe-area-inset-bottom))] md:pb-8'
           : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-8'
       } min-h-[100svh] pt-8 md:min-h-[48svh] md:pt-10`}
@@ -186,31 +206,7 @@ export default function PublicFooter({ isDashboard = false }: PublicFooterProps)
               </ul>
           </section>
 
-          <section className="overflow-hidden rounded-md border border-white/10 bg-white/[0.04] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
-            <div className="mb-2 flex items-center justify-between gap-2 px-1">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8eecee]">
-                Official Map
-              </h3>
-              <a
-                href="https://g.page/r/CcdqZmyXuAhxEAI"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/72 hover:text-white"
-              >
-                Open Maps
-                <ArrowUpRight className="h-3 w-3" />
-              </a>
-            </div>
-            <iframe
-              title="TS Boat Tourism map"
-              src={MAP_EMBED_URL}
-              className="h-[15.5rem] w-full rounded-md bg-white md:h-[17.5rem] lg:h-full lg:min-h-[18rem]"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          </section>
+          <FooterMapSection />
         </div>
 
         <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs font-semibold text-white/48 md:flex-row md:items-center md:justify-between">

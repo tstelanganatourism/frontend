@@ -202,14 +202,23 @@ export default async function HomePage() {
     ],
   };
 
-  // Run all fetches in parallel for best performance
-  const [heroPackagesRaw, allRoomsRaw, featuredPackages, featuredRooms] =
-    await Promise.all([
-      fetchHeroPackages(),
-      fetchAllRooms(),
-      fetchFeaturedPackages(),
-      fetchFeaturedRooms(),
-    ]);
+  // Run consolidated fetches in parallel (featured lists derived in memory)
+  const [heroPackagesRaw, allRoomsRaw] = await Promise.all([
+    fetchHeroPackages(),
+    fetchAllRooms(),
+  ]);
+
+  const featuredPackages = heroPackagesRaw
+    ? (heroPackagesRaw.filter((p) => p.is_featured).length > 0
+        ? heroPackagesRaw.filter((p) => p.is_featured).slice(0, 3)
+        : heroPackagesRaw.slice(0, 3))
+    : null;
+
+  const featuredRooms = allRoomsRaw
+    ? (allRoomsRaw.filter((r) => r.is_featured).length > 0
+        ? allRoomsRaw.filter((r) => r.is_featured).slice(0, 3)
+        : allRoomsRaw.slice(0, 3))
+    : null;
 
   // Build unified hero items: packages first, then rooms, interleaved
   let heroItems: HeroItem[] = HERO_ITEMS_FALLBACK;
@@ -269,6 +278,7 @@ export default async function HomePage() {
         href="https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1600/v1786273967/200b2b33-a6c8-474a-b9f1-823c5e0c831a_v9mwdp.jpg"
         as="image"
         type="image/jpeg"
+        media="(min-width: 768px)"
         fetchPriority="high"
       />
       <script

@@ -214,49 +214,77 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             box-shadow: 0 4px 20px rgba(10, 35, 81, 0.05);
           }
 
-          /* Header Styling */
+          /* Header Styling — APTDC-style: left logo | center org | right seal */
           .header-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 110px 1fr 90px;
             align-items: center;
-            justify-content: space-between;
+            gap: 14px;
             border-bottom: 3px solid #0a2351;
-            padding-bottom: 20px;
-            margin-bottom: 24px;
+            padding-bottom: 14px;
+            margin-bottom: 10px;
           }
-          
-          .header-left {
+
+          .header-logo-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: flex-start;
           }
 
-          .logo-img {
-            height: 52px;
-            width: 52px;
-            border-radius: 50%;
-            border: 2px solid #c8a45a;
-            object-fit: cover;
+          .header-logo-left img {
+            height: 78px;
+            width: auto;
+            object-fit: contain;
           }
-          
-          .brand-title {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-style: italic;
-            font-size: 25px;
+
+          .header-center {
+            text-align: center;
+            padding: 0 8px;
+          }
+
+          .header-org-name {
+            font-family: 'Outfit', sans-serif;
             font-weight: 900;
-            color: #1a6b7a;
-            line-height: 1.1;
-          }
-
-          .brand-tagline {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 15px;
             color: #0a2351;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            line-height: 1.2;
+            margin-bottom: 5px;
           }
 
-          .header-right {
-            text-align: right;
+          .header-org-address {
+            font-size: 10px;
+            font-weight: 600;
+            color: #334155;
+            line-height: 1.6;
+            margin-bottom: 4px;
+          }
+
+          .header-org-website {
+            font-size: 10px;
+            font-weight: 700;
+            color: #c8181e;
+            text-decoration: none;
+          }
+
+          .header-logo-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+          }
+
+          .header-logo-right img {
+            height: 78px;
+            width: 78px;
+            object-fit: contain;
+          }
+
+          .invoice-sub-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
           }
 
           .invoice-main-title {
@@ -649,14 +677,23 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             }
             .header-row {
               padding-bottom: 8px !important;
+              margin-bottom: 6px !important;
+            }
+            .header-logo-left img {
+              height: 56px !important;
+            }
+            .header-logo-right img {
+              height: 56px !important;
+              width: 56px !important;
+            }
+            .header-org-name {
+              font-size: 12px !important;
+            }
+            .header-org-address {
+              font-size: 8.5px !important;
+            }
+            .invoice-sub-row {
               margin-bottom: 10px !important;
-            }
-            .logo-img {
-              width: 40px !important;
-              height: 40px !important;
-            }
-            .brand-title {
-              font-size: 20px !important;
             }
             .invoice-main-title {
               font-size: 22px !important;
@@ -700,16 +737,35 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
           }
         ` }} />
 
-        {/* HEADER (FIRST) */}
+        {/* HEADER (FIRST) — APTDC-style: TS Logo | Center Org Info | AP Gov Seal */}
         <div className="header-row">
-          <div className="header-left">
-            <img src="/apple-touch-icon.png" className="logo-img" alt="TS Boat Tourism" />
-            <div>
-              <div className="brand-title">TS BOAT TOURISM</div>
-              <div className="brand-tagline">Official Booking Platform</div>
-            </div>
+          {/* Left: TS Boat Tourism Logo */}
+          <div className="header-logo-left">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/aptdc-logo.png" alt="TS Boat Tourism" />
           </div>
-          <div className="header-right">
+
+          {/* Center: Org Name, Address, Website */}
+          <div className="header-center">
+            <div className="header-org-name">TS Boat Tourism</div>
+            <div className="header-org-address">
+              Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
+              Bhadrachalam, Bhadradri Kothagudem Dist, Telangana – 507 111
+            </div>
+            <a href="https://www.tstelanganatourism.com" className="header-org-website">www.tstelanganatourism.com</a>
+          </div>
+
+          {/* Right: Government Seal */}
+          <div className="header-logo-right">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ap-gov-seal.png" alt="Government of Andhra Pradesh" />
+          </div>
+        </div>
+
+        {/* Invoice Title Sub-row (below header) */}
+        <div className="invoice-sub-row">
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', fontFamily: "'Noto Sans Telugu', sans-serif" }}>తెలంగాణ పర్యాటక రంగం · Official Booking Platform</div>
+          <div style={{ textAlign: 'right' }}>
             <h1 className="invoice-main-title">TAX INVOICE</h1>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '4px' }}>
               <div className="tax-badge">Original for Recipient</div>
