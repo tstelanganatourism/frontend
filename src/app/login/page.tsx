@@ -336,7 +336,8 @@ function LoginContent() {
             )}
           </AnimatePresence>
 
-          {/* Portal logins divider */}
+          {/* Portal logins — hidden for now, re-enable by removing the false && wrapper */}
+          {false && (
           <div className="mt-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-px flex-1 bg-slate-200" />
@@ -356,6 +357,7 @@ function LoginContent() {
               </Link>
             </div>
           </div>
+          )}
         </motion.div>
       </div>
     </div>
