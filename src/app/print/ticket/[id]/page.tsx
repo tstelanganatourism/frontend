@@ -129,8 +129,20 @@ export default async function PrintTicketPage({
   const { id } = await params;
   const { secret } = await searchParams;
 
-  if (secret) {
-    const secretKey = process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
+  // SECURITY: Require valid HMAC secret for all non-DEMO bookings
+  const isDemoBooking = id.startsWith('DEMO-');
+  if (!isDemoBooking) {
+    if (!secret) {
+      // Missing secret — reject immediately (previously this was a bypass)
+      return (
+        <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
+          <h1 style={{ color: '#dc2626' }}>401 Authorization Required</h1>
+          <p>A valid authorization token is required to view this document.</p>
+        </div>
+      );
+    }
+    // Use PDF_SECRET_KEY with fallback chain — must match backend settings
+    const secretKey = process.env.PDF_SECRET_KEY || process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
     const expectedSecret = crypto
       .createHmac('sha256', secretKey)
       .update(id)
@@ -145,6 +157,7 @@ export default async function PrintTicketPage({
       );
     }
   }
+
 
   let booking: BookingDetails | null = null;
   try {

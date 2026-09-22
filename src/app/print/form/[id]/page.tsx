@@ -1,4 +1,5 @@
 import React from 'react';
+import crypto from 'crypto';
 import { notFound } from 'next/navigation';
 import PrintAction from '@/components/ui/PrintAction';
 import { apiFetch } from '@/lib/api';
@@ -30,10 +31,40 @@ export const dynamic = 'force-dynamic';
 
 export default async function PrintFormPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>,
+  searchParams: Promise<{ secret?: string }>,
 }) {
   const { id } = await params;
+  const { secret } = await searchParams;
+
+  // SECURITY: Require valid HMAC secret for all non-DEMO bookings
+  const isDemoBooking = id.startsWith('DEMO-');
+  if (!isDemoBooking) {
+    const secretKey = process.env.PDF_SECRET_KEY || process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
+    const expectedSecret = crypto
+      .createHmac('sha256', secretKey)
+      .update(id)
+      .digest('hex');
+
+    if (!secret) {
+      return (
+        <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
+          <h1 style={{ color: '#dc2626' }}>401 Authorization Required</h1>
+          <p>A valid authorization token is required to view this document.</p>
+        </div>
+      );
+    }
+    if (secret !== expectedSecret) {
+      return (
+        <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
+          <h1 style={{ color: '#dc2626' }}>403 Access Denied</h1>
+          <p>This document signature is invalid or has expired.</p>
+        </div>
+      );
+    }
+  }
 
   let booking: BookingDetails | null = null;
 
@@ -46,6 +77,7 @@ export default async function PrintFormPage({
   }
 
   if (!booking) return notFound();
+
 
   // Only need date and public_id — no passenger processing needed
   const travelDateObj = new Date(booking.travel_date);

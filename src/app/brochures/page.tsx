@@ -8,16 +8,20 @@ export const metadata = {
   alternates: { canonical: '/brochures' },
 };
 
+// Always fetch fresh so brochure availability is never stale
+export const dynamic = 'force-dynamic';
+
 async function fetchBrochurePackages() {
   try {
     const res = await apiFetch(`/api/v1/packages?size=100`, {
-      next: { revalidate: 43200, tags: ['packages', 'brochures'] },
+      cache: 'no-store',
     });
 
     if (!res.ok) return undefined;
 
     const data = await res.json();
-    return { items: data.items || [], total: data.total || data.items?.length || 0 };
+    const items: BrochurePackage[] = data.items || [];
+    return { items, total: data.total || items.length };
   } catch {
     return undefined;
   }

@@ -100,15 +100,26 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   const { id } = await params;
   const { secret } = await searchParams;
 
-  const secretKey = process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
+  // Use PDF_SECRET_KEY with fallback chain — must match backend settings
+  const secretKey = process.env.PDF_SECRET_KEY || process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
   const expectedSecret = crypto
     .createHmac('sha256', secretKey)
     .update(id)
     .digest('hex');
 
-  let hasSecret = false;
+  const isDemoBooking = id.startsWith('DEMO-');
+  const hasSecret = !!secret;
 
-  if (secret) {
+  // SECURITY: Require valid HMAC for all non-DEMO bookings
+  if (!isDemoBooking) {
+    if (!secret) {
+      return (
+        <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
+          <h1 style={{ color: '#dc2626' }}>401 Authorization Required</h1>
+          <p>A valid authorization token is required to view this document.</p>
+        </div>
+      );
+    }
     if (secret !== expectedSecret) {
       return (
         <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
@@ -117,8 +128,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
         </div>
       );
     }
-    hasSecret = true;
   }
+
 
   let booking: BookingDetails | null = null;
   try {

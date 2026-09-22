@@ -48,7 +48,7 @@ const policyLinks = [
 ];
 
 const socialLinks = [
-  { label: 'Facebook', href: '#', icon: <FacebookIcon /> },
+  { label: 'Facebook', href: 'https://www.facebook.com/tsboattourism', icon: <FacebookIcon /> },
   { label: 'Instagram', href: 'https://www.instagram.com/ap_ts_boat_tourism/', icon: <InstagramIcon /> },
   { label: 'YouTube', href: 'https://youtube.com/@telanganaboattourism?si=V1bDCkIJD0mE7lXq', icon: <YouTubeIcon /> },
   { label: 'WhatsApp', href: 'https://wa.me/919951369573', icon: <WhatsAppIcon /> },
@@ -212,6 +212,9 @@ export default function PublicFooter({ isDashboard = false, isBooking = false }:
         <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs font-semibold text-white/48 md:flex-row md:items-center md:justify-between">
           <p suppressHydrationWarning>
             © {new Date().getFullYear()} TS Boat Tourism. All rights reserved.
+          </p>
+          <p className="text-white/40">
+            Proprietor: <span className="font-black text-white/70">Durga Prasad Kandula</span>
           </p>
         </div>
       </div>
