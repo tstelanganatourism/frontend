@@ -21,7 +21,7 @@ export function proxy(request: NextRequest) {
       else if (path.startsWith('/agent')) loginUrl = '/agent/login';
 
       const url = new URL(loginUrl, request.url);
-      url.searchParams.set('redirect', encodeURIComponent(path));
+      url.searchParams.set('redirect', path);
       return NextResponse.redirect(url);
     }
   }

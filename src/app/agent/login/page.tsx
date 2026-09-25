@@ -24,7 +24,8 @@ function getAuthErrorMessage(error: unknown, fallback: string) {
 function AgentLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect');
+  const rawRedirect = searchParams.get('redirect');
+  const redirect = rawRedirect ? (decodeURIComponent(rawRedirect).startsWith('/') ? decodeURIComponent(rawRedirect) : `/${decodeURIComponent(rawRedirect).replace(/^\/+/, '')}`) : null;
   const [showPassword, setShowPassword] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 

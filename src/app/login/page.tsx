@@ -35,7 +35,8 @@ function useCountdown(initial: number) {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect');
+  const rawRedirect = searchParams.get('redirect');
+  const redirect = rawRedirect ? (decodeURIComponent(rawRedirect).startsWith('/') ? decodeURIComponent(rawRedirect) : `/${decodeURIComponent(rawRedirect).replace(/^\/+/, '')}`) : null;
   const { isAuthenticated, user, isHydrated } = useAuthStore();
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
