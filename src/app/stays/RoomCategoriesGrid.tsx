@@ -19,6 +19,44 @@ type RoomCategory = {
   rating?: number;
 };
 
+const DEFAULT_ROOM_CATEGORY_IMAGES: Record<string, string> = {
+  'bhadrachalam-accommodations': 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786273972/9b475911-9c60-4bf6-9ffb-b9f1802275a2_k6zmkd.jpg',
+  'papikondalu-forest-huts': 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+};
+
+function getRoomCategoryCoverImage(cat: RoomCategory): string {
+  if (cat.cover_image_url && cat.cover_image_url.trim().length > 0) {
+    return cat.cover_image_url;
+  }
+  if (cat.slug && DEFAULT_ROOM_CATEGORY_IMAGES[cat.slug]) {
+    return DEFAULT_ROOM_CATEGORY_IMAGES[cat.slug];
+  }
+  const low = (cat.name || '').toLowerCase();
+  if (low.includes('papikondalu') || low.includes('hut') || low.includes('forest')) {
+    return 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg';
+  }
+  return 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786273972/9b475911-9c60-4bf6-9ffb-b9f1802275a2_k6zmkd.jpg';
+}
+
+function RoomCategoryCoverImage({ cat }: { cat: RoomCategory }) {
+  const resolved = getRoomCategoryCoverImage(cat);
+  const [imgSrc, setImgSrc] = React.useState<string>(resolved);
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={cat.name}
+      fill
+      priority
+      className="object-cover group-hover:scale-105 transition-transform duration-500"
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+      onError={() => {
+        setImgSrc('https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786273972/9b475911-9c60-4bf6-9ffb-b9f1802275a2_k6zmkd.jpg');
+      }}
+    />
+  );
+}
+
 export default function RoomCategoriesGrid({ categories }: { categories: RoomCategory[] }) {
   if (!categories || categories.length === 0) return null;
 
@@ -81,23 +119,11 @@ export default function RoomCategoriesGrid({ categories }: { categories: RoomCat
                 className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all duration-300 flex flex-col h-full"
               >
                 {/* Image Container */}
-                <div className="relative h-48 sm:h-52 overflow-hidden bg-slate-100">
-                  {cat.cover_image_url ? (
-                    <Image
-                      src={cat.cover_image_url}
-                      alt={cat.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-emerald-700 flex items-center justify-center">
-                      <BedDouble className="w-16 h-16 text-white/40" />
-                    </div>
-                  )}
+                <div className="relative h-52 sm:h-56 overflow-hidden bg-slate-900">
+                  <RoomCategoryCoverImage cat={cat} />
 
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/30 opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30 opacity-90" />
 
                   {/* TOP LEFT BADGES: Price & Rating */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">

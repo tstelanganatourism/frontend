@@ -19,6 +19,48 @@ type Category = {
   rating?: number;
 };
 
+const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
+  'papikondalu-tour-packages': 'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+  'pochavaram-to-papikondalu-tour': 'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+  'bhadrachalam-packages': 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786268860/ts_boat_tourism/gallery/boats/q6md8goirybznxvajwet.png',
+};
+
+function getCategoryCoverImage(cat: Category): string {
+  if (cat.cover_image_url && cat.cover_image_url.trim().length > 0) {
+    return cat.cover_image_url;
+  }
+  if (cat.slug && CATEGORY_DEFAULT_IMAGES[cat.slug]) {
+    return CATEGORY_DEFAULT_IMAGES[cat.slug];
+  }
+  const low = (cat.name || '').toLowerCase();
+  if (low.includes('pochavaram')) {
+    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg';
+  }
+  if (low.includes('bhadrachalam')) {
+    return 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786268860/ts_boat_tourism/gallery/boats/q6md8goirybznxvajwet.png';
+  }
+  return 'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp';
+}
+
+function CategoryCoverImage({ cat }: { cat: Category }) {
+  const resolved = getCategoryCoverImage(cat);
+  const [imgSrc, setImgSrc] = React.useState<string>(resolved);
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={cat.name}
+      fill
+      priority
+      className="object-cover group-hover:scale-105 transition-transform duration-500"
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+      onError={() => {
+        setImgSrc('https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp');
+      }}
+    />
+  );
+}
+
 export default function PackageCategoriesGrid({ categories }: { categories: Category[] }) {
   if (!categories || categories.length === 0) return null;
 
@@ -81,23 +123,11 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
                 className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl hover:border-[#1598a1]/50 transition-all duration-300 flex flex-col h-full"
               >
                 {/* Image Container */}
-                <div className="relative h-48 sm:h-52 overflow-hidden bg-slate-100">
-                  {cat.cover_image_url ? (
-                    <Image
-                      src={cat.cover_image_url}
-                      alt={cat.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-[#1598a1] flex items-center justify-center">
-                      <Compass className="w-16 h-16 text-white/40" />
-                    </div>
-                  )}
+                <div className="relative h-52 sm:h-56 overflow-hidden bg-slate-900">
+                  <CategoryCoverImage cat={cat} />
 
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/30 opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30 opacity-90" />
 
                   {/* TOP LEFT BADGES: Price & Rating */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">

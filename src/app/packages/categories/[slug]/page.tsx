@@ -65,16 +65,17 @@ export default async function PackageCategoryPage({ params }: Props) {
   const categoryData = await fetchCategoryPackages(slug);
 
   if (categoryData && 'notFound' in categoryData) notFound();
-  if (!categoryData) {
-    // If backend was temporarily unavailable, show graceful retry instead of permanent 404
-    throw new Error(`Failed to load category '${slug}'. Please refresh.`);
-  }
+
+  const fallbackName = slug
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 
   // Shape the data to match PackagesList's expected format
   const listData = {
-    items: categoryData.packages || [],
-    total: categoryData.package_count || 0,
-    size: (categoryData.packages || []).length,
+    items: categoryData?.packages || [],
+    total: categoryData?.package_count || (categoryData?.packages || []).length,
+    size: (categoryData?.packages || []).length,
   };
 
   return (
@@ -82,9 +83,9 @@ export default async function PackageCategoryPage({ params }: Props) {
       data={listData}
       pathname="/packages"
       searchParams={{}}
-      categoryName={categoryData.name}
+      categoryName={categoryData?.name || fallbackName}
       categorySlug={slug}
-      categoryDescription={categoryData.description}
+      categoryDescription={categoryData?.description || `Explore ${categoryData?.name || fallbackName} tours and boat packages.`}
       categoryBackHref="/packages"
     />
   );
