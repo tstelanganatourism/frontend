@@ -87,17 +87,16 @@ function CustomFilterSelect({
 }
 
 export default function AdminPackagesPage() {
-  const { 
-    packages, 
-    packagesTotal,
-    packagesPage,
-    packagesLimit,
-    isLoading, 
-    fetchPackages, 
-    updatePackage, 
-    deletePackage, 
-    createPackage 
-  } = useAdminStore();
+  const packages = useAdminStore((s) => s.packages);
+  const packagesTotal = useAdminStore((s) => s.packagesTotal);
+  const packagesPage = useAdminStore((s) => s.packagesPage);
+  const packagesLimit = useAdminStore((s) => s.packagesLimit);
+  const isLoading = useAdminStore((s) => s.isLoading);
+  const fetchPackages = useAdminStore((s) => s.fetchPackages);
+  const updatePackage = useAdminStore((s) => s.updatePackage);
+  const deletePackage = useAdminStore((s) => s.deletePackage);
+  const createPackage = useAdminStore((s) => s.createPackage);
+
   const [searchVal, setSearchVal] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('default');
@@ -113,16 +112,12 @@ export default function AdminPackagesPage() {
   const [togglingActiveId, setTogglingActiveId] = useState<number | null>(null);
   const [togglingStatusId, setTogglingStatusId] = useState<number | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
-
-  const { isHydrated, accessToken } = useAuthStore();
-
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    if (isHydrated) {
-      fetchPackages('', statusFilter, 1, packagesLimit).then(() => setHasFetched(true));
-    }
-  }, [fetchPackages, statusFilter, packagesLimit, isHydrated, accessToken]);
+    fetchPackages('', statusFilter, 1, packagesLimit).finally(() => setHasFetched(true));
+  }, [statusFilter, packagesLimit]);
+
 
   const handleDeleteConfirm = async () => {
     if (selectedPackageId) {
@@ -392,7 +387,7 @@ export default function AdminPackagesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {isLoading || !hasFetched ? (
+              {(!hasFetched && (!packages || packages.length === 0)) ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12">
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />

@@ -462,15 +462,15 @@ function TransportEditDrawer({ row, onClose, onSaved }: { row: TransportInventor
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
                   <Users className="h-3 w-3 text-blue-500" />
-                  {row.transport_option_type === 'SHARED' ? 'Vehicles Count' : 'Vehicles Count'}
+                  {row.transport_option_type === 'SHARED' ? 'Total Seats Available' : 'Total Vehicles Available'}
                 </label>
-                <input type="number" min={row.transport_option_type === 'SHARED' ? Math.ceil(row.booked_count / (capacity || 1)) : row.booked_count} value={availableCount} onChange={(e) => setAvailableCount(parseInt(e.target.value) || 0)}
+                <input type="number" min={row.booked_count} value={availableCount} onChange={(e) => setAvailableCount(parseInt(e.target.value) || 0)}
                   className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10" />
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
                   <Car className="h-3 w-3 text-blue-500" />
-                  Seats per Vehicle
+                  {row.transport_option_type === 'SHARED' ? 'Vehicle Size (Default)' : 'Seats per Vehicle'}
                 </label>
                 <input type="number" min={1} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
                   className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10" />
@@ -518,7 +518,7 @@ function TransportEditDrawer({ row, onClose, onSaved }: { row: TransportInventor
             <button onClick={onClose} className="rounded-xl bg-white border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900">
               Cancel
             </button>
-            <button onClick={handleSave} disabled={saving || availableCount < (row.transport_option_type === 'SHARED' ? Math.ceil(row.booked_count / (capacity || 1)) : row.booked_count)} 
+            <button onClick={handleSave} disabled={saving || availableCount < row.booked_count} 
               className="flex items-center gap-2 rounded-xl bg-[#0f3d56] px-6 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Save Changes
             </button>
@@ -595,7 +595,7 @@ function TransportGenerateModal({
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-slate-500">Default capacity by transport option</p>
               <p className="mt-1 text-sm font-medium text-slate-500">
-                Set default seats (for Shared) or vehicles (for Separate Vehicles) to generate.
+                Set total seats (for Shared) or vehicles (for Separate Vehicles) to generate.
               </p>
             </div>
             {transportOptions.length === 0 ? (
@@ -614,7 +614,7 @@ function TransportGenerateModal({
                   <div key={opt.id} className="grid grid-cols-[1fr_116px] items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black text-slate-900">{opt.title}</p>
-                      <p className="mt-0.5 text-xs font-bold text-slate-500">{opt.type === 'SHARED' ? `Shared (Capacity ${opt.capacity})` : `Separate Vehicle (Seats ${opt.capacity})`}</p>
+                      <p className="mt-0.5 text-xs font-bold text-slate-500">{opt.type === 'SHARED' ? `Shared (Default: ${opt.capacity} seats)` : `Separate Vehicle (${opt.capacity} seats/vehicle)`}</p>
                     </div>
                     <input
                       type="number"

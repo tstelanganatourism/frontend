@@ -124,22 +124,27 @@ apiClient.interceptors.response.use(
     }
 
     // CRITICAL: If auth has not hydrated yet, AuthProvider is already handling the
-    // refresh. Queue this request so it gets retried once hydration completes
-    // instead of dropping it (which would surface as a false logout).
+    // refresh. Queue this request so it gets retried once hydration completes.
     {
       const authStore = getAuthStore();
       if (authStore && !authStore.getState().isHydrated) {
+        originalRequest._retry = true;
         return new Promise((resolve, reject) => {
           pendingQueue.push({
             resolve: (token) => {
-              setAuthHeader(originalRequest, token);
-              resolve(apiClient(originalRequest));
+              if (token) {
+                setAuthHeader(originalRequest, token);
+                resolve(apiClient(originalRequest));
+              } else {
+                reject(error);
+              }
             },
             reject,
           });
         });
       }
     }
+
 
     originalRequest._retry = true;
 

@@ -85,17 +85,16 @@ function CustomFilterSelect({
 }
 
 export default function AdminRoomsPage() {
-  const { 
-    rooms, 
-    roomsTotal,
-    roomsPage,
-    roomsLimit,
-    isLoading, 
-    fetchRooms, 
-    deleteRoom, 
-    createRoom, 
-    updateRoom 
-  } = useAdminStore();
+  const rooms = useAdminStore((s) => s.rooms);
+  const roomsTotal = useAdminStore((s) => s.roomsTotal);
+  const roomsPage = useAdminStore((s) => s.roomsPage);
+  const roomsLimit = useAdminStore((s) => s.roomsLimit);
+  const isLoading = useAdminStore((s) => s.isLoading);
+  const fetchRooms = useAdminStore((s) => s.fetchRooms);
+  const deleteRoom = useAdminStore((s) => s.deleteRoom);
+  const createRoom = useAdminStore((s) => s.createRoom);
+  const updateRoom = useAdminStore((s) => s.updateRoom);
+
   const [searchVal, setSearchVal] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('default');
@@ -115,8 +114,9 @@ export default function AdminRoomsPage() {
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    fetchRooms('', statusFilter, 1, roomsLimit).then(() => setHasFetched(true));
-  }, [fetchRooms, statusFilter, roomsLimit]);
+    fetchRooms('', statusFilter, 1, roomsLimit).finally(() => setHasFetched(true));
+  }, [statusFilter, roomsLimit]);
+
 
 
 
@@ -383,7 +383,7 @@ export default function AdminRoomsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {isLoading || !hasFetched ? (
+              {(!hasFetched && (!rooms || rooms.length === 0)) ? (
                 <tr>
                   <td colSpan={6} className="text-center py-12">
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />

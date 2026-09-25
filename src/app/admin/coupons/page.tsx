@@ -20,7 +20,16 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 
 export default function AdminCouponsPage() {
-  const { coupons, packages, rooms, isLoading, fetchCoupons, fetchPackages, fetchRooms, updateCoupon, deleteCoupon } = useAdminStore();
+  const coupons = useAdminStore((s) => s.coupons);
+  const packages = useAdminStore((s) => s.packages);
+  const rooms = useAdminStore((s) => s.rooms);
+  const isLoading = useAdminStore((s) => s.isLoading);
+  const fetchCoupons = useAdminStore((s) => s.fetchCoupons);
+  const fetchPackages = useAdminStore((s) => s.fetchPackages);
+  const fetchRooms = useAdminStore((s) => s.fetchRooms);
+  const updateCoupon = useAdminStore((s) => s.updateCoupon);
+  const deleteCoupon = useAdminStore((s) => s.deleteCoupon);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [targetFilter, setTargetFilter] = useState<'ALL' | 'PACKAGES' | 'ROOMS'>('ALL');
   const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null);
@@ -28,14 +37,20 @@ export default function AdminCouponsPage() {
   const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetchCoupons(searchQuery),
-      fetchPackages(undefined, undefined, 1, 1000),
-      fetchRooms(undefined, undefined, 1, 1000)
-    ]).finally(() => {
-      setIsInitialMount(false);
-    });
-  }, [fetchCoupons, fetchPackages, fetchRooms, searchQuery]);
+    fetchPackages(undefined, undefined, 1, 200, true);
+    fetchRooms(undefined, undefined, 1, 200, true);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCoupons(searchQuery).finally(() => {
+        setIsInitialMount(false);
+      });
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
 
   const handleDeleteConfirm = async () => {
     if (selectedCouponId) {

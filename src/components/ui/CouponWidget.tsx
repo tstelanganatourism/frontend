@@ -192,42 +192,59 @@ function ConfettiBurst({ trigger }: { trigger: boolean }) {
   );
 }
 
-/* ── Suggestion coupon data ──────────────────────────────────────────── */
-interface SuggestedCoupon {
+import { apiClient } from '@/lib/api';
+
+/* ── Dynamic coupon interface ─────────────────────────────────────────── */
+export interface ActiveCoupon {
   code: string;
-  label: string;
-  description: string;
-  badge: string;
-  gradient: string;
-  badgeBg: string;
+  discount_type: string;
+  discount_value: number;
+  min_booking_amount?: number | null;
+  max_discount_amount?: number | null;
+  min_tickets?: number | null;
+  description?: string | null;
 }
 
-const SUGGESTED_COUPONS: SuggestedCoupon[] = [
-  {
-    code: 'TSBOAT10',
-    label: '10% OFF',
-    description: 'Save 10% on any Godavari boat tour',
-    badge: '10%',
-    gradient: 'from-[#0d6e75] to-[#0a4f55]',
-    badgeBg: 'bg-amber-400',
-  },
-  {
-    code: 'FIRSTRIDE',
-    label: 'First Ride',
-    description: 'Welcome aboard! First booking special',
-    badge: '1ST',
-    gradient: 'from-[#1e3a5f] to-[#162c47]',
-    badgeBg: 'bg-rose-400',
-  },
-  {
-    code: 'HOLIDAY20',
-    label: '20% OFF',
-    description: 'Holiday season — sail & save big!',
-    badge: '20%',
-    gradient: 'from-[#4f46e5] to-[#3730a3]',
-    badgeBg: 'bg-emerald-400',
-  },
-];
+const getCouponBadge = (c: ActiveCoupon) => {
+  if (c.discount_type === 'PERCENTAGE') {
+    return `${Math.round(c.discount_value)}%`;
+  }
+  return `₹${Math.round(c.discount_value)}`;
+};
+
+const getCouponBadgeBg = (index: number) => {
+  const bgs = ['bg-amber-400', 'bg-emerald-400', 'bg-rose-400', 'bg-indigo-400', 'bg-teal-400'];
+  return bgs[index % bgs.length];
+};
+
+const getCouponGradient = (index: number) => {
+  const grads = [
+    'from-[#0d6e75] to-[#0a4f55]',
+    'from-[#1e3a5f] to-[#162c47]',
+    'from-[#4f46e5] to-[#3730a3]',
+    'from-[#065f46] to-[#044e39]',
+  ];
+  return grads[index % grads.length];
+};
+
+const getCouponDesc = (c: ActiveCoupon) => {
+  const parts: string[] = [];
+  if (c.discount_type === 'PERCENTAGE') {
+    parts.push(`${Math.round(c.discount_value)}% OFF`);
+    if (c.max_discount_amount) {
+      parts.push(`up to ₹${Number(c.max_discount_amount).toLocaleString('en-IN')}`);
+    }
+  } else {
+    parts.push(`Flat ₹${Number(c.discount_value).toLocaleString('en-IN')} off`);
+  }
+  if (c.min_booking_amount) {
+    parts.push(`· Min ₹${Number(c.min_booking_amount).toLocaleString('en-IN')}`);
+  }
+  if (c.min_tickets) {
+    parts.push(`· Min ${c.min_tickets} pax`);
+  }
+  return parts.join(' ');
+};
 
 /* ── Main CouponWidget Props ─────────────────────────────────────────── */
 export interface CouponWidgetProps {
@@ -242,6 +259,8 @@ export interface CouponWidgetProps {
   onAutoApply?: (code: string) => void;
   subtotal?: number;
   stepNumber?: number;
+  targetType?: 'PACKAGE' | 'ROOM';
+  targetId?: number;
 }
 
 /* ── Main Component ──────────────────────────────────────────────────── */
@@ -257,15 +276,38 @@ export function CouponWidget({
   onAutoApply,
   subtotal = 0,
   stepNumber,
+  targetType,
+  targetId,
 }: CouponWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [shakeError, setShakeError] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [activeCoupons, setActiveCoupons] = useState<ActiveCoupon[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Inject styles once
   useEffect(() => { ensureStyles(); }, []);
+
+  // Fetch real active coupons from database
+  useEffect(() => {
+    let isMounted = true;
+    const loadCoupons = async () => {
+      try {
+        const params: Record<string, any> = {};
+        if (targetType) params.target_type = targetType;
+        if (targetId) params.target_id = targetId;
+        const res = await apiClient.get('/api/v1/coupons/active', { params });
+        if (isMounted && Array.isArray(res.data)) {
+          setActiveCoupons(res.data);
+        }
+      } catch {
+        if (isMounted) setActiveCoupons([]);
+      }
+    };
+    loadCoupons();
+    return () => { isMounted = false; };
+  }, [targetType, targetId]);
 
   // Auto-open drawer when coupon is pre-filled
   useEffect(() => {
@@ -408,71 +450,73 @@ export function CouponWidget({
           <div>
             <div className="pt-3 space-y-3">
 
-              {/* ── SUGGESTION CARDS ── */}
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400" />
-                  Available Offers
-                </p>
-                <div className="flex gap-2 overflow-x-auto pb-1 cw-scroll-none -mx-0.5 px-0.5"
-                  style={{ scrollSnapType: 'x mandatory' }}>
-                  {SUGGESTED_COUPONS.map((s) => (
-                    <div
-                      key={s.code}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleSuggestionClick(s.code)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleSuggestionClick(s.code);
-                        }
-                      }}
-                      className="cw-card-shine group relative flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0d6e75] to-[#0a4f55] text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 cursor-pointer"
-                      style={{
-                        width: 'min(190px, 68vw)',
-                        scrollSnapAlign: 'start',
-                      }}
-                      title={`Apply ${s.code}`}
-                    >
-                      <div className="flex h-full">
-                        {/* Left: discount badge */}
-                        <div className={`flex shrink-0 flex-col items-center justify-center px-3 py-4 ${s.badgeBg} bg-opacity-90`}
-                          style={{ minWidth: '64px' }}>
-                          <span className="text-[11px] font-black text-white leading-none text-center">{s.badge}</span>
-                          <span className="text-[8px] font-bold text-white/80 mt-0.5">OFF</span>
-                        </div>
-                        {/* Divider */}
-                        <div className="cw-ticket-divider self-stretch my-2" />
-                        {/* Right: code + description */}
-                        <div className="flex flex-1 flex-col justify-center px-3 py-4 text-left min-w-0">
-                          <span className="text-[11px] font-black uppercase tracking-wider text-white leading-none truncate">{s.code}</span>
-                          <span className="text-[9px] font-medium text-white/70 mt-1 leading-tight line-clamp-2">{s.description}</span>
-                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[8px] font-black text-white/90 uppercase tracking-wider w-fit">
-                            Tap to Apply
-                          </span>
-                        </div>
-                        {/* Copy button */}
-                        <div className="absolute top-1.5 right-1.5">
-                          <button
-                            type="button"
-                            title="Copy code"
-                            onClick={(e) => handleCopyCode(s.code, e)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 transition-colors"
-                          >
-                            <Copy className="h-3 w-3 text-white" />
-                          </button>
-                          {copiedCode === s.code && (
-                            <span className="cw-copied-toast absolute right-0 top-7 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg z-10">
-                              Copied!
+              {/* ── DYNAMIC SUGGESTION CARDS (FROM DATABASE) ── */}
+              {activeCoupons && activeCoupons.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400" />
+                    Available Offers
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto pb-1 cw-scroll-none -mx-0.5 px-0.5"
+                    style={{ scrollSnapType: 'x mandatory' }}>
+                    {activeCoupons.map((s, index) => (
+                      <div
+                        key={s.code}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleSuggestionClick(s.code)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSuggestionClick(s.code);
+                          }
+                        }}
+                        className={`cw-card-shine group relative flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${getCouponGradient(index)} text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 cursor-pointer`}
+                        style={{
+                          width: 'min(200px, 70vw)',
+                          scrollSnapAlign: 'start',
+                        }}
+                        title={`Apply ${s.code}`}
+                      >
+                        <div className="flex h-full">
+                          {/* Left: discount badge */}
+                          <div className={`flex shrink-0 flex-col items-center justify-center px-3 py-4 ${getCouponBadgeBg(index)} bg-opacity-90`}
+                            style={{ minWidth: '64px' }}>
+                            <span className="text-[11px] font-black text-white leading-none text-center">{getCouponBadge(s)}</span>
+                            <span className="text-[8px] font-bold text-white/80 mt-0.5">OFF</span>
+                          </div>
+                          {/* Divider */}
+                          <div className="cw-ticket-divider self-stretch my-2" />
+                          {/* Right: code + description */}
+                          <div className="flex flex-1 flex-col justify-center px-3 py-4 text-left min-w-0">
+                            <span className="text-[11px] font-black uppercase tracking-wider text-white leading-none truncate">{s.code}</span>
+                            <span className="text-[9px] font-medium text-white/80 mt-1 leading-tight line-clamp-2">{getCouponDesc(s)}</span>
+                            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[8px] font-black text-white/90 uppercase tracking-wider w-fit">
+                              Tap to Apply
                             </span>
-                          )}
+                          </div>
+                          {/* Copy button */}
+                          <div className="absolute top-1.5 right-1.5">
+                            <button
+                              type="button"
+                              title="Copy code"
+                              onClick={(e) => handleCopyCode(s.code, e)}
+                              className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 transition-colors"
+                            >
+                              <Copy className="h-3 w-3 text-white" />
+                            </button>
+                            {copiedCode === s.code && (
+                              <span className="cw-copied-toast absolute right-0 top-7 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg z-10">
+                                Copied!
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* ── MANUAL INPUT ── */}
               <div>

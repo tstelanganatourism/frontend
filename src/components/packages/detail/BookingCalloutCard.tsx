@@ -101,10 +101,9 @@ export const BookingCalloutCard = ({
     const num = Number(value);
     if (isNaN(num)) return 'N/A';
     return '₹' + num.toLocaleString('en-IN');
-  };
-
-  // Determine which tabs are relevant to display
-  const showAddonsTab = hasRefreshments || hasFoodOption || (extras && extras.length > 0);
+  };  const hasValidRefreshments = Boolean(hasRefreshments && (Number(refreshmentAdultPrice) > 0 || Number(refreshmentChildPrice) > 0 || Number(refreshmentStudentPrice) > 0));
+  const hasValidFood = Boolean(hasFoodOption && (Number(foodAdultPrice) > 0 || Number(foodChildPrice) > 0 || Number(foodStudentPrice) > 0));
+  const showAddonsTab = hasValidRefreshments || hasValidFood || (extras && extras.length > 0);
   const showTransportTab = hasTransport && transportOptions && transportOptions.length > 0;
   const hasTabs = showAddonsTab || showTransportTab;
 
@@ -254,7 +253,7 @@ export const BookingCalloutCard = ({
             </span>
 
             {/* Fresh Up Accommodation Option */}
-            {hasRefreshments && (
+            {hasValidRefreshments && (
               <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50/80 border border-slate-100">
                 <Home className="h-4 w-4 text-[#0d6e75] shrink-0 mt-0.5" />
                 <div className="text-[10px]">
@@ -267,7 +266,7 @@ export const BookingCalloutCard = ({
             )}
 
             {/* Food Meals Option */}
-            {hasFoodOption && (
+            {hasValidFood && (
               <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50/80 border border-slate-100">
                 <Utensils className="h-4 w-4 text-[#0d6e75] shrink-0 mt-0.5" />
                 <div className="text-[10px]">

@@ -2098,6 +2098,8 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     onApply={() => validateCoupon(couponCode.trim())}
                     onRemove={handleRemoveCoupon}
                     onAutoApply={(code) => validateCoupon(code)}
+                    targetType="ROOM"
+                    targetId={room.id}
                     subtotal={stayDetails.totalPrice * roomsCount}
                   />
 

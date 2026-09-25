@@ -43,28 +43,81 @@ interface AuthState {
   setHydrated: () => void;
 }
 
+const getInitialAuthState = () => {
+  if (typeof window === 'undefined') {
+    return {
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      isHydrated: false,
+    };
+  }
+
+  const hasSession = localStorage.getItem('has_session');
+  if (!hasSession) {
+    return {
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      isHydrated: true, // Guests are immediately ready with zero lag
+    };
+  }
+
+  try {
+    const cachedUserStr = localStorage.getItem('cached_user');
+    if (cachedUserStr) {
+      const user = JSON.parse(cachedUserStr);
+      return {
+        user,
+        accessToken: null,
+        isAuthenticated: true,
+        isHydrated: true, // Instant UI hydration from cached profile
+      };
+    }
+  } catch {}
+
+  return {
+    user: null,
+    accessToken: null,
+    isAuthenticated: false,
+    isHydrated: false,
+  };
+};
+
 export const useAuthStore = create<AuthState>()((set) => ({
-  user: null,
-  accessToken: null,
-  isAuthenticated: false,
-  isHydrated: false,
+  ...getInitialAuthState(),
 
   setAuth: (user, accessToken) => {
-    if (typeof window !== 'undefined') localStorage.setItem('has_session', '1');
-    set({ user, accessToken, isAuthenticated: true });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('has_session', '1');
+      try {
+        localStorage.setItem('cached_user', JSON.stringify(user));
+      } catch {}
+    }
+    set({ user, accessToken, isAuthenticated: true, isHydrated: true });
   },
 
-  updateUser: (user) =>
-    set({ user }),
+  updateUser: (user) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('cached_user', JSON.stringify(user));
+      } catch {}
+    }
+    set({ user });
+  },
 
   updateAccessToken: (token) =>
     set({ accessToken: token }),
 
   clearAuth: () => {
-    if (typeof window !== 'undefined') localStorage.removeItem('has_session');
-    set({ user: null, accessToken: null, isAuthenticated: false });
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('has_session');
+      localStorage.removeItem('cached_user');
+    }
+    set({ user: null, accessToken: null, isAuthenticated: false, isHydrated: true });
   },
 
   setHydrated: () =>
     set({ isHydrated: true }),
 }));
+

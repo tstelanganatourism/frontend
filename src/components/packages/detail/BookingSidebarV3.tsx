@@ -2084,7 +2084,7 @@ export const BookingSidebarV3 = ({
                   )}
 
                   {/* Fresh Up Accommodation */}
-                  {hasRefreshments && (
+                  {hasRefreshments && (Number(refreshmentAdultPrice) > 0 || Number(refreshmentChildPrice) > 0 || Number(refreshmentStudentPrice) > 0) && (
                     <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${isRefreshmentDisabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : includeRefreshments ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
                       }`}>
                       <input
@@ -2110,7 +2110,7 @@ export const BookingSidebarV3 = ({
                   )}
 
                   {/* Food package */}
-                  {hasFoodOption && (
+                  {hasFoodOption && (Number(foodAdultPrice) > 0 || Number(foodChildPrice) > 0 || Number(foodStudentPrice) > 0) && (
                     <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${includeFoodOption ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
                       }`}>
                       <input
@@ -2178,8 +2178,11 @@ export const BookingSidebarV3 = ({
                 onApply={handleApplyCoupon}
                 onRemove={handleRemoveCoupon}
                 onAutoApply={(code) => applyCouponByCode(code)}
+                targetType="PACKAGE"
+                targetId={packageId}
                 stepNumber={5}
               />
+
 
               {/* Detailed Pricing Summary Breakdown on Mobile */}
               {selectedDate && (
