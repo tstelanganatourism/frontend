@@ -335,15 +335,14 @@ export function CouponWidget({
   }, [couponError]);
 
   const handleSuggestionClick = useCallback((code: string) => {
-    setCouponCode(code);
-    setTimeout(() => {
-      if (onAutoApply && subtotal > 0) {
-        onAutoApply(code);
-      } else {
-        onApply();
-      }
-    }, 120);
-  }, [setCouponCode, onAutoApply, onApply, subtotal]);
+    const trimmed = code.trim().toUpperCase();
+    setCouponCode(trimmed);
+    if (onAutoApply) {
+      onAutoApply(trimmed);
+    } else {
+      onApply();
+    }
+  }, [setCouponCode, onAutoApply, onApply]);
 
   const handleCopyCode = useCallback((code: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -355,7 +354,11 @@ export function CouponWidget({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && couponCode.trim() && !validatingCoupon && !appliedCoupon) {
-      onApply();
+      if (onAutoApply) {
+        onAutoApply(couponCode.trim().toUpperCase());
+      } else {
+        onApply();
+      }
     }
   };
 
@@ -552,7 +555,13 @@ export function CouponWidget({
                   <button
                     type="button"
                     disabled={!couponCode.trim() || validatingCoupon}
-                    onClick={onApply}
+                    onClick={() => {
+                      if (onAutoApply) {
+                        onAutoApply(couponCode.trim().toUpperCase());
+                      } else {
+                        onApply();
+                      }
+                    }}
                     className="shrink-0 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#0d6e75] to-[#0a5860] px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:from-[#0b5c62] hover:to-[#094d54] disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed min-w-[72px]"
                   >
                     {validatingCoupon

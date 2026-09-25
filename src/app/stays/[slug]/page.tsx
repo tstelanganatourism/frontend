@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { apiFetch } from '@/lib/api';
 import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperience';
-import CouponPopup from '@/components/ui/CouponPopup';
 
 // ISR: revalidate every 12 hours OR instantly when admin triggers /api/revalidate
 export const revalidate = 43200;
@@ -186,7 +185,6 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
         <link rel="preload" href={heroImage} as="image" type="image/jpeg" fetchPriority="high" />
       )}
       <RoomDetailExperience room={room} />
-      <CouponPopup targetType="ROOM" targetId={room.id} />
     </>
   );
 }

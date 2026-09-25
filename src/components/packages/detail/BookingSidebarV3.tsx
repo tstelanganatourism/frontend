@@ -944,10 +944,10 @@ export const BookingSidebarV3 = ({
     }
   }, [prices.rawSubtotal, pendingCouponCode]);
 
-  const applyCouponByCode = async (codeToApply: string) => {
+  const applyCouponByCode = async (codeToApply?: string) => {
     setCouponError(null);
     setCouponSuccess(null);
-    const trimmedCode = codeToApply.trim().toUpperCase();
+    const trimmedCode = (codeToApply || couponCode || '').trim().toUpperCase();
     setCouponCode(trimmedCode);
 
     if (!trimmedCode) {
@@ -956,7 +956,8 @@ export const BookingSidebarV3 = ({
     }
 
     if (prices.rawSubtotal <= 0) {
-      setCouponError("Please select passengers and dates first to activate coupon");
+      setPendingCouponCode(trimmedCode);
+      setCouponSuccess(`Coupon ${trimmedCode} applied! Select travel date & passengers to calculate discount.`);
       return;
     }
 
@@ -967,7 +968,7 @@ export const BookingSidebarV3 = ({
         target_type: 'PACKAGE',
         target_id: packageId,
         booking_amount: prices.rawSubtotal,
-        ticket_count: adults + children,
+        ticket_count: Math.max(1, adults + (isStudentPackage ? 0 : children)),
         travel_date: selectedDate ? selectedDate : null
       });
 
@@ -977,11 +978,14 @@ export const BookingSidebarV3 = ({
           discount_amount: response.data.discount_amount,
           discounted_subtotal: response.data.discounted_subtotal
         });
-        setCouponSuccess("Coupon applied successfully");
+        setCouponSuccess(`Coupon ${trimmedCode} applied successfully! You save ₹${Math.round(response.data.discount_amount)}.`);
+        setCouponError(null);
       } else {
+        setAppliedCoupon(null);
         setCouponError(response.data.reason || "Invalid coupon code");
       }
     } catch (err: any) {
+      setAppliedCoupon(null);
       setCouponError(err.response?.data?.detail || "Failed to validate coupon");
     } finally {
       setValidatingCoupon(false);
@@ -2178,6 +2182,7 @@ export const BookingSidebarV3 = ({
                 onApply={handleApplyCoupon}
                 onRemove={handleRemoveCoupon}
                 onAutoApply={(code) => applyCouponByCode(code)}
+                subtotal={prices.rawSubtotal}
                 targetType="PACKAGE"
                 targetId={packageId}
                 stepNumber={5}

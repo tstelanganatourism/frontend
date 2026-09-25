@@ -17,7 +17,6 @@ import { BookingDialogV3 } from '@/components/packages/detail/BookingDialogV3';
 import { BookingCalloutCard } from '@/components/packages/detail/BookingCalloutCard';
 import { PackageMeals } from '@/components/packages/detail/PackageMeals';
 import { PackageVideoHero } from '@/components/packages/detail/PackageVideoHero';
-import CouponPopup from '@/components/ui/CouponPopup';
 
 // ISR: revalidate every 12 hours OR instantly when admin triggers /api/revalidate
 export const revalidate = 43200;
@@ -528,8 +527,6 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         agentDailyQuota={pkg.agent_daily_quota}
         agentIsAllowed={pkg.agent_is_allowed}
       />
-
-      <CouponPopup targetType="PACKAGE" targetId={pkg.id} />
     </main>
   );
 }
