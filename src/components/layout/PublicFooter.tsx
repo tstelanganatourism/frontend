@@ -45,6 +45,8 @@ const policyLinks = [
   { label: 'Privacy', href: '/privacy' },
   { label: 'Refunds', href: '/refund' },
   { label: 'Cancellations', href: '/cancellation' },
+  { label: 'Agent Portal', href: '/agent/login' },
+  { label: 'Admin Portal', href: '/admin/login' },
 ];
 
 const socialLinks = [

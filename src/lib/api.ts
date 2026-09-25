@@ -49,7 +49,7 @@ export const apiClient: AxiosInstance = axios.create({
   baseURL: typeof window !== 'undefined' ? '' : API_BASE,
   withCredentials: true, // send HttpOnly refresh cookie
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15_000,
+  timeout: 45_000,
 });
 
 /** Lazy singleton getter for useAuthStore — resolved once, client-side only */

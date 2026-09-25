@@ -6,6 +6,7 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   withCredentials: true,
+  timeout: 45000,
 });
 
 // Queue for failed requests while token is refreshing
