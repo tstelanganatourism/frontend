@@ -4,7 +4,6 @@ import "./globals.css";
 import TopLoader from '@/components/layout/TopLoader';
 import QueryProvider from '@/components/providers/QueryProvider';
 import AuthProvider from '@/components/providers/AuthProvider';
-import PromoBanner from "@/components/ui/PromoBanner";
 import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { Toaster } from 'sonner';
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
@@ -219,7 +218,7 @@ export default function RootLayout({
         <TopLoader />
         <QueryProvider>
           <AuthProvider>
-            <ClientLayoutWrapper promoBanner={<PromoBanner />}>
+            <ClientLayoutWrapper promoBanner={null}>
               {children}
             </ClientLayoutWrapper>
             <Toaster position="top-center" richColors />

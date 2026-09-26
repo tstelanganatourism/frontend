@@ -287,7 +287,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
 
           .header-logo-right img {
             height: 78px;
-            width: 78px;
+            width: auto;
             object-fit: contain;
           }
 
@@ -695,7 +695,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             }
             .header-logo-right img {
               height: 56px !important;
-              width: 56px !important;
+              width: auto !important;
             }
             .header-org-name {
               font-size: 12px !important;
@@ -766,10 +766,10 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             <a href="https://www.tstelanganatourism.com" className="header-org-website">www.tstelanganatourism.com</a>
           </div>
 
-          {/* Right: Government Seal */}
+          {/* Right: TS Boat Tourism Seal */}
           <div className="header-logo-right">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ap-gov-seal.png" alt="Government of Andhra Pradesh" />
+            <img src="/ts-boat-seal.png" alt="TS Boat Tourism Logo" />
           </div>
         </div>
 

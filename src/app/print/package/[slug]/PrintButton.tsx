@@ -28,93 +28,163 @@ export function PrintButton() {
   };
 
   return (
-    <div className="no-print" style={{ width: '100%', background: '#061626', padding: '16px 0', borderTop: '2px solid #0f3d56', marginTop: '24px' }}>
+    <>
+      {/* ── Sticky Top Action Bar (hidden on print) ── */}
       <div
+        className="no-print"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-          width: '100%',
-          maxWidth: '210mm',
-          margin: '0 auto',
-          padding: '0 16px',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: 'rgba(6, 22, 38, 0.97)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(90, 196, 215, 0.25)',
+          boxShadow: '0 2px 20px rgba(0,0,0,0.4)',
+          padding: '10px 16px',
         }}
       >
-        {/* Left: Back / Close Button */}
-        <button
-          onClick={handleBack}
-          type="button"
+        <div
           style={{
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            backgroundColor: '#1e293b',
-            color: '#ffffff',
-            fontSize: '13px',
-            fontWeight: 800,
-            borderRadius: '8px',
-            border: '1px solid #475569',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-            transition: 'all 0.2s ease',
+            justifyContent: 'space-between',
+            gap: '12px',
+            maxWidth: '210mm',
+            margin: '0 auto',
+            flexWrap: 'wrap',
           }}
-          title="Return to site"
         >
-          <span style={{ fontSize: '15px' }}>←</span>
-          <span>Back to Packages</span>
-        </button>
-
-        {/* Right: Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Left: Back Button */}
           <button
-            onClick={handleShare}
+            onClick={handleBack}
             type="button"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '10px 18px',
-              backgroundColor: '#1e293b',
-              color: '#ffffff',
+              padding: '9px 18px',
+              backgroundColor: 'rgba(30, 41, 59, 0.9)',
+              color: '#e2e8f0',
               fontSize: '13px',
-              fontWeight: 800,
+              fontWeight: 700,
               borderRadius: '8px',
-              border: '1px solid #475569',
+              border: '1px solid rgba(71, 85, 105, 0.6)',
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
               transition: 'all 0.2s ease',
+              letterSpacing: '0.2px',
+              flexShrink: 0,
+            }}
+            title="Return to site"
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1e293b';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#5ac4d7';
+              (e.currentTarget as HTMLButtonElement).style.color = '#5ac4d7';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(30, 41, 59, 0.9)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(71, 85, 105, 0.6)';
+              (e.currentTarget as HTMLButtonElement).style.color = '#e2e8f0';
             }}
           >
-            <span>{copied ? '✓ Link Copied!' : '🔗 Share Link'}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span>Back</span>
           </button>
 
-          <button
-            onClick={() => window.print()}
-            type="button"
+          {/* Center: Brochure label (hidden on very small screens) */}
+          <span
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '11px 26px',
-              background: 'linear-gradient(135deg, #0d6e75 0%, #0891b2 100%)',
-              color: '#ffffff',
-              fontSize: '14px',
-              fontWeight: 900,
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(13,110,117,0.45)',
+              color: '#94a3b8',
+              fontSize: '11px',
+              fontWeight: 600,
               letterSpacing: '0.5px',
-              transition: 'all 0.2s ease',
+              textTransform: 'uppercase',
+              flex: 1,
+              textAlign: 'center',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            <span style={{ fontSize: '18px' }}>🖨</span>
-            <span>PRINT / SAVE AS PDF</span>
-          </button>
+            Tour Brochure Preview
+          </span>
+
+          {/* Right: Share + Print Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <button
+              onClick={handleShare}
+              type="button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '9px 14px',
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                color: '#e2e8f0',
+                fontSize: '12px',
+                fontWeight: 700,
+                borderRadius: '8px',
+                border: '1px solid rgba(71, 85, 105, 0.6)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = '#5ac4d7';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(71, 85, 105, 0.6)';
+              }}
+            >
+              <span style={{ fontSize: '14px' }}>{copied ? '✓' : '🔗'}</span>
+              <span style={{ display: 'none' }} className="btn-label">{copied ? 'Copied!' : 'Share'}</span>
+              <span>{copied ? 'Copied!' : 'Share'}</span>
+            </button>
+
+            <button
+              onClick={() => window.print()}
+              type="button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 20px',
+                background: 'linear-gradient(135deg, #0d6e75 0%, #0891b2 100%)',
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: 800,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(13,110,117,0.4)',
+                letterSpacing: '0.4px',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(13,110,117,0.55)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(13,110,117,0.4)';
+              }}
+            >
+              <span style={{ fontSize: '16px' }}>🖨</span>
+              <span>Print / PDF</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* ── Spacer so brochure doesn't hide behind fixed top bar ── */}
+      <div className="no-print" style={{ height: '58px' }} />
+    </>
   );
 }

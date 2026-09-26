@@ -58,6 +58,11 @@ export default function PublicNavbar() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const pathname = usePathname();
   const router = useRouter();
   const accountRef = useRef<HTMLDivElement>(null);
@@ -132,7 +137,7 @@ export default function PublicNavbar() {
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-[100] w-full border-b transition-all duration-300 ${
+      <header suppressHydrationWarning className={`relative w-full border-b transition-all duration-300 ${
         showTransparent 
           ? 'border-white/15 bg-gradient-to-b from-[#061826]/90 via-[#061826]/75 to-[#061826]/40 backdrop-blur-md shadow-md' 
           : 'border-slate-200/90 bg-white/95 backdrop-blur-md shadow-sm'
@@ -141,23 +146,58 @@ export default function PublicNavbar() {
 
         <div className="mx-auto w-full max-w-[1800px] px-3 sm:px-5 2xl:px-8">
           <nav className="grid min-h-[72px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5 nav:grid-cols-[auto_minmax(0,1fr)_auto] xl:grid-cols-[auto_minmax(0,1fr)_auto]">
-            <Link href="/" onClick={closeMenus} className={`flex min-w-0 items-center gap-3 rounded-xl p-1.5 transition-colors ${
-              showTransparent ? 'hover:bg-white/10' : 'hover:bg-slate-50'
-            }`}>
-              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full border shadow-sm sm:h-14 sm:w-14 transition-all ${
-                showTransparent ? 'border-cyan-400/40 bg-white/15 ring-2 ring-cyan-300/20' : 'border-slate-200 bg-white'
+            {/* Logo + Back button container */}
+            <div className="flex min-w-0 items-center gap-1.5">
+              {/* ← Back button: appears on all non-home pages */}
+              {!isHome && (
+                <button
+                  suppressHydrationWarning
+                  onClick={() => {
+                    if (window.history.length > 1) {
+                      router.back();
+                    } else {
+                      router.push('/');
+                    }
+                  }}
+                  type="button"
+                  aria-label="Go back"
+                  className={`shrink-0 flex items-center gap-1 rounded-xl px-2 py-2 text-[12px] font-bold transition-all duration-200 hover:scale-105 active:scale-95 ${
+                    showTransparent
+                      ? 'border border-cyan-400/30 bg-white/10 text-white/90 hover:bg-white/20 hover:border-cyan-400/60 backdrop-blur-md shadow-[0_2px_10px_rgba(0,0,0,0.25)]'
+                      : 'border border-slate-200 bg-white text-[#0f3d56] hover:bg-[#e9f7f7] hover:border-[#1598a1] shadow-sm'
+                  }`}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  <span className="hidden lg:inline">Back</span>
+                </button>
+              )}
+
+              {/* Brand logo */}
+              <Link href="/" onClick={closeMenus} className={`flex min-w-0 items-center gap-2 rounded-xl p-1.5 transition-colors ${
+                showTransparent ? 'hover:bg-white/10' : 'hover:bg-slate-50'
               }`}>
-                <Image src="/ts-boat-tourism-logo.png" alt="TS Boat Tourism" width={48} height={48} className="h-10 w-10 object-cover rounded-full sm:h-12 sm:w-12" />
-              </span>
-              <span className="min-w-0 leading-tight">
-                <span className={`block truncate text-[15px] font-black tracking-tight sm:text-lg xl:text-xl transition-colors ${
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border shadow-sm sm:h-12 sm:w-12 transition-all ${
+                  showTransparent ? 'border-cyan-400/40 bg-white/15 ring-2 ring-cyan-300/20' : 'border-slate-200 bg-white'
+                }`}>
+                  <Image src="/ts-boat-tourism-logo.png" alt="TS Boat Tourism" width={48} height={48} className="h-9 w-9 object-cover rounded-full sm:h-10 sm:w-10" />
+                </span>
+                {/* Brand text: hidden at medium zoom levels to prevent overflow */}
+                <span className="min-w-0 leading-tight hidden lg:block">
+                  <span className={`block truncate text-[15px] font-black tracking-tight xl:text-[17px] transition-colors ${
+                    showTransparent ? 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]' : 'text-[#0f3d56]'
+                  }`}>TS Boat Tourism</span>
+                  <span className={`block truncate text-[9px] font-black uppercase tracking-[0.14em] xl:text-[10px] transition-colors ${
+                    showTransparent ? 'text-cyan-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[#1598a1]'
+                  }`}>Official Booking Portal</span>
+                </span>
+                {/* Logo-only label for medium viewports */}
+                <span className={`lg:hidden truncate text-[14px] font-black tracking-tight transition-colors ${
                   showTransparent ? 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]' : 'text-[#0f3d56]'
                 }`}>TS Boat Tourism</span>
-                <span className={`block truncate text-[10px] font-black uppercase tracking-[0.16em] sm:text-[11px] transition-colors ${
-                  showTransparent ? 'text-cyan-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[#1598a1]'
-                }`}>Official Booking Portal</span>
-              </span>
-            </Link>
+              </Link>
+            </div>
 
             <div className="hidden min-w-0 items-center justify-center gap-0.5 nav:flex xl:gap-1.5">
               {navLinks.map((link) => {
@@ -222,7 +262,7 @@ export default function PublicNavbar() {
 
 
               <div className="hidden nav:block">
-                {!isHydrated ? (
+                {!mounted || !isHydrated ? (
                   <div className="h-10 w-24 animate-pulse rounded-md bg-slate-100" />
                 ) : isAuthenticated ? (
                   <div className="relative" ref={accountRef}>
@@ -442,7 +482,7 @@ export default function PublicNavbar() {
 
                 {/* Account */}
                 <div className="border-t border-slate-100 px-4 py-3">
-                  {!isHydrated ? (
+                  {!mounted || !isHydrated ? (
                     <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
                   ) : isAuthenticated ? (
                     <div className="flex gap-2">

@@ -39,15 +39,14 @@ export default function ClientLayoutWrapper({ children, promoBanner }: ClientLay
 
   return (
     <>
-      {promoBanner}
-      <Suspense fallback={<div className="h-16 border-b border-border bg-white" />}>
-        <PublicNavbar />
-      </Suspense>
+      <div className="sticky top-0 z-[100] w-full">
+        <Suspense fallback={<div className="h-[72px] sm:h-[76px] border-b border-border bg-white" />}>
+          <PublicNavbar />
+        </Suspense>
+      </div>
       <main
         suppressHydrationWarning
         className={`w-full max-w-full flex-1 relative ${
-          isHome ? 'pt-0' : 'pt-[72px] sm:pt-[76px]'
-        } ${
           isBookingPage ? 'pb-[110px] md:pb-0' : 'pb-[64px] md:pb-0'
         }`}
       >

@@ -119,6 +119,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
       font-size: 8.5pt; color: #1e293b;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      min-height: 100vh;
     }
     .brochure-container {
       width: 210mm;
@@ -127,14 +128,12 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
       box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     @media print {
-      html, body { background: #fff; }
-      .brochure-container { box-shadow: none; width: 210mm; }
+      html, body { background: #fff; margin: 0; padding: 0; }
+      .brochure-container { box-shadow: none; width: 210mm; margin: 0; }
       .no-print { display: none !important; }
     }
-    .no-print {
-      width: 210mm;
-      margin: 0 auto;
-      background: #0f172a;
+    @media screen and (max-width: 230mm) {
+      .brochure-container { width: 100%; box-shadow: none; }
     }
 
     /* ── Official Header matching Ticket style ── */
@@ -183,7 +182,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
     }
     .header-logo-right img {
       height: 56px;
-      width: 56px;
+      width: auto;
       object-fit: contain;
       display: block;
     }
@@ -364,6 +363,9 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
+      {/* Sticky top bar with Back / Share / Print — hidden on print */}
+      <PrintButton />
+
       <div className="brochure-container">
         {/* ── 1. Official Header (matching Ticket Header) ── */}
         <div className="brochure-header">
@@ -385,10 +387,10 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
             <a href={`https://${CO.website}`} className="header-org-website">{CO.website}</a>
           </div>
 
-          {/* Right: Government Seal */}
+          {/* Right: TS Boat Tourism Seal */}
           <div className="header-logo-right">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ap-gov-seal.png" alt="Government of Andhra Pradesh / Telangana Tourism" />
+            <img src="/ts-boat-seal.png" alt="TS Boat Tourism Logo" />
           </div>
         </div>
 
@@ -675,8 +677,6 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
         </div>
 
       </div>
-
-      <PrintButton />
     </>
   );
 }

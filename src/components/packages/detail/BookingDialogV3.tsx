@@ -112,7 +112,7 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
     <>
       {/* ── Desktop Floating Action Widget (Stacked above WhatsApp) ── */}
       <div
-        className={`hidden lg:flex fixed right-8 bottom-28 z-40 flex-col items-end transition-all duration-500 ${
+        className={`hidden lg:flex fixed right-8 bottom-12 z-40 flex-col items-end transition-all duration-500 ${
           showStickyBar && !isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-90 pointer-events-none'
         }`}
       >

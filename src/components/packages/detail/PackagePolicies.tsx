@@ -171,29 +171,7 @@ export const PackagePolicies = ({ policies, primaryBoarding }: PackagePoliciesPr
             );
           })}
           
-          {/* Empty Space filler: Google Maps Embed */}
-          {embedUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="rounded-xl border border-slate-200 overflow-hidden h-[260px] shadow-3xs relative group"
-            >
-              <iframe
-                title="Location Map"
-                src={embedUrl}
-                className="w-full h-full border-0 grayscale group-hover:grayscale-0 transition-all duration-700"
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-md border border-slate-200 flex items-center gap-1.5 shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">Boarding Location</span>
-              </div>
-            </motion.div>
-          )}
+          {/* Map embed removed per user request */}
         </div>
       </div>
     </section>
