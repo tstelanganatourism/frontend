@@ -71,7 +71,7 @@ const getInitialAuthState = () => {
         user,
         accessToken: null,
         isAuthenticated: true,
-        isHydrated: true, // Instant UI hydration from cached profile
+        isHydrated: false, // Must be false until token refresh completes so API calls are queued
       };
     }
   } catch {}

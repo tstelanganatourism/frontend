@@ -61,52 +61,111 @@ function CategoryCoverImage({ cat }: { cat: Category }) {
   );
 }
 
+type PackageItem = {
+  id: number;
+  slug: string;
+  title: string;
+  duration?: string | null;
+  place?: string | null;
+  starting_price?: number | null;
+  cover_image_url?: string | null;
+  is_featured?: boolean;
+};
+
+type MarqueeItem = {
+  id: string | number;
+  type: 'category' | 'package';
+  name: string;
+  badge: string;
+  badgeClass: string;
+  dotClass: string;
+  subtitle: string;
+  href: string;
+};
+
 /* ──────────────────────────────────────────────
-   INFINITE MARQUEE CAROUSEL
+   INFINITE MARQUEE CAROUSEL (Packages & Categories)
 ────────────────────────────────────────────── */
-function InfiniteMarquee({ categories }: { categories: Category[] }) {
-  // Triple items for seamless loop
-  const items = [...categories, ...categories, ...categories];
+function InfiniteMarquee({ categories, packages = [] }: { categories: Category[]; packages?: PackageItem[] }) {
+  // Construct dynamic marquee items list
+  const categoryItems: MarqueeItem[] = categories.map((cat) => ({
+    id: `cat-${cat.slug}`,
+    type: 'category',
+    name: cat.name,
+    badge: 'Category',
+    badgeClass: 'bg-[#f5b016]/15 text-[#f5b016] border-[#f5b016]/30',
+    dotClass: 'bg-[#f5b016] shadow-[0_0_6px_1px_rgba(245,176,22,0.6)]',
+    subtitle: `${cat.package_count} ${cat.package_count === 1 ? 'Package' : 'Packages'}${cat.min_price ? ` · from ₹${cat.min_price.toLocaleString('en-IN')}` : ''}`,
+    href: `/packages/categories/${cat.slug}`,
+  }));
+
+  const packageItems: MarqueeItem[] = packages.map((pkg) => ({
+    id: `pkg-${pkg.slug}`,
+    type: 'package',
+    name: pkg.title,
+    badge: 'Tour Package',
+    badgeClass: 'bg-[#1598a1]/20 text-[#62d5da] border-[#1598a1]/40',
+    dotClass: 'bg-[#1598a1] shadow-[0_0_6px_1px_rgba(21,152,161,0.7)]',
+    subtitle: `${pkg.duration || pkg.place || 'Curated Tour'}${pkg.starting_price ? ` · ₹${Number(pkg.starting_price).toLocaleString('en-IN')}` : ''}`,
+    href: `/packages/${pkg.slug}`,
+  }));
+
+  // Combine categories and packages: category pills first, then all individual packages
+  const combinedList = [...categoryItems, ...packageItems];
+  const listToUse = combinedList.length > 0 ? combinedList : categoryItems;
+  // Duplicate 3x for seamless infinite looping
+  const items = [...listToUse, ...listToUse, ...listToUse];
+  
+  // Turtle-slow, calm drifting speed (approx 8.5s per item, min 90s)
+  const slowDuration = Math.max(90, listToUse.length * 8.5);
 
   return (
-    <div className="relative w-full overflow-hidden py-3" aria-label="Package categories carousel">
+    <div className="relative w-full overflow-hidden py-3 group/marquee" aria-label="Packages and categories carousel">
+      <style>{`
+        @keyframes pkgMarqueeDrift {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-33.333333%, 0, 0); }
+        }
+        .pkg-marquee-track {
+          animation: pkgMarqueeDrift ${slowDuration}s linear infinite;
+        }
+        .group\\/marquee:hover .pkg-marquee-track,
+        .pkg-marquee-track:hover {
+          animation-play-state: paused !important;
+        }
+      `}</style>
+
       {/* Left fade edge */}
       <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-[#0f1c2e] to-transparent sm:w-28" />
       {/* Right fade edge */}
       <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-[#0f1c2e] to-transparent sm:w-28" />
 
-      <motion.div
-        className="flex gap-2.5 sm:gap-3 w-max"
-        animate={{ x: [0, `-${100 / 3}%`] }}
-        transition={{
-          x: {
-            duration: 20 + categories.length * 4,
-            repeat: Infinity,
-            ease: 'linear',
-            repeatType: 'loop',
-          },
-        }}
-        style={{ willChange: 'transform' }}
+      <div
+        className="pkg-marquee-track flex gap-2.5 sm:gap-3 w-max will-change-transform"
       >
-        {items.map((cat, idx) => (
+        {items.map((item, idx) => (
           <Link
-            key={`${cat.id}-marquee-${idx}`}
-            href={`/packages/categories/${cat.slug}`}
-            id={idx < categories.length ? `marquee-pkg-${cat.slug}` : undefined}
+            key={`${item.id}-marquee-${idx}`}
+            href={item.href}
+            id={idx < listToUse.length ? `marquee-${item.type}-${item.id}` : undefined}
             className="group flex-shrink-0"
-            tabIndex={idx < categories.length ? 0 : -1}
-            aria-hidden={idx >= categories.length ? 'true' : undefined}
+            tabIndex={idx < listToUse.length ? 0 : -1}
+            aria-hidden={idx >= listToUse.length ? 'true' : undefined}
           >
-            <div className="relative flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-md ring-1 ring-inset ring-white/5 hover:border-[#1598a1]/60 hover:bg-[#1598a1]/10 transition-all duration-300 cursor-pointer min-w-[160px] sm:min-w-[210px]">
+            <div className="relative flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-md ring-1 ring-inset ring-white/5 hover:border-[#1598a1]/60 hover:bg-[#1598a1]/15 hover:scale-[1.02] transition-all duration-300 cursor-pointer min-w-[170px] sm:min-w-[220px]">
               {/* Glow dot accent */}
-              <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[#1598a1] shadow-[0_0_6px_1px_rgba(21,152,161,0.55)]" />
+              <div className={`flex-shrink-0 w-2 h-2 rounded-full ${item.dotClass}`} />
               <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeClass}`}>
+                    {item.badge}
+                  </span>
+                </div>
                 <p className="text-white font-bold text-[12px] sm:text-[13px] truncate leading-tight group-hover:text-[#62d5da] transition-colors">
-                  {cat.name}
+                  {item.name}
                 </p>
-                <p className="text-slate-400 text-[10px] mt-0 font-medium">
-                  {cat.package_count} {cat.package_count === 1 ? 'package' : 'packages'}
-                  {cat.min_price ? ` · ₹${cat.min_price.toLocaleString('en-IN')}+` : ''}
+                <p className="text-slate-400 text-[10px] mt-0.5 font-medium truncate">
+                  {item.subtitle}
                 </p>
               </div>
               <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#1598a1] transition-all">
@@ -115,12 +174,12 @@ function InfiniteMarquee({ categories }: { categories: Category[] }) {
             </div>
           </Link>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
 
-export default function PackageCategoriesGrid({ categories }: { categories: Category[] }) {
+export default function PackageCategoriesGrid({ categories, packages = [] }: { categories: Category[]; packages?: PackageItem[] }) {
   if (!categories || categories.length === 0) return null;
 
   return (
@@ -210,9 +269,9 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
         {/* Marquee Carousel Strip */}
         <div className="relative z-10 pt-3 pb-5 sm:pb-6">
           <p className="text-center text-[9px] uppercase tracking-[0.18em] text-slate-500 mb-3 font-bold px-4">
-            ✦ all categories ✦
+            ✦ EXPLORE ALL PACKAGES &amp; CATEGORIES ✦
           </p>
-          <InfiniteMarquee categories={categories} />
+          <InfiniteMarquee categories={categories} packages={packages} />
         </div>
 
         {/* Fade to light bg */}

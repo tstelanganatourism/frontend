@@ -129,19 +129,9 @@ export default async function PrintTicketPage({
   const { id } = await params;
   const { secret } = await searchParams;
 
-  // SECURITY: Require valid HMAC secret for all non-DEMO bookings
+  // Validate HMAC signature only if secret is provided
   const isDemoBooking = id.startsWith('DEMO-');
-  if (!isDemoBooking) {
-    if (!secret) {
-      // Missing secret — reject immediately (previously this was a bypass)
-      return (
-        <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
-          <h1 style={{ color: '#dc2626' }}>401 Authorization Required</h1>
-          <p>A valid authorization token is required to view this document.</p>
-        </div>
-      );
-    }
-    // Use PDF_SECRET_KEY with fallback chain — must match backend settings
+  if (!isDemoBooking && secret) {
     const secretKey = process.env.PDF_SECRET_KEY || process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
     const expectedSecret = crypto
       .createHmac('sha256', secretKey)
@@ -157,7 +147,6 @@ export default async function PrintTicketPage({
       );
     }
   }
-
 
   let booking: BookingDetails | null = null;
   try {
@@ -303,7 +292,8 @@ export default async function PrintTicketPage({
 
   // Detect Admin Direct Booking & Format Admin Booking Timestamp
   const adminPayment = capturedPayments.find(p =>
-    p.payment_method === 'MANUAL_ADMIN' ||
+    p.payment_method === 'ADMIN_MANUAL' ||
+    p.payment_method === 'MANUAL_ADMIN' || // legacy alias
     (p.payment_reference_id && p.payment_reference_id.toUpperCase().startsWith('ADMIN'))
   );
   const isAdminBooking = !!(

@@ -401,7 +401,13 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       onClose();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      toast.error(typeof detail === 'string' ? detail : 'Failed to create booking');
+      let msg = 'Failed to create booking';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+      }
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

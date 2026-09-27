@@ -33,7 +33,7 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
     }
   }
 
-  params.set('size', '20');
+  params.set('size', '50');
 
   try {
     const query = params.toString();
@@ -65,7 +65,7 @@ export default async function PackagesPage(props: { searchParams: Promise<Record
   const showCategories = categories.length > 0 && !hasActiveFilter && !viewAll;
 
   if (showCategories) {
-    return <PackageCategoriesGrid categories={categories} />;
+    return <PackageCategoriesGrid categories={categories} packages={data?.items || []} />;
   }
 
   return <PackagesList data={data} pathname="/packages" searchParams={searchParams} />;

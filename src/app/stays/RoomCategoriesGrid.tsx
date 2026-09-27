@@ -57,51 +57,110 @@ function RoomCategoryCoverImage({ cat }: { cat: RoomCategory }) {
   );
 }
 
+type RoomItem = {
+  id: number;
+  slug: string;
+  lodge_name: string;
+  address?: string | null;
+  starting_price?: number | string | null;
+  cover_image_url?: string | null;
+  is_featured?: boolean;
+};
+
+type StayMarqueeItem = {
+  id: string | number;
+  type: 'category' | 'room';
+  name: string;
+  badge: string;
+  badgeClass: string;
+  dotClass: string;
+  subtitle: string;
+  href: string;
+};
+
 /* ──────────────────────────────────────────────
-   INFINITE MARQUEE CAROUSEL (Stays)
+   INFINITE MARQUEE CAROUSEL (Stays & Rooms)
 ────────────────────────────────────────────── */
-function InfiniteMarqueeStays({ categories }: { categories: RoomCategory[] }) {
-  const items = [...categories, ...categories, ...categories];
+function InfiniteMarqueeStays({ categories, rooms = [] }: { categories: RoomCategory[]; rooms?: RoomItem[] }) {
+  // Construct dynamic stay marquee items
+  const categoryItems: StayMarqueeItem[] = categories.map((cat) => ({
+    id: `cat-${cat.slug}`,
+    type: 'category',
+    name: cat.name,
+    badge: 'Stay Category',
+    badgeClass: 'bg-amber-400/15 text-amber-300 border-amber-400/30',
+    dotClass: 'bg-amber-400 shadow-[0_0_6px_1px_rgba(251,191,36,0.6)]',
+    subtitle: `${cat.room_count} ${cat.room_count === 1 ? 'Stay' : 'Stays'}${cat.min_price ? ` · from ₹${cat.min_price.toLocaleString('en-IN')}` : ''}`,
+    href: `/stays/categories/${cat.slug}`,
+  }));
+
+  const roomItems: StayMarqueeItem[] = rooms.map((r) => ({
+    id: `room-${r.slug}`,
+    type: 'room',
+    name: r.lodge_name,
+    badge: 'Bamboo Hut / Stay',
+    badgeClass: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/40',
+    dotClass: 'bg-emerald-400 shadow-[0_0_6px_1px_rgba(52,211,153,0.7)]',
+    subtitle: `${r.address || 'Riverside Stay'}${r.starting_price ? ` · ₹${Number(r.starting_price).toLocaleString('en-IN')}/night` : ''}`,
+    href: `/stays/${r.slug}`,
+  }));
+
+  // Combine categories and rooms: category pills first, then all individual rooms
+  const combinedList = [...categoryItems, ...roomItems];
+  const listToUse = combinedList.length > 0 ? combinedList : categoryItems;
+  // Duplicate 3x for seamless infinite looping
+  const items = [...listToUse, ...listToUse, ...listToUse];
+
+  // Turtle-slow, calm drifting speed (approx 8.5s per item, min 90s)
+  const slowDuration = Math.max(90, listToUse.length * 8.5);
 
   return (
-    <div className="relative w-full overflow-hidden py-3" aria-label="Stay categories carousel">
+    <div className="relative w-full overflow-hidden py-3 group/marquee" aria-label="Stay categories and rooms carousel">
+      <style>{`
+        @keyframes stayMarqueeDrift {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-33.333333%, 0, 0); }
+        }
+        .stay-marquee-track {
+          animation: stayMarqueeDrift ${slowDuration}s linear infinite;
+        }
+        .group\\/marquee:hover .stay-marquee-track,
+        .stay-marquee-track:hover {
+          animation-play-state: paused !important;
+        }
+      `}</style>
+
       {/* Left fade edge */}
       <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-[#0d1f1a] to-transparent sm:w-28" />
       {/* Right fade edge */}
       <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-[#0d1f1a] to-transparent sm:w-28" />
 
-      <motion.div
-        className="flex gap-2.5 sm:gap-3 w-max"
-        animate={{ x: [0, `-${100 / 3}%`] }}
-        transition={{
-          x: {
-            duration: 20 + categories.length * 4,
-            repeat: Infinity,
-            ease: 'linear',
-            repeatType: 'loop',
-          },
-        }}
-        style={{ willChange: 'transform' }}
+      <div
+        className="stay-marquee-track flex gap-2.5 sm:gap-3 w-max will-change-transform"
       >
-        {items.map((cat, idx) => (
+        {items.map((item, idx) => (
           <Link
-            key={`${cat.id}-marqueestay-${idx}`}
-            href={`/stays/categories/${cat.slug}`}
-            id={idx < categories.length ? `marquee-stay-${cat.slug}` : undefined}
+            key={`${item.id}-marqueestay-${idx}`}
+            href={item.href}
+            id={idx < listToUse.length ? `marquee-${item.type}-${item.id}` : undefined}
             className="group flex-shrink-0"
-            tabIndex={idx < categories.length ? 0 : -1}
-            aria-hidden={idx >= categories.length ? 'true' : undefined}
+            tabIndex={idx < listToUse.length ? 0 : -1}
+            aria-hidden={idx >= listToUse.length ? 'true' : undefined}
           >
-            <div className="relative flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-md ring-1 ring-inset ring-white/5 hover:border-emerald-500/60 hover:bg-emerald-500/10 transition-all duration-300 cursor-pointer min-w-[160px] sm:min-w-[210px]">
+            <div className="relative flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-md ring-1 ring-inset ring-white/5 hover:border-emerald-500/60 hover:bg-emerald-500/15 hover:scale-[1.02] transition-all duration-300 cursor-pointer min-w-[170px] sm:min-w-[220px]">
               {/* Glow dot */}
-              <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_1px_rgba(52,211,153,0.55)]" />
+              <div className={`flex-shrink-0 w-2 h-2 rounded-full ${item.dotClass}`} />
               <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeClass}`}>
+                    {item.badge}
+                  </span>
+                </div>
                 <p className="text-white font-bold text-[12px] sm:text-[13px] truncate leading-tight group-hover:text-emerald-300 transition-colors">
-                  {cat.name}
+                  {item.name}
                 </p>
-                <p className="text-slate-400 text-[10px] mt-0 font-medium">
-                  {cat.room_count} {cat.room_count === 1 ? 'stay' : 'stays'}
-                  {cat.min_price ? ` · ₹${cat.min_price.toLocaleString('en-IN')}+` : ''}
+                <p className="text-slate-400 text-[10px] mt-0.5 font-medium truncate">
+                  {item.subtitle}
                 </p>
               </div>
               <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-emerald-500 transition-all">
@@ -110,12 +169,12 @@ function InfiniteMarqueeStays({ categories }: { categories: RoomCategory[] }) {
             </div>
           </Link>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
 
-export default function RoomCategoriesGrid({ categories }: { categories: RoomCategory[] }) {
+export default function RoomCategoriesGrid({ categories, rooms = [] }: { categories: RoomCategory[]; rooms?: RoomItem[] }) {
   if (!categories || categories.length === 0) return null;
 
   return (
@@ -205,9 +264,9 @@ export default function RoomCategoriesGrid({ categories }: { categories: RoomCat
         {/* Marquee Carousel Strip */}
         <div className="relative z-10 pt-3 pb-5 sm:pb-6">
           <p className="text-center text-[9px] uppercase tracking-[0.18em] text-slate-500 mb-3 font-bold px-4">
-            ✦ all stay types ✦
+            ✦ EXPLORE ALL ROOMS, HUTS &amp; STAY TYPES ✦
           </p>
-          <InfiniteMarqueeStays categories={categories} />
+          <InfiniteMarqueeStays categories={categories} rooms={rooms} />
         </div>
 
         {/* Fade to light bg */}

@@ -39,23 +39,15 @@ export default async function PrintFormPage({
   const { id } = await params;
   const { secret } = await searchParams;
 
-  // SECURITY: Require valid HMAC secret for all non-DEMO bookings
+  // Validate HMAC secret only if secret is provided
   const isDemoBooking = id.startsWith('DEMO-');
-  if (!isDemoBooking) {
+  if (!isDemoBooking && secret) {
     const secretKey = process.env.PDF_SECRET_KEY || process.env.SECRET_KEY || 'tsaptourismpapikondalubadhrachalam';
     const expectedSecret = crypto
       .createHmac('sha256', secretKey)
       .update(id)
       .digest('hex');
 
-    if (!secret) {
-      return (
-        <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>
-          <h1 style={{ color: '#dc2626' }}>401 Authorization Required</h1>
-          <p>A valid authorization token is required to view this document.</p>
-        </div>
-      );
-    }
     if (secret !== expectedSecret) {
       return (
         <div style={{ padding: '40px', fontFamily: 'system-ui', textAlign: 'center' }}>

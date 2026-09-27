@@ -40,7 +40,7 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
     params.append('facilities', facilities);
   }
 
-  params.set('size', '6');
+  params.set('size', '50');
 
   try {
     const query = params.toString();
@@ -68,7 +68,7 @@ export default async function StaysPage(props: { searchParams: Promise<Record<st
   const showCategories = categories.length > 0 && !hasActiveFilter && !viewAll;
 
   if (showCategories) {
-    return <RoomCategoriesGrid categories={categories} />;
+    return <RoomCategoriesGrid categories={categories} rooms={data?.items || []} />;
   }
 
   return (

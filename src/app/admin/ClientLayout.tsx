@@ -120,7 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   )}
                 </div>
                 <div className="min-w-0">
-                  <h1 className="truncate text-base font-black tracking-tight">{user?.full_name || 'Admin'}</h1>
+                  <h1 suppressHydrationWarning className="truncate text-base font-black tracking-tight">{user?.full_name || 'Admin'}</h1>
                   <p className="text-[10px] uppercase tracking-widest text-white/40">Control Center</p>
                 </div>
               </div>

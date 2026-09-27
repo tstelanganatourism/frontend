@@ -24,9 +24,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // Fast 4-second timeout safeguard for token refresh so UI never hangs
+      // Safe 10-second timeout safeguard for token refresh so UI never permanently hangs on cold boot
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth refresh timeout')), 4000)
+        setTimeout(() => reject(new Error('Auth refresh timeout')), 10000)
       );
 
       try {

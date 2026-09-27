@@ -63,14 +63,43 @@ const getAuthStore = (): typeof _useAuthStore => {
   return _useAuthStore;
 };
 
-apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const store = getAuthStore();
-  const token = store?.getState?.()?.accessToken;
-  if (token && config.headers) {
-    if (typeof config.headers.set === 'function') {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    } else {
-      config.headers['Authorization'] = `Bearer ${token}`;
+  if (store) {
+    const state = store.getState();
+    let token = state.accessToken;
+
+    // If session exists in localStorage but accessToken isn't in memory yet and auth is hydrating:
+    // Queue and wait for AuthProvider to resolve the fresh token before firing this request!
+    if (!token && !state.isHydrated && typeof window !== 'undefined' && localStorage.getItem('has_session')) {
+      const isAuthUrl = 
+        config.url?.includes('/auth/refresh') ||
+        config.url?.includes('/auth/login') ||
+        config.url?.includes('/auth/logout') ||
+        config.url?.includes('/login') ||
+        config.url?.includes('/signup') ||
+        config.url?.includes('/verify-otp');
+
+      if (!isAuthUrl) {
+        try {
+          token = await new Promise<string>((resolve, reject) => {
+            pendingQueue.push({
+              resolve,
+              reject,
+            });
+          });
+        } catch {
+          // If token refresh fails, proceed without token or reject
+        }
+      }
+    }
+
+    if (token && config.headers) {
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`);
+      } else {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
     }
   }
   return config;

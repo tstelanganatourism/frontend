@@ -159,14 +159,23 @@ export default function AdminBookingsPage() {
       if (startDate) params.start_date = startDate;
       if (endDate) params.end_date = endDate;
 
-      const [listRes, summaryRes] = await Promise.all([
+      const [listResult, summaryResult] = await Promise.allSettled([
         apiClient.get('/api/v1/admin/bookings', { params }),
         apiClient.get('/api/v1/admin/bookings/summary', { params: { start_date: startDate, end_date: endDate } }),
       ]);
 
-      setBookings(Array.isArray(listRes.data?.items) ? listRes.data.items : []);
-      setTotal(listRes.data?.total ?? 0);
-      setSummary(summaryRes.data ?? null);
+      if (listResult.status === 'fulfilled') {
+        const listData = listResult.value.data;
+        setBookings(Array.isArray(listData?.items) ? listData.items : []);
+        setTotal(listData?.total ?? 0);
+      } else {
+        console.error('Failed to load bookings list:', listResult.reason);
+        setBookings([]);
+      }
+
+      if (summaryResult.status === 'fulfilled') {
+        setSummary(summaryResult.value.data ?? null);
+      }
     } catch (err) {
       console.error('Failed to load bookings:', err);
       setBookings([]);
