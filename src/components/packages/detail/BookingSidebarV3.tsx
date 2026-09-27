@@ -297,11 +297,7 @@ export const BookingSidebarV3 = ({
     }
   }, [isStudentPackage]);
 
-  useEffect(() => {
-    if (isRefreshmentDisabled && includeRefreshments) {
-      setIncludeRefreshments(false);
-    }
-  }, [isRefreshmentDisabled, includeRefreshments]);
+
 
   useEffect(() => {
     const handlePageShow = () => {

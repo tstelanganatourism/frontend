@@ -26,6 +26,7 @@ type PackageItem = {
   region: string;
   cover_image_url: string | null;
   is_featured: boolean;
+  is_active?: boolean;
   is_student_package?: boolean;
   tags: string[];
   starting_price: number | null;

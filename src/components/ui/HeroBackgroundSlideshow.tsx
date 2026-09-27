@@ -36,15 +36,15 @@ const HERO_SLIDES: HeroSlide[] = [
   {
     type: 'image',
     src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1600/v1786268773/ts_boat_tourism/gallery/boats/ovn5jyixd9i8fqm3fxc2.png',
-    title: 'TS Luxury Cruise Fleet on Godavari',
-    tag: '🚢 Luxury Cruise Fleet',
+    title: 'TS Boat Fleet on Godavari',
+    tag: '🚢 Boat Fleet',
   },
   {
     type: 'video',
     src: 'https://res.cloudinary.com/r929tquv/video/upload/v1786268870/ts_boat_tourism/videos/gallery/vvokrkgttqxkwy1zungp.mp4',
     poster: 'https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill/v1786268870/ts_boat_tourism/videos/gallery/vvokrkgttqxkwy1zungp.jpg',
-    title: 'Godavari Cruise Voyage Experience',
-    tag: '🎬 Live Cruise Voyage',
+    title: 'Godavari Boat Trip Experience',
+    tag: '🎬 Live Boat Ride',
   },
   {
     type: 'image',

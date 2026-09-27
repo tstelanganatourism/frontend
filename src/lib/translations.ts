@@ -20,10 +20,10 @@ export const translations = {
 
     // Hero Section
     hero: {
-      badge: 'Since 2004 · Papikondalu & Bhadrachalam river cruises',
-      heading: 'TS Boat Tourism river cruises for Papikondalu and Bhadrachalam.',
+      badge: 'Since 2004 · Papikondalu & Bhadrachalam boat tours',
+      heading: 'TS Boat Tourism boat trips for Papikondalu and Bhadrachalam.',
       description:
-        'TS BOAT TOURISM is a pioneer in providing tourism and travel services to highly popular tourist destinations in and around Rajahmundry. Started in the year 2004, we have been providing services to Papikondalu and Bhadrachalam by River Cruises.',
+        'TS BOAT TOURISM is a pioneer in providing tourism and travel services in and around Rajahmundry. Started in the year 2004, we provide boat trips to Papikondalu and Bhadrachalam.',
       viewPackages: 'View Packages',
       talkToTeam: 'Talk to Booking Team',
     },
@@ -80,7 +80,7 @@ export const translations = {
       badge: 'Handpicked Destinations & Stays',
       heading: 'Top Tour Packages & Riverside Accommodations',
       subheading:
-        'Choose from our popular Godavari river cruise packages or book comfortable hotel rooms and riverside bamboo huts.',
+        'Choose from our popular Godavari boat tour packages or book comfortable hotel rooms and riverside bamboo huts.',
       featuredPackages: 'Featured Packages',
       top3Packages: 'Top 3 Godavari Tour Packages',
       viewAll: 'View All',

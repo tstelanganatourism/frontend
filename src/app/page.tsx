@@ -135,8 +135,8 @@ async function fetchFeaturedRooms(): Promise<RoomItem[] | null> {
 
 const HERO_ITEMS_FALLBACK: HeroItem[] = [
   {
-    title: 'Papikondalu Boat Cruise',
-    desc: 'Godavari river journey through hill valleys with meals and boarding guidance.',
+    title: 'Papikondalu Boat Trip',
+    desc: 'Godavari river trip through hill valleys with meals and boarding guidance.',
     href: '/packages?place=papikondalu',
     image: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
     meta: 'Boat Tour',

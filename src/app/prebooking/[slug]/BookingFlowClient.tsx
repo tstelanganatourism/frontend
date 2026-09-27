@@ -148,7 +148,7 @@ function OfficeDetailsSection() {
             Open 7 Days a Week
           </p>
           <p className="text-[11px] text-[#1598a1] mt-2 font-semibold">
-            Cruise Reporting: 7:00 AM – 7:30 AM
+            Boat Ride Reporting: 7:00 AM – 7:30 AM
           </p>
         </div>
       </div>
@@ -556,7 +556,7 @@ function SuccessScreen({
                 <span>Official Tourism Assurance</span>
               </p>
               <p className="text-xs text-gray-600 leading-relaxed">
-                TS Boat Tourism is the authorized operator for Godavari river cruises, Kolluru &amp; Sirivaka bamboo huts, and temple tours. Your reservation request is saved with high priority.
+                TS Boat Tourism is the authorized operator for Godavari boat trips, Kolluru &amp; Sirivaka bamboo huts, and temple tours. Your reservation request is saved with high priority.
               </p>
               <div className="flex gap-3 mt-4 pt-3 border-t border-[#1598a1]/20">
                 <Link

@@ -26,7 +26,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     type: 'TRIP',
     cover_image_url:
       'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
-    tags: ['1 Day Cruise', '₹1,350 Adult · ₹1,100 Child', 'Godavari Boat Ride', 'Breakfast & Lunch'],
+    tags: ['1 Day Boat Trip', '₹1,350 Adult · ₹1,100 Child', 'Godavari Boat Ride', 'Breakfast & Lunch'],
     description: 'Complete one day Papikondalu boat tour starting from Bhadrachalam with breakfast, veg/non-veg lunch, and tea snacks included.',
   },
   {
@@ -42,7 +42,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     cover_image_url:
       'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
     tags: ['Boat Point Only', '₹1,000 Adult · ₹800 Child', 'Pochavaram Revu', 'Day Tour'],
-    description: 'Direct boat ride package from Pochavaram boat point to Papikondalu and back with river cruise and scenic views.',
+    description: 'Direct boat ride package from Pochavaram boat point to Papikondalu and back with boat ride and scenic views.',
   },
   {
     id: 'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days',
@@ -57,7 +57,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     cover_image_url:
       'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
     tags: ['Maredumilli Resorts', '₹4,000 / Person', '2 Days Stay', 'All Meals Included'],
-    description: '2-Day combo package featuring Papikondalu boat cruise and overnight stay at Maredumilli forest resort with waterfalls sightseeing.',
+    description: '2-Day combo package featuring Papikondalu boat trip and overnight stay at Maredumilli forest resort with waterfalls sightseeing.',
   },
   {
     id: 'bhadrachalam-to-papikondalu-resort-package-2days',

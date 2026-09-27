@@ -58,6 +58,7 @@ interface PackageProps {
     region: string;
     cover_image_url: string | null;
     is_featured: boolean;
+    is_active?: boolean;
     tags: string[];
     starting_price: number | null;
     is_student_package?: boolean;
@@ -105,12 +106,13 @@ function getTransportType(transport_info: string | null | undefined, title: stri
   const lowTitle = title.toLowerCase();
   if (lowTitle.includes('non-ac') || lowTitle.includes('non ac')) return 'Sharing Non-A/C';
   if (lowTitle.includes('ac ') || lowTitle.includes(' ac') || lowTitle.includes('a/c')) return 'AC Luxury Coach';
-  return 'River Cruise Only';
+  return 'Boat Tour Only';
 }
 
 function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOverride }: PackageProps) {
   const [imgSrc, setImgSrc] = React.useState<string>(pkg.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp');
   const isTrip = pkg.type?.toUpperCase() === 'TRIP';
+  const isInactive = pkg.is_active === false;
 
   // Tags
   const rawTags = pkg.tags || [];
@@ -137,10 +139,10 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
   // Designations
   const isStayPkg = pkg.title.toLowerCase().includes('stay') || pkg.title.toLowerCase().includes('bamboo') || pkg.title.toLowerCase().includes('hut') || pkg.title.toLowerCase().includes('resorts');
   const experienceType = isStayPkg
-    ? 'Cruise + Stay'
+    ? 'Boat + Stay'
     : isTrip
       ? 'Sightseeing'
-      : 'Boat Cruise';
+      : 'Boat Tour';
 
   const IdentityIcon = isStayPkg ? Route : isTrip ? Compass : Ship;
 
@@ -156,7 +158,11 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
       <Link
         href={hrefOverride ?? `/packages/${pkg.slug}`}
         prefetch={false}
-        className="group flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/60 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-teal-400/50 hover:shadow-[0_10px_28px_rgba(20,152,161,0.14)]"
+        className={`group flex flex-col overflow-hidden rounded-xl bg-white border shadow-sm transition-all duration-200 hover:-translate-y-1 ${
+          isInactive
+            ? 'border-amber-300/80 bg-slate-50/60 hover:border-amber-400'
+            : 'border-slate-200/60 hover:border-teal-400/50 hover:shadow-[0_10px_28px_rgba(20,152,161,0.14)]'
+        }`}
       >
         {/* Square image */}
         <div className="relative aspect-square w-full overflow-hidden bg-slate-100 shrink-0">
@@ -168,13 +174,17 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
             sizes="(max-width: 640px) 50vw, 20vw"
             quality={70}
             onError={() => setImgSrc('https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp')}
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isInactive ? 'opacity-85 grayscale-[20%]' : ''}`}
           />
           <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(7,25,35,0.68)_0%,transparent_55%)]" />
 
           {/* Top badges */}
           <div className="absolute left-2 right-2 top-2 flex items-center justify-between z-10">
-            {pkg.is_featured ? (
+            {isInactive ? (
+              <span className="rounded-full bg-amber-600 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white shadow-xs">
+                Not Serviceable
+              </span>
+            ) : pkg.is_featured ? (
               <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white shadow-xs">
                 Featured
               </span>
@@ -190,10 +200,19 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
             <IdentityIcon className="h-2.5 w-2.5 text-teal-300" />
             <span className="uppercase tracking-wide">{experienceType}</span>
           </div>
-          <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-white">
-            <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
-            Active
-          </div>
+
+          {isInactive ? (
+            <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-amber-600 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-white shadow-xs">
+              <span className="h-1 w-1 rounded-full bg-white" />
+              Not Serviceable
+            </div>
+          ) : (
+            <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-white">
+              <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+              Active
+            </div>
+          )}
+
           {/* Video available badge */}
           {pkg.video_url && (
             <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md px-2 py-0.5 border border-[#5ac4d7]/40 shadow">
@@ -242,9 +261,15 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
           <div className="mt-auto pt-2.5 border-t border-slate-100 mt-2">
             <div className="flex items-center justify-between gap-1 mb-1">
               <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Starts from</span>
-              <span className="flex items-center gap-0.5 text-[9px] font-bold text-teal-600 group-hover:text-teal-700 shrink-0 transition-colors">
-                View Details <ChevronRight className="h-2.5 w-2.5" />
-              </span>
+              {isInactive ? (
+                <span className="flex items-center gap-0.5 text-[8px] font-black text-amber-700 uppercase tracking-tight shrink-0">
+                  Not Serviceable
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 text-[9px] font-bold text-teal-600 group-hover:text-teal-700 shrink-0 transition-colors">
+                  View Details <ChevronRight className="h-2.5 w-2.5" />
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
               <div className="flex items-baseline gap-0.5">
@@ -271,7 +296,11 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
     <Link
       href={`/packages/${pkg.slug}`}
       prefetch={false}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/40 hover:shadow-[0_16px_36px_rgba(20,152,161,0.12)]"
+      className={`group flex flex-col overflow-hidden rounded-2xl bg-white border shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 ${
+        isInactive
+          ? 'border-amber-300/80 bg-slate-50/50 hover:border-amber-400'
+          : 'border-slate-200/70 hover:border-teal-500/40 hover:shadow-[0_16px_36px_rgba(20,152,161,0.12)]'
+      }`}
     >
       {/* Visual Image Container */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
@@ -283,7 +312,7 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           quality={75}
           onError={() => setImgSrc('https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp')}
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          className={`object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${isInactive ? 'opacity-85 grayscale-[15%]' : ''}`}
         />
         
         {/* Soft shadow gradients */}
@@ -292,21 +321,27 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
         {/* Floating Badges */}
         <div className="absolute left-3 right-3 top-3 flex items-center justify-between gap-2 z-10">
           <div className="flex flex-wrap gap-1">
-            {visibleTags.map((tag) => {
-              const isFeat = tag.toLowerCase() === 'featured';
-              return (
-                <span
-                  key={tag}
-                  className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs ${
-                    isFeat
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-white/95 text-slate-900'
-                  }`}
-                >
-                  {tag}
-                </span>
-              );
-            })}
+            {isInactive ? (
+              <span className="rounded-full bg-amber-600 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
+                Currently Not Serviceable
+              </span>
+            ) : (
+              visibleTags.map((tag) => {
+                const isFeat = tag.toLowerCase() === 'featured';
+                return (
+                  <span
+                    key={tag}
+                    className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs ${
+                      isFeat
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white/95 text-slate-900'
+                    }`}
+                  >
+                    {tag}
+                  </span>
+                );
+              })
+            )}
           </div>
           
           {/* Review Badge */}
@@ -325,10 +360,17 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
         </div>
 
         {/* Tag label on bottom right */}
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">
-          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-          <span>Active</span>
-        </div>
+        {isInactive ? (
+          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-full bg-amber-600 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white shadow-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+            <span>Currently Not Serviceable</span>
+          </div>
+        ) : (
+          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            <span>Active</span>
+          </div>
+        )}
       </div>
 
       {/* Details Body */}
@@ -372,10 +414,16 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
             <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
               Starts from
             </span>
-            <div className="flex items-center gap-0.5 text-[11px] font-bold text-teal-600 group-hover:text-teal-700 transition-colors shrink-0">
-              <span>View Details</span>
-              <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </div>
+            {isInactive ? (
+              <div className="flex items-center gap-0.5 text-[10px] font-black text-amber-700 uppercase tracking-wider shrink-0">
+                <span>Currently Not Serviceable</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-0.5 text-[11px] font-bold text-teal-600 group-hover:text-teal-700 transition-colors shrink-0">
+                <span>View Details</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

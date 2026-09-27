@@ -29,7 +29,7 @@ import {
 
 
 const bottomTags = [
-  { icon: Ship, label: 'Godavari Cruises' },
+  { icon: Ship, label: 'Godavari Boat Trips' },
   { icon: BedDouble, label: 'Riverside Stays' },
   { icon: Camera, label: 'Sightseeing Tours' },
   { icon: Users, label: 'Family Packages' },

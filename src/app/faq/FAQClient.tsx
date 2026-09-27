@@ -187,7 +187,7 @@ export default function FAQClient() {
               <div>
                 <h3 className="text-xl font-bold tracking-tight">Still choosing a package?</h3>
                 <p className="mt-1.5 text-xs leading-relaxed text-slate-200">
-                  Compare Papikondalu boat cruise options and stay availabilities with our agents. Reporting time is 7:00 AM to 7:30 AM (Aadhaar Xerox required).
+                  Compare Papikondalu boat trip options and stay availabilities with our agents. Reporting time is 7:00 AM to 7:30 AM (Aadhaar Xerox required).
                 </p>
               </div>
             </div>

@@ -233,30 +233,32 @@ export default function PublicNavbar() {
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2 xl:gap-2.5">
-              {/* Language Toggle — Desktop: premium animated pill switch */}
+              {/* Language Toggle — Desktop: premium square box switch */}
               <button
                 onClick={toggleLanguage}
                 aria-label={isTelugu ? 'Switch to English' : 'తెలుగుకు మారండి'}
                 title={isTelugu ? 'Switch to English' : 'Switch to Telugu'}
-                className={`hidden nav:inline-flex h-9 w-[72px] items-center rounded-full border p-1 transition-all duration-300 relative overflow-hidden shadow-sm ${
+                className={`hidden nav:inline-flex h-9 w-[76px] items-center rounded-xl border p-1 transition-all duration-300 relative overflow-hidden shadow-sm ${
                   showTransparent
-                    ? 'border-cyan-400/40 bg-[#061826]/70 shadow-[0_2px_12px_rgba(0,0,0,0.3)] backdrop-blur-md'
-                    : 'border-slate-200 bg-slate-100'
+                    ? 'border-cyan-400/50 bg-[#061826]/85 shadow-[0_2px_12px_rgba(0,0,0,0.35)] backdrop-blur-md'
+                    : 'border-slate-300 bg-slate-100/90 shadow-inner'
                 }`}
               >
-                {/* Sliding indicator */}
+                {/* Sliding square indicator */}
                 <span
-                  className={`absolute top-1 h-7 w-8 rounded-full shadow-sm transition-all duration-300 ease-out ${
-                    isTelugu ? 'left-[calc(100%-2.25rem)]' : 'left-1'
+                  className={`absolute top-1 h-7 w-[34px] rounded-lg shadow-sm transition-all duration-300 ease-out border ${
+                    isTelugu ? 'left-[37px]' : 'left-1'
                   } ${
-                    showTransparent ? 'bg-gradient-to-br from-cyan-400 to-[#0d6e75]' : 'bg-gradient-to-br from-[#1598a1] to-[#0d6e75]'
+                    showTransparent
+                      ? 'bg-gradient-to-br from-cyan-400 to-[#0d6e75] border-cyan-200/50 shadow-[0_0_8px_rgba(34,211,238,0.4)]'
+                      : 'bg-gradient-to-br from-[#1598a1] to-[#0d6e75] border-teal-400/30'
                   }`}
                 />
-                <span className={`relative z-10 flex-1 text-center text-[11px] font-black transition-colors duration-300 ${
-                  !isTelugu ? 'text-white' : showTransparent ? 'text-white/60' : 'text-slate-400'
+                <span className={`relative z-10 flex-1 text-center text-[11px] font-black tracking-tight transition-colors duration-300 ${
+                  !isTelugu ? 'text-white' : showTransparent ? 'text-white/70' : 'text-slate-500'
                 }`}>EN</span>
                 <span className={`relative z-10 flex-1 text-center text-[11px] font-black font-telugu transition-colors duration-300 ${
-                  isTelugu ? 'text-white' : showTransparent ? 'text-white/60' : 'text-slate-400'
+                  isTelugu ? 'text-white' : showTransparent ? 'text-white/70' : 'text-slate-500'
                 }`}>తె</span>
               </button>
 
@@ -469,13 +471,13 @@ export default function PublicNavbar() {
                       <span className="text-lg">🌐</span>
                       <span className="text-sm font-bold text-slate-600">Language / భాష</span>
                     </span>
-                    {/* Animated toggle pill */}
-                    <span className="relative inline-flex h-8 w-16 items-center rounded-full border border-slate-200 bg-slate-100 p-1 transition-all">
-                      <span className={`absolute top-1 h-6 w-7 rounded-full bg-gradient-to-br from-[#1598a1] to-[#0d6e75] shadow-sm transition-all duration-300 ease-out ${
+                    {/* Animated toggle box */}
+                    <span className="relative inline-flex h-8 w-16 items-center rounded-lg border border-slate-300 bg-slate-100 p-1 transition-all shadow-inner">
+                      <span className={`absolute top-1 h-6 w-7 rounded-md bg-gradient-to-br from-[#1598a1] to-[#0d6e75] border border-teal-400/30 shadow-sm transition-all duration-300 ease-out ${
                         isTelugu ? 'left-[calc(100%-1.875rem)]' : 'left-1'
                       }`} />
-                      <span className={`relative z-10 flex-1 text-center text-[10px] font-black transition-colors ${!isTelugu ? 'text-white' : 'text-slate-400'}`}>EN</span>
-                      <span className={`relative z-10 flex-1 text-center text-[10px] font-black font-telugu transition-colors ${isTelugu ? 'text-white' : 'text-slate-400'}`}>తె</span>
+                      <span className={`relative z-10 flex-1 text-center text-[10px] font-black transition-colors ${!isTelugu ? 'text-white' : 'text-slate-500'}`}>EN</span>
+                      <span className={`relative z-10 flex-1 text-center text-[10px] font-black font-telugu transition-colors ${isTelugu ? 'text-white' : 'text-slate-500'}`}>తె</span>
                     </span>
                   </button>
                 </div>

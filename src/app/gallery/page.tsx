@@ -101,50 +101,53 @@ export default function GalleryPage() {
   return (
     <div className="bg-[#F9F9F7] min-h-screen text-slate-900 font-sans selection:bg-[#1598a1] selection:text-white pb-20">
 
-      {/* ── ORIGINAL BRAND HERO ───────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-[#0f3d56] pt-24 pb-16 sm:pt-32 sm:pb-20 border-b border-slate-200">
-        {/* Background Image Overlay */}
+      {/* ── COMPACT HERO ── */}
+      <div className="relative overflow-hidden bg-[#0f3d56] pt-14 pb-4 sm:pt-16 sm:pb-5 border-b border-slate-200">
+        {/* Background Image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1600/v1785917171/ts_boat_tourism/images/uadyznucdhwm3ti9k6kx.jpg"
           alt=""
           aria-hidden
-          className="absolute inset-0 w-full h-full object-cover opacity-30"
+          className="absolute inset-0 w-full h-full object-cover opacity-20"
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f3d56]/85 via-[#0f3d56]/75 to-[#0f3d56]/95" />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-1">
+
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-teal-300 backdrop-blur-md mb-4 shadow-sm">
-            <Camera className="w-3.5 h-3.5 text-amber-300" />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[#1598a1]/40 bg-[#1598a1]/10 px-3.5 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-[#62d5da] backdrop-blur-md mb-4 shadow-sm">
+            <Camera className="w-3 h-3 text-[#f5b016]" />
             Official Visual Archive — Godavari Tourism
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-tight mb-4">
-            <span className="block text-teal-300 font-bold text-lg sm:text-2xl uppercase tracking-widest mb-1">
+          {/* Heading */}
+          <h1 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight mb-3">
+            <span className="block text-[#1598a1] font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5">
               Landscapes, Moments &amp; Tours
             </span>
-            <span className="block text-white">Photo &amp; Drone Video Gallery</span>
+            Photo &amp; Drone Video Gallery
           </h1>
 
-          <p className="max-w-2xl mx-auto text-slate-200 text-sm sm:text-base font-medium leading-relaxed mb-6">
-            Explore high-definition photos and 4K aerial drone videos of Papikondalu gorges, Godavari river cruises, Kolluru bamboo huts, and sacred shrines.
+          {/* Description */}
+          <p className="max-w-2xl mx-auto text-slate-300 text-xs sm:text-sm font-medium leading-relaxed mb-4">
+            High-definition photos and 4K videos of Papikondalu, Godavari trips, bamboo huts, and temples.
           </p>
 
           {/* Stat Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-bold text-slate-200">
-            <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-3.5 py-1.5 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-bold text-slate-200">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 backdrop-blur-sm">
               📷 {totalPhotos}+ HD Photos
             </span>
-            <span className="inline-flex items-center gap-2 rounded-xl bg-teal-500/20 border border-teal-400/30 px-3.5 py-1.5 backdrop-blur-sm text-teal-200">
-              🎬 {totalVideos} Drone &amp; Tour Videos
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#1598a1]/20 border border-[#1598a1]/30 px-2.5 py-1 backdrop-blur-sm text-[#62d5da]">
+              🎬 {totalVideos} Tour Videos
             </span>
-            <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-3.5 py-1.5 backdrop-blur-sm">
-              🛥️ Verified Cruise Fleet
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 backdrop-blur-sm">
+              🛥️ Verified Boat Fleet
             </span>
           </div>
+
         </div>
       </div>
 

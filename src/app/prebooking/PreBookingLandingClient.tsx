@@ -31,7 +31,7 @@ const FALLBACK_PACKAGES = [
       'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
     starting_price: 5000,
     type: 'TOUR',
-    tags: ['Bamboo Huts', 'Godavari Cruise', 'All Meals Included'],
+    tags: ['Bamboo Huts', 'Godavari Boat Trip', 'All Meals Included'],
   },
   {
     id: 'bhadrachalam-to-papikondalu-sirivaka-wooden-cottage-2-days',
@@ -67,23 +67,23 @@ const FALLBACK_PACKAGES = [
       'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
     starting_price: 990,
     type: 'TRIP',
-    tags: ['Day Cruise', 'Breakfast & Lunch', 'Temple Visit'],
+    tags: ['Day Boat Trip', 'Breakfast & Lunch', 'Temple Visit'],
   },
   {
-    id: 'bhadrachalam-to-papikondalu-boat-rajahmundry-package',
-    slug: 'bhadrachalam-to-papikondalu-boat-rajahmundry-package',
-    title: 'Bhadrachalam to Papikondalu Boat Cruise with Rajahmundry Drop',
+    id: 'bhadrachalam-to-rajahmundry-1-day-drop-package',
+    slug: 'bhadrachalam-to-rajahmundry-1-day-drop-package',
+    title: 'Bhadrachalam to Papikondalu Boat Trip with Rajahmundry Drop',
     duration: '1 Day',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Purushothapatnam - Rajahmundry',
     cover_image_url:
       'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
     starting_price: 2200,
     type: 'TOUR',
-    tags: ['One-Way Cruise', 'Rajahmundry Drop', 'Full Day Trip'],
+    tags: ['One-Way Boat Trip', 'Rajahmundry Drop', 'Full Day Trip'],
   },
   {
-    id: 'rajahmundry-to-papikondalu-bhadrachalam-package',
-    slug: 'rajahmundry-to-papikondalu-bhadrachalam-package',
+    id: 'rajahmundry-bhadrachalam-1-day-drop-package',
+    slug: 'rajahmundry-bhadrachalam-1-day-drop-package',
     title: 'Rajahmundry to Papikondalu Boat with Bhadrachalam Drop',
     duration: '1 Day',
     place: 'Rajahmundry - Purushothapatnam - Papikondalu - Perantapalli - Pochavaram - Bhadrachalam',
@@ -91,7 +91,7 @@ const FALLBACK_PACKAGES = [
       'https://res.cloudinary.com/r929tquv/image/upload/v1786941607/ts_tours/ou4bikypctyozwhizlic.jpg',
     starting_price: 2200,
     type: 'TOUR',
-    tags: ['River Gorge Cruise', 'Bhadrachalam Drop', 'Temple Darshan'],
+    tags: ['River Gorge Boat Ride', 'Bhadrachalam Drop', 'Temple Darshan'],
   },
 ];
 
@@ -363,7 +363,7 @@ export default function PreBookingLandingClient({ packages }: Props) {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Authorized Godavari Cruises & Temple Tourism Booking Center
+                  Authorized Godavari Boat Trips & Temple Tourism Booking Center
                 </p>
               </div>
             </div>
@@ -436,7 +436,7 @@ export default function PreBookingLandingClient({ packages }: Props) {
               </div>
             </div>
 
-            {/* Timings & Cruise Reporting */}
+            {/* Timings & Boat Reporting */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 flex flex-col">
               <div className="flex items-center gap-2 text-xs font-bold text-[#1598a1] uppercase tracking-wider mb-2">
                 <Clock className="w-4 h-4 text-[#1598a1]" />
@@ -449,7 +449,7 @@ export default function PreBookingLandingClient({ packages }: Props) {
                   <p className="text-xs text-gray-500">Open 7 Days a Week</p>
                 </div>
                 <div className="pt-2 border-t border-gray-200">
-                  <p className="text-[10px] text-gray-400 uppercase font-semibold">Boat Cruise Reporting Time</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold">Boat Ride Reporting Time</p>
                   <p className="text-sm font-bold text-[#1598a1]">7:00 AM to 7:30 AM IST</p>
                   <p className="text-xs text-gray-500">Pochavaram / Bhadrachalam Boat Dock</p>
                 </div>

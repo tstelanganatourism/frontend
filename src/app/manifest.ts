@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'TS Boat Tourism',
     short_name: 'TS Boat Tourism',
-    description: 'Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari river cruises, and premium stays.',
+    description: 'Book the best Papikondalu tours, Bhadrachalam travel packages, Godavari boat trips, and stays.',
     start_url: '/',
     display: 'standalone',
     background_color: '#F9F9F7',

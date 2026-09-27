@@ -136,7 +136,7 @@ export default function RootLayout({
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com",
                 "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
                 "image": "https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_800/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png",
-                "description": "Premium travel agency offering Godavari river cruises, Papikondalu tours, and Bhadrachalam travel packages.",
+                "description": "Travel agency offering Godavari boat trips, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 99513 69573",
                 "email": "tstelanganatourism@gmail.com",
                 "address": {

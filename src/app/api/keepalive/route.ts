@@ -14,7 +14,7 @@ export async function GET() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
     
-    const res = await fetch(`${backendUrl}/health`, {
+    const res = await fetch(`${backendUrl}/ping`, {
       signal: controller.signal,
       headers: { 'User-Agent': 'TS-Tourism-KeepAlive/1.0' },
       cache: 'no-store',

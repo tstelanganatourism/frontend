@@ -46,6 +46,7 @@ interface BookingCalloutCardProps {
   foodChildPrice?: number | string | null;
   foodStudentPrice?: number | string | null;
   extras?: any[];
+  isActive?: boolean;
 }
 
 export const BookingCalloutCard = ({
@@ -64,6 +65,7 @@ export const BookingCalloutCard = ({
   foodChildPrice,
   foodStudentPrice,
   extras = [],
+  isActive = true,
 }: BookingCalloutCardProps) => {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(variants[0]?.id ?? null);
 
@@ -328,13 +330,18 @@ export const BookingCalloutCard = ({
       {/* Bottom Sticky Action Bar */}
       <div className="p-3.5 bg-white border-t border-slate-150 shrink-0 space-y-2">
         <button
+          disabled={!isActive}
           onClick={handleBookNowClick}
           type="button"
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#0d6e75] hover:bg-[#0b5c62] py-3 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:shadow-lg active:scale-98"
+          className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-black uppercase tracking-wider transition ${
+            !isActive
+              ? 'bg-amber-600/90 text-white cursor-not-allowed shadow-none'
+              : 'bg-[#0d6e75] hover:bg-[#0b5c62] text-white shadow-md hover:shadow-lg active:scale-98'
+          }`}
         >
           <Ticket className="h-4 w-4 stroke-[2.5]" />
-          <span>Book Selected Package</span>
-          <ArrowRight className="h-4 w-4 stroke-[3]" />
+          <span>{!isActive ? 'Currently Not Serviceable' : 'Book Selected Package'}</span>
+          {isActive && <ArrowRight className="h-4 w-4 stroke-[3]" />}
         </button>
 
         {brochurePdfUrl && (

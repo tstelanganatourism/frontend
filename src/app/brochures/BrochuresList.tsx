@@ -206,83 +206,53 @@ export default function BrochuresList({ data }: { data?: PackageData }) {
 
   return (
     <div className="bg-[#f6f3ec]">
-      {/* Unique State-of-the-Art Hero Canvas */}
-      <section className="relative overflow-hidden bg-slate-950 pb-16 pt-24 sm:pb-20 sm:pt-32">
-        {/* Ambient Glow Effects */}
-        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-indigo-500/10 blur-3xl" />
-        
-        {/* Rich Photography Background Image */}
+      {/* Compact Hero — ~25% screen height */}
+      <section className="relative overflow-hidden bg-[#0f1c2e] pt-14 pb-5 sm:pt-16 sm:pb-6">
+        {/* Ambient glows */}
+        <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-1/2 h-36 w-36 -translate-y-1/2 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+
+        {/* Background image */}
         <Image
           src="https://res.cloudinary.com/r929tquv/image/upload/v1785917164/ts_boat_tourism/images/gd4pulduucghrnfzel5z.jpg"
           alt="Papikondalu river hills"
           fill
           sizes="100vw"
-          className="object-cover opacity-60"
+          className="object-cover opacity-20 pointer-events-none"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-indigo-950/40" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0f1c2e]/90 via-[#0f1c2e]/70 to-[#0f1c2e]/90 pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#f6f3ec] to-transparent pointer-events-none" />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
-            
-            {/* Left Content */}
-            <div className="lg:col-span-7">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-cyan-300 backdrop-blur-md shadow-xs">
-                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                Official Package PDFs & Guides
-              </div>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center pt-1">
 
-              <h1 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
-                <span className="block text-cyan-400 font-extrabold text-xl sm:text-2xl uppercase tracking-widest mb-1.5">Offline Tour Schedules</span>
-                <span className="block text-white drop-shadow-sm">Tour Brochures</span>
-              </h1>
-
-              <p className="mb-6 max-w-2xl text-sm font-medium leading-relaxed text-slate-300 sm:text-base">
-                Download verified package PDFs with itinerary details, fare variants, reporting points, meal timings, inclusions, and rules in one place.
-              </p>
-
-              {/* Quick Feature Badges */}
-              <div className="flex flex-wrap gap-3 text-[11px] font-bold text-slate-300">
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
-                  📄 Full Itinerary PDF
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
-                  📍 Boarding Instructions
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 backdrop-blur-xs">
-                  🍱 Meal Timings Included
-                </span>
-              </div>
-            </div>
-
-            {/* Right Card Panel */}
-            <div className="lg:col-span-5">
-              <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-cyan-400/40">
-                <div className="flex items-center gap-4">
-                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-white/20">
-                    <Image
-                      src={heroImages[1].src}
-                      alt={heroImages[1].alt}
-                      fill
-                      sizes="96px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-md font-bold text-white mb-1">High-Res Offline Guides</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Download complete printable brochures directly to your device for offline trip reference.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          {/* Badge */}
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-[#1598a1]/40 bg-[#1598a1]/10 px-3.5 py-1.5 text-[9px] font-black uppercase tracking-widest text-[#62d5da] backdrop-blur-md shadow-sm">
+            <Sparkles className="h-3 w-3 text-[#f5b016]" />
+            Official Package PDFs &amp; Guides
           </div>
+
+          {/* Heading */}
+          <h1 className="mb-3 text-2xl font-black tracking-tight text-white sm:text-3xl lg:text-4xl leading-tight">
+            <span className="block text-[#1598a1] font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5">Offline Tour Schedules</span>
+            Tour Brochures
+          </h1>
+
+          {/* Description */}
+          <p className="mb-4 text-slate-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+            Download verified PDFs with itinerary details, fare variants, boarding points and meal timings.
+          </p>
+
+          {/* Quick Feature Badges */}
+          <div className="flex flex-wrap justify-center gap-2 text-[10px] font-bold text-slate-300">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 border border-white/10 px-2.5 py-1 backdrop-blur-sm">📄 Full Itinerary PDF</span>
+            <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 border border-white/10 px-2.5 py-1 backdrop-blur-sm">📍 Boarding Instructions</span>
+            <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 border border-white/10 px-2.5 py-1 backdrop-blur-sm">🍱 Meal Timings</span>
+          </div>
+
         </div>
       </section>
+
 
       <section className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 lg:px-8 lg:pb-16">
         <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">

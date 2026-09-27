@@ -194,7 +194,7 @@ export default function DashboardPage() {
                   <span className="text-teal-300">{firstName}!</span>
                 </h1>
                 <p className="text-white/55 mt-2.5 text-sm font-medium max-w-sm leading-relaxed">
-                  Your next river adventure awaits. Book a cruise, track your trips, and explore scenic Godavari routes.
+                  Your next river adventure awaits. Book a boat trip, track your trips, and explore scenic Godavari routes.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">

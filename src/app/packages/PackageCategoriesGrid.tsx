@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Compass, Package, ArrowRight, Sparkles, Grid3X3, Star, Tag } from 'lucide-react';
+import { Compass, Package, ArrowRight, Sparkles, Grid3X3, Star, Tag, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 type Category = {
@@ -61,16 +61,77 @@ function CategoryCoverImage({ cat }: { cat: Category }) {
   );
 }
 
+/* ──────────────────────────────────────────────
+   INFINITE MARQUEE CAROUSEL
+────────────────────────────────────────────── */
+function InfiniteMarquee({ categories }: { categories: Category[] }) {
+  // Triple items for seamless loop
+  const items = [...categories, ...categories, ...categories];
+
+  return (
+    <div className="relative w-full overflow-hidden py-3" aria-label="Package categories carousel">
+      {/* Left fade edge */}
+      <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-[#0f1c2e] to-transparent sm:w-28" />
+      {/* Right fade edge */}
+      <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-[#0f1c2e] to-transparent sm:w-28" />
+
+      <motion.div
+        className="flex gap-2.5 sm:gap-3 w-max"
+        animate={{ x: [0, `-${100 / 3}%`] }}
+        transition={{
+          x: {
+            duration: 20 + categories.length * 4,
+            repeat: Infinity,
+            ease: 'linear',
+            repeatType: 'loop',
+          },
+        }}
+        style={{ willChange: 'transform' }}
+      >
+        {items.map((cat, idx) => (
+          <Link
+            key={`${cat.id}-marquee-${idx}`}
+            href={`/packages/categories/${cat.slug}`}
+            id={idx < categories.length ? `marquee-pkg-${cat.slug}` : undefined}
+            className="group flex-shrink-0"
+            tabIndex={idx < categories.length ? 0 : -1}
+            aria-hidden={idx >= categories.length ? 'true' : undefined}
+          >
+            <div className="relative flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-md ring-1 ring-inset ring-white/5 hover:border-[#1598a1]/60 hover:bg-[#1598a1]/10 transition-all duration-300 cursor-pointer min-w-[160px] sm:min-w-[210px]">
+              {/* Glow dot accent */}
+              <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[#1598a1] shadow-[0_0_6px_1px_rgba(21,152,161,0.55)]" />
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-[12px] sm:text-[13px] truncate leading-tight group-hover:text-[#62d5da] transition-colors">
+                  {cat.name}
+                </p>
+                <p className="text-slate-400 text-[10px] mt-0 font-medium">
+                  {cat.package_count} {cat.package_count === 1 ? 'package' : 'packages'}
+                  {cat.min_price ? ` · ₹${cat.min_price.toLocaleString('en-IN')}+` : ''}
+                </p>
+              </div>
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#1598a1] transition-all">
+                <ChevronRight className="w-3 h-3 text-white" />
+              </div>
+            </div>
+          </Link>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
 export default function PackageCategoriesGrid({ categories }: { categories: Category[] }) {
   if (!categories || categories.length === 0) return null;
 
   return (
     <div className="w-full min-h-screen bg-slate-50/50">
-      {/* State-of-the-Art Hero Canvas (Image 2 Banner Style) */}
-      <div className="relative overflow-hidden bg-slate-950 pb-12 pt-20 sm:pb-16 sm:pt-24">
+
+      {/* ── HERO SECTION ── */}
+      <div className="relative overflow-hidden bg-[#0f1c2e] pb-0 pt-14 sm:pt-16">
         {/* Ambient Glow Effects */}
-        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute right-0 top-1/2 h-60 w-60 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -top-20 h-48 w-48 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute left-1/2 bottom-0 h-24 w-72 -translate-x-1/2 rounded-full bg-[#1598a1]/8 blur-3xl pointer-events-none" />
 
         {/* Photography Background Image */}
         <Image
@@ -78,37 +139,98 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
           alt="Tour Categories Canvas Background"
           fill
           sizes="100vw"
-          className="object-cover opacity-75 pointer-events-none"
+          className="object-cover opacity-25 pointer-events-none"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/55 to-slate-950/80 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40 pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-50/50 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0f1c2e]/90 via-[#0f1c2e]/60 to-[#0f1c2e]/90 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f1c2e] via-transparent to-[#0f1c2e]/50 pointer-events-none" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-teal-300 backdrop-blur-md shadow-xs">
-            <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-2 pb-3 sm:pb-4">
+
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-[#1598a1]/40 bg-[#1598a1]/10 px-3.5 py-1.5 text-[9px] font-black uppercase tracking-widest text-[#62d5da] backdrop-blur-md shadow-sm"
+          >
+            <Sparkles className="h-3 w-3 text-[#f5b016]" />
             <span>Explore Tour Categories</span>
-          </div>
+          </motion.div>
 
-          <h1 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
-            <span className="block text-teal-400 font-extrabold text-sm sm:text-base uppercase tracking-widest mb-1.5">
+          {/* Heading */}
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.08 }}
+            className="mb-3 text-2xl font-black tracking-tight text-white sm:text-3xl lg:text-4xl leading-tight"
+          >
+            <span className="block text-[#1598a1] font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5">
               Curated Experiences
             </span>
-            <span className="block text-white drop-shadow-md">
-              Select Your Category
-            </span>
-          </h1>
+            <span className="block text-white">Select Your Category</span>
+          </motion.h1>
 
-          <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed drop-shadow-sm">
-            Select a package category to browse curated boat tours, island camping trips, and temple tours.
-          </p>
+          {/* Description */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed mb-4"
+          >
+            Curated boat tours, island camping trips, and temple tours.
+          </motion.p>
+
+          {/* Stats Row */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.22 }}
+            className="flex flex-wrap justify-center gap-2 sm:gap-3"
+          >
+            {[
+              { label: 'Categories', value: categories.length },
+              { label: 'Packages', value: categories.reduce((s, c) => s + c.package_count, 0) },
+              { label: 'Rating', value: '4.9 ★' },
+            ].map((stat) => (
+              <div key={stat.label} className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white/6 border border-white/12 backdrop-blur-sm">
+                <span className="text-sm sm:text-base font-black text-white">{stat.value}</span>
+                <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">{stat.label}</span>
+              </div>
+            ))}
+          </motion.div>
+
         </div>
+
+        {/* Divider */}
+        <div className="relative z-10 px-8 sm:px-16 mb-1">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        </div>
+
+        {/* Marquee Carousel Strip */}
+        <div className="relative z-10 pt-3 pb-5 sm:pb-6">
+          <p className="text-center text-[9px] uppercase tracking-[0.18em] text-slate-500 mb-3 font-bold px-4">
+            ✦ all categories ✦
+          </p>
+          <InfiniteMarquee categories={categories} />
+        </div>
+
+        {/* Fade to light bg */}
+        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-50/50 to-transparent pointer-events-none" />
       </div>
 
-      {/* Categories Grid (Clean Light Card Design) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* ── CATEGORIES GRID ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+        {/* Section heading */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">All Package Categories</h2>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">{categories.length} categories · Tap any to explore</p>
+          </div>
+          <Compass className="w-6 h-6 text-[#1598a1]" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {categories.map((cat, index) => (
             <Link
               key={cat.id}
@@ -119,7 +241,7 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
+                transition={{ duration: 0.3, delay: index * 0.06 }}
                 className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl hover:border-[#1598a1]/50 transition-all duration-300 flex flex-col h-full"
               >
                 {/* Image Container */}
@@ -131,10 +253,9 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
 
                   {/* TOP LEFT BADGES: Price & Rating */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
-                    {/* Price Badge */}
                     {cat.min_price ? (
-                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/90 backdrop-blur-md border border-amber-400/40 text-amber-300 font-extrabold text-xs shadow-md">
-                        <Tag className="w-3 h-3 text-amber-300" />
+                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/90 backdrop-blur-md border border-[#f5b016]/40 text-[#f5b016] font-extrabold text-xs shadow-md">
+                        <Tag className="w-3 h-3" />
                         <span>From ₹{cat.min_price.toLocaleString('en-IN')}</span>
                       </div>
                     ) : (
@@ -143,9 +264,8 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
                       </div>
                     )}
 
-                    {/* Rating Badge */}
                     <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md shadow-sm border border-slate-200/80 text-slate-900 text-xs font-black">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      <Star className="w-3 h-3 fill-[#f5b016] text-[#f5b016]" />
                       <span>{cat.rating || 4.8}</span>
                     </div>
                   </div>
@@ -187,7 +307,7 @@ export default function PackageCategoriesGrid({ categories }: { categories: Cate
         <div className="mt-12 text-center">
           <Link
             href="/packages?view=all"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white border border-slate-300 text-slate-700 text-sm font-bold shadow-sm hover:border-[#1598a1] hover:text-[#1598a1] transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white border border-slate-300 text-slate-700 text-sm font-bold shadow-sm hover:border-[#1598a1] hover:text-[#1598a1] hover:shadow-md transition-all"
             id="view-all-packages-link"
           >
             <Grid3X3 className="w-4 h-4" />

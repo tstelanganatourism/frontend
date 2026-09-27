@@ -217,7 +217,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       `${pkg.title} tour package`,
       'Papikondalu boat booking',
       'Bhadrachalam tour package',
-      'Godavari river cruise booking',
+      'Godavari boat trip booking',
       ...(pkg.tags || []),
     ],
     openGraph: {
@@ -387,6 +387,30 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         <link rel="preload" href={pkg.cover_image_url} as="image" type="image/jpeg" fetchPriority="high" />
       )}
 
+      {/* Non-serviceable alert banner */}
+      {!pkg.is_active && (
+        <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-rose-700 text-white shadow-md border-b border-rose-800">
+          <div className="mx-auto max-w-[1800px] px-4 py-3.5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
+                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-amber-100">Notice: Tour Package Currently Not Serviceable</p>
+                <p className="text-xs font-medium text-white/95 mt-0.5">
+                  Online bookings for this tour package are temporarily paused by management. Package details are displayed for reference only.
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-black uppercase tracking-wider text-white">
+              Currently Not Serviceable
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Clean Header Grid */}
       <PackageHeroV3
         title={pkg.title}
@@ -401,6 +425,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         variantCount={(pkg.variants || []).length}
         gallery={pkg.gallery || []}
         videoUrl={pkg.video_url}
+        isActive={pkg.is_active}
       />
 
       {/* Tabbed Navigation */}
@@ -492,6 +517,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
             foodChildPrice={pkg.food_child_price}
             foodStudentPrice={pkg.food_student_price}
             extras={pkg.extras}
+            isActive={pkg.is_active}
           />
         </aside>
 
