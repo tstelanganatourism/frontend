@@ -183,13 +183,15 @@ export default async function PrintTicketPage({
 
   const reportingTime = isRoom ? (booking.room_checkin || 'TBA') : (booking.boarding_point?.departure_time || 'TBA');
 
+  // For rooms: hotel_name / package_title is the lodge name (e.g. "PUNNAMI SOUTHERN RESIDENCY")
+  // variant_title is the room type (e.g. "2 Bed Luxury Suite") — this is what users see
   const allocatedHotelName = (isRoom && (booking.hotel_name || booking.package_title)) ||
     (booking.room_address ? booking.room_address.split(',')[0].trim() : null) ||
     booking.package_title ||
     'Godavari Riverside Bamboo Huts';
 
   const boardingTitle = isRoom
-    ? allocatedHotelName
+    ? (booking.variant_title || allocatedHotelName)   // show room TYPE (e.g. "2 Bed Luxury") — hotel name is secondary
     : (booking.boarding_point?.title || 'Bhadrachalam Office');
 
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
@@ -1088,10 +1090,13 @@ export default async function PrintTicketPage({
             </div>
           </div>
 
-          {/* Ribbon */}
+          {/* Ribbon — for rooms show variant_title (room type) as primary, hotel name as secondary */}
           <div className="pkg-ribbon-bar">
-            <span>{booking.package_title}</span>
-            {booking.variant_title && <span className="pkg-ribbon-variant">{booking.variant_title}</span>}
+            <span>{isRoom ? (booking.variant_title || booking.package_title) : booking.package_title}</span>
+            {isRoom
+              ? (booking.variant_title && booking.package_title && <span className="pkg-ribbon-variant">{booking.package_title}</span>)
+              : (booking.variant_title && <span className="pkg-ribbon-variant">{booking.variant_title}</span>)
+            }
           </div>
 
           {/* Primary Uploaded Image Banner */}
@@ -1169,8 +1174,13 @@ export default async function PrintTicketPage({
           {/* 3-Column details grid */}
           <div className="info-grid">
             <div className="info-card">
-              <div className="info-label">{isRoom ? 'Lodge / Hotel' : 'Boarding Point'}</div>
-              <div className="info-value">{boardingTitle}</div>
+              <div className="info-label">{isRoom ? 'Room Type' : 'Boarding Point'}</div>
+              <div className="info-value">
+                {boardingTitle}
+                {isRoom && booking.variant_title && booking.package_title && booking.variant_title !== booking.package_title && (
+                  <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>{allocatedHotelName}</div>
+                )}
+              </div>
             </div>
             <div className="info-card">
               <div className="info-label">{isRoom ? 'Check-In Date' : 'Travel Date'}</div>
@@ -1511,7 +1521,7 @@ export default async function PrintTicketPage({
                       <div className="timeline-line" />
                       <div className="timeline-dot" />
                       <div className="timeline-time">{booking.room_checkin || '12:00 PM'}</div>
-                      <div className="timeline-desc">Check-in at {booking.package_title}</div>
+                      <div className="timeline-desc">Check-in · {booking.variant_title || booking.package_title}</div>
                     </div>
                     {booking.room_highlights && booking.room_highlights.length > 0 ? (
                       booking.room_highlights.map((hi, i) => (

@@ -112,7 +112,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Logo Area */}
             <div className="flex h-20 items-center border-b border-white/10 px-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#5ac4d7] text-slate-900 font-bold">
+                {/* suppressHydrationWarning: avatar_url only available client-side */}
+                <div
+                  suppressHydrationWarning
+                  className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#5ac4d7] text-slate-900 font-bold"
+                >
                   {user?.avatar_url ? (
                     <img src={user.avatar_url} alt="Profile" className="h-full w-full object-cover" />
                   ) : (
@@ -192,7 +196,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Menu className="h-6 w-6" />
               </button>
               <div>
-                <h2 className="text-sm font-medium text-slate-500">Welcome back, {user?.full_name || 'Admin'}</h2>
+                {/* suppressHydrationWarning: user.full_name is client-only (Zustand), SSR renders 'Admin' fallback */}
+                <h2 className="text-sm font-medium text-slate-500" suppressHydrationWarning>
+                  Welcome back, {user?.full_name || 'Admin'}
+                </h2>
                 <p className="text-lg font-bold text-slate-900 capitalize">
                   {getPageTitle()}
                 </p>

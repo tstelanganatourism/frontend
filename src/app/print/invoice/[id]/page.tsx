@@ -954,7 +954,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                     <td style={{ textAlign: 'center' }}>{sNo++}</td>
                     <td>
                       <span className="tax-table-line-title">
-                        {booking.package_title} — {booking.variant_title}
+                        {isRoom ? (booking.variant_title || booking.package_title) : booking.package_title} — {isRoom ? booking.package_title : booking.variant_title}
                       </span>
                       <span className="tax-table-line-sub">
                         Travel Date: {travelDateFormatted} | Guests: {guestSummary}
