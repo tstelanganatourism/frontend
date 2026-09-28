@@ -721,19 +721,22 @@ export default function BookingDetailsModal({
                         let quickStudents = 0;
 
                         booking.passengers.forEach((p: any) => {
-                          const isQuickGuest = !p.is_primary && (
-                            booking.pricing_snapshot?.booking_mode === 'QUICK' ||
-                            p.full_name.toLowerCase().includes("quick ticket") ||
-                            p.full_name.toLowerCase().includes("guest adult") ||
-                            p.full_name.toLowerCase().includes("guest child") ||
-                            p.full_name.toLowerCase().includes("student")
-                          );
-                          if (isQuickGuest) {
+                          const nameClean = (p.full_name || '').trim().toLowerCase();
+                          const isPlaceholder = !nameClean ||
+                            nameClean.startsWith("guest adult") ||
+                            nameClean.startsWith("guest child") ||
+                            nameClean.startsWith("guest student") ||
+                            nameClean.startsWith("guest passenger") ||
+                            nameClean.startsWith("quick ticket") ||
+                            nameClean.startsWith("tba");
+
+                          // If passenger has a real name entered, or is primary, always display them
+                          if (!isPlaceholder || p.is_primary) {
+                            detailed.push(p);
+                          } else {
                             if (booking.student_count > 0) quickStudents++;
                             else if (p.age >= 11) quickAdults++;
                             else quickChildren++;
-                          } else {
-                            detailed.push(p);
                           }
                         });
 

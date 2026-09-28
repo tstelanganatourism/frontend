@@ -55,6 +55,12 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const [roomsList, setRoomsList] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCouponCode, setAppliedCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
   // Transport state for package bookings
   const [transportMode, setTransportMode] = useState<'NONE' | 'SHARED' | 'SEPARATE'>('NONE');
   const [selectedSharedOptId, setSelectedSharedOptId] = useState<number | null>(null);
@@ -121,6 +127,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         student_class: '',
       });
       setCustomerEmail('');
+      setCouponCode('');
+      setAppliedCouponCode('');
+      setCouponDiscount(0);
     }
   }, [isOpen]);
 
@@ -376,6 +385,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         include_refreshments: includeRefreshments,
         quick_booking: passengerMode === 'quick',
         customer_email: customerEmail.trim() || undefined,
+        coupon_code: (appliedCouponCode || couponCode).trim().toUpperCase() || undefined,
       };
       if (amountPaid) {
         payload.amount_paid = parseFloat(amountPaid);
@@ -432,7 +442,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     }))
   );
 
-  const estimatedTotal = useMemo(() => {
+  const estimatedSubtotal = useMemo(() => {
     let subtotal = 0;
     if (targetType === 'package' && variantId) {
       const selectedVariantNum = parseInt(variantId);
@@ -495,10 +505,51 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         }
       }
     }
-    const gst = subtotal * 0.05;
-    const gatewayFee = (subtotal + gst) * 0.01;
-    return subtotal + gst + gatewayFee;
+    return subtotal;
   }, [targetType, variantId, roomVariantId, packagesList, packageOptions, roomOptions, adultCount, childCount, studentCount, travelDate, departureDate, transportMode, selectedSharedOptId, separateVehicleQtys, packageTransportOptions, includeRefreshments, packageHasRefreshments, packageRefAdultPrice, packageRefChildPrice]);
+
+  const estimatedTotal = useMemo(() => {
+    const discounted = Math.max(0, estimatedSubtotal - couponDiscount);
+    const gst = discounted * 0.05;
+    const gatewayFee = (discounted + gst) * 0.01;
+    return discounted + gst + gatewayFee;
+  }, [estimatedSubtotal, couponDiscount]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setIsValidatingCoupon(true);
+    try {
+      const res = await apiClient.post('/api/v1/coupons/validate', {
+        code: couponCode.trim(),
+        booking_amount: estimatedSubtotal,
+        target_type: targetType === 'package' ? 'PACKAGE' : 'ROOM',
+        target_id: targetType === 'package' ? (selectedPackage?.id || 1) : 1,
+        ticket_count: totalPax,
+        travel_date: travelDate || undefined,
+      });
+      if (res.data?.valid) {
+        setCouponDiscount(Number(res.data.discount_amount || 0));
+        setAppliedCouponCode(couponCode.trim().toUpperCase());
+        toast.success(`Coupon ${couponCode.trim().toUpperCase()} applied! Saved ₹${Number(res.data.discount_amount).toFixed(2)}`);
+      } else {
+        setCouponDiscount(0);
+        setAppliedCouponCode('');
+        toast.error(res.data?.reason || 'Invalid coupon code');
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Failed to validate coupon');
+      setCouponDiscount(0);
+      setAppliedCouponCode('');
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    setAppliedCouponCode('');
+    setCouponDiscount(0);
+  };
 
   if (!isOpen) return null;
 
@@ -687,12 +738,57 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
             </label>
           )}
 
+          {/* Coupon Code Section */}
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 space-y-2">
+            <label className="text-xs font-bold text-slate-700 block">Apply Coupon Code (Optional)</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="e.g. SAVE10, TSBOATSPECIAL"
+                value={couponCode}
+                onChange={(e) => {
+                  setCouponCode(e.target.value.toUpperCase());
+                  if (appliedCouponCode) handleRemoveCoupon();
+                }}
+                disabled={isValidatingCoupon || !!appliedCouponCode}
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold uppercase tracking-wider focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400 outline-none disabled:bg-slate-100"
+              />
+              {appliedCouponCode ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition"
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={!couponCode.trim() || isValidatingCoupon}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isValidatingCoupon ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Apply'}
+                </button>
+              )}
+            </div>
+            {appliedCouponCode && (
+              <p className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Coupon {appliedCouponCode} applied! Discount: ₹{couponDiscount.toFixed(2)}
+              </p>
+            )}
+          </div>
+
           {/* Payment Info */}
           <div className="rounded-xl border border-[#1a6b7a]/20 bg-[#1a6b7a]/5 p-4 space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-[#1a6b7a]">Total Amount</p>
                 <p className="text-xl font-black text-slate-900">₹{estimatedTotal.toFixed(2)}</p>
+                {couponDiscount > 0 && (
+                  <p className="text-[10px] text-emerald-600 font-bold">Includes -₹{couponDiscount.toFixed(2)} coupon discount</p>
+                )}
                 <p className="text-[10px] text-slate-500 font-semibold">Includes 5% GST & 1% Gateway Fee</p>
               </div>
               <div className="w-1/2 flex flex-col items-end">

@@ -1273,21 +1273,23 @@ export default async function PrintTicketPage({
                 let quickStudents = 0;
 
                 booking.passengers.forEach((p: any) => {
-                  const isQuickGuest = !p.is_primary && (
-                    booking.pricing_snapshot?.booking_mode === 'QUICK' ||
-                    (p.full_name || '').toLowerCase().includes("quick ticket") ||
-                    (p.full_name || '').toLowerCase().includes("guest adult") ||
-                    (p.full_name || '').toLowerCase().includes("guest child") ||
-                    (p.full_name || '').toLowerCase().includes("quick ticket(not provided)") ||
-                    (p.full_name || '').toLowerCase().includes("student")
-                  );
+                  const nameClean = (p.full_name || '').trim().toLowerCase();
+                  const isPlaceholder = !nameClean ||
+                    nameClean.startsWith("guest adult") ||
+                    nameClean.startsWith("guest child") ||
+                    nameClean.startsWith("guest student") ||
+                    nameClean.startsWith("guest passenger") ||
+                    nameClean.startsWith("quick ticket") ||
+                    nameClean.startsWith("tba");
 
-                  if (isQuickGuest) {
+                  // If passenger has a real name entered (NOT a generic placeholder),
+                  // or is primary, ALWAYS display their individual name row!
+                  if (!isPlaceholder || p.is_primary) {
+                    detailed.push(p);
+                  } else {
                     if (booking.student_count > 0) quickStudents++;
                     else if (p.age >= 11) quickAdults++;
                     else quickChildren++;
-                  } else {
-                    detailed.push(p);
                   }
                 });
 
@@ -1306,7 +1308,7 @@ export default async function PrintTicketPage({
                       </span>
                     </td>
                     <td>{p.gender || '—'}</td>
-                    <td>{p.id_proof_number ? `${p.id_proof_type || 'Aadhaar'}: ${p.id_proof_number}` : '(Not Provided)'}</td>
+                    <td>{p.id_proof_number ? `${p.id_proof_type || 'Aadhaar'}: ${p.id_proof_number}` : (p.phone_number ? `Phone: ${p.phone_number}` : '(Verified at Boarding)')}</td>
                   </tr>
                 ));
 

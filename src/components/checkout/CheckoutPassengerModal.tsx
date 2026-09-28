@@ -231,7 +231,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
           target_type: targetType,
         });
 
-        await onSubmit(passengersPayload, true, customerEmail.trim() || undefined);
+        await onSubmit(passengersPayload, true, customerEmail.trim() || user?.email || undefined);
       } else {
         // Clean up ages for student package
         const cleanPassengers = passengers.map(p => ({
@@ -251,7 +251,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
           target_type: targetType,
         });
 
-        await onSubmit(cleanPassengers, false, customerEmail.trim() || undefined);
+        await onSubmit(cleanPassengers, false, customerEmail.trim() || user?.email || undefined);
       }
     } catch (err: any) {
       console.error("Passenger modal submission error:", err);

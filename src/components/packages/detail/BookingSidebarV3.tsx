@@ -1246,6 +1246,7 @@ export const BookingSidebarV3 = ({
           include_food_option: hasFoodOption ? includeFoodOption : false,
           selected_extra_ids: selectedExtraIds,
           extra_ids: selectedExtraIds,
+          coupon_code: appliedCoupon ? appliedCoupon.code : null,
           passengers: passengers.map(p => ({
             ...p,
             age: Number(p.age) || 0,
@@ -1254,7 +1255,8 @@ export const BookingSidebarV3 = ({
           })),
           amount_paid: isAdvanceSelected ? effectivePayNow : (customPayAmount !== '' ? Number(customPayAmount) : prices.grandTotal),
           quick_booking: quickBooking,
-          customer_email: customerEmail,
+          customer_email: customerEmail?.trim() || user?.email || undefined,
+          user_id: user?.id,
         };
         const res = await apiClient.post('/api/v1/admin/bookings/create', adminPayload);
         toast.success(`Booking ${res.data.public_id} created successfully!`);
