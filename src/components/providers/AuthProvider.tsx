@@ -24,10 +24,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // 7-second timeout — shorter than the 8-second queue timeout in api.ts
-      // so auth ALWAYS resolves before queued requests time out
+      // If already hydrated from sessionStorage, immediately flush queue with existing token
+      const existingToken = useAuthStore.getState().accessToken;
+      if (existingToken) {
+        processQueue(null, existingToken);
+      }
+
+      // 2.5-second timeout — so auth resolves swiftly without stalling the UI
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth refresh timeout')), 7000)
+        setTimeout(() => reject(new Error('Auth refresh timeout')), 2500)
       );
 
       try {

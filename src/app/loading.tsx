@@ -1,5 +1,5 @@
-import PremiumLoader from '@/components/ui/PremiumLoader';
-
 export default function Loading() {
-  return <PremiumLoader />;
+  // TopLoader in layout.tsx provides smooth, non-intrusive navigation progress
+  // Returning null here prevents unmounting pages and flashing floating loader pills on every navigation
+  return null;
 }

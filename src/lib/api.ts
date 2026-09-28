@@ -84,29 +84,49 @@ const AUTH_BYPASS_URLS = [
 const isAuthBypassUrl = (url?: string) =>
   AUTH_BYPASS_URLS.some((bypass) => url?.includes(bypass));
 
+const isPublicUrl = (url?: string) => {
+  if (!url) return false;
+  if (isAuthBypassUrl(url)) return true;
+  if (
+    url.includes('/packages') ||
+    url.includes('/rooms') ||
+    url.includes('/stays') ||
+    url.includes('/brochures') ||
+    url.includes('/gallery') ||
+    url.includes('/categories') ||
+    url.includes('/reviews') ||
+    url.includes('/health') ||
+    url.includes('/coupons/validate')
+  ) {
+    if (!url.includes('/admin') && !url.includes('/agent')) {
+      return true;
+    }
+  }
+  return false;
+};
+
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const store = getAuthStore();
   if (store) {
     const state = store.getState();
     let token = state.accessToken;
 
-    // Queue API requests during auth hydration — but NEVER queue auth URLs themselves
-    // (queueing /auth/refresh would cause a deadlock since refresh flushes the queue)
+    // Queue API requests during auth hydration — but NEVER queue auth or public URLs
     if (
       !token &&
       !state.isHydrated &&
       typeof window !== 'undefined' &&
       localStorage.getItem('has_session') &&
-      !isAuthBypassUrl(config.url)
+      !isPublicUrl(config.url)
     ) {
       try {
-        // Hard 8-second timeout: if auth never resolves, unblock the request anyway
+        // Fast 2.5-second timeout: if auth takes longer, unblock the request anyway
         token = await Promise.race([
           new Promise<string>((resolve, reject) => {
             pendingQueue.push({ resolve, reject });
           }),
           new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Auth queue timeout')), 8000)
+            setTimeout(() => reject(new Error('Auth queue timeout')), 2500)
           ),
         ]);
       } catch {

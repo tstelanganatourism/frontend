@@ -23,15 +23,17 @@ export default function PrintAction({
       const searchParams = new URLSearchParams(window.location.search);
       const secret = searchParams.get('secret') || '';
       const pathParts = window.location.pathname.split('/').filter(Boolean);
-      
+
       // Expected URL pattern: /print/[docType]/[bookingId]
       const printIdx = pathParts.indexOf('print');
       const docType = printIdx !== -1 && pathParts[printIdx + 1] ? pathParts[printIdx + 1] : 'ticket';
       const bookingId = printIdx !== -1 && pathParts[printIdx + 2] ? pathParts[printIdx + 2] : '';
 
-      const defaultFilename = filename ? (filename.endsWith('.pdf') ? filename : `${filename}.pdf`) : `${docType.toUpperCase()}_${bookingId || 'document'}.pdf`;
+      const defaultFilename = filename
+        ? (filename.endsWith('.pdf') ? filename : `${filename}.pdf`)
+        : `${docType.toUpperCase()}_${bookingId || 'document'}.pdf`;
 
-      // 1. Call high-fidelity backend Playwright PDF endpoint
+      // ── 1. Try the high-fidelity backend Playwright PDF endpoint ──────────
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
       const pdfEndpoint = `${apiUrl}/api/v1/bookings/${encodeURIComponent(bookingId)}/pdf?doc_type=${encodeURIComponent(docType)}&secret=${encodeURIComponent(secret)}`;
 
@@ -39,28 +41,31 @@ export default function PrintAction({
         const response = await fetch(pdfEndpoint);
         if (response.ok) {
           const blob = await response.blob();
-          const blobUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = blobUrl;
-          a.download = defaultFilename;
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => {
-            a.remove();
-            window.URL.revokeObjectURL(blobUrl);
-          }, 1000);
+          triggerBlobDownload(blob, defaultFilename);
           setDownloading(false);
           return;
         }
       } catch (backendErr) {
-        console.warn('Backend PDF endpoint error, using browser print fallback:', backendErr);
+        console.warn('Backend PDF endpoint unavailable, trying client-side generation:', backendErr);
       }
 
-      // If backend was unreachable, open standard print dialog
+      // ── 2. Client-side fallback: html2canvas + jsPDF ─────────────────────
+      // This downloads the PDF directly to the user's Downloads folder without
+      // opening a print dialog — works on desktop and mobile browsers.
+      try {
+        await clientSideDownloadPdf(targetSelector, defaultFilename);
+        setDownloading(false);
+        return;
+      } catch (clientErr) {
+        console.warn('Client-side PDF generation failed, falling back to print dialog:', clientErr);
+      }
+
+      // ── 3. Last resort: browser print (shows print dialog / Save as PDF) ──
+      // On all modern browsers, when no physical printer is available,
+      // this defaults to "Save as PDF" in the destination dropdown.
       window.print();
     } catch (err) {
-      console.error('Direct PDF download error:', err);
+      console.error('PDF download error:', err);
       window.print();
     } finally {
       setDownloading(false);
@@ -68,7 +73,19 @@ export default function PrintAction({
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000, display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }} className="no-print">
+    <div
+      style={{
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        zIndex: 1000,
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'center',
+        flexWrap: 'wrap'
+      }}
+      className="no-print"
+    >
       {showClose && (
         <button
           type="button"
@@ -94,7 +111,7 @@ export default function PrintAction({
         </button>
       )}
 
-      {/* 1. SEPARATE PRINT BUTTON */}
+      {/* 1. PRINT BUTTON — opens browser print dialog */}
       <button
         type="button"
         onClick={() => {
@@ -125,7 +142,7 @@ export default function PrintAction({
         Print
       </button>
 
-      {/* 2. SEPARATE SAVE PDF BUTTON (Direct download of .pdf file to user system / mobile phone) */}
+      {/* 2. SAVE PDF BUTTON — direct download to Downloads folder, no print dialog */}
       <button
         type="button"
         onClick={handleDownloadPdf}
@@ -181,4 +198,140 @@ export default function PrintAction({
       `}} />
     </div>
   );
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+/**
+ * Triggers a direct file download from a Blob object.
+ * Works on all browsers including mobile (iOS Safari, Android Chrome).
+ */
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = filename;
+  // iOS Safari requires the anchor to be in the DOM
+  document.body.appendChild(a);
+  a.click();
+  // Small delay before cleanup so the download initiates
+  setTimeout(() => {
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }, 1500);
+}
+
+/**
+ * Client-side PDF generation using html2canvas + jsPDF.
+ * Captures the specified DOM element(s) as high-quality images and packages
+ * them into a PDF that is downloaded directly to the user's Downloads folder.
+ * No print dialog is ever shown.
+ */
+async function clientSideDownloadPdf(selector: string, filename: string): Promise<void> {
+  // Dynamic imports — defensive handling for both ESM default and CJS module shapes
+  const [h2cMod, jsPdfMod] = await Promise.all([
+    import('html2canvas'),
+    import('jspdf')
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const html2canvas = (h2cMod.default || h2cMod) as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const jsPDF = (jsPdfMod.default || (jsPdfMod as any).jsPDF) as any;
+
+  // Find the printable container element
+  const selectors = selector.split(',').map(s => s.trim());
+  let el: HTMLElement | null = null;
+  for (const sel of selectors) {
+    el = document.querySelector(sel) as HTMLElement | null;
+    if (el) break;
+  }
+  if (!el) {
+    el = document.body;
+  }
+
+  // Temporarily hide the no-print toolbar so it doesn't appear in the PDF
+  const toolbar = document.querySelector('.no-print') as HTMLElement | null;
+  if (toolbar) toolbar.style.display = 'none';
+
+  try {
+    // Capture the element at 2x scale for crisp rendering on retina screens
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      backgroundColor: '#ffffff',
+      // Ignore elements that shouldn't appear in the PDF
+      ignoreElements: (element: Element) => {
+        return element.classList.contains('no-print');
+      }
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+
+    // A4 size in mm: 210 x 297
+    const pageWidthMm = 210;
+    const pageHeightMm = 297;
+
+    // Calculate dimensions to fit the image into A4, maintaining aspect ratio
+    const pxPerMm = imgWidth / pageWidthMm;
+    const contentHeightMm = imgHeight / pxPerMm;
+
+    let orientation: 'p' | 'l' = 'p';
+    let docWidth = pageWidthMm;
+    let docHeight = pageHeightMm;
+
+    // Use landscape if content is very wide compared to tall
+    if (imgWidth > imgHeight * 1.2) {
+      orientation = 'l';
+      docWidth = pageHeightMm;
+      docHeight = pageWidthMm;
+    }
+
+    const pdf = new jsPDF({
+      orientation,
+      unit: 'mm',
+      format: 'a4',
+      compress: true,
+    });
+
+    // If content fits in one page, add as single page
+    if (contentHeightMm <= docHeight) {
+      pdf.addImage(imgData, 'JPEG', 0, 0, docWidth, contentHeightMm);
+    } else {
+      // Multi-page: slice the canvas into A4-page-height chunks
+      const pagePixelHeight = Math.floor(docHeight * pxPerMm);
+      let yOffset = 0;
+
+      while (yOffset < imgHeight) {
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = imgWidth;
+        sliceCanvas.height = Math.min(pagePixelHeight, imgHeight - yOffset);
+
+        const ctx = sliceCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(canvas, 0, -yOffset);
+        }
+
+        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
+        const sliceHeightMm = (sliceCanvas.height / pxPerMm);
+
+        if (yOffset > 0) pdf.addPage();
+        pdf.addImage(sliceData, 'JPEG', 0, 0, docWidth, sliceHeightMm);
+
+        yOffset += pagePixelHeight;
+      }
+    }
+
+    // Save — this triggers direct file download (no print dialog)
+    pdf.save(filename);
+  } finally {
+    // Restore the toolbar
+    if (toolbar) toolbar.style.display = '';
+  }
 }

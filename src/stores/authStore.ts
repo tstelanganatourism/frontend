@@ -65,13 +65,15 @@ const getInitialAuthState = () => {
 
   try {
     const cachedUserStr = localStorage.getItem('cached_user');
+    const cachedToken = sessionStorage.getItem('access_token');
     if (cachedUserStr) {
       const user = JSON.parse(cachedUserStr);
       return {
         user,
-        accessToken: null,
+        accessToken: cachedToken || null,
         isAuthenticated: true,
-        isHydrated: false, // Must be false until token refresh completes so API calls are queued
+        // If we already have the token in sessionStorage, we are 100% hydrated from frame 0!
+        isHydrated: !!cachedToken,
       };
     }
   } catch {}
@@ -92,6 +94,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
       localStorage.setItem('has_session', '1');
       try {
         localStorage.setItem('cached_user', JSON.stringify(user));
+        if (accessToken) {
+          sessionStorage.setItem('access_token', accessToken);
+        }
       } catch {}
     }
     set({ user, accessToken, isAuthenticated: true, isHydrated: true });
@@ -106,13 +111,22 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ user });
   },
 
-  updateAccessToken: (token) =>
-    set({ accessToken: token }),
+  updateAccessToken: (token) => {
+    if (typeof window !== 'undefined' && token) {
+      try {
+        sessionStorage.setItem('access_token', token);
+      } catch {}
+    }
+    set({ accessToken: token });
+  },
 
   clearAuth: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('has_session');
       localStorage.removeItem('cached_user');
+      try {
+        sessionStorage.removeItem('access_token');
+      } catch {}
     }
     set({ user: null, accessToken: null, isAuthenticated: false, isHydrated: true });
   },

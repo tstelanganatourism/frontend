@@ -264,86 +264,136 @@ export default function PublicNavbar() {
 
 
               <div className="hidden nav:block">
-                {!mounted || !isHydrated ? (
-                  <div className="h-10 w-24 animate-pulse rounded-md bg-slate-100" />
-                ) : isAuthenticated ? (
-                  <div className="relative" ref={accountRef}>
-                    <button
-                      onClick={() => setAccountOpen((open) => !open)}
-                      className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-black transition-all ${
-                        showTransparent 
-                          ? 'border-cyan-400/50 bg-[#061826]/60 text-white hover:bg-cyan-500/20 shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur-md' 
-                          : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="relative grid h-7 w-7 place-items-center rounded-lg bg-[#1598a1] text-xs font-bold text-white shadow-xs overflow-hidden shrink-0">
-                        <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
-                          {user?.full_name?.charAt(0).toUpperCase() || 'U'}
-                        </span>
-                        {user?.avatar_url && (
-                          <img
-                            src={user.avatar_url}
-                            alt={user.full_name || 'Profile'}
-                            className="absolute inset-0 h-full w-full rounded-lg object-cover z-10"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        )}
-                      </span>
-                      <span className="max-w-[90px] truncate">{user?.full_name?.split(' ')[0] || 'Account'}</span>
-                      <ChevronDown className="h-4 w-4 text-cyan-300" />
-                    </button>
+                {!mounted ? (
+                  <div className="h-10 w-24 rounded-xl bg-slate-100/50" />
+                ) : (user || isAuthenticated) ? (
+                  <div className="flex items-center gap-2">
+                    {/* Direct Quick Link to Dashboard for Admin and Agent */}
+                    {user?.role === 'ADMIN' && (
+                      <Link
+                        href="/admin/dashboard"
+                        onClick={closeMenus}
+                        className={`hidden xl:inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-all shadow-xs ${
+                          showTransparent
+                            ? 'border-amber-400/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+                            : 'border-amber-400/50 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                        }`}
+                      >
+                        <LayoutDashboard className="h-3.5 w-3.5 text-amber-500" />
+                        <span>Admin Dashboard</span>
+                      </Link>
+                    )}
+                    {user?.role === 'AGENT' && (
+                      <Link
+                        href="/agent/dashboard"
+                        onClick={closeMenus}
+                        className={`hidden xl:inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-all shadow-xs ${
+                          showTransparent
+                            ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
+                            : 'border-emerald-400/50 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                        }`}
+                      >
+                        <LayoutDashboard className="h-3.5 w-3.5 text-emerald-500" />
+                        <span>Agent Dashboard</span>
+                      </Link>
+                    )}
 
-                    <AnimatePresence>
-                      {accountOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_22px_60px_rgba(15,35,58,0.16)]"
-                        >
-                          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 flex items-center gap-3">
-                            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-[#1598a1] text-sm font-bold text-white shadow-xs overflow-hidden shrink-0">
-                              <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
-                                {user?.full_name?.charAt(0).toUpperCase() || 'U'}
-                              </span>
-                              {user?.avatar_url && (
-                                <img
-                                  src={user.avatar_url}
-                                  alt={user.full_name || 'Profile'}
-                                  className="absolute inset-0 h-full w-full rounded-xl object-cover z-10"
-                                  onError={(e) => {
-                                    (e.target as HTMLElement).style.display = 'none';
-                                  }}
-                                />
-                              )}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-black text-slate-900">{user?.full_name}</p>
-                              <p className="truncate text-xs font-semibold text-slate-500">{user?.email}</p>
-                            </div>
-                          </div>
-                          <AccountLinks userRole={user?.role} onNavigate={closeMenus} />
-                          <div className="border-t border-slate-100 p-1.5">
-                            <button
-                              onClick={() => {
-                                setAccountOpen(false);
-                                setIsLogoutModalOpen(true);
+                    <div className="relative" ref={accountRef}>
+                      <button
+                        onClick={() => setAccountOpen((open) => !open)}
+                        className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-black transition-all ${
+                          showTransparent 
+                            ? 'border-cyan-400/50 bg-[#061826]/60 text-white hover:bg-cyan-500/20 shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur-md' 
+                            : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="relative grid h-7 w-7 place-items-center rounded-lg bg-[#1598a1] text-xs font-bold text-white shadow-xs overflow-hidden shrink-0">
+                          <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
+                            {user?.full_name?.charAt(0).toUpperCase() || (user?.role === 'ADMIN' ? 'A' : 'U')}
+                          </span>
+                          {user?.avatar_url && (
+                            <img
+                              src={user.avatar_url}
+                              alt={user.full_name || 'Profile'}
+                              className="absolute inset-0 h-full w-full rounded-lg object-cover z-10"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
                               }}
-                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-black text-red-600 transition-colors hover:bg-red-50"
-                            >
-                              <LogOut className="h-4 w-4" />
-                              Logout
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                            />
+                          )}
+                        </span>
+                        <span className="max-w-[95px] truncate font-extrabold">{user?.full_name?.split(' ')[0] || (user?.role === 'ADMIN' ? 'Admin' : 'Account')}</span>
+                        {user?.role === 'ADMIN' && (
+                          <span className="rounded-md bg-amber-500/25 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-500 border border-amber-500/30 shrink-0">
+                            Admin
+                          </span>
+                        )}
+                        {user?.role === 'AGENT' && (
+                          <span className="rounded-md bg-emerald-500/25 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-400 border border-emerald-500/30 shrink-0">
+                            Agent
+                          </span>
+                        )}
+                        <ChevronDown className="h-4 w-4 text-cyan-300 shrink-0" />
+                      </button>
+
+                      <AnimatePresence>
+                        {accountOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_22px_60px_rgba(15,35,58,0.16)] z-50"
+                          >
+                            <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 flex items-center gap-3">
+                              <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-[#1598a1] text-sm font-bold text-white shadow-xs overflow-hidden shrink-0">
+                                <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
+                                  {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                                </span>
+                                {user?.avatar_url && (
+                                  <img
+                                    src={user.avatar_url}
+                                    alt={user.full_name || 'Profile'}
+                                    className="absolute inset-0 h-full w-full rounded-xl object-cover z-10"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = 'none';
+                                    }}
+                                  />
+                                )}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="truncate text-sm font-black text-slate-900">{user?.full_name}</p>
+                                  {user?.role === 'ADMIN' && (
+                                    <span className="rounded bg-amber-100 px-1 py-0.2 text-[8px] font-black text-amber-800">Admin</span>
+                                  )}
+                                  {user?.role === 'AGENT' && (
+                                    <span className="rounded bg-emerald-100 px-1 py-0.2 text-[8px] font-black text-emerald-800">Agent</span>
+                                  )}
+                                </div>
+                                <p className="truncate text-xs font-semibold text-slate-500">{user?.email}</p>
+                              </div>
+                            </div>
+                            <AccountLinks userRole={user?.role} onNavigate={closeMenus} />
+                            <div className="border-t border-slate-100 p-1.5">
+                              <button
+                                onClick={() => {
+                                  setAccountOpen(false);
+                                  setIsLogoutModalOpen(true);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-black text-red-600 transition-colors hover:bg-red-50"
+                              >
+                                <LogOut className="h-4 w-4" />
+                                Logout
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 ) : (
-                  <Link href="/login" onClick={closeMenus} className={`flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-black transition-all ${
+                  <Link href="/login" onClick={closeMenus} className={`flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-black transition-all ${
                     showTransparent 
                       ? 'border-cyan-400/50 bg-[#061826]/60 text-white hover:bg-cyan-500/25 shadow-[0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-md' 
                       : 'border-slate-200 bg-white text-[#0f3d56] shadow-sm hover:bg-slate-50'
@@ -484,15 +534,15 @@ export default function PublicNavbar() {
 
                 {/* Account */}
                 <div className="border-t border-slate-100 px-4 py-3">
-                  {!mounted || !isHydrated ? (
-                    <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
-                  ) : isAuthenticated ? (
+                  {!mounted ? (
+                    <div className="h-12 rounded-xl bg-slate-100/50" />
+                  ) : (user || isAuthenticated) ? (
                     <div className="flex gap-2">
                       <Link href={dashboardHref} prefetch={false} onClick={closeMenus} className="flex flex-1 h-11 items-center justify-center gap-2 rounded-xl bg-[#eef8f8] text-sm font-black text-[#0f3d56] hover:bg-[#d9f2f2] transition-colors">
                         <LayoutDashboard className="h-4.5 w-4.5 text-[#1598a1]" />
-                        Dashboard
+                        {user?.role === 'ADMIN' ? 'Admin Dashboard' : user?.role === 'AGENT' ? 'Agent Dashboard' : 'My Dashboard'}
                       </Link>
-                      <button onClick={() => setIsLogoutModalOpen(true)} className="flex flex-1 h-11 items-center justify-center gap-2 rounded-xl bg-red-50 text-sm font-black text-red-600 hover:bg-red-100 transition-colors">
+                      <button onClick={() => setIsLogoutModalOpen(true)} className="flex h-11 px-4 items-center justify-center gap-2 rounded-xl bg-red-50 text-sm font-black text-red-600 hover:bg-red-100 transition-colors">
                         <LogOut className="h-4.5 w-4.5" />
                         Logout
                       </button>
