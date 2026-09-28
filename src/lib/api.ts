@@ -63,34 +63,54 @@ const getAuthStore = (): typeof _useAuthStore => {
   return _useAuthStore;
 };
 
+// URLs that must NEVER be queued — they are part of the auth flow itself
+const AUTH_BYPASS_URLS = [
+  '/auth/refresh',
+  '/auth/login',
+  '/auth/logout',
+  '/auth/tourist/login',
+  '/auth/tourist/signup',
+  '/auth/agent/login',
+  '/auth/admin/login',
+  '/auth/admin/verify-otp',
+  '/auth/otp/send',
+  '/auth/otp/verify',
+  '/auth/google',
+  '/login',
+  '/signup',
+  '/verify-otp',
+];
+
+const isAuthBypassUrl = (url?: string) =>
+  AUTH_BYPASS_URLS.some((bypass) => url?.includes(bypass));
+
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const store = getAuthStore();
   if (store) {
     const state = store.getState();
     let token = state.accessToken;
 
-    // If session exists in localStorage but accessToken isn't in memory yet and auth is hydrating:
-    // Queue and wait for AuthProvider to resolve the fresh token before firing this request!
-    if (!token && !state.isHydrated && typeof window !== 'undefined' && localStorage.getItem('has_session')) {
-      const isAuthUrl = 
-        config.url?.includes('/auth/refresh') ||
-        config.url?.includes('/auth/login') ||
-        config.url?.includes('/auth/logout') ||
-        config.url?.includes('/login') ||
-        config.url?.includes('/signup') ||
-        config.url?.includes('/verify-otp');
-
-      if (!isAuthUrl) {
-        try {
-          token = await new Promise<string>((resolve, reject) => {
-            pendingQueue.push({
-              resolve,
-              reject,
-            });
-          });
-        } catch {
-          // If token refresh fails, proceed without token or reject
-        }
+    // Queue API requests during auth hydration — but NEVER queue auth URLs themselves
+    // (queueing /auth/refresh would cause a deadlock since refresh flushes the queue)
+    if (
+      !token &&
+      !state.isHydrated &&
+      typeof window !== 'undefined' &&
+      localStorage.getItem('has_session') &&
+      !isAuthBypassUrl(config.url)
+    ) {
+      try {
+        // Hard 8-second timeout: if auth never resolves, unblock the request anyway
+        token = await Promise.race([
+          new Promise<string>((resolve, reject) => {
+            pendingQueue.push({ resolve, reject });
+          }),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('Auth queue timeout')), 8000)
+          ),
+        ]);
+      } catch {
+        // If timed out or refresh failed, proceed without token (will get 401 handled below)
       }
     }
 
@@ -141,14 +161,7 @@ apiClient.interceptors.response.use(
     }
 
     // Don't retry login, signup, OTP verify, logout, or refresh itself
-    const bypassRetry = 
-      originalRequest.url?.includes('/auth/refresh') ||
-      originalRequest.url?.includes('/auth/logout') ||
-      originalRequest.url?.includes('/login') ||
-      originalRequest.url?.includes('/signup') ||
-      originalRequest.url?.includes('/verify-otp');
-
-    if (bypassRetry) {
+    if (isAuthBypassUrl(originalRequest.url)) {
       return Promise.reject(error);
     }
 

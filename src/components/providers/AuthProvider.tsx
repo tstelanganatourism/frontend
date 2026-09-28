@@ -24,9 +24,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // Safe 10-second timeout safeguard for token refresh so UI never permanently hangs on cold boot
+      // 7-second timeout — shorter than the 8-second queue timeout in api.ts
+      // so auth ALWAYS resolves before queued requests time out
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth refresh timeout')), 10000)
+        setTimeout(() => reject(new Error('Auth refresh timeout')), 7000)
       );
 
       try {
@@ -38,6 +39,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         if (status === 401 || status === 403) {
           clearAuth();
         }
+        // Always flush the queue — even on error/timeout — so nothing hangs forever
         processQueue(error, null);
       } finally {
         setHydrated();
