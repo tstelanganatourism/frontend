@@ -60,9 +60,38 @@ function getFacilityIcon(name: string): React.ElementType {
   return FACILITY_ICON_MAP[key] || CheckCircle2;
 }
 
+function getStayDisplayTitle(room: { lodge_name: string; slug?: string }) {
+  const name = (room.lodge_name || '').trim();
+  const lowerName = name.toLowerCase();
+  const isVendorName = lowerName.includes('hotel') || lowerName.includes('residency') || lowerName.includes('resort') || lowerName.includes('punnami') || lowerName.includes('lodge');
+  
+  if (!isVendorName && name.length > 0) {
+    return name;
+  }
 
+  const slug = (room.slug || '').toLowerCase();
+  if (slug.includes('godavari-haritha-resort')) return 'Standard A/C Room';
+  if (slug.includes('vashista-residency')) return 'Deluxe & Family Suite A/C';
+  if (slug.includes('hotel-anand-regency')) return '2-Bed & 4-Bed A/C Deluxe Room';
+  if (slug.includes('family-mini-suite')) return 'Family Mini Suite A/C';
+
+  if (slug.includes('suite') || slug.includes('deluxe') || slug.includes('bed') || slug.includes('hut') || slug.includes('room') || slug.includes('cottage')) {
+    const parts = slug.split('-');
+    const clean = parts.map(p => {
+      const lower = p.toLowerCase();
+      if (lower === 'ac') return 'A/C';
+      if (lower === 'nonac') return 'Non-A/C';
+      if (/^\d+$/.test(p)) return '';
+      return p.charAt(0).toUpperCase() + p.slice(1);
+    }).filter(Boolean);
+    if (clean.length > 0) return clean.join(' ');
+  }
+
+  return name || 'Luxury Room & Suite';
+}
 
 function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride }: RoomProps) {
+  const displayTitle = getStayDisplayTitle(room);
   const startPriceNum = room.starting_price ? Number(room.starting_price) : null;
   const startWeekendNum = room.starting_weekend_price ? Number(room.starting_weekend_price) : null;
   const prices = getPriceDetails(startPriceNum);
@@ -90,7 +119,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
         <div className="relative aspect-square w-full overflow-hidden bg-slate-100 shrink-0">
           <Image
             src={room.cover_image_url || '/placeholder-room.jpg'}
-            alt={room.lodge_name}
+            alt={displayTitle}
             fill
             priority={priority}
             sizes="(max-width: 640px) 50vw, 20vw"
@@ -136,7 +165,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
 
           {/* Title */}
           <h3 className="mt-0.5 text-xs font-extrabold leading-snug text-slate-900 line-clamp-2 group-hover:text-amber-700 transition-colors min-h-[2.25rem]">
-            {room.lodge_name}
+            {displayTitle}
           </h3>
 
           {/* Stars */}
@@ -205,7 +234,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
           <div className="relative h-56 w-full shrink-0 overflow-hidden bg-slate-100 md:h-[240px] md:w-[320px]">
             <Image
               src={room.cover_image_url || '/placeholder-room.jpg'}
-              alt={room.lodge_name}
+              alt={displayTitle}
               fill
               priority={priority}
               sizes="(max-width: 768px) 100vw, 320px"
@@ -235,7 +264,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h3 className="text-xl font-black leading-tight text-slate-900 transition-colors duration-200 group-hover/list:text-[var(--color-brand-teal)] sm:text-2xl">
-                  {room.lodge_name}
+                  {displayTitle}
                 </h3>
                 <div className="mt-2 flex items-start gap-1.5 text-sm font-semibold leading-5 text-slate-600">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-teal)]" />
@@ -349,7 +378,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
       <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-100 shrink-0">
         <Image
           src={room.cover_image_url || '/placeholder-room.jpg'}
-          alt={room.lodge_name}
+          alt={displayTitle}
           fill
           priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
@@ -402,7 +431,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
 
         {/* Title */}
         <h3 className="mb-1.5 min-h-[2.5rem] text-sm font-extrabold leading-snug text-slate-900 line-clamp-2 transition-colors group-hover:text-teal-600">
-          {room.lodge_name}
+          {displayTitle}
         </h3>
 
         {/* Reviews Summary */}
