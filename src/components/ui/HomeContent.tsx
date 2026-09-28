@@ -150,13 +150,13 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
         {/* Slideshow renders its own gradient overlay + carousel controls internally */}
         <HeroBackgroundSlideshow />
 
-        <div className="relative z-10 mx-auto grid min-h-[auto] lg:min-h-screen lg:h-screen w-full max-w-[1800px] items-start lg:items-center gap-8 px-4 pb-8 pt-24 sm:pt-28 lg:pt-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,460px)] lg:px-8 xl:px-12">
+        <div className="relative z-10 mx-auto grid min-h-[auto] lg:min-h-screen lg:h-screen w-full max-w-[1800px] items-start lg:items-center gap-8 px-4 pb-8 pt-3 sm:pt-6 lg:pt-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,460px)] lg:px-8 xl:px-12">
 
           {/* Left: hero text */}
-          <div className="max-w-4xl py-4 text-white lg:py-6">
+          <div className="max-w-4xl py-2 sm:py-4 lg:py-6 text-white min-h-[calc(100svh-4.5rem)] lg:min-h-0 flex flex-col justify-center">
 
             {/* ── Phone numbers strip — shown above the badge ── */}
-            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="mb-2 sm:mb-3 flex flex-wrap items-center gap-x-2.5 sm:gap-x-3 gap-y-1.5 sm:gap-y-2">
               {/* Pulsing live indicator */}
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -165,75 +165,81 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
               <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55 sm:text-[11px]">
                 Call us now
               </span>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <a
                   href="tel:+919951369573"
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4] sm:text-xs"
+                  className="group inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4]"
                   aria-label="Call +91 99513 69573"
                 >
-                  <Phone className="h-3 w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
+                  <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
                   +91 99513 69573
                 </a>
                 <span className="text-white/25 text-xs select-none">·</span>
                 <a
                   href="tel:+917780119268"
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4] sm:text-xs"
+                  className="group inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4]"
                   aria-label="Call +91 77801 19268"
                 >
-                  <Phone className="h-3 w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
+                  <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
                   +91 77801 19268
                 </a>
               </div>
             </div>
 
-            <div className={`mb-4 inline-flex items-center gap-2 rounded-md border border-[#35c6ca]/45 bg-[#1598a1]/18 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#a7f3f4] backdrop-blur-md sm:text-xs ${tc}`}>
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+            <div className={`mb-2.5 sm:mb-4 inline-flex items-center gap-1.5 sm:gap-2 rounded-md border border-[#35c6ca]/45 bg-[#1598a1]/18 px-2.5 py-1 sm:px-3 sm:py-2 text-[9px] sm:text-xs font-black uppercase tracking-[0.16em] sm:tracking-[0.18em] text-[#a7f3f4] backdrop-blur-md ${tc}`}>
+              <ShieldCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
               {t.hero.badge}
             </div>
 
 
-            <h1 className={`max-w-4xl font-black leading-[1.1] tracking-tight ${tc} ${
+            <h1 className={`max-w-4xl font-black leading-[1.12] sm:leading-[1.1] tracking-tight ${tc} ${
               isTelugu
-                ? 'text-2xl sm:text-4xl lg:text-[2.4rem] xl:text-[3rem] 2xl:text-[3.6rem]'
-                : 'text-3xl sm:text-5xl lg:text-[2.75rem] xl:text-[3.5rem] 2xl:text-[4.2rem]'
+                ? 'text-xl sm:text-4xl lg:text-[2.4rem] xl:text-[3rem] 2xl:text-[3.6rem]'
+                : 'text-2xl sm:text-5xl lg:text-[2.75rem] xl:text-[3.5rem] 2xl:text-[4.2rem]'
             }`}>
               {t.hero.heading}
             </h1>
 
-            <p className={`mt-4 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base ${tc}`}>
+            <p className={`mt-2 sm:mt-4 max-w-2xl text-xs sm:text-base leading-relaxed text-white/80 line-clamp-3 sm:line-clamp-none ${tc}`}>
               {t.hero.description}
             </p>
 
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-3.5 sm:mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3">
               <Link
                 href="/packages"
-                className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#1598a1] px-7 text-sm font-black text-white shadow-[0_18px_45px_rgba(21,152,161,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[#117f87] sm:text-base ${tc}`}
+                className={`inline-flex h-11 sm:min-h-12 items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-md bg-[#1598a1] px-3 sm:px-7 text-xs sm:text-base font-black text-white shadow-[0_18px_45px_rgba(21,152,161,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[#117f87] ${tc}`}
               >
-                {t.hero.viewPackages} <ArrowRight className="h-4 w-4 shrink-0" />
+                <span>{t.hero.viewPackages}</span> <ArrowRight className="h-3.5 w-3.5 shrink-0" />
               </Link>
               <a
                 href="tel:+919951369573"
-                className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/28 bg-white/12 px-7 text-sm font-black text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 sm:text-base ${tc}`}
+                className={`inline-flex h-11 sm:min-h-12 items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-md border border-white/28 bg-white/12 px-3 sm:px-7 text-xs sm:text-base font-black text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 ${tc}`}
               >
-                <Phone className="h-4 w-4 shrink-0" /> {t.hero.talkToTeam}
+                <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-400" /> <span>{t.hero.talkToTeam}</span>
               </a>
             </div>
 
             {/* Trust bar */}
-            <div className="mt-6 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-md border border-white/18 bg-white/18 sm:grid-cols-4">
+            <div className="mt-3.5 sm:mt-6 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-lg sm:rounded-md border border-white/18 bg-white/18 sm:grid-cols-4">
               {TRUST_VALUES.map((value, idx) => (
-                <div key={idx} className="bg-[#06333c]/66 p-3 backdrop-blur">
-                  <p className="text-xl font-black text-[#8eecee] sm:text-2xl">{value}</p>
-                  <p className={`mt-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/58 ${tc}`}>
+                <div key={idx} className="bg-[#06333c]/66 p-2 sm:p-3 backdrop-blur text-center sm:text-left">
+                  <p className="text-lg font-black text-[#8eecee] sm:text-2xl leading-none">{value}</p>
+                  <p className={`mt-1 text-[8px] font-black uppercase tracking-wider text-white/60 sm:text-[9px] sm:tracking-[0.14em] ${tc}`}>
                     {trustLabels[idx]}
                   </p>
                 </div>
               ))}
             </div>
+
+            {/* Subtle mobile scroll indicator */}
+            <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] font-bold text-white/45 lg:hidden">
+              <span>Scroll to find packages</span>
+              <span className="text-xs">↓</span>
+            </div>
           </div>
 
           {/* ─── Right: Find your package + stay card ─── */}
-          <div className="pb-6 lg:pb-0">
+          <div className="pt-4 pb-8 lg:pt-0 lg:pb-0">
             <div className="rounded-xl border border-white/10 bg-white p-4 shadow-[0_24px_70px_rgba(15,61,86,0.16)]">
 
               {/* Card header */}
