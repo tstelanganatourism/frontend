@@ -525,8 +525,10 @@ export default function AdminBookingsPage() {
                       {b.agent_commission != null && b.agent_commission > 0 && (
                         <p className="text-[10px] text-orange-600 font-bold">-{formatINR(b.agent_commission)} commission</p>
                       )}
-                      {b.coupon_applied && (
-                        <p className="text-[10px] text-emerald-600 font-bold">-{formatINR(b.coupon_discount)} coupon</p>
+                      {(b.coupon_applied || b.coupon_discount > 0) && (
+                        <p className="text-[10px] text-emerald-600 font-bold">
+                          🏷️ {b.coupon_applied || 'Coupon'}: -{formatINR(b.coupon_discount)}
+                        </p>
                       )}
                       {b.remaining_balance > 0 && b.remaining_balance < (b.agent_payable ?? b.total_amount) && (
                         <p className="text-[10px] text-amber-600 font-bold">{formatINR(b.remaining_balance)} due</p>

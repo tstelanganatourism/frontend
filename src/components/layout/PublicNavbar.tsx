@@ -297,6 +297,20 @@ export default function PublicNavbar() {
                         <span>Agent Dashboard</span>
                       </Link>
                     )}
+                    {(!user?.role || user.role === 'USER') && (
+                      <Link
+                        href="/dashboard"
+                        onClick={closeMenus}
+                        className={`hidden xl:inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-all shadow-xs ${
+                          showTransparent
+                            ? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30'
+                            : 'border-teal-400/50 bg-teal-50 text-teal-800 hover:bg-teal-100'
+                        }`}
+                      >
+                        <LayoutDashboard className="h-3.5 w-3.5 text-teal-600" />
+                        <span>My Dashboard</span>
+                      </Link>
+                    )}
 
                     <div className="relative" ref={accountRef}>
                       <button
@@ -309,7 +323,7 @@ export default function PublicNavbar() {
                       >
                         <span className="relative grid h-7 w-7 place-items-center rounded-lg bg-[#1598a1] text-xs font-bold text-white shadow-xs overflow-hidden shrink-0">
                           <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
-                            {user?.full_name?.charAt(0).toUpperCase() || (user?.role === 'ADMIN' ? 'A' : 'U')}
+                            {user?.full_name?.charAt(0).toUpperCase() || (user?.role === 'ADMIN' ? 'A' : user?.role === 'AGENT' ? 'A' : 'T')}
                           </span>
                           {user?.avatar_url && (
                             <img
@@ -322,7 +336,7 @@ export default function PublicNavbar() {
                             />
                           )}
                         </span>
-                        <span className="max-w-[95px] truncate font-extrabold">{user?.full_name?.split(' ')[0] || (user?.role === 'ADMIN' ? 'Admin' : 'Account')}</span>
+                        <span className="max-w-[95px] truncate font-extrabold">{user?.full_name?.split(' ')[0] || (user?.role === 'ADMIN' ? 'Admin' : user?.role === 'AGENT' ? 'Agent' : 'Account')}</span>
                         {user?.role === 'ADMIN' && (
                           <span className="rounded-md bg-amber-500/25 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-500 border border-amber-500/30 shrink-0">
                             Admin
@@ -331,6 +345,11 @@ export default function PublicNavbar() {
                         {user?.role === 'AGENT' && (
                           <span className="rounded-md bg-emerald-500/25 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-400 border border-emerald-500/30 shrink-0">
                             Agent
+                          </span>
+                        )}
+                        {(!user?.role || user.role === 'USER') && (
+                          <span className="rounded-md bg-cyan-500/25 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-cyan-400 border border-cyan-500/30 shrink-0">
+                            Tourist
                           </span>
                         )}
                         <ChevronDown className="h-4 w-4 text-cyan-300 shrink-0" />

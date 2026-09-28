@@ -1130,7 +1130,14 @@ export default async function PrintTicketPage({
                     📍 DOOR NO: 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
                     Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana – 507 111
                   </div>
-                  <div style={{ fontSize: '11px', color: '#92400e', marginTop: '4px' }}>📞 +91 99513 69573 &nbsp;|&nbsp; +91 77801 19268</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <a href="tel:+919951369573" style={{ background: '#1e40af', color: '#ffffff', textDecoration: 'none', padding: '3px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      📞 +91 99513 69573
+                    </a>
+                    <a href="tel:+917780119268" style={{ background: '#1e40af', color: '#ffffff', textDecoration: 'none', padding: '3px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      📞 +91 77801 19268
+                    </a>
+                  </div>
                 </div>
                 <a
                   href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8"
@@ -1157,7 +1164,14 @@ export default async function PrintTicketPage({
                     📍 DOOR NO: 10-1-2/1, Ground Floor, Om Shanthi Building Sataram,<br />
                     Bhadrachalam, Bhadradri Kothagudem (Dist), Telangana – 507 111
                   </div>
-                  <div style={{ fontSize: '11px', color: '#92400e', marginTop: '4px' }}>📞 +91 99513 69573 &nbsp;|&nbsp; +91 77801 19268</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <a href="tel:+919951369573" style={{ background: '#1e40af', color: '#ffffff', textDecoration: 'none', padding: '3px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      📞 +91 99513 69573
+                    </a>
+                    <a href="tel:+917780119268" style={{ background: '#1e40af', color: '#ffffff', textDecoration: 'none', padding: '3px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      📞 +91 77801 19268
+                    </a>
+                  </div>
                 </div>
                 <a
                   href="https://maps.app.goo.gl/b9ZvxUvvFq6FgKVU8"
@@ -1207,7 +1221,9 @@ export default async function PrintTicketPage({
               <div className="info-label">Customer Contact</div>
               <div className="info-value">
                 {primaryPassenger?.full_name}<br />
-                <span style={{ fontSize: '10px', color: '#475569' }}>📞 {primaryPassenger?.phone_number || 'N/A'}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 800, color: '#0369a1', marginTop: '3px' }}>
+                  📞 <span style={{ fontFamily: 'monospace', letterSpacing: '0.5px', color: '#0f172a' }}>{primaryPassenger?.phone_number || 'N/A'}</span>
+                </span>
               </div>
             </div>
             <div className="info-card">
@@ -1416,10 +1432,10 @@ export default async function PrintTicketPage({
                 )
               )}
 
-              {booking.coupon_discount > 0 && (
-                <div className="pay-row" style={{ color: '#16a34a' }}>
-                  <span>Coupon Discount ({booking.coupon_applied})</span>
-                  <span>−{money(booking.coupon_discount, 2)}</span>
+              {(booking.coupon_discount > 0 || !!booking.coupon_applied) && (
+                <div className="pay-row" style={{ color: '#16a34a', fontWeight: 700 }}>
+                  <span>Coupon Discount ({booking.coupon_applied || 'Applied'})</span>
+                  <span>−{money(booking.coupon_discount || 0, 2)}</span>
                 </div>
               )}
 

@@ -157,33 +157,42 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
 
             {/* Top section: contacts, badge, heading, description, buttons */}
             <div>
-              {/* ── Phone numbers strip ── */}
-              <div className="mb-3 sm:mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-                {/* Pulsing live indicator */}
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                </span>
-                <span className="text-[11px] font-black uppercase tracking-[0.16em] text-white/60">
-                  Call us now
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
+              {/* ── Highlighted VIP Helpline Strip ── */}
+              <div className="mb-3.5 sm:mb-5 flex flex-wrap items-center gap-2 sm:gap-3 p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-2xl bg-slate-900/85 border border-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.22)] backdrop-blur-md w-fit">
+                {/* Pulsing live indicator & Helpline label */}
+                <div className="flex items-center gap-2 pl-2 sm:pl-2.5 py-0.5">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                  </span>
+                  <span className="text-[10.5px] sm:text-xs font-black uppercase tracking-[0.14em] text-emerald-300 select-none">
+                    24/7 Helpline:
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                   <a
                     href="tel:+919951369573"
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/12 px-3 py-1 text-xs font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4]"
+                    className="group relative inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500/30 via-teal-500/25 to-emerald-500/30 border border-emerald-400/70 hover:border-emerald-300 px-3 py-1.5 text-xs sm:text-sm font-black text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_24px_rgba(16,185,129,0.55)] hover:scale-105 active:scale-95 transition-all duration-200"
                     aria-label="Call +91 99513 69573"
                   >
-                    <Phone className="h-3 w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
-                    +91 99513 69573
+                    <div className="grid h-5 w-5 sm:h-5.5 sm:w-5.5 place-items-center rounded-lg bg-emerald-400 text-slate-950 shadow-sm transition-transform duration-200 group-hover:scale-110">
+                      <Phone className="h-3 w-3 fill-current" />
+                    </div>
+                    <span className="tracking-wide font-mono text-emerald-100 group-hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-black">
+                      +91 99513 69573
+                    </span>
                   </a>
-                  <span className="text-white/30 text-xs select-none">·</span>
                   <a
                     href="tel:+917780119268"
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/12 px-3 py-1 text-xs font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4]"
+                    className="group relative inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500/30 via-teal-500/25 to-cyan-500/30 border border-cyan-400/70 hover:border-cyan-300 px-3 py-1.5 text-xs sm:text-sm font-black text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_24px_rgba(6,182,212,0.55)] hover:scale-105 active:scale-95 transition-all duration-200"
                     aria-label="Call +91 77801 19268"
                   >
-                    <Phone className="h-3 w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
-                    +91 77801 19268
+                    <div className="grid h-5 w-5 sm:h-5.5 sm:w-5.5 place-items-center rounded-lg bg-cyan-400 text-slate-950 shadow-sm transition-transform duration-200 group-hover:scale-110">
+                      <Phone className="h-3 w-3 fill-current" />
+                    </div>
+                    <span className="tracking-wide font-mono text-cyan-100 group-hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-black">
+                      +91 77801 19268
+                    </span>
                   </a>
                 </div>
               </div>

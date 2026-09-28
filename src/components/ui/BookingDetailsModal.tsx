@@ -985,10 +985,10 @@ export default function BookingDetailsModal({
                             </>
                           )
                         )}
-                        {booking.coupon_discount > 0 && (
+                        {(booking.coupon_discount > 0 || !!booking.coupon_applied) && (
                           <>
-                            <div className="text-rose-600">Promo Discount ({booking.coupon_applied})</div>
-                            <div className="text-right font-black text-rose-600">-{formatCurrency(booking.coupon_discount)}</div>
+                            <div className="text-emerald-600 font-bold">Promo Coupon Discount ({booking.coupon_applied})</div>
+                            <div className="text-right font-black text-emerald-600">-{formatCurrency(booking.coupon_discount || 0)}</div>
                           </>
                         )}
                         <div>GST (5%)</div>

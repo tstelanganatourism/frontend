@@ -1102,10 +1102,10 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <td>Total Taxable Value</td>
                   <td>{money(Number(baseFare) + transportSelections.reduce((acc, curr) => acc + Number(curr.item_total || 0), 0) + (refreshmentIncluded ? Number(refreshmentAmount) : 0) + (foodIncluded ? Number(foodAmount) : 0) + (extrasIncluded && selectedExtrasList.length === 0 ? Number(extrasAmount) : selectedExtrasList.reduce((acc: number, e: any) => acc + Number(e.item_total ?? e.total_price ?? e.price ?? e.amount ?? 0), 0)), 2)}</td>
                 </tr>
-                {booking.coupon_discount > 0 && (
+                {(booking.coupon_discount > 0 || !!booking.coupon_applied) && (
                   <tr>
-                    <td>Coupon Discount ({booking.coupon_applied})</td>
-                    <td style={{ color: '#16a34a' }}>−{money(booking.coupon_discount, 2)}</td>
+                    <td>Coupon Discount ({booking.coupon_applied || 'Applied'})</td>
+                    <td style={{ color: '#16a34a', fontWeight: 700 }}>−{money(booking.coupon_discount || 0, 2)}</td>
                   </tr>
                 )}
                 <tr>

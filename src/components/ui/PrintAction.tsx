@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 interface PrintActionProps {
   showClose?: boolean;
@@ -40,10 +41,11 @@ export default function PrintAction({
           if (response.ok) {
             const blob = await response.blob();
             triggerBlobDownload(blob, defaultFilename);
+            toast.success('PDF downloaded successfully!');
             setDownloading(false);
             return;
           }
-          console.warn(`[PrintAction] Proxy returned ${response.status}, trying backend direct`);
+          console.warn(`[PrintAction] Proxy returned ${response.status}, trying fallback`);
         } catch (proxyErr) {
           console.warn('[PrintAction] Proxy fetch failed:', proxyErr);
         }
@@ -52,38 +54,38 @@ export default function PrintAction({
       // ── 2. Direct backend call (fallback if proxy is down) ───────────────────
       const searchParams = new URLSearchParams(window.location.search);
       const secret = searchParams.get('secret') || '';
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-      const pdfEndpoint = `${apiUrl}/api/v1/bookings/${encodeURIComponent(bookingId)}/pdf?doc_type=${encodeURIComponent(docType)}&secret=${encodeURIComponent(secret)}`;
-
-      if (bookingId) {
+      if (bookingId && secret) {
         try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+          const pdfEndpoint = `${apiUrl}/api/v1/bookings/${encodeURIComponent(bookingId)}/pdf?doc_type=${encodeURIComponent(docType)}&secret=${encodeURIComponent(secret)}`;
           const response = await fetch(pdfEndpoint);
           if (response.ok) {
             const blob = await response.blob();
             triggerBlobDownload(blob, defaultFilename);
+            toast.success('PDF downloaded successfully!');
             setDownloading(false);
             return;
           }
         } catch (backendErr) {
-          console.warn('[PrintAction] Backend PDF endpoint unavailable, trying client-side generation:', backendErr);
+          console.warn('[PrintAction] Direct backend PDF endpoint unavailable:', backendErr);
         }
       }
 
       // ── 3. Client-side fallback: html2canvas + jsPDF ─────────────────────────
-      // Downloads directly to Downloads folder — no print dialog.
       try {
         await clientSideDownloadPdf(targetSelector, defaultFilename);
+        toast.success('PDF generated and downloaded!');
         setDownloading(false);
         return;
       } catch (clientErr) {
-        console.warn('[PrintAction] Client-side PDF generation failed, falling back to print dialog:', clientErr);
+        console.warn('[PrintAction] Client-side PDF generation failed:', clientErr);
       }
 
-      // ── 4. Last resort: browser print dialog ─────────────────────────────────
-      window.print();
+      // ── Never invoke print dialog when user clicked Save PDF ───────────────
+      toast.error('Unable to auto-download PDF. Please click the Print button to print or Save as PDF.');
     } catch (err) {
       console.error('[PrintAction] PDF download error:', err);
-      window.print();
+      toast.error('Failed to download PDF. Please try again or use the Print button.');
     } finally {
       setDownloading(false);
     }
