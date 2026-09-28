@@ -20,8 +20,6 @@ export default function PrintAction({
     try {
       setDownloading(true);
 
-      const searchParams = new URLSearchParams(window.location.search);
-      const secret = searchParams.get('secret') || '';
       const pathParts = window.location.pathname.split('/').filter(Boolean);
 
       // Expected URL pattern: /print/[docType]/[bookingId]
@@ -33,39 +31,58 @@ export default function PrintAction({
         ? (filename.endsWith('.pdf') ? filename : `${filename}.pdf`)
         : `${docType.toUpperCase()}_${bookingId || 'document'}.pdf`;
 
-      // ── 1. Try the high-fidelity backend Playwright PDF endpoint ──────────
+      // ── 1. Next.js internal PDF proxy (RECOMMENDED — same-origin, no CORS, ──
+      //       generates HMAC secret server-side, streams PDF as attachment)   ──
+      if (bookingId) {
+        try {
+          const proxyUrl = `/api/pdf/${encodeURIComponent(docType)}/${encodeURIComponent(bookingId)}`;
+          const response = await fetch(proxyUrl, { cache: 'no-store' });
+          if (response.ok) {
+            const blob = await response.blob();
+            triggerBlobDownload(blob, defaultFilename);
+            setDownloading(false);
+            return;
+          }
+          console.warn(`[PrintAction] Proxy returned ${response.status}, trying backend direct`);
+        } catch (proxyErr) {
+          console.warn('[PrintAction] Proxy fetch failed:', proxyErr);
+        }
+      }
+
+      // ── 2. Direct backend call (fallback if proxy is down) ───────────────────
+      const searchParams = new URLSearchParams(window.location.search);
+      const secret = searchParams.get('secret') || '';
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
       const pdfEndpoint = `${apiUrl}/api/v1/bookings/${encodeURIComponent(bookingId)}/pdf?doc_type=${encodeURIComponent(docType)}&secret=${encodeURIComponent(secret)}`;
 
-      try {
-        const response = await fetch(pdfEndpoint);
-        if (response.ok) {
-          const blob = await response.blob();
-          triggerBlobDownload(blob, defaultFilename);
-          setDownloading(false);
-          return;
+      if (bookingId) {
+        try {
+          const response = await fetch(pdfEndpoint);
+          if (response.ok) {
+            const blob = await response.blob();
+            triggerBlobDownload(blob, defaultFilename);
+            setDownloading(false);
+            return;
+          }
+        } catch (backendErr) {
+          console.warn('[PrintAction] Backend PDF endpoint unavailable, trying client-side generation:', backendErr);
         }
-      } catch (backendErr) {
-        console.warn('Backend PDF endpoint unavailable, trying client-side generation:', backendErr);
       }
 
-      // ── 2. Client-side fallback: html2canvas + jsPDF ─────────────────────
-      // This downloads the PDF directly to the user's Downloads folder without
-      // opening a print dialog — works on desktop and mobile browsers.
+      // ── 3. Client-side fallback: html2canvas + jsPDF ─────────────────────────
+      // Downloads directly to Downloads folder — no print dialog.
       try {
         await clientSideDownloadPdf(targetSelector, defaultFilename);
         setDownloading(false);
         return;
       } catch (clientErr) {
-        console.warn('Client-side PDF generation failed, falling back to print dialog:', clientErr);
+        console.warn('[PrintAction] Client-side PDF generation failed, falling back to print dialog:', clientErr);
       }
 
-      // ── 3. Last resort: browser print (shows print dialog / Save as PDF) ──
-      // On all modern browsers, when no physical printer is available,
-      // this defaults to "Save as PDF" in the destination dropdown.
+      // ── 4. Last resort: browser print dialog ─────────────────────────────────
       window.print();
     } catch (err) {
-      console.error('PDF download error:', err);
+      console.error('[PrintAction] PDF download error:', err);
       window.print();
     } finally {
       setDownloading(false);

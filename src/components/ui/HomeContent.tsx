@@ -154,10 +154,43 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
 
           {/* Left: hero text */}
           <div className="max-w-4xl py-4 text-white lg:py-6">
+
+            {/* ── Phone numbers strip — shown above the badge ── */}
+            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/* Pulsing live indicator */}
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55 sm:text-[11px]">
+                Call us now
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href="tel:+919951369573"
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4] sm:text-xs"
+                  aria-label="Call +91 99513 69573"
+                >
+                  <Phone className="h-3 w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
+                  +91 99513 69573
+                </a>
+                <span className="text-white/25 text-xs select-none">·</span>
+                <a
+                  href="tel:+917780119268"
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-black text-white backdrop-blur-sm transition-all duration-200 hover:border-[#35c6ca]/60 hover:bg-[#1598a1]/30 hover:text-[#a7f3f4] sm:text-xs"
+                  aria-label="Call +91 77801 19268"
+                >
+                  <Phone className="h-3 w-3 shrink-0 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
+                  +91 77801 19268
+                </a>
+              </div>
+            </div>
+
             <div className={`mb-4 inline-flex items-center gap-2 rounded-md border border-[#35c6ca]/45 bg-[#1598a1]/18 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#a7f3f4] backdrop-blur-md sm:text-xs ${tc}`}>
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
               {t.hero.badge}
             </div>
+
 
             <h1 className={`max-w-4xl font-black leading-[1.1] tracking-tight ${tc} ${
               isTelugu
