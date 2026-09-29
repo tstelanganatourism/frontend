@@ -63,6 +63,7 @@ interface BookingDetails {
   coupon_discount: number;
   coupon_applied: string | null;
   gst_amount: number;
+  service_charge?: number;
   gateway_fee: number;
   total_amount: number;
   remaining_balance: number;
@@ -1118,9 +1119,21 @@ export default function BookingDetailPage() {
                 </div>
               )}
               <div className="flex justify-between text-slate-500 font-semibold">
-                <span>GST & Taxes</span>
-                <span className="font-bold text-slate-700">{formatINR(booking.gst_amount + booking.gateway_fee)}</span>
+                <span>GST (5%)</span>
+                <span className="font-bold text-slate-700">{formatINR(booking.gst_amount)}</span>
               </div>
+              {booking.service_charge != null && booking.service_charge > 0 && (
+                <div className="flex justify-between text-slate-500 font-semibold">
+                  <span>Ts Boat Service Charge (1%)</span>
+                  <span className="font-bold text-slate-700">{formatINR(booking.service_charge)}</span>
+                </div>
+              )}
+              {booking.gateway_fee > 0 && (
+                <div className="flex justify-between text-slate-500 font-semibold">
+                  <span>Payment Gateway Fee</span>
+                  <span className="font-bold text-slate-700">{formatINR(booking.gateway_fee)}</span>
+                </div>
+              )}
 
               <div className="flex justify-between items-center pt-3 border-t border-slate-100 text-slate-850">
                 <span className="font-extrabold">Grand Total</span>

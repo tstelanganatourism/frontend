@@ -844,8 +844,9 @@ export const BookingSidebarV2 = ({
     }
 
     const gst = Math.round(subtotal * 0.05);
-    const gatewayFee = Math.round((subtotal + gst) * 0.01);
-    const grandTotal = subtotal + gst + gatewayFee;
+    const serviceCharge = Math.round(subtotal * 0.01);
+    const gatewayFee = Math.round((subtotal + gst + serviceCharge) * 0.01);
+    const grandTotal = subtotal + gst + serviceCharge + gatewayFee;
 
     // Agent Commission Calculations
     const commissionType = (commType || user?.commission_type || 'PERCENTAGE') as 'PERCENTAGE' | 'FIXED_AMOUNT';
@@ -873,7 +874,7 @@ export const BookingSidebarV2 = ({
       transportSubtotal, transportBreakdown,
       refreshmentSubtotal, 
       foodSubtotal,
-      rawSubtotal, discount, subtotal, gst, gatewayFee, 
+      rawSubtotal, discount, subtotal, gst, serviceCharge, gatewayFee, 
       grandTotal, agentDiscount, agentPayable 
     };
   }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice, commType, commPercentage, commFixedAmount]);
@@ -2392,9 +2393,12 @@ export const BookingSidebarV2 = ({
                 <span className="font-bold text-slate-800">₹{formatINR(prices.gst)}</span>
               </div>
               <div className="flex justify-between items-center">
+                <span>Ts Boat Service Charge <span className="text-[10px] text-slate-400">(1%)</span></span>
+                <span className="font-bold text-slate-800">₹{formatINR(prices.serviceCharge)}</span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span>Gateway Fee <span className="text-[10px] text-slate-400">(1%)</span></span>
                 <span className="font-bold text-slate-800">₹{formatINR(prices.gatewayFee)}</span>
-
               </div>
               {isAgent ? (
                 <>

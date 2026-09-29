@@ -53,6 +53,7 @@ interface BookingDetails {
   coupon_discount: number;
   coupon_applied: string | null;
   gst_amount: number;
+  service_charge?: number;
   gateway_fee: number;
   total_amount: number;
   paid_amount: number;
@@ -1443,6 +1444,13 @@ export default async function PrintTicketPage({
                 <span>GST (5%)</span>
                 <span>{money(booking.gst_amount, 2)}</span>
               </div>
+
+              {booking.service_charge != null && booking.service_charge > 0 && (
+                <div className="pay-row">
+                  <span>Ts Boat Service Charge (1%)</span>
+                  <span>{money(booking.service_charge, 2)}</span>
+                </div>
+              )}
 
               <div className="pay-row">
                 <span>Gateway &amp; Processing Fee</span>

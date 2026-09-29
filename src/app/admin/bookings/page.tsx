@@ -32,6 +32,7 @@ interface BookingItem {
   coupon_discount: number;
   coupon_applied: string | null;
   gst_amount: number;
+  service_charge?: number;
   gateway_fee: number;
   total_amount: number;
   paid_amount: number;

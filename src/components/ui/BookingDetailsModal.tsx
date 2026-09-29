@@ -59,6 +59,7 @@ interface BookingDetails {
   coupon_discount: number;
   coupon_applied: string | null;
   gst_amount: number;
+  service_charge?: number;
   gateway_fee: number;
   total_amount: number;
   remaining_balance: number;
@@ -993,6 +994,12 @@ export default function BookingDetailsModal({
                         )}
                         <div>GST (5%)</div>
                         <div className="text-right font-bold text-slate-700">{formatCurrency(booking.gst_amount)}</div>
+                        {booking.service_charge != null && booking.service_charge > 0 && (
+                          <>
+                            <div>Ts Boat Service Charge (1%)</div>
+                            <div className="text-right font-bold text-slate-700">{formatCurrency(booking.service_charge)}</div>
+                          </>
+                        )}
                         {booking.gateway_fee > 0 && (
                           <>
                             <div>Convenience &amp; Processing Fee</div>

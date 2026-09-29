@@ -35,6 +35,7 @@ interface BookingListItem {
   coupon_discount: number;
   coupon_applied: string | null;
   gst_amount: number;
+  service_charge?: number;
   gateway_fee: number;
   total_amount: number;
   remaining_balance: number;
@@ -611,7 +612,7 @@ export default function AgentBookingsLedgerPage() {
                     )}
                     <div>
                       <span className="text-slate-400 font-medium">GST & Fees</span>
-                      <p className="font-bold text-slate-700">{money(b.gst_amount + b.gateway_fee)}</p>
+                      <p className="font-bold text-slate-700">{money(b.gst_amount + (b.service_charge || 0) + b.gateway_fee)}</p>
                     </div>
                     {/* Agent commission breakdown */}
                     {(b.agent_commission ?? 0) > 0 && (

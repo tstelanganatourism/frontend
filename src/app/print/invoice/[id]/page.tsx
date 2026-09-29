@@ -47,6 +47,7 @@ interface BookingDetails {
   coupon_discount: number;
   coupon_applied: string | null;
   gst_amount: number;
+  service_charge?: number;
   gateway_fee: number;
   total_amount: number;
   paid_amount: number;
@@ -1116,6 +1117,12 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   <td>SGST (2.5%)</td>
                   <td>{money(halfGst, 2)}</td>
                 </tr>
+                {booking.service_charge != null && booking.service_charge > 0 && (
+                  <tr>
+                    <td>Ts Boat Service Charge (1%)</td>
+                    <td>{money(booking.service_charge, 2)}</td>
+                  </tr>
+                )}
                 {booking.gateway_fee > 0 && (
                   <tr>
                     <td>Gateway Convenience Fee</td>

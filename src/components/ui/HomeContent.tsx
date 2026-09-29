@@ -150,15 +150,15 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
         {/* Slideshow renders its own gradient overlay + carousel controls internally */}
         <HeroBackgroundSlideshow />
 
-        <div className="relative z-10 mx-auto grid min-h-[auto] lg:min-h-screen lg:h-screen w-full max-w-[1800px] items-start lg:items-center gap-8 px-4 pb-8 pt-3 sm:pt-6 lg:pt-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,460px)] lg:px-8 xl:px-12">
+        <div className="relative z-10 mx-auto grid min-h-[auto] lg:min-h-screen lg:h-screen w-full max-w-[1800px] items-center gap-6 lg:gap-8 px-3.5 sm:px-6 lg:px-8 xl:px-12 pt-2 sm:pt-4 lg:pt-20 pb-4 sm:pb-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,460px)]">
 
-          {/* Left: hero text */}
-          <div className="max-w-4xl text-white min-h-[calc(100svh-4.5rem)] lg:min-h-0 flex flex-col justify-between py-3 sm:py-5 lg:py-6">
+          {/* Left: hero text - vertically centered, relative gaps, fully fits in first screen */}
+          <div className="max-w-4xl text-white min-h-[calc(100svh-5rem)] lg:min-h-0 flex flex-col justify-center items-center lg:items-start text-center lg:text-left py-1 sm:py-4 lg:py-6">
 
             {/* Top section: contacts, badge, heading, description, buttons */}
-            <div>
+            <div className="w-full flex flex-col items-center lg:items-start">
               {/* ── Highlighted VIP Helpline Strip ── */}
-              <div className="mb-3.5 sm:mb-5 flex flex-wrap items-center gap-2 sm:gap-3 p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-2xl bg-slate-900/85 border border-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.22)] backdrop-blur-md w-fit">
+              <div className="mb-2.5 sm:mb-4 flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-2xl bg-slate-900/85 border border-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.22)] backdrop-blur-md w-fit mx-auto lg:mx-0">
                 {/* Pulsing live indicator & Helpline label */}
                 <div className="flex items-center gap-2 pl-2 sm:pl-2.5 py-0.5">
                   <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -169,7 +169,7 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
                     24/7 Helpline:
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
                   <a
                     href="tel:+919951369573"
                     className="group relative inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500/30 via-teal-500/25 to-emerald-500/30 border border-emerald-400/70 hover:border-emerald-300 px-3 py-1.5 text-xs sm:text-sm font-black text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_24px_rgba(16,185,129,0.55)] hover:scale-105 active:scale-95 transition-all duration-200"
@@ -198,45 +198,45 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
               </div>
 
               {/* Badge */}
-              <div className={`mb-3.5 sm:mb-5 inline-flex items-center gap-2 rounded-lg border border-[#35c6ca]/45 bg-[#1598a1]/20 px-3 py-1.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] text-[#a7f3f4] backdrop-blur-md shadow-sm ${tc}`}>
+              <div className={`mb-2.5 sm:mb-4 inline-flex items-center justify-center gap-2 rounded-lg border border-[#35c6ca]/45 bg-[#1598a1]/20 px-3 py-1.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] text-[#a7f3f4] backdrop-blur-md shadow-sm mx-auto lg:mx-0 ${tc}`}>
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#35c6ca]" />
                 {t.hero.badge}
               </div>
 
               {/* Headline */}
-              <h1 className={`max-w-4xl font-black leading-[1.16] sm:leading-[1.12] tracking-tight ${tc} ${
+              <h1 className={`max-w-4xl text-center lg:text-left mx-auto lg:mx-0 font-black leading-[1.16] sm:leading-[1.12] tracking-tight ${tc} ${
                 isTelugu
                   ? 'text-[1.65rem] sm:text-4xl lg:text-[2.4rem] xl:text-[3rem] 2xl:text-[3.6rem]'
-                  : 'text-[1.85rem] sm:text-5xl lg:text-[2.75rem] xl:text-[3.5rem] 2xl:text-[4.2rem]'
+                  : 'text-[1.75rem] sm:text-5xl lg:text-[2.75rem] xl:text-[3.5rem] 2xl:text-[4.2rem]'
               }`}>
                 {t.hero.heading}
               </h1>
 
               {/* Description */}
-              <p className={`mt-3.5 sm:mt-5 max-w-2xl text-xs sm:text-base leading-relaxed text-white/85 line-clamp-3 sm:line-clamp-none ${tc}`}>
+              <p className={`mt-2.5 sm:mt-4 max-w-2xl text-center lg:text-left mx-auto lg:mx-0 text-xs sm:text-base leading-relaxed text-white/85 line-clamp-3 sm:line-clamp-none ${tc}`}>
                 {t.hero.description}
               </p>
 
               {/* CTA Buttons */}
-              <div className="mt-4 sm:mt-6 grid grid-cols-2 gap-2.5 sm:flex sm:flex-row sm:gap-3.5">
+              <div className="mt-3.5 sm:mt-5 flex flex-row items-center justify-center lg:justify-start gap-2.5 sm:gap-3.5 w-full sm:w-auto">
                 <Link
                   href="/packages"
-                  className={`inline-flex h-11 sm:h-12 items-center justify-center gap-2 rounded-xl bg-[#1598a1] px-4 sm:px-7 text-xs sm:text-base font-black text-white shadow-[0_12px_30px_rgba(21,152,161,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[#117f87] active:scale-[0.98] ${tc}`}
+                  className={`inline-flex h-10 sm:h-12 flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[#1598a1] px-4 sm:px-7 text-xs sm:text-base font-black text-white shadow-[0_12px_30px_rgba(21,152,161,0.35)] transition-all hover:-translate-y-0.5 hover:bg-[#117f87] active:scale-[0.98] ${tc}`}
                 >
                   <span>{t.hero.viewPackages}</span> <ArrowRight className="h-4 w-4 shrink-0" />
                 </Link>
                 <a
                   href="tel:+919951369573"
-                  className={`inline-flex h-11 sm:h-12 items-center justify-center gap-2 rounded-xl border border-white/28 bg-white/12 px-4 sm:px-7 text-xs sm:text-base font-black text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 active:scale-[0.98] ${tc}`}
+                  className={`inline-flex h-10 sm:h-12 flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/28 bg-white/12 px-4 sm:px-7 text-xs sm:text-base font-black text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 active:scale-[0.98] ${tc}`}
                 >
                   <Phone className="h-4 w-4 shrink-0 text-emerald-400" /> <span>{t.hero.talkToTeam}</span>
                 </a>
               </div>
             </div>
 
-            {/* Bottom section: Trust bar + scroll hint */}
-            <div className="mt-6 sm:mt-8 pt-2">
-              <div className="grid max-w-3xl grid-cols-2 gap-1.5 sm:gap-px overflow-hidden rounded-xl border border-white/20 bg-white/10 sm:bg-white/18 sm:grid-cols-4 p-1 sm:p-0">
+            {/* Bottom section: Trust bar + scroll hint (relative spacing, no dead gap) */}
+            <div className="mt-4 sm:mt-6 lg:mt-8 w-full max-w-3xl mx-auto lg:mx-0">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-px overflow-hidden rounded-xl border border-white/20 bg-white/10 sm:bg-white/18 sm:grid-cols-4 p-1 sm:p-0">
                 {TRUST_VALUES.map((value, idx) => (
                   <div key={idx} className="bg-[#06333c]/85 sm:bg-[#06333c]/66 p-2.5 sm:p-3.5 rounded-lg sm:rounded-none backdrop-blur text-center sm:text-left">
                     <p className="text-lg sm:text-2xl font-black text-[#8eecee] leading-none">{value}</p>
@@ -248,7 +248,7 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
               </div>
 
               {/* Scroll prompt */}
-              <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold text-white/50 lg:hidden">
+              <div className="mt-2.5 sm:mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold text-white/60 lg:hidden">
                 <span>Scroll down to find packages &amp; stays</span>
                 <span className="text-xs animate-bounce">↓</span>
               </div>

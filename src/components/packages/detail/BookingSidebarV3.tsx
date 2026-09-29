@@ -788,8 +788,9 @@ export const BookingSidebarV3 = ({
     }
 
     const gst = Math.round(subtotal * 0.05);
-    const gatewayFee = Math.round((subtotal + gst) * 0.01);
-    const grandTotal = subtotal + gst + gatewayFee;
+    const serviceCharge = Math.round(subtotal * 0.01);
+    const gatewayFee = Math.round((subtotal + gst + serviceCharge) * 0.01);
+    const grandTotal = subtotal + gst + serviceCharge + gatewayFee;
 
     const commissionType = (commType || user?.commission_type || 'PERCENTAGE') as 'PERCENTAGE' | 'FIXED_AMOUNT';
     const commissionPercentage = commPercentage !== undefined && commPercentage !== null
@@ -817,7 +818,7 @@ export const BookingSidebarV3 = ({
       refreshmentSubtotal,
       foodSubtotal,
       customExtrasSubtotal, customExtrasBreakdown,
-      rawSubtotal, discount, subtotal, gst, gatewayFee,
+      rawSubtotal, discount, subtotal, gst, serviceCharge, gatewayFee,
       grandTotal, agentDiscount, agentPayable
     };
   }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice, selectedExtraIds, extras, isSpecialUser, isWeekendSelected, commType, commPercentage, commFixedAmount]);
@@ -2240,6 +2241,10 @@ export const BookingSidebarV3 = ({
                       <span>₹{formatINR(prices.gst)}</span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                      <span>Ts Boat Service Charge (1%)</span>
+                      <span>₹{formatINR(prices.serviceCharge)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
                       <span>Payment Gateway Fee (1%)</span>
                       <span>₹{formatINR(prices.gatewayFee)}</span>
                     </div>
@@ -2426,7 +2431,11 @@ export const BookingSidebarV3 = ({
                     <span>₹{formatINR(prices.gst)}</span>
                   </div>
                   <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
-                    <span>Gateway Service Fee (1%)</span>
+                    <span>Ts Boat Service Charge (1%)</span>
+                    <span>₹{formatINR(prices.serviceCharge)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                    <span>Payment Gateway Fee (1%)</span>
                     <span>₹{formatINR(prices.gatewayFee)}</span>
                   </div>
 

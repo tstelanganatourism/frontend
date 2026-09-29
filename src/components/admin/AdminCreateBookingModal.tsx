@@ -511,8 +511,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const estimatedTotal = useMemo(() => {
     const discounted = Math.max(0, estimatedSubtotal - couponDiscount);
     const gst = discounted * 0.05;
-    const gatewayFee = (discounted + gst) * 0.01;
-    return discounted + gst + gatewayFee;
+    const serviceCharge = discounted * 0.01;
+    const gatewayFee = (discounted + gst + serviceCharge) * 0.01;
+    return discounted + gst + serviceCharge + gatewayFee;
   }, [estimatedSubtotal, couponDiscount]);
 
   const handleApplyCoupon = async () => {
@@ -789,7 +790,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 {couponDiscount > 0 && (
                   <p className="text-[10px] text-emerald-600 font-bold">Includes -₹{couponDiscount.toFixed(2)} coupon discount</p>
                 )}
-                <p className="text-[10px] text-slate-500 font-semibold">Includes 5% GST & 1% Gateway Fee</p>
+                <p className="text-[10px] text-slate-500 font-semibold">Includes 5% GST, 1% Ts Boat Service Charge & 1% Gateway Fee</p>
               </div>
               <div className="w-1/2 flex flex-col items-end">
                 <div className="flex items-center justify-between w-full mb-1">

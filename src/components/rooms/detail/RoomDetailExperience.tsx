@@ -975,8 +975,9 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     const subtotal = Math.max(0, rawSubtotal - discount);
 
     const gst = Math.round(subtotal * 0.05);
-    const gatewayFee = Math.round((subtotal + gst) * 0.01);
-    const grandTotal = subtotal + gst + gatewayFee;
+    const serviceCharge = Math.round(subtotal * 0.01);
+    const gatewayFee = Math.round((subtotal + gst + serviceCharge) * 0.01);
+    const grandTotal = subtotal + gst + serviceCharge + gatewayFee;
 
     // Agent Commission Calculations
     const commissionPercentage = user?.commission_percentage ? Number(user.commission_percentage) : 0;
@@ -993,7 +994,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     }
     const agentPayable = Math.max(0, grandTotal - agentDiscount);
 
-    return { rawSubtotal, discount, subtotal, gst, gatewayFee, grandTotal, agentDiscount, agentPayable };
+    return { rawSubtotal, discount, subtotal, gst, serviceCharge, gatewayFee, grandTotal, agentDiscount, agentPayable };
   }, [stayDetails.totalPrice, roomsCount, price, appliedCoupon, user, isAgent]);
 
   // Adjust custom pay amount when total price changes
@@ -2125,6 +2126,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                       <div className="flex justify-between items-center">
                         <span>GST <span className="text-[10px] text-slate-450 font-medium">(5%)</span></span>
                         <span className="font-extrabold text-slate-900">{money(prices.gst)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Ts Boat Service Charge <span className="text-[10px] text-slate-450 font-medium">(1%)</span></span>
+                        <span className="font-extrabold text-slate-900">{money(prices.serviceCharge)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Gateway Fee <span className="text-[10px] text-slate-455 font-medium">(1%)</span></span>

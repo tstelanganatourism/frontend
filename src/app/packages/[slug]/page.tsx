@@ -1,6 +1,26 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import { apiFetch } from '@/lib/api';
+import { getPreBookingPackage, PREBOOKING_SLUG_ALIASES } from '@/app/prebooking/prebookingData';
+
+const KNOWN_PACKAGE_ALIASES: Record<string, string> = {
+  // Pre-booking aliases & cottage/hut variants
+  'bhadrachalam-to-papikondalu-sirivaka-bamboo-huts-2-days': '/prebooking/bhadrachalam-to-papikondalu-sirivaka-bamboo-huts-2-days',
+  'bhadrachalam-to-papikondalu-sirivaka-wooden-cottage-2-days': '/prebooking/bhadrachalam-to-papikondalu-sirivaka-wooden-cottage-2-days',
+  'bhadrachalam-to-papikondalu-maredumilli-2-days': '/packages/maredumilli-bhadrachalam-papikondalu',
+  'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days': '/packages/maredumilli-bhadrachalam-papikondalu',
+  'bhadrachalam-to-papikondalu-one-day-package': '/packages/bhadrachalam-to-papikondalu-1-day-tour-package',
+  'bhadrachalam-to-papikondalu-one-day-tour': '/packages/bhadrachalam-to-papikondalu-1-day-tour-package',
+  'bhadrachalam-to-pochavaram-only-boat-point-package': '/packages/papikondalu-premium-tour',
+  'pochavaram-to-papikondalu': '/packages/papikondalu-premium-tour',
+  'bhadrachalam-to-papikondalu-resort-package-2days': '/prebooking/bhadrachalam-to-papikondalu-resort-package-2days',
+  'hyderabad-kolluru-huts-3-days': '/packages/maredumilli-bhadrachalam-papikondalu',
+  'bhadrachalam-rajahmundry-1-day': '/packages/bhadrachalam-to-rajahmundry-1-day-drop-package',
+  'bhadrachalam-kolluru-huts-2-days': '/packages/maredumilli-bhadrachalam-papikondalu',
+  'kolluru-bamboo-huts': '/stays',
+  'sirivaka-bamboo-huts': '/prebooking/bhadrachalam-to-papikondalu-sirivaka-bamboo-huts-2-days',
+  'sirivaka-wooden-cottage': '/prebooking/bhadrachalam-to-papikondalu-sirivaka-wooden-cottage-2-days',
+};
 
 // Experiential Rebuilt Components
 import { PackageHeroV3 } from '@/components/packages/detail/PackageHeroV3';
@@ -189,6 +209,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   }
   if (!pkg) {
+    const lowSlug = slug.toLowerCase();
+    const targetAlias = KNOWN_PACKAGE_ALIASES[lowSlug] || PREBOOKING_SLUG_ALIASES[lowSlug];
+    if (targetAlias || getPreBookingPackage(lowSlug)) {
+      return {
+        title: 'Tour Package | TS Boat Tourism',
+      };
+    }
     return {
       title: 'Package Not Found | TS Boat Tourism',
       robots: {
@@ -273,7 +300,38 @@ function getPositiveStartingPrice(pkg: PackageDetail) {
 export default async function PackageDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const pkg = await fetchPackageDetail(slug);
-  if (!pkg) notFound();
+  if (!pkg) {
+    const lowSlug = slug.toLowerCase();
+    // 1. Direct alias match
+    if (KNOWN_PACKAGE_ALIASES[lowSlug]) {
+      redirect(KNOWN_PACKAGE_ALIASES[lowSlug]);
+    }
+    // 2. Prebooking packages match
+    if (getPreBookingPackage(lowSlug)) {
+      redirect(`/prebooking/${lowSlug}`);
+    }
+    // 3. Keyword matching to ensure visitors never hit a dead-end
+    if (lowSlug.includes('sirivaka') || lowSlug.includes('bamboo-huts') || lowSlug.includes('cottage')) {
+      redirect('/prebooking/bhadrachalam-to-papikondalu-sirivaka-bamboo-huts-2-days');
+    }
+    if (lowSlug.includes('maredumilli')) {
+      redirect('/packages/maredumilli-bhadrachalam-papikondalu');
+    }
+    if (lowSlug.includes('kolluru')) {
+      redirect('/stays');
+    }
+    if (lowSlug.includes('bhadrachalam') && (lowSlug.includes('papikondalu') || lowSlug.includes('boat'))) {
+      redirect('/packages/bhadrachalam-to-papikondalu-1-day-tour-package');
+    }
+    if (lowSlug.includes('pochavaram')) {
+      redirect('/packages/papikondalu-premium-tour');
+    }
+    if (lowSlug.includes('rajahmundry')) {
+      redirect('/packages/rajahmundry-to-papikondalu-one-day-tour-package');
+    }
+    // 4. Default fallback: redirect to all packages listing
+    redirect('/packages');
+  }
 
   const price = getPositiveStartingPrice(pkg) || 0;
   const absoluteCanonical = canonicalForPackage(pkg);
