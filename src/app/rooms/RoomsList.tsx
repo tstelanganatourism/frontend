@@ -47,7 +47,7 @@ export default function RoomsList({
   const [isPending, startTransition] = useTransition();
 
   const [allRooms, setAllRooms] = React.useState<RoomItem[]>(data?.items || []);
-  const [isFetching, setIsFetching] = React.useState(false);
+  const [isFetching, setIsFetching] = React.useState(!data?.items || data.items.length === 0);
   const [searchVal, setSearchVal] = React.useState('');
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [urlQuery, setUrlQuery] = React.useState(typeof window !== 'undefined' ? window.location.search : '');
@@ -86,12 +86,17 @@ export default function RoomsList({
     }
   }, [data]);
 
-  // Fetch complete rooms dataset in background if not provided by SSR
+  // Fetch complete rooms dataset in background if not provided by SSR (with retry on cold start)
   React.useEffect(() => {
-    if (data?.items && data.items.length > 0 && categorySlug) return;
+    if (data?.items && data.items.length > 0 && categorySlug) {
+      setIsFetching(false);
+      return;
+    }
 
     let isMounted = true;
-    const fetchAllRooms = async () => {
+    let retryTimeout: NodeJS.Timeout;
+
+    const fetchAllRooms = async (attempt = 1) => {
       try {
         if (!data?.items || data.items.length === 0) {
           setIsFetching(true);
@@ -105,17 +110,36 @@ export default function RoomsList({
           const items = categorySlug ? (json.rooms || []) : (json.items || []);
           if (items && items.length > 0) {
             setAllRooms(items);
+            setIsFetching(false);
+            return;
           }
+        }
+        if (attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => {
+            if (isMounted) fetchAllRooms(attempt + 1);
+          }, 3000);
+          return;
         }
       } catch (err) {
         console.error("Failed to fetch rooms for client-side search:", err);
+        if (attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => {
+            if (isMounted) fetchAllRooms(attempt + 1);
+          }, 3000);
+          return;
+        }
       } finally {
-        if (isMounted) setIsFetching(false);
+        if (isMounted && attempt >= 3) {
+          setIsFetching(false);
+        }
       }
     };
 
     fetchAllRooms();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, [categorySlug, data]);
 
   // INSTANT Client-Side Search & Filter Engine

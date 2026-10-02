@@ -112,7 +112,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
     return (
       <Link
         href={hrefOverride ?? `/stays/${room.slug}`}
-        prefetch={false}
+        prefetch={true}
         className="group flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/60 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-amber-400/50 hover:shadow-[0_10px_28px_rgba(180,83,9,0.12)]"
       >
         {/* Square image */}
@@ -371,7 +371,7 @@ function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride
   return (
     <Link
       href={`/stays/${room.slug}`}
-      prefetch={false}
+      prefetch={true}
       className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/40 hover:shadow-[0_16px_36px_rgba(20,152,161,0.12)]"
     >
       {/* Visual Image Container */}

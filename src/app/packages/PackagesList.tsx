@@ -69,7 +69,7 @@ export default function PackagesList({
   const [isPending, startTransition] = useTransition();
 
   const [allPackages, setAllPackages] = React.useState<PackageItem[]>(data?.items || []);
-  const [isFetching, setIsFetching] = React.useState(false);
+  const [isFetching, setIsFetching] = React.useState(!data?.items || data.items.length === 0);
   const [searchVal, setSearchVal] = React.useState('');
   const [urlQuery, setUrlQuery] = React.useState(typeof window !== 'undefined' ? window.location.search : '');
 
@@ -99,7 +99,7 @@ export default function PackagesList({
     }
   }, [urlQuery]);
 
-  // Update allPackages if initial data changes (e.g. category page navigation)
+  // Update allPackages if initial data changes (e.g. category page navigation or SSR updates)
   React.useEffect(() => {
     if (data?.items && data.items.length > 0) {
       setAllPackages(data.items);
@@ -107,32 +107,66 @@ export default function PackagesList({
     }
   }, [data]);
 
-  // Only fetch category dataset if not provided by SSR
+  // Robust client-side fallback: fetch packages if SSR timed out or returned empty (e.g. Render backend cold start)
   React.useEffect(() => {
-    if (!categorySlug || (data?.items && data.items.length > 0)) return;
+    if (data?.items && data.items.length > 0) {
+      setIsFetching(false);
+      return;
+    }
 
     let isMounted = true;
-    const fetchCategoryPackages = async () => {
+    let retryTimeout: NodeJS.Timeout;
+
+    const fetchFallbackPackages = async (attempt = 1) => {
       try {
         setIsFetching(true);
-        const res = await fetch(`/api/v1/packages/categories/${categorySlug}`);
+        const fetchUrl = categorySlug
+          ? `/api/v1/packages/categories/${categorySlug}`
+          : isBoatRide
+            ? '/api/v1/packages?type=TOUR&size=50'
+            : isSightseeing
+              ? '/api/v1/packages?type=TRIP&size=50'
+              : '/api/v1/packages?size=50';
+
+        const res = await fetch(fetchUrl);
         if (res.ok && isMounted) {
           const json = await res.json();
-          const items = json.packages || [];
+          const items = categorySlug ? (json.packages || []) : (json.items || []);
           if (items && items.length > 0) {
             setAllPackages(items);
+            setIsFetching(false);
+            return;
           }
         }
+
+        // If response wasn't ok or items empty (backend might still be warming up), retry up to 3 times
+        if (attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => {
+            if (isMounted) fetchFallbackPackages(attempt + 1);
+          }, 3000);
+          return;
+        }
       } catch (err) {
-        console.error("Failed to fetch category packages:", err);
+        console.error("Failed to fetch packages on client:", err);
+        if (attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => {
+            if (isMounted) fetchFallbackPackages(attempt + 1);
+          }, 3000);
+          return;
+        }
       } finally {
-        if (isMounted) setIsFetching(false);
+        if (isMounted && attempt >= 3) {
+          setIsFetching(false);
+        }
       }
     };
 
-    fetchCategoryPackages();
-    return () => { isMounted = false; };
-  }, [categorySlug, data]);
+    fetchFallbackPackages();
+    return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
+  }, [categorySlug, data, isBoatRide, isSightseeing]);
 
   // INSTANT Client-Side Search & Filter Engine
   const filteredItems = React.useMemo(() => {

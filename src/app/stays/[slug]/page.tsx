@@ -7,6 +7,11 @@ import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperi
 export const revalidate = 43200;
 export const dynamicParams = true;
 
+const KNOWN_STATIC_ROOM_SLUGS = [
+  'family-mini-suite-ac',
+  'vashista-residency-bhadrachalam',
+];
+
 /**
  * Pre-build all published room/stay pages at compile time.
  * Without this, the first visitor to any stay URL waits for a full SSR round-trip.
@@ -16,14 +21,15 @@ export async function generateStaticParams() {
     const res = await apiFetch('/api/v1/rooms?size=200&page=1', {
       next: { revalidate: 43200, tags: ['rooms'] }
     });
-    if (!res.ok) return [];
+    if (!res.ok) return KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
     const data = await res.json();
     const items: Array<{ slug: string }> = data?.items ?? [];
-    return items
+    const slugs = items
       .filter((r) => typeof r.slug === 'string' && r.slug.length > 0)
       .map((r) => ({ slug: r.slug }));
+    return slugs.length > 0 ? slugs : KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
   } catch {
-    return [];
+    return KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
   }
 }
 

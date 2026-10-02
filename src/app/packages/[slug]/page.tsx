@@ -43,6 +43,23 @@ export const revalidate = 43200;
 // dynamicParams=true means new slugs added after build are still rendered on-demand
 export const dynamicParams = true;
 
+const KNOWN_STATIC_PACKAGE_SLUGS = [
+  'bhadrachalam-to-papikondalu-1-day-tour-package',
+  'papikondalu-premium-tour',
+  'bhadrachalam-parnashala-papikondalu-1-day-tour',
+  'bhadrachalam-to-rajahmundry-1-day-drop-package',
+  'pochavaram-to-gandipochamma-rajahmundry',
+  'rajahmundry-bhadrachalam-1-day-drop-package',
+  'maredumilli-bhadrachalam-papikondalu',
+  'mothugudem-1-day-tour-package',
+  'maredumilli-bhadrachalam-papikondalu-with-out-transport',
+  'gandipochamma-pochavaram-bhadrachalam',
+  'rajahmundry-to-papikondalu-one-day-tour-package',
+  'pochavaram-to-papikondalu-one-day-tour-college-package',
+  'pochavaram-to-papikondalu-1-day-tour-package-school-package-lkg-to-10th',
+  'gandipochamma-revu-to-papikondalu-1-day-tour-package',
+];
+
 /**
  * Pre-build all published package pages at compile time.
  * Without this, the first visitor to any package URL waits for a full SSR round-trip
@@ -54,15 +71,16 @@ export async function generateStaticParams() {
     const res = await apiFetch('/api/v1/packages?size=200&page=1', {
       next: { revalidate: 43200, tags: ['packages'] }
     });
-    if (!res.ok) return [];
+    if (!res.ok) return KNOWN_STATIC_PACKAGE_SLUGS.map((slug) => ({ slug }));
     const data = await res.json();
     const items: Array<{ slug: string }> = data?.items ?? [];
-    return items
+    const slugs = items
       .filter((p) => typeof p.slug === 'string' && p.slug.length > 0)
       .map((p) => ({ slug: p.slug }));
+    return slugs.length > 0 ? slugs : KNOWN_STATIC_PACKAGE_SLUGS.map((slug) => ({ slug }));
   } catch {
-    // Backend unreachable at build time — pages will still be rendered on-demand
-    return [];
+    // Backend unreachable at build time — compile known static package pages immediately
+    return KNOWN_STATIC_PACKAGE_SLUGS.map((slug) => ({ slug }));
   }
 }
 

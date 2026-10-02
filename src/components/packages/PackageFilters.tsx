@@ -59,23 +59,36 @@ export default function PackageFilters({ className, sticky = true }: { className
     : '';
 
   React.useEffect(() => {
-    const fetchData = async () => {
+    let isMounted = true;
+    let retryTimeout: NodeJS.Timeout;
+
+    const fetchData = async (attempt = 1) => {
       try {
         const [placesRes, catRes] = await Promise.all([
           fetch('/api/v1/packages/places/all'),
           fetch('/api/v1/packages/categories', { cache: 'no-store' }),
         ]);
-        if (placesRes.ok) {
+        if (placesRes.ok && isMounted) {
           setPlaces(await placesRes.json());
         }
-        if (catRes.ok) {
+        if (catRes.ok && isMounted) {
           setCategories(await catRes.json());
+        }
+        if ((!placesRes.ok || !catRes.ok) && attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => fetchData(attempt + 1), 3000);
         }
       } catch (err) {
         console.error('Failed to fetch filter metadata:', err);
+        if (attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => fetchData(attempt + 1), 3000);
+        }
       }
     };
     fetchData();
+    return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, []);
 
   const isBoatRide = pathname === '/boat-rides';

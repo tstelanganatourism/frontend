@@ -37,17 +37,31 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
     : '';
 
   React.useEffect(() => {
-    const fetchCategories = async () => {
+    let isMounted = true;
+    let retryTimeout: NodeJS.Timeout;
+
+    const fetchCategories = async (attempt = 1) => {
       try {
         const res = await fetch('/api/v1/rooms/categories', { cache: 'no-store' });
-        if (res.ok) {
+        if (res.ok && isMounted) {
           setCategories(await res.json());
+          return;
+        }
+        if (attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => fetchCategories(attempt + 1), 3000);
         }
       } catch (err) {
         console.error('Failed to fetch room categories:', err);
+        if (attempt < 3 && isMounted) {
+          retryTimeout = setTimeout(() => fetchCategories(attempt + 1), 3000);
+        }
       }
     };
     fetchCategories();
+    return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, []);
 
   const pushRoomParams = (params: URLSearchParams) => {

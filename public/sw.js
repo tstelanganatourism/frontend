@@ -7,8 +7,8 @@
 //   Cross-origin     →  Network-Only (CDN images/videos bypass)
 // ──────────────────────────────────────────────────────────────────────────────
 
-const STATIC_CACHE = 'ts-static-v4';
-const SHELL_CACHE = 'ts-shell-v4';
+const STATIC_CACHE = 'ts-static-v5';
+const SHELL_CACHE = 'ts-shell-v5';
 
 // HTML pages to pre-cache on install for offline capability
 const SHELL_URLS = ['/', '/packages', '/stays', '/about', '/contact', '/gallery', '/faq', '/brochures'];

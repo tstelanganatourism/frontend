@@ -157,7 +157,7 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
     return (
       <Link
         href={hrefOverride ?? `/packages/${pkg.slug}`}
-        prefetch={false}
+        prefetch={true}
         className={`group flex flex-col overflow-hidden rounded-xl bg-white border shadow-sm transition-all duration-200 hover:-translate-y-1 ${
           isInactive
             ? 'border-amber-300/80 bg-slate-50/60 hover:border-amber-400'
@@ -295,7 +295,7 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
   return (
     <Link
       href={`/packages/${pkg.slug}`}
-      prefetch={false}
+      prefetch={true}
       className={`group flex flex-col overflow-hidden rounded-2xl bg-white border shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 ${
         isInactive
           ? 'border-amber-300/80 bg-slate-50/50 hover:border-amber-400'

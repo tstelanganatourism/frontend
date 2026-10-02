@@ -74,28 +74,15 @@ export type RoomItem = {
   facilities: string[];
 };
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
-async function fetchFeaturedPackages(): Promise<FeaturedPackage[] | null> {
-  try {
-    const res = await apiFetch('/api/v1/packages?is_featured=true&size=3', {
-      next: { revalidate: 60, tags: ['packages'] },
-    });
-    if (!res.ok) throw new Error('Failed');
-    const data = await res.json();
-    return data.items as FeaturedPackage[];
-  } catch {
-    return null;
-  }
-}
-
-/** Fetches up to 20 packages for the hero scrolling card */
+/** Fetches up to 20 packages for the hero scrolling card and featured section */
 async function fetchHeroPackages(): Promise<FeaturedPackage[] | null> {
   try {
     const res = await apiFetch('/api/v1/packages?size=20', {
-      next: { revalidate: 60, tags: ['packages'] },
+      next: { revalidate: 3600, tags: ['packages'] },
     });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
@@ -109,7 +96,7 @@ async function fetchHeroPackages(): Promise<FeaturedPackage[] | null> {
 async function fetchAllRooms(): Promise<RoomItem[] | null> {
   try {
     const res = await apiFetch('/api/v1/rooms?size=20', {
-      next: { revalidate: 60, tags: ['rooms'] },
+      next: { revalidate: 3600, tags: ['rooms'] },
     });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
@@ -204,20 +191,17 @@ export default async function HomePage() {
     ],
   };
 
-  // Run consolidated fetches in parallel (fetch featured packages directly so home page top 3 matches admin order)
-  const [featuredPackagesRaw, heroPackagesRaw, allRoomsRaw] = await Promise.all([
-    fetchFeaturedPackages(),
+  // Run consolidated fetches in parallel
+  const [heroPackagesRaw, allRoomsRaw] = await Promise.all([
     fetchHeroPackages(),
     fetchAllRooms(),
   ]);
 
-  const featuredPackages = featuredPackagesRaw && featuredPackagesRaw.length > 0
-    ? featuredPackagesRaw
-    : heroPackagesRaw
-      ? (heroPackagesRaw.filter((p) => p.is_featured).length > 0
-          ? heroPackagesRaw.filter((p) => p.is_featured).slice(0, 3)
-          : heroPackagesRaw.slice(0, 3))
-      : null;
+  const featuredPackages = heroPackagesRaw
+    ? (heroPackagesRaw.filter((p) => p.is_featured).length > 0
+        ? heroPackagesRaw.filter((p) => p.is_featured).slice(0, 3)
+        : heroPackagesRaw.slice(0, 3))
+    : null;
 
   const featuredRooms = allRoomsRaw
     ? (allRoomsRaw.filter((r) => r.is_featured).length > 0
