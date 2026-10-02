@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -14,7 +14,6 @@ import {
   X,
   Briefcase,
   ShieldCheck,
-  Anchor,
 } from 'lucide-react';
 import { logout } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -22,36 +21,36 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 
-export default function AgentDashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const { user } = useAuthStore();
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+}
 
-  const navItems = [
-    { name: 'Dashboard', href: '/agent/dashboard', icon: LayoutDashboard },
-    { name: 'Customer Bookings', href: '/agent/dashboard/bookings', icon: Ticket },
-    { name: 'My Profile', href: '/dashboard/profile', icon: User },
-  ];
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success('Logged out successfully');
-      router.push('/');
-    } catch (err) {
-      toast.error('Logout failed');
-    }
-  };
-
-  const initials = user?.full_name
-    ? user.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-    : 'AG';
-
-  const [imgError, setImgError] = useState(false);
-
-  const NavContent = () => (
+function NavContent({
+  user,
+  initials,
+  displayName,
+  mounted,
+  imgError,
+  setImgError,
+  pathname,
+  setIsMobileNavOpen,
+  setIsLogoutModalOpen,
+  navItems,
+}: {
+  user: any;
+  initials: string;
+  displayName: string;
+  mounted: boolean;
+  imgError: boolean;
+  setImgError: (v: boolean) => void;
+  pathname: string;
+  setIsMobileNavOpen: (v: boolean) => void;
+  setIsLogoutModalOpen: (v: boolean) => void;
+  navItems: NavItem[];
+}) {
+  return (
     <div className="flex flex-col h-full">
       {/* ── Agent Identity Card ── */}
       <div className="px-4 py-5 border-b border-slate-100">
@@ -61,7 +60,8 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
             className="relative shrink-0 h-11 w-11 rounded-xl overflow-hidden"
             style={{ boxShadow: '0 2px 10px rgba(30,70,138,0.18)' }}
           >
-            {user?.avatar_url && !imgError ? (
+            {mounted && user?.avatar_url && !imgError ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={user.avatar_url}
                 alt="Avatar"
@@ -72,6 +72,7 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
               <div
                 className="h-full w-full flex items-center justify-center text-white font-black text-base"
                 style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e468a)' }}
+                suppressHydrationWarning
               >
                 {initials}
               </div>
@@ -82,8 +83,8 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
 
           {/* Name & role */}
           <div className="min-w-0 flex-1">
-            <h2 className="text-slate-900 text-sm font-black truncate leading-tight">
-              {user?.full_name || 'Agent'}
+            <h2 className="text-slate-900 text-sm font-black truncate leading-tight" suppressHydrationWarning>
+              {displayName}
             </h2>
             <div className="flex items-center gap-1.5 mt-0.5">
               <ShieldCheck className="h-3 w-3 text-amber-500 shrink-0" />
@@ -134,8 +135,11 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
       {/* ── Sign Out ── */}
       <div className="px-3 pb-4 border-t border-slate-100 pt-3">
         <button
-          onClick={() => { setIsMobileNavOpen(false); setIsLogoutModalOpen(true); }}
-          className="group w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-150 text-left"
+          onClick={() => {
+            setIsMobileNavOpen(false);
+            setIsLogoutModalOpen(true);
+          }}
+          className="group w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-150 text-left cursor-pointer"
         >
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-rose-100 transition-all">
             <LogOut className="h-4 w-4 text-slate-400 group-hover:text-rose-500" />
@@ -145,6 +149,55 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
       </div>
     </div>
   );
+}
+
+export default function AgentDashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const { user } = useAuthStore();
+  const [imgError, setImgError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const navItems: NavItem[] = [
+    { name: 'Dashboard', href: '/agent/dashboard', icon: LayoutDashboard },
+    { name: 'Customer Bookings', href: '/agent/dashboard/bookings', icon: Ticket },
+    { name: 'My Profile', href: '/dashboard/profile', icon: User },
+  ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+      router.push('/');
+    } catch {
+      toast.error('Logout failed');
+    }
+  };
+
+  const initials = user?.full_name
+    ? user.full_name
+        .split(' ')
+        .map((n: string) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : 'AG';
+
+  const displayName = user?.full_name || 'Agent';
+
+  if (!mounted) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#1598a1] border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute allowedRoles={['AGENT']}>
@@ -155,16 +208,22 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
             className="h-7 w-7 rounded-lg overflow-hidden shrink-0"
             style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e468a)' }}
           >
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+            {mounted && user?.avatar_url && !imgError ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.avatar_url}
+                alt="Avatar"
+                onError={() => setImgError(true)}
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <span className="h-full w-full flex items-center justify-center text-white font-black text-xs">
+              <span suppressHydrationWarning className="h-full w-full flex items-center justify-center text-white font-black text-xs">
                 {initials}
               </span>
             )}
           </div>
           <div>
-            <p className="text-slate-800 font-bold text-sm leading-tight">{user?.full_name || 'Agent'}</p>
+            <p suppressHydrationWarning className="text-slate-800 font-bold text-sm leading-tight">{displayName}</p>
             <p className="text-slate-400 text-[10px] font-medium leading-tight">Agent Portal</p>
           </div>
         </div>
@@ -173,11 +232,7 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
           className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
           aria-label="Toggle navigation"
         >
-          {isMobileNavOpen ? (
-            <X className="h-4 w-4 text-slate-600" />
-          ) : (
-            <Menu className="h-4 w-4 text-slate-600" />
-          )}
+          {isMobileNavOpen ? <X className="h-4 w-4 text-slate-600" /> : <Menu className="h-4 w-4 text-slate-600" />}
         </button>
       </div>
 
@@ -188,13 +243,23 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
         }`}
       >
         <div className="px-3 py-3">
-          <NavContent />
+          <NavContent
+            user={user}
+            initials={initials}
+            displayName={displayName}
+            mounted={mounted}
+            imgError={imgError}
+            setImgError={setImgError}
+            pathname={pathname}
+            setIsMobileNavOpen={setIsMobileNavOpen}
+            setIsLogoutModalOpen={setIsLogoutModalOpen}
+            navItems={navItems}
+          />
         </div>
       </div>
 
       {/* ── Main Layout ── */}
       <div className="max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 flex flex-col md:flex-row gap-6 lg:gap-8 min-h-[80vh]">
-
         {/* ── Desktop Sidebar ── */}
         <aside className="hidden md:block w-64 shrink-0">
           <div
@@ -211,14 +276,23 @@ export default function AgentDashboardLayout({ children }: { children: React.Rea
                 Agent Console
               </span>
             </div>
-            <NavContent />
+            <NavContent
+              user={user}
+              initials={initials}
+              displayName={displayName}
+              mounted={mounted}
+              imgError={imgError}
+              setImgError={setImgError}
+              pathname={pathname}
+              setIsMobileNavOpen={setIsMobileNavOpen}
+              setIsLogoutModalOpen={setIsLogoutModalOpen}
+              navItems={navItems}
+            />
           </div>
         </aside>
 
         {/* ── Main Content ── */}
-        <main className="flex-1 min-w-0">
-          {children}
-        </main>
+        <main className="flex-1 min-w-0">{children}</main>
       </div>
 
       <ConfirmModal

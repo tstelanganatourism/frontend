@@ -532,11 +532,11 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
               </div>
               <a
                 href={
-                  pkg.brochure_pdf_url || pkg.generated_brochure_url
-                    ? `/api/download?url=${encodeURIComponent(pkg.brochure_pdf_url || pkg.generated_brochure_url || "")}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}`
-                    : `/print/package/${pkg.slug}`
+                  (pkg.brochure_pdf_url?.startsWith('http') || pkg.generated_brochure_url?.startsWith('http'))
+                    ? `/api/download?url=${encodeURIComponent(pkg.generated_brochure_url || pkg.brochure_pdf_url || '')}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}`
+                    : `/print/package/${pkg.slug}?autoDownload=true`
                 }
-                target={pkg.brochure_pdf_url || pkg.generated_brochure_url ? '_self' : '_blank'}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a6b7a] hover:bg-[#13505c] text-white px-6 py-3.5 text-xs font-black uppercase tracking-wider shadow-md transition hover:-translate-y-0.5"
               >

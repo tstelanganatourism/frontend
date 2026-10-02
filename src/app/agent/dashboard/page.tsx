@@ -48,13 +48,16 @@ export default function AgentDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [greeting, setGreeting] = useState('Good afternoon');
+  const [mounted, setMounted] = useState(false);
 
-  const getGreeting = () => {
+  useEffect(() => {
+    setMounted(true);
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 17) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, []);
 
   useEffect(() => {
     const fetchSummaryAndBookings = async () => {
@@ -74,6 +77,14 @@ export default function AgentDashboardPage() {
     };
     fetchSummaryAndBookings();
   }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#1598a1] border-t-transparent" />
+      </div>
+    );
+  }
 
   const kpiCards = [
     {
@@ -175,9 +186,11 @@ export default function AgentDashboardPage() {
 
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
-                <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                  {getGreeting()},<br />
-                  <span className="text-amber-300">{user?.full_name?.split(' ')[0] || 'Agent'}!</span>
+                <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight" suppressHydrationWarning>
+                  <span suppressHydrationWarning>{greeting}</span>,<br />
+                  <span className="text-amber-300" suppressHydrationWarning>
+                    {mounted ? (user?.full_name?.split(' ')[0] || 'Agent') : 'Agent'}!
+                  </span>
                 </h1>
                 <p className="text-white/50 mt-2.5 text-sm font-medium max-w-sm leading-relaxed">
                   Track your offline tourist bookings and direct margin earnings from one place.

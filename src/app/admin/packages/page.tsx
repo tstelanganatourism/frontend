@@ -23,12 +23,18 @@ import {
   CheckCircle2,
   Users,
   Loader2,
-  FolderPlus
+  FolderPlus,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import Pagination from '@/components/ui/Pagination';
+import ReorderPackagesModal from '@/components/admin/ReorderPackagesModal';
 
 function CustomFilterSelect({ 
   value, 
@@ -96,6 +102,7 @@ export default function AdminPackagesPage() {
   const updatePackage = useAdminStore((s) => s.updatePackage);
   const deletePackage = useAdminStore((s) => s.deletePackage);
   const createPackage = useAdminStore((s) => s.createPackage);
+  const reorderPackages = useAdminStore((s) => s.reorderPackages);
 
   const [searchVal, setSearchVal] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -104,6 +111,8 @@ export default function AdminPackagesPage() {
   const [regionFilter, setRegionFilter] = useState('all');
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+  const [savingPriorityId, setSavingPriorityId] = useState<number | null>(null);
 
   // Status toggle states
   const [selectedPackageToToggle, setSelectedPackageToToggle] = useState<any | null>(null);
@@ -117,6 +126,65 @@ export default function AdminPackagesPage() {
   useEffect(() => {
     fetchPackages('', statusFilter, 1, packagesLimit).finally(() => setHasFetched(true));
   }, [statusFilter, packagesLimit]);
+
+  const handleInlinePrioritySave = async (pkgId: number, newPriority: number) => {
+    try {
+      setSavingPriorityId(pkgId);
+      await updatePackage(pkgId, { order_priority: newPriority });
+      toast.success(`Display order updated to #${newPriority}`);
+      await fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
+    } catch (err: any) {
+      toast.error('Failed to update order priority');
+    } finally {
+      setSavingPriorityId(null);
+    }
+  };
+
+  const handleMovePackage = async (index: number, direction: 'up' | 'down', currentList: any[]) => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentList.length) return;
+    const currentPkg = currentList[index];
+    const targetPkg = currentList[targetIndex];
+
+    const currentOrder = currentPkg.order_priority ?? index + 1;
+    const targetOrder = targetPkg.order_priority ?? targetIndex + 1;
+
+    const newCurrentOrder = targetOrder === currentOrder 
+      ? (direction === 'up' ? Math.max(0, currentOrder - 1) : currentOrder + 1) 
+      : targetOrder;
+    const newTargetOrder = currentOrder;
+
+    try {
+      setSavingPriorityId(currentPkg.id);
+      await reorderPackages([
+        { id: currentPkg.id, order_priority: newCurrentOrder },
+        { id: targetPkg.id, order_priority: newTargetOrder },
+      ]);
+      toast.success(`Moved "${currentPkg.title}" ${direction}`);
+      await fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
+    } catch (err) {
+      toast.error('Failed to move package');
+    } finally {
+      setSavingPriorityId(null);
+    }
+  };
+
+  const featuredRankMap = React.useMemo(() => {
+    const map = new Map<number, number>();
+    if (!packages || !Array.isArray(packages)) return map;
+    const sortedFeatured = [...packages]
+      .filter((p) => p.is_featured)
+      .sort((a, b) => {
+        const pA = a.order_priority ?? 9999;
+        const pB = b.order_priority ?? 9999;
+        if (pA !== pB) return pA - pB;
+        return a.id - b.id;
+      });
+    sortedFeatured.forEach((pkg, idx) => {
+      map.set(pkg.id, idx + 1);
+    });
+    return map;
+  }, [packages]);
 
 
   const handleDeleteConfirm = async () => {
@@ -293,22 +361,30 @@ export default function AdminPackagesPage() {
           <h1 className="text-3xl font-black text-slate-900">Tours & Packages</h1>
           <p className="text-slate-500 mt-1">Manage and curate public tour experiences and trips.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <button 
+            type="button"
+            onClick={() => setIsReorderModalOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 cursor-pointer"
+          >
+            <ArrowUpDown className="h-4 w-4 text-[#1598a1] shrink-0" />
+            <span>Reorder Packages</span>
+          </button>
           <Link 
             href="/admin/packages/categories"
             prefetch={false}
-            className="flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300"
+            className="flex items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300"
           >
-            <FolderPlus className="h-4 w-4 text-[#1598a1]" />
-            Manage Categories
+            <FolderPlus className="h-4 w-4 text-[#1598a1] shrink-0" />
+            <span>Manage Categories</span>
           </Link>
           <Link 
             href="/admin/packages/create"
             prefetch={false}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-slate-800"
+            className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-slate-800"
           >
-            <Plus className="h-4 w-4" />
-            Create New Package
+            <Plus className="h-4 w-4 shrink-0" />
+            <span>Create New Package</span>
           </Link>
         </div>
       </div>
@@ -372,24 +448,28 @@ export default function AdminPackagesPage() {
       </div>
 
       {/* Table Card */}
-      <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm max-w-full">
+        <div className="md:hidden px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400">
+          <span>← Swipe horizontally to view all columns & actions →</span>
+        </div>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[880px] text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <th className="px-4 py-4 text-center w-28" title="Order Priority: lower numbers appear first across website and categories">Order #</th>
                 <th className="px-6 py-4">Package</th>
                 <th className="px-6 py-4">Type</th>
                 <th className="px-6 py-4">Region</th>
                 <th className="px-6 py-4">Active Booking</th>
                 <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Featured</th>
+                <th className="px-6 py-4">Home / Featured</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
               {(!hasFetched && (!packages || packages.length === 0)) ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={8} className="text-center py-12">
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />
                   </td>
                 </tr>
@@ -415,7 +495,14 @@ export default function AdminPackagesPage() {
                 }
 
                 // Sort By
-                if (sortBy === 'bookings-desc') {
+                if (sortBy === 'default') {
+                  filteredPackages.sort((a, b) => {
+                    const orderA = a.order_priority !== null && a.order_priority !== undefined ? a.order_priority : 9999;
+                    const orderB = b.order_priority !== null && b.order_priority !== undefined ? b.order_priority : 9999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.id - b.id;
+                  });
+                } else if (sortBy === 'bookings-desc') {
                   filteredPackages.sort((a, b) => (b.active_booking_count || 0) - (a.active_booking_count || 0));
                 } else if (sortBy === 'price-asc') {
                   filteredPackages.sort((a, b) => Number(a.starting_price || 0) - Number(b.starting_price || 0));
@@ -426,7 +513,7 @@ export default function AdminPackagesPage() {
                 if (filteredPackages.length === 0) {
                   return (
                     <tr>
-                      <td colSpan={7} className="text-center py-16 text-slate-400">
+                      <td colSpan={8} className="text-center py-16 text-slate-400">
                         <ShieldAlert className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                         <h3 className="font-bold text-slate-700">No packages found</h3>
                         <p className="text-xs text-slate-400 mt-1 mb-4">Try resetting filters, or click below to reload packages.</p>
@@ -444,8 +531,63 @@ export default function AdminPackagesPage() {
                   );
                 }
 
-                return filteredPackages.map((pkg) => (
+                return filteredPackages.map((pkg, index) => (
                   <tr key={pkg.id} className="hover:bg-slate-50/50 transition-colors group">
+                    {/* Order # Priority Cell */}
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <div className="flex flex-col">
+                          <button
+                            type="button"
+                            onClick={() => handleMovePackage(index, 'up', filteredPackages)}
+                            disabled={index === 0 || savingPriorityId === pkg.id}
+                            title="Move Up"
+                            className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-20 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMovePackage(index, 'down', filteredPackages)}
+                            disabled={index === filteredPackages.length - 1 || savingPriorityId === pkg.id}
+                            title="Move Down"
+                            className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-20 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="999"
+                            defaultValue={pkg.order_priority ?? 0}
+                            key={`${pkg.id}-${pkg.order_priority}`}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val) && val !== pkg.order_priority) {
+                                handleInlinePrioritySave(pkg.id, val);
+                              }
+                            }}
+                            disabled={savingPriorityId === pkg.id}
+                            className="w-14 rounded-lg border border-slate-200 bg-slate-50/70 px-2 py-1.5 text-center text-xs font-black text-slate-800 focus:bg-white focus:border-[#5ac4d7] focus:ring-1 focus:ring-[#5ac4d7] outline-none transition-all"
+                            title="Click and type sequence number (press Enter to save)"
+                          />
+                          {savingPriorityId === pkg.id && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#5ac4d7]"></span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-16 shrink-0 rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
@@ -522,7 +664,7 @@ export default function AdminPackagesPage() {
                       </button>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <button
                           type="button"
                           onClick={async () => {
@@ -532,13 +674,14 @@ export default function AdminPackagesPage() {
                                 is_featured: updatedFeatured
                               });
                               await fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
-                              toast.success(`Package "${pkg.title}" is now ${updatedFeatured ? 'Featured' : 'Not Featured'}`);
+                              toast.success(`Package "${pkg.title}" ${updatedFeatured ? 'is now FEATURED on Home Page' : 'removed from Home Page'}`);
                             } catch (err: any) {
                               toast.error(err.message || 'Failed to toggle featured status');
                             }
                           }}
+                          title={pkg.is_featured ? "Click to remove from Home Page" : "Click to feature on Home Page"}
                           className={`flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${
-                            pkg.is_featured ? 'bg-amber-500' : 'bg-slate-350'
+                            pkg.is_featured ? 'bg-amber-500 ring-2 ring-amber-200' : 'bg-slate-300'
                           }`}
                         >
                           <div
@@ -547,9 +690,35 @@ export default function AdminPackagesPage() {
                             }`}
                           />
                         </button>
-                        <span className={`text-[10px] font-black uppercase tracking-wider ${pkg.is_featured ? 'text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md' : 'text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md'}`}>
-                          {pkg.is_featured ? 'Featured' : 'No'}
-                        </span>
+                        {(() => {
+                          if (!pkg.is_featured) {
+                            return (
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                Hidden
+                              </span>
+                            );
+                          }
+                          const homeRank = featuredRankMap.get(pkg.id);
+                          if (homeRank && homeRank <= 3) {
+                            return (
+                              <span 
+                                title="Featured in the Top 3 hero cards on the TS Boat Tourism Home Page!"
+                                className="inline-flex items-center gap-1 text-[11px] font-black text-amber-900 bg-gradient-to-r from-amber-100 to-amber-200 border border-amber-300 px-2 py-0.5 rounded-md shadow-xs animate-pulse"
+                              >
+                                <Sparkles className="h-3 w-3 text-amber-600 shrink-0" />
+                                <span>★ Home #{homeRank}</span>
+                              </span>
+                            );
+                          }
+                          return (
+                            <span 
+                              title={`Featured package (Home rank #${homeRank}), shown on Home Page 'View All'`}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md"
+                            >
+                              <span>Home #{homeRank}</span>
+                            </span>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -614,6 +783,17 @@ export default function AdminPackagesPage() {
         confirmText="Archive Package"
         cancelText="Cancel"
         type="danger"
+      />
+
+      {/* Visual Bulk Reorder Packages Modal */}
+      <ReorderPackagesModal 
+        isOpen={isReorderModalOpen}
+        onClose={() => setIsReorderModalOpen(false)}
+        packages={packages || []}
+        onSave={async (items) => {
+          await reorderPackages(items);
+          await fetchPackages('', statusFilter, packagesPage, packagesLimit, true);
+        }}
       />
 
       {/* Active Booking Future Warnings Modal */}

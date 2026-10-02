@@ -134,16 +134,8 @@ export const MobileBookingSheet = ({
               type="button"
               onClick={async (e) => {
                 e.preventDefault();
-                const match = brochurePdfUrl.match(/(private\/[^?#]+)/);
-                const rawKey = match ? decodeURIComponent(match[1]) : null;
                 const filename = `${packageSlug}-brochure.pdf`;
-
-                if (rawKey) {
-                  const downloadUrl = `${API_BASE}/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-                  await downloadFileViaFetch(downloadUrl, filename);
-                } else {
-                  await downloadFileViaFetch(brochurePdfUrl, filename);
-                }
+                await downloadFileViaFetch(brochurePdfUrl, filename, packageSlug);
               }}
               className="text-[9px] font-black text-[#0d6e75] hover:underline flex items-center gap-0.5 mt-1 uppercase tracking-wider"
             >

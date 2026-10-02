@@ -26,6 +26,7 @@ type RoomItem = {
   starting_weekend_price?: number | null | string;
   address: string | null;
   facilities: string[];
+  order_priority?: number | null;
 };
 
 export default function RoomsList({ 
@@ -158,6 +159,22 @@ export default function RoomsList({
           (item.facilities || []).some((itemFac) => itemFac.toLowerCase().includes(fac.toLowerCase()))
         )
       );
+    }
+
+    // 4. Sort
+    const sort = params.get('sort');
+    if (sort === 'price_asc') {
+      list.sort((a, b) => (Number(a.starting_price) || 0) - (Number(b.starting_price) || 0));
+    } else if (sort === 'price_desc') {
+      list.sort((a, b) => (Number(b.starting_price) || 0) - (Number(a.starting_price) || 0));
+    } else {
+      // Default: sort by order_priority ascending, then by id
+      list.sort((a, b) => {
+        const pA = a.order_priority !== null && a.order_priority !== undefined ? a.order_priority : 9999;
+        const pB = b.order_priority !== null && b.order_priority !== undefined ? b.order_priority : 9999;
+        if (pA !== pB) return pA - pB;
+        return a.id - b.id;
+      });
     }
 
     return list;

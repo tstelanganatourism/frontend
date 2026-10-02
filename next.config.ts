@@ -41,8 +41,6 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    const isProd = process.env.NODE_ENV === 'production';
-    
     const headersList = [
       // Security headers for all routes
       {
@@ -53,6 +51,18 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
           { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.cashfree.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://maps.googleapis.com https://maps.gstatic.com https://*.ggpht.com https://*.googleapis.com https://*.gstatic.com https://tstelanganatourism.com https://www.tstelanganatourism.com https://*.vercel.app; connect-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com https://backend-st7o.onrender.com https://*.onrender.com https://tstelanganatourism.com https://www.tstelanganatourism.com https://*.vercel.app https://*.r2.cloudflarestorage.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com wss: https://*.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net https://*.sentry.io https://cloudflareinsights.com https://maps.googleapis.com; worker-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com; media-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com; frame-src 'self' https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://www.google.com https://maps.googleapis.com https://maps.google.com; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;" },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/(ts-boat-tourism-logo.png|logo.png|favicon.ico|icon-192x192.png|icon-512x512.png|apple-touch-icon.png)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
       {

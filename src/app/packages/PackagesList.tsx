@@ -30,6 +30,7 @@ type PackageItem = {
   is_student_package?: boolean;
   tags: string[];
   starting_price: number | null;
+  order_priority?: number | null;
   variants?: Array<{
     id: number;
     title: string;
@@ -209,6 +210,14 @@ export default function PackagesList({
       list.sort((a, b) => (Number(b.starting_price) || 0) - (Number(a.starting_price) || 0));
     } else if (sort === 'rating_desc') {
       list.sort((a, b) => (Number(b.is_featured ? 5 : 4) - Number(a.is_featured ? 5 : 4)));
+    } else {
+      // Default: Sort by admin defined order_priority ascending, then by id
+      list.sort((a, b) => {
+        const pA = a.order_priority !== null && a.order_priority !== undefined ? a.order_priority : 9999;
+        const pB = b.order_priority !== null && b.order_priority !== undefined ? b.order_priority : 9999;
+        if (pA !== pB) return pA - pB;
+        return a.id - b.id;
+      });
     }
 
     return list;

@@ -9,6 +9,7 @@ import {
   StickyNote, AlertTriangle, CheckCheck, X, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import PremiumSelect from '@/components/ui/PremiumSelect';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface PreBooking {
@@ -358,26 +359,32 @@ export default function AdminPreBookingsPage() {
 
           {/* Status filter */}
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <select
-              value={filterConfirmed}
-              onChange={(e) => { setFilterConfirmed(e.target.value as 'all' | 'yes' | 'no'); setOffset(0); }}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2.5 outline-none focus:border-[#5ac4d7] text-slate-700 bg-white"
-            >
-              <option value="all">All Status</option>
-              <option value="yes">Confirmed Only</option>
-              <option value="no">Pending Only</option>
-            </select>
+            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="w-[150px]">
+              <PremiumSelect
+                value={filterConfirmed}
+                onChange={(val) => { setFilterConfirmed(val as 'all' | 'yes' | 'no'); setOffset(0); }}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'yes', label: 'Confirmed Only' },
+                  { value: 'no', label: 'Pending Only' },
+                ]}
+                placeholder="All Status"
+              />
+            </div>
 
-            <select
-              value={filterContacted}
-              onChange={(e) => { setFilterContacted(e.target.value as 'all' | 'yes' | 'no'); setOffset(0); }}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2.5 outline-none focus:border-[#5ac4d7] text-slate-700 bg-white"
-            >
-              <option value="all">All Contact</option>
-              <option value="yes">Contacted</option>
-              <option value="no">Not Contacted</option>
-            </select>
+            <div className="w-[160px]">
+              <PremiumSelect
+                value={filterContacted}
+                onChange={(val) => { setFilterContacted(val as 'all' | 'yes' | 'no'); setOffset(0); }}
+                options={[
+                  { value: 'all', label: 'All Contact' },
+                  { value: 'yes', label: 'Contacted' },
+                  { value: 'no', label: 'Not Contacted' },
+                ]}
+                placeholder="All Contact"
+              />
+            </div>
           </div>
 
           {/* Clear */}

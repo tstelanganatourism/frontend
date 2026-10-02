@@ -49,13 +49,16 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [greeting, setGreeting] = useState('Good afternoon');
 
-  const getGreeting = () => {
+  useEffect(() => {
+    setMounted(true);
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 17) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, []);
 
   const firstName = user?.full_name?.split(' ')[0] || 'Traveler';
 
@@ -77,6 +80,14 @@ export default function DashboardPage() {
     };
     fetchDashboard();
   }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#1598a1] border-t-transparent" />
+      </div>
+    );
+  }
 
   const stats = [
     {
@@ -190,7 +201,7 @@ export default function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
                 <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                  {getGreeting()},<br />
+                  {greeting},<br />
                   <span className="text-teal-300">{firstName}!</span>
                 </h1>
                 <p className="text-white/55 mt-2.5 text-sm font-medium max-w-sm leading-relaxed">

@@ -78,6 +78,7 @@ interface AdminState {
   fetchPackageById: (id: number | string) => Promise<void>;
   createPackage: (data: any) => Promise<any>;
   updatePackage: (id: number | string, data: any) => Promise<any>;
+  reorderPackages: (items: { id: number; order_priority: number }[]) => Promise<any>;
   publishPackage: (id: number | string) => Promise<any>;
   deletePackage: (id: number | string) => Promise<void>;
 
@@ -85,6 +86,7 @@ interface AdminState {
   fetchRoomById: (id: number | string) => Promise<void>;
   createRoom: (data: any) => Promise<any>;
   updateRoom: (id: number | string, data: any) => Promise<any>;
+  reorderRooms: (items: { id: number; order_priority: number }[]) => Promise<any>;
   deleteRoom: (id: number | string) => Promise<void>;
 
   coupons: any[];
@@ -286,6 +288,29 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
   },
 
+  reorderPackages: async (items) => {
+    // Optimistic local update
+    const priorityMap = new Map(items.map((i) => [i.id, i.order_priority]));
+    set((state) => ({
+      packages: state.packages.map((p) =>
+        priorityMap.has(p.id) ? { ...p, order_priority: priorityMap.get(p.id)! } : p
+      ),
+    }));
+    try {
+      const response = await apiClient.put('/api/v1/admin/packages/reorder', items);
+      revalidateStorefront(
+        ['/', '/packages', '/boat-rides', '/sightseeing', '/brochures'],
+        ['packages', 'categories']
+      );
+      return response.data;
+    } catch (err: any) {
+      let errMsg = 'Failed to reorder packages';
+      if (err.response?.data?.detail) errMsg = err.response.data.detail;
+      set({ error: errMsg });
+      throw err;
+    }
+  },
+
   publishPackage: async (id) => {
     set({ isLoading: true, error: null });
     try {
@@ -423,6 +448,32 @@ export const useAdminStore = create<AdminState>((set) => ({
         errMsg = err.response.data.error.message;
       }
       set({ error: errMsg });
+      throw err;
+    }
+  },
+
+  reorderRooms: async (items: { id: number; order_priority: number }[]) => {
+    // Optimistic local update
+    const priorityMap = new Map(items.map((i) => [i.id, i.order_priority]));
+    set((state) => ({
+      rooms: state.rooms.map((r) =>
+        priorityMap.has(r.id) ? { ...r, order_priority: priorityMap.get(r.id)! } : r
+      ),
+    }));
+    try {
+      const response = await apiClient.put('/api/v1/admin/rooms/reorder', items);
+      revalidateStorefront([
+        '/',
+        '/stays',
+        '/stays/categories',
+      ], [
+        'rooms',
+        'stays',
+        'room-categories',
+      ]);
+      return response.data;
+    } catch (err: any) {
+      console.error('Failed to reorder rooms:', err);
       throw err;
     }
   },

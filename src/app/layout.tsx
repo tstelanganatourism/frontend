@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Telugu, Outfit } from "next/font/google";
 import "./globals.css";
 import TopLoader from '@/components/layout/TopLoader';
@@ -119,7 +119,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="w-full max-w-[100vw] overflow-x-hidden">
       <head>
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
@@ -214,7 +214,7 @@ export default function RootLayout({
           }}
         ></script>
       </head>
-      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col w-full max-w-[100vw] overflow-x-hidden`}>
         <TopLoader />
         <QueryProvider>
           <AuthProvider>

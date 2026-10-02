@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X as CloseIcon, Ticket, Calendar, Clock, CreditCard, ExternalLink,
   Loader2, Users, Phone, FileText, History, Banknote, Wifi,
-  CheckCircle2, AlertCircle, IndianRupee, TrendingUp, MessageCircle
+  CheckCircle2, AlertCircle, IndianRupee, TrendingUp, MessageCircle, SlidersHorizontal
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
@@ -397,6 +397,212 @@ function RescheduleDatePanel({
           {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
           {isSubmitting ? 'Rescheduling...' : 'Confirm Reschedule'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function AdjustTaxesPanel({
+  booking,
+  onSuccess,
+}: {
+  booking: BookingDetails;
+  onSuccess: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const initialGstRate = Number(booking.pricing_snapshot?.gst_rate ?? (booking.gst_amount > 0 ? 5 : 0));
+  const initialScRate = Number(booking.pricing_snapshot?.service_charge_rate ?? (booking.service_charge ? 1 : 0));
+  const initialGwRate = Number(booking.pricing_snapshot?.gateway_fee_rate ?? (booking.gateway_fee > 0 ? 1 : 0));
+
+  const [gstRate, setGstRate] = useState<number>(initialGstRate);
+  const [gstAmount, setGstAmount] = useState<string>('');
+  const [serviceChargeRate, setServiceChargeRate] = useState<number>(initialScRate);
+  const [serviceChargeAmount, setServiceChargeAmount] = useState<string>('');
+  const [gatewayFeeRate, setGatewayFeeRate] = useState<number>(initialGwRate);
+  const [gatewayFeeAmount, setGatewayFeeAmount] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const discountedSubtotal = Math.max(0, (booking.subtotal_amount || 0) - (booking.coupon_discount || 0));
+
+  const effectiveGst = gstAmount !== '' ? Math.max(0, parseFloat(gstAmount) || 0) : (discountedSubtotal * (gstRate / 100));
+  const effectiveSc = serviceChargeAmount !== '' ? Math.max(0, parseFloat(serviceChargeAmount) || 0) : (discountedSubtotal * (serviceChargeRate / 100));
+  const gwBase = discountedSubtotal + effectiveGst + effectiveSc;
+  const effectiveGw = gatewayFeeAmount !== '' ? Math.max(0, parseFloat(gatewayFeeAmount) || 0) : (gwBase * (gatewayFeeRate / 100));
+  const newTotal = discountedSubtotal + effectiveGst + effectiveSc + effectiveGw;
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const payload: any = {};
+      if (gstAmount !== '') payload.gst_amount = parseFloat(gstAmount);
+      else payload.gst_rate = gstRate;
+
+      if (serviceChargeAmount !== '') payload.service_charge_amount = parseFloat(serviceChargeAmount);
+      else payload.service_charge_rate = serviceChargeRate;
+
+      if (gatewayFeeAmount !== '') payload.gateway_fee_amount = parseFloat(gatewayFeeAmount);
+      else payload.gateway_fee_rate = gatewayFeeRate;
+
+      await apiClient.patch(`/api/v1/admin/bookings/${booking.id}/adjust-taxes`, payload);
+      toast.success('Taxes and total updated successfully!');
+      setIsOpen(false);
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to adjust taxes.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black tracking-wide border-2 border-[#1a6b7a] text-[#1a6b7a] bg-[#1a6b7a]/5 hover:bg-[#1a6b7a] hover:text-white transition-all shadow-sm w-full sm:w-auto active:scale-95 cursor-pointer"
+      >
+        <SlidersHorizontal className="w-4 h-4" />
+        Adjust Taxes &amp; Surcharges (GST / Service Charge / Gateway)
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+          <SlidersHorizontal className="h-3.5 w-3.5 text-[#1a6b7a]" />
+          Adjust Taxes &amp; Fees for #{booking.public_id}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setGstRate(0);
+            setGstAmount('0');
+            setServiceChargeRate(0);
+            setServiceChargeAmount('0');
+            setGatewayFeeRate(0);
+            setGatewayFeeAmount('0');
+            toast.success("Zeroed out all taxes and fees");
+          }}
+          className="text-[10px] font-extrabold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition"
+        >
+          Zero All (₹0)
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* GST */}
+        <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+            <span>GST:</span>
+            <span className="text-[#1a6b7a] font-extrabold">{formatCurrency(effectiveGst)}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {[0, 5, 12, 18].map(r => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => { setGstRate(r); setGstAmount(''); }}
+                className={`flex-1 py-1 rounded text-[10px] font-bold ${gstAmount === '' && gstRate === r ? 'bg-[#1a6b7a] text-white' : 'bg-slate-100 text-slate-700'}`}
+              >
+                {r}%
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 text-[10px]">
+            <span className="text-slate-400">or ₹:</span>
+            <input
+              type="number"
+              placeholder="Amount"
+              value={gstAmount}
+              onChange={e => setGstAmount(e.target.value)}
+              className="w-full h-7 rounded border border-slate-200 px-2 text-xs font-bold outline-none focus:border-[#1a6b7a]"
+            />
+          </div>
+        </div>
+
+        {/* Ts Boat Service Charge */}
+        <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+            <span>Ts Boat SC:</span>
+            <span className="text-[#1a6b7a] font-extrabold">{formatCurrency(effectiveSc)}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {[0, 1, 2].map(r => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => { setServiceChargeRate(r); setServiceChargeAmount(''); }}
+                className={`flex-1 py-1 rounded text-[10px] font-bold ${serviceChargeAmount === '' && serviceChargeRate === r ? 'bg-[#1a6b7a] text-white' : 'bg-slate-100 text-slate-700'}`}
+              >
+                {r}%
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 text-[10px]">
+            <span className="text-slate-400">or ₹:</span>
+            <input
+              type="number"
+              placeholder="Amount"
+              value={serviceChargeAmount}
+              onChange={e => setServiceChargeAmount(e.target.value)}
+              className="w-full h-7 rounded border border-slate-200 px-2 text-xs font-bold outline-none focus:border-[#1a6b7a]"
+            />
+          </div>
+        </div>
+
+        {/* Gateway Fee */}
+        <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+            <span>Gateway Fee:</span>
+            <span className="text-[#1a6b7a] font-extrabold">{formatCurrency(effectiveGw)}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {[0, 1, 2].map(r => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => { setGatewayFeeRate(r); setGatewayFeeAmount(''); }}
+                className={`flex-1 py-1 rounded text-[10px] font-bold ${gatewayFeeAmount === '' && gatewayFeeRate === r ? 'bg-[#1a6b7a] text-white' : 'bg-slate-100 text-slate-700'}`}
+              >
+                {r}%
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 text-[10px]">
+            <span className="text-slate-400">or ₹:</span>
+            <input
+              type="number"
+              placeholder="Amount"
+              value={gatewayFeeAmount}
+              onChange={e => setGatewayFeeAmount(e.target.value)}
+              className="w-full h-7 rounded border border-slate-200 px-2 text-xs font-bold outline-none focus:border-[#1a6b7a]"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs font-bold flex-wrap gap-2">
+        <span>New Grand Total: <span className="text-[#0f3d56] text-sm font-black">{formatCurrency(newTotal)}</span></span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="px-4 py-1.5 rounded-lg bg-[#1a6b7a] hover:bg-[#155763] text-white transition font-black flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+          >
+            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+            Save &amp; Recalculate
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -992,18 +1198,18 @@ export default function BookingDetailsModal({
                             <div className="text-right font-black text-emerald-600">-{formatCurrency(booking.coupon_discount || 0)}</div>
                           </>
                         )}
-                        <div>GST (5%)</div>
+                        <div>GST ({booking.pricing_snapshot?.gst_rate ?? (booking.gst_amount > 0 ? 5 : 0)}%)</div>
                         <div className="text-right font-bold text-slate-700">{formatCurrency(booking.gst_amount)}</div>
-                        {booking.service_charge != null && booking.service_charge > 0 && (
+                        {(booking.service_charge != null && booking.service_charge > 0) || (booking.pricing_snapshot?.service_charge_rate != null) ? (
                           <>
-                            <div>Ts Boat Service Charge (1%)</div>
-                            <div className="text-right font-bold text-slate-700">{formatCurrency(booking.service_charge)}</div>
+                            <div>Ts Boat Service Charge ({booking.pricing_snapshot?.service_charge_rate ?? 1}%)</div>
+                            <div className="text-right font-bold text-slate-700">{formatCurrency(booking.service_charge || 0)}</div>
                           </>
-                        )}
-                        {booking.gateway_fee > 0 && (
+                        ) : null}
+                        {(booking.gateway_fee > 0 || booking.pricing_snapshot?.gateway_fee_rate != null) && (
                           <>
-                            <div>Convenience &amp; Processing Fee</div>
-                            <div className="text-right font-bold text-slate-700">{formatCurrency(booking.gateway_fee)}</div>
+                            <div>Convenience &amp; Processing Fee ({booking.pricing_snapshot?.gateway_fee_rate ?? 1}%)</div>
+                            <div className="text-right font-bold text-slate-700">{formatCurrency(booking.gateway_fee || 0)}</div>
                           </>
                         )}
                       </div>
@@ -1149,6 +1355,13 @@ export default function BookingDetailsModal({
                     {isAdmin && booking.status !== 'CANCELLED' && booking.status !== 'REFUNDED' && (
                       <div className="mt-3">
                         <RescheduleDatePanel booking={booking} onSuccess={handlePaymentRecorded} />
+                      </div>
+                    )}
+
+                    {/* Admin: Adjust Taxes & Surcharges panel */}
+                    {isAdmin && booking.status !== 'CANCELLED' && booking.status !== 'REFUNDED' && (
+                      <div className="mt-3">
+                        <AdjustTaxesPanel booking={booking} onSuccess={handlePaymentRecorded} />
                       </div>
                     )}
                   </div>

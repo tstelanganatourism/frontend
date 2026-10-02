@@ -268,50 +268,6 @@ export default function PublicNavbar() {
                   <div className="h-10 w-24 rounded-xl bg-slate-100/50" />
                 ) : (user || isAuthenticated) ? (
                   <div className="flex items-center gap-2">
-                    {/* Direct Quick Link to Dashboard for Admin and Agent */}
-                    {user?.role === 'ADMIN' && (
-                      <Link
-                        href="/admin/dashboard"
-                        onClick={closeMenus}
-                        className={`hidden xl:inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-all shadow-xs ${
-                          showTransparent
-                            ? 'border-amber-400/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
-                            : 'border-amber-400/50 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                        }`}
-                      >
-                        <LayoutDashboard className="h-3.5 w-3.5 text-amber-500" />
-                        <span>Admin Dashboard</span>
-                      </Link>
-                    )}
-                    {user?.role === 'AGENT' && (
-                      <Link
-                        href="/agent/dashboard"
-                        onClick={closeMenus}
-                        className={`hidden xl:inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-all shadow-xs ${
-                          showTransparent
-                            ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
-                            : 'border-emerald-400/50 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                        }`}
-                      >
-                        <LayoutDashboard className="h-3.5 w-3.5 text-emerald-500" />
-                        <span>Agent Dashboard</span>
-                      </Link>
-                    )}
-                    {(!user?.role || user.role === 'USER') && (
-                      <Link
-                        href="/dashboard"
-                        onClick={closeMenus}
-                        className={`hidden xl:inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-all shadow-xs ${
-                          showTransparent
-                            ? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30'
-                            : 'border-teal-400/50 bg-teal-50 text-teal-800 hover:bg-teal-100'
-                        }`}
-                      >
-                        <LayoutDashboard className="h-3.5 w-3.5 text-teal-600" />
-                        <span>My Dashboard</span>
-                      </Link>
-                    )}
-
                     <div className="relative" ref={accountRef}>
                       <button
                         onClick={() => setAccountOpen((open) => !open)}

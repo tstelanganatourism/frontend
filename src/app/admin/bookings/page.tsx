@@ -6,11 +6,12 @@ import { apiClient } from '@/lib/api';
 import {
   Ticket, Search, RefreshCw, ChevronLeft, ChevronRight,
   CheckCircle2, Clock, XCircle, AlertCircle, IndianRupee,
-  ExternalLink, Filter, Users, Loader2, Plus
+  ExternalLink, Filter, Users, Loader2, Plus, Printer
 } from 'lucide-react';
 import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
 import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
 import AdminCreateBookingModal from '@/components/admin/AdminCreateBookingModal';
+import PrintBookingsModal from '@/components/admin/PrintBookingsModal';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
@@ -74,13 +75,19 @@ const STATUS_CFG: Record<string, { label: string; color: string; icon: React.Ele
   REFUNDED:     { label: 'Refunded',     color: 'bg-slate-100 text-slate-600 border-slate-200',     icon: AlertCircle },
 };
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, booking }: { status: string; booking?: BookingItem }) {
   const cfg = STATUS_CFG[status] ?? { label: status, color: 'bg-slate-100 text-slate-500 border-slate-200', icon: AlertCircle };
   const Icon = cfg.icon;
+  let customLabel = cfg.label;
+  if (status === 'PARTIAL_PAID' && booking && booking.paid_amount > 0) {
+    customLabel = `Advance Paid (${formatINR(booking.paid_amount)} / ${formatINR(booking.agent_payable ?? booking.total_amount)})`;
+  } else if (status === 'FULLY_PAID' && booking) {
+    customLabel = `Full Paid (${formatINR(booking.agent_payable ?? booking.total_amount)})`;
+  }
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${cfg.color}`}>
       <Icon className="h-3 w-3" />
-      {cfg.label}
+      {customLabel}
     </span>
   );
 }
@@ -142,6 +149,7 @@ export default function AdminBookingsPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedPublicId, setSelectedPublicId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [activePopupDetails, setActivePopupDetails] = useState<{
     bookingId: string;
     targetType: string;
@@ -243,13 +251,20 @@ export default function AdminBookingsPage() {
           <h1 className="text-3xl font-black text-slate-900">Booking Operations</h1>
           <p className="text-slate-500 mt-1">Live booking records from all channels.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => setIsCreateOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-violet-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
             Create Booking
+          </button>
+          <button
+            onClick={() => setIsPrintOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-[#0a2351] bg-[#0a2351] px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-[#1a3a6b] transition-colors"
+          >
+            <Printer className="h-4 w-4" />
+            Print Bookings
           </button>
           <button
             onClick={fetchBookings}
@@ -276,6 +291,12 @@ export default function AdminBookingsPage() {
             secret: info.secret,
           });
         }}
+      />
+
+      {/* Print Bookings Modal */}
+      <PrintBookingsModal
+        isOpen={isPrintOpen}
+        onClose={() => setIsPrintOpen(false)}
       />
 
       <Suspense fallback={null}>
@@ -523,6 +544,20 @@ export default function AdminBookingsPage() {
                     {/* Amount */}
                     <td className="px-5 py-4 text-right">
                       <p className="font-black text-slate-900 text-sm">{formatINR(b.agent_payable ?? b.total_amount)}</p>
+                      {/* Show paid of total for partial payment */}
+                      {b.status === 'PARTIAL_PAID' && b.paid_amount > 0 && (
+                        <div className="mt-1 space-y-0.5">
+                          <p className="text-[11px] font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 inline-block">
+                            ✓ {formatINR(b.paid_amount)} paid of {formatINR(b.agent_payable ?? b.total_amount)}
+                          </p>
+                          <p className="text-[11px] font-black text-amber-600">⬤ Due: {formatINR(b.remaining_balance)}</p>
+                        </div>
+                      )}
+                      {b.status === 'FULLY_PAID' && (
+                        <p className="text-[10px] text-emerald-700 font-bold mt-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block">
+                          ✓ {formatINR(b.agent_payable ?? b.total_amount)} of {formatINR(b.agent_payable ?? b.total_amount)} (Full Paid)
+                        </p>
+                      )}
                       {b.agent_commission != null && b.agent_commission > 0 && (
                         <p className="text-[10px] text-orange-600 font-bold">-{formatINR(b.agent_commission)} commission</p>
                       )}
@@ -531,14 +566,11 @@ export default function AdminBookingsPage() {
                           🏷️ {b.coupon_applied || 'Coupon'}: -{formatINR(b.coupon_discount)}
                         </p>
                       )}
-                      {b.remaining_balance > 0 && b.remaining_balance < (b.agent_payable ?? b.total_amount) && (
-                        <p className="text-[10px] text-amber-600 font-bold">{formatINR(b.remaining_balance)} due</p>
-                      )}
                     </td>
 
                     {/* Status */}
                     <td className="px-5 py-4 text-center">
-                      <StatusBadge status={b.status} />
+                      <StatusBadge status={b.status} booking={b} />
                     </td>
 
                     {/* Source */}

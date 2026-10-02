@@ -55,10 +55,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     : (isAgent ? 'A' : 'G');
 
   const [imgError, setImgError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     setImgError(false);
   }, [user?.avatar_url]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#1598a1] border-t-transparent" />
+      </div>
+    );
+  }
 
   const NavContent = () => (
     <div className="flex flex-col h-full">

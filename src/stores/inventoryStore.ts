@@ -457,10 +457,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     set({ transportAdminRows: updated, transportError: null });
 
     try {
-      await apiClient.delete(`/api/v1/admin/inventory/slots/${rowId}`);
+      await apiClient.delete(`/api/v1/admin/inventory/transport/slots/${rowId}`);
     } catch (err: any) {
       set({ transportAdminRows: previousRows });
-      const msg = err.response?.data?.detail || 'Failed to delete transport inventory row';
+      const msg = err.response?.data?.detail || err.message || 'Failed to delete transport inventory row';
       set({ transportError: msg });
       throw new Error(msg);
     }
@@ -490,7 +490,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       
       set({ transportAdminRows: updated, transportIsLoading: false });
     } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Failed to create transport inventory slot';
+      const msg = err.response?.data?.detail || err.message || 'Failed to create transport inventory slot';
       set({ transportError: msg, transportIsLoading: false });
       throw new Error(msg);
     }
@@ -504,8 +504,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       const { data } = await apiClient.post('/api/v1/admin/inventory/packages/bulk', req);
       return data;
     } catch (error: any) {
-      set({ error: error.message || 'Failed to apply bulk action' });
-      throw error;
+      const msg = error.response?.data?.detail || error.message || 'Failed to apply bulk action';
+      set({ error: msg });
+      throw new Error(msg);
     } finally {
       set({ isLoading: false });
     }
@@ -517,8 +518,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       const { data } = await apiClient.post('/api/v1/admin/inventory/rooms/bulk', req);
       return data;
     } catch (error: any) {
-      set({ error: error.message || 'Failed to apply bulk action' });
-      throw error;
+      const msg = error.response?.data?.detail || error.message || 'Failed to apply bulk action';
+      set({ error: msg });
+      throw new Error(msg);
     } finally {
       set({ roomIsLoading: false });
     }
@@ -530,8 +532,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       const { data } = await apiClient.post('/api/v1/admin/inventory/transport/bulk', req);
       return data;
     } catch (error: any) {
-      set({ error: error.message || 'Failed to apply bulk action' });
-      throw error;
+      const msg = error.response?.data?.detail || error.message || 'Failed to apply bulk action';
+      set({ error: msg });
+      throw new Error(msg);
     } finally {
       set({ transportIsLoading: false });
     }

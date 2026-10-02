@@ -64,7 +64,10 @@ const heroImages = [
 ];
 
 function getActiveBrochureUrl(pkg: BrochurePackage) {
-  return pkg.generated_brochure_url || pkg.brochure_pdf_url || `/print/package/${pkg.slug}`;
+  const isHttp = (u?: string | null) => Boolean(u && (u.startsWith('http://') || u.startsWith('https://')));
+  if (isHttp(pkg.generated_brochure_url)) return pkg.generated_brochure_url!;
+  if (isHttp(pkg.brochure_pdf_url)) return pkg.brochure_pdf_url!;
+  return `/print/package/${pkg.slug}`;
 }
 
 function formatPrice(value?: number | string | null) {
@@ -173,8 +176,14 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
           </button>
           {brochureUrl && (
             <a
-              href={`/api/download?url=${encodeURIComponent(brochureUrl)}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}`}
-              className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+              href={
+                brochureUrl.startsWith('http')
+                  ? `/api/download?url=${encodeURIComponent(brochureUrl)}&filename=${encodeURIComponent(`${pkg.slug}-brochure.pdf`)}&slug=${encodeURIComponent(pkg.slug)}`
+                  : `/print/package/${pkg.slug}?autoDownload=true`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
               title="Download PDF"
             >
               PDF

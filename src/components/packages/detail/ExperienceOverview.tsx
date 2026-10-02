@@ -79,16 +79,9 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
     const brochureUrl = activeBrochureUrl;
     if (!brochureUrl) return;
 
-    const rawKey = extractObjectKey(brochureUrl);
+    e.preventDefault();
     const filename = `${pkg.slug}-brochure.pdf`;
-
-    if (rawKey) {
-      e.preventDefault();
-      const downloadUrl = `/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-      await downloadFileViaFetch(downloadUrl, filename);
-    }
-    // If no rawKey (e.g. Google Drive link), do NOT call e.preventDefault().
-    // The native <a> tag behavior will open/download it, bypassing the CORS fetch error.
+    await downloadFileViaFetch(brochureUrl, filename, pkg.slug);
   };
 
   return (

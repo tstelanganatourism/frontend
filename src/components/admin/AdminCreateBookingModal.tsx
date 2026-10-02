@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Loader2, Plus, Users, Calendar, Package, Home, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Zap } from 'lucide-react';
+import { X, Loader2, Plus, Users, Calendar, Package, Home, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Zap, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 import PremiumSelect from '@/components/ui/PremiumSelect';
@@ -19,6 +19,12 @@ function isValidAadhaar(num: string): boolean {
 }
 
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+
+const GENDER_OPTIONS = [
+  { value: 'MALE', label: 'Male' },
+  { value: 'FEMALE', label: 'Female' },
+  { value: 'OTHER', label: 'Other' },
+];
 
 
 interface PassengerForm {
@@ -72,6 +78,21 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const [packageRefChildPrice, setPackageRefChildPrice] = useState(0);
   const [includeRefreshments, setIncludeRefreshments] = useState(false);
   const [minPassengers, setMinPassengers] = useState(1);
+
+  // Taxes, Fees & Surcharges overrides
+  const [gstRate, setGstRate] = useState<number>(5);
+  const [gstMode, setGstMode] = useState<'percent' | 'fixed'>('percent');
+  const [gstFixedAmount, setGstFixedAmount] = useState<string>('');
+
+  const [serviceChargeRate, setServiceChargeRate] = useState<number>(1);
+  const [serviceChargeMode, setServiceChargeMode] = useState<'percent' | 'fixed'>('percent');
+  const [serviceChargeFixedAmount, setServiceChargeFixedAmount] = useState<string>('');
+
+  const [gatewayFeeRate, setGatewayFeeRate] = useState<number>(0);
+  const [gatewayFeeMode, setGatewayFeeMode] = useState<'percent' | 'fixed'>('percent');
+  const [gatewayFeeFixedAmount, setGatewayFeeFixedAmount] = useState<string>('');
+
+  const [showTaxCustomizer, setShowTaxCustomizer] = useState<boolean>(false);
 
   // Quick booking mode
   const [passengerMode, setPassengerMode] = useState<'full' | 'quick'>('full');
@@ -130,6 +151,16 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       setCouponCode('');
       setAppliedCouponCode('');
       setCouponDiscount(0);
+      setGstRate(5);
+      setGstMode('percent');
+      setGstFixedAmount('');
+      setServiceChargeRate(1);
+      setServiceChargeMode('percent');
+      setServiceChargeFixedAmount('');
+      setGatewayFeeRate(0);
+      setGatewayFeeMode('percent');
+      setGatewayFeeFixedAmount('');
+      setShowTaxCustomizer(false);
     }
   }, [isOpen]);
 
@@ -387,6 +418,25 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         customer_email: customerEmail.trim() || undefined,
         coupon_code: (appliedCouponCode || couponCode).trim().toUpperCase() || undefined,
       };
+
+      if (gstMode === 'fixed') {
+        payload.gst_amount = parseFloat(gstFixedAmount || '0');
+      } else {
+        payload.gst_rate = gstRate;
+      }
+
+      if (serviceChargeMode === 'fixed') {
+        payload.service_charge_amount = parseFloat(serviceChargeFixedAmount || '0');
+      } else {
+        payload.service_charge_rate = serviceChargeRate;
+      }
+
+      if (gatewayFeeMode === 'fixed') {
+        payload.gateway_fee_amount = parseFloat(gatewayFeeFixedAmount || '0');
+      } else {
+        payload.gateway_fee_rate = gatewayFeeRate;
+      }
+
       if (amountPaid) {
         payload.amount_paid = parseFloat(amountPaid);
       }
@@ -508,13 +558,29 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     return subtotal;
   }, [targetType, variantId, roomVariantId, packagesList, packageOptions, roomOptions, adultCount, childCount, studentCount, travelDate, departureDate, transportMode, selectedSharedOptId, separateVehicleQtys, packageTransportOptions, includeRefreshments, packageHasRefreshments, packageRefAdultPrice, packageRefChildPrice]);
 
-  const estimatedTotal = useMemo(() => {
+  const taxBreakdown = useMemo(() => {
     const discounted = Math.max(0, estimatedSubtotal - couponDiscount);
-    const gst = discounted * 0.05;
-    const serviceCharge = discounted * 0.01;
-    const gatewayFee = (discounted + gst + serviceCharge) * 0.01;
-    return discounted + gst + serviceCharge + gatewayFee;
-  }, [estimatedSubtotal, couponDiscount]);
+    const gst = gstMode === 'fixed' 
+      ? Math.max(0, parseFloat(gstFixedAmount || '0')) 
+      : (discounted * (gstRate / 100));
+    const serviceCharge = serviceChargeMode === 'fixed' 
+      ? Math.max(0, parseFloat(serviceChargeFixedAmount || '0')) 
+      : (discounted * (serviceChargeRate / 100));
+    const gwBase = discounted + gst + serviceCharge;
+    const gatewayFee = gatewayFeeMode === 'fixed' 
+      ? Math.max(0, parseFloat(gatewayFeeFixedAmount || '0')) 
+      : (gwBase * (gatewayFeeRate / 100));
+    const total = discounted + gst + serviceCharge + gatewayFee;
+    return {
+      discounted,
+      gst,
+      serviceCharge,
+      gatewayFee,
+      total,
+    };
+  }, [estimatedSubtotal, couponDiscount, gstRate, gstMode, gstFixedAmount, serviceChargeRate, serviceChargeMode, serviceChargeFixedAmount, gatewayFeeRate, gatewayFeeMode, gatewayFeeFixedAmount]);
+
+  const estimatedTotal = taxBreakdown.total;
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -781,6 +847,269 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
             )}
           </div>
 
+          {/* Taxes, Surcharges & Fees Customization */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-4 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-md bg-[#1a6b7a]/10 flex items-center justify-center text-[#1a6b7a]">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Taxes & Surcharges (Admin Override)</h4>
+                  <p className="text-[10px] text-slate-500">Configure GST, Ts Boat Service Charge, or make them ₹0</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGstRate(0);
+                    setGstMode('percent');
+                    setGstFixedAmount('');
+                    setServiceChargeRate(0);
+                    setServiceChargeMode('percent');
+                    setServiceChargeFixedAmount('');
+                    setGatewayFeeRate(0);
+                    setGatewayFeeMode('percent');
+                    setGatewayFeeFixedAmount('');
+                    toast.success("All taxes set to 0%");
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold border transition ${
+                    gstRate === 0 && serviceChargeRate === 0 && gatewayFeeRate === 0 && gstMode === 'percent' && serviceChargeMode === 'percent' && gatewayFeeMode === 'percent'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                  }`}
+                >
+                  Zero All (0%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGstRate(5);
+                    setGstMode('percent');
+                    setGstFixedAmount('');
+                    setServiceChargeRate(1);
+                    setServiceChargeMode('percent');
+                    setServiceChargeFixedAmount('');
+                    setGatewayFeeRate(0);
+                    setGatewayFeeMode('percent');
+                    setGatewayFeeFixedAmount('');
+                    toast.info("Reset to default (5% GST, 1% SC, 0% GW)");
+                  }}
+                  className="px-2 py-1 rounded-md text-[11px] font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition flex items-center gap-1"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Default
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowTaxCustomizer(!showTaxCustomizer)}
+                  className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#1a6b7a] text-white hover:bg-[#155763] transition shadow-sm"
+                >
+                  {showTaxCustomizer ? 'Hide Controls' : 'Customize'}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick summary grid */}
+            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200/80 text-[11px]">
+              <div className="bg-white p-2 rounded-lg border border-slate-200">
+                <span className="text-slate-500 font-medium block">GST:</span>
+                <span className="font-bold text-slate-800">
+                  {gstMode === 'fixed' ? `₹${parseFloat(gstFixedAmount || '0').toFixed(2)}` : `${gstRate}% (₹${taxBreakdown.gst.toFixed(2)})`}
+                </span>
+              </div>
+              <div className="bg-white p-2 rounded-lg border border-slate-200">
+                <span className="text-slate-500 font-medium block">Ts Boat SC:</span>
+                <span className="font-bold text-slate-800">
+                  {serviceChargeMode === 'fixed' ? `₹${parseFloat(serviceChargeFixedAmount || '0').toFixed(2)}` : `${serviceChargeRate}% (₹${taxBreakdown.serviceCharge.toFixed(2)})`}
+                </span>
+              </div>
+              <div className="bg-white p-2 rounded-lg border border-slate-200">
+                <span className="text-slate-500 font-medium block">Gateway Fee:</span>
+                <span className="font-bold text-slate-800">
+                  {gatewayFeeMode === 'fixed' ? `₹${parseFloat(gatewayFeeFixedAmount || '0').toFixed(2)}` : `${gatewayFeeRate}% (₹${taxBreakdown.gatewayFee.toFixed(2)})`}
+                </span>
+              </div>
+            </div>
+
+            {/* Detailed Controls */}
+            {showTaxCustomizer && (
+              <div className="space-y-3 pt-2 border-t border-slate-200">
+                {/* GST Row */}
+                <div className="space-y-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">GST (Goods & Services Tax)</label>
+                    <span className="text-xs font-extrabold text-emerald-700">
+                      +₹{taxBreakdown.gst.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[0, 5, 12, 18].map((rate) => (
+                      <button
+                        key={rate}
+                        type="button"
+                        onClick={() => {
+                          setGstMode('percent');
+                          setGstRate(rate);
+                        }}
+                        className={`px-2 py-1 rounded text-xs font-bold transition ${
+                          gstMode === 'percent' && gstRate === rate
+                            ? 'bg-[#1a6b7a] text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {rate}%
+                      </button>
+                    ))}
+                    <div className="flex items-center gap-1 ml-auto">
+                      <span className="text-[10px] font-bold text-slate-500">Custom %:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={gstMode === 'percent' ? gstRate : ''}
+                        onChange={(e) => {
+                          setGstMode('percent');
+                          setGstRate(Math.max(0, parseFloat(e.target.value) || 0));
+                        }}
+                        className="w-16 h-7 rounded border border-slate-300 px-1.5 text-xs font-bold text-center outline-none focus:border-[#1a6b7a]"
+                        placeholder="%"
+                      />
+                      <span className="text-[10px] font-bold text-slate-400">or</span>
+                      <span className="text-[10px] font-bold text-slate-500">Fixed ₹:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={gstMode === 'fixed' ? gstFixedAmount : ''}
+                        onChange={(e) => {
+                          setGstMode('fixed');
+                          setGstFixedAmount(e.target.value);
+                        }}
+                        className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs font-bold text-center outline-none focus:border-[#1a6b7a]"
+                        placeholder="₹ Amount"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ts Boat Service Charge Row */}
+                <div className="space-y-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">Ts Boat Service Charge</label>
+                    <span className="text-xs font-extrabold text-emerald-700">
+                      +₹{taxBreakdown.serviceCharge.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[0, 1, 2, 5].map((rate) => (
+                      <button
+                        key={rate}
+                        type="button"
+                        onClick={() => {
+                          setServiceChargeMode('percent');
+                          setServiceChargeRate(rate);
+                        }}
+                        className={`px-2 py-1 rounded text-xs font-bold transition ${
+                          serviceChargeMode === 'percent' && serviceChargeRate === rate
+                            ? 'bg-[#1a6b7a] text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {rate}%
+                      </button>
+                    ))}
+                    <div className="flex items-center gap-1 ml-auto">
+                      <span className="text-[10px] font-bold text-slate-500">Custom %:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={serviceChargeMode === 'percent' ? serviceChargeRate : ''}
+                        onChange={(e) => {
+                          setServiceChargeMode('percent');
+                          setServiceChargeRate(Math.max(0, parseFloat(e.target.value) || 0));
+                        }}
+                        className="w-16 h-7 rounded border border-slate-300 px-1.5 text-xs font-bold text-center outline-none focus:border-[#1a6b7a]"
+                        placeholder="%"
+                      />
+                      <span className="text-[10px] font-bold text-slate-400">or</span>
+                      <span className="text-[10px] font-bold text-slate-500">Fixed ₹:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={serviceChargeMode === 'fixed' ? serviceChargeFixedAmount : ''}
+                        onChange={(e) => {
+                          setServiceChargeMode('fixed');
+                          setServiceChargeFixedAmount(e.target.value);
+                        }}
+                        className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs font-bold text-center outline-none focus:border-[#1a6b7a]"
+                        placeholder="₹ Amount"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gateway Fee Row */}
+                <div className="space-y-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">Payment Gateway Fee</label>
+                    <span className="text-xs font-extrabold text-emerald-700">
+                      +₹{taxBreakdown.gatewayFee.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[0, 1, 2].map((rate) => (
+                      <button
+                        key={rate}
+                        type="button"
+                        onClick={() => {
+                          setGatewayFeeMode('percent');
+                          setGatewayFeeRate(rate);
+                        }}
+                        className={`px-2 py-1 rounded text-xs font-bold transition ${
+                          gatewayFeeMode === 'percent' && gatewayFeeRate === rate
+                            ? 'bg-[#1a6b7a] text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {rate}%
+                      </button>
+                    ))}
+                    <div className="flex items-center gap-1 ml-auto">
+                      <span className="text-[10px] font-bold text-slate-500">Custom %:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={gatewayFeeMode === 'percent' ? gatewayFeeRate : ''}
+                        onChange={(e) => {
+                          setGatewayFeeMode('percent');
+                          setGatewayFeeRate(Math.max(0, parseFloat(e.target.value) || 0));
+                        }}
+                        className="w-16 h-7 rounded border border-slate-300 px-1.5 text-xs font-bold text-center outline-none focus:border-[#1a6b7a]"
+                        placeholder="%"
+                      />
+                      <span className="text-[10px] font-bold text-slate-400">or</span>
+                      <span className="text-[10px] font-bold text-slate-500">Fixed ₹:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={gatewayFeeMode === 'fixed' ? gatewayFeeFixedAmount : ''}
+                        onChange={(e) => {
+                          setGatewayFeeMode('fixed');
+                          setGatewayFeeFixedAmount(e.target.value);
+                        }}
+                        className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs font-bold text-center outline-none focus:border-[#1a6b7a]"
+                        placeholder="₹ Amount"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Payment Info */}
           <div className="rounded-xl border border-[#1a6b7a]/20 bg-[#1a6b7a]/5 p-4 space-y-4">
             <div className="flex items-center justify-between gap-4">
@@ -790,7 +1119,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 {couponDiscount > 0 && (
                   <p className="text-[10px] text-emerald-600 font-bold">Includes -₹{couponDiscount.toFixed(2)} coupon discount</p>
                 )}
-                <p className="text-[10px] text-slate-500 font-semibold">Includes 5% GST, 1% Ts Boat Service Charge & 1% Gateway Fee</p>
+                <p className="text-[10px] text-slate-500 font-semibold">
+                  Subtotal: ₹{estimatedSubtotal.toFixed(2)} | GST: ₹{taxBreakdown.gst.toFixed(2)} | Ts Boat SC: ₹{taxBreakdown.serviceCharge.toFixed(2)} | GW: ₹{taxBreakdown.gatewayFee.toFixed(2)}
+                </p>
               </div>
               <div className="w-1/2 flex flex-col items-end">
                 <div className="flex items-center justify-between w-full mb-1">
@@ -949,16 +1280,12 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                       </div>
                     )}
                     <div>
-                      <select
+                      <PremiumSelect
                         value={quickPassenger.gender}
-                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, gender: e.target.value }))}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none bg-white"
-                      >
-                        <option value="">Gender *</option>
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                        <option value="OTHER">Other</option>
-                      </select>
+                        onChange={(val) => setQuickPassenger(prev => ({ ...prev, gender: String(val) }))}
+                        options={GENDER_OPTIONS}
+                        placeholder="Gender *"
+                      />
                     </div>
                     <div className="sm:col-span-2">
                       <input
@@ -1087,13 +1414,12 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                       )}
                     </div>
                     <div>
-                      <select value={p.gender} onChange={(e) => handlePassengerChange(i, 'gender', e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none bg-white">
-                        <option value="">Gender</option>
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                        <option value="OTHER">Other</option>
-                      </select>
+                      <PremiumSelect
+                        value={p.gender}
+                        onChange={(val) => handlePassengerChange(i, 'gender', String(val))}
+                        options={GENDER_OPTIONS}
+                        placeholder="Gender"
+                      />
                     </div>
                     <div className="sm:col-span-2">
                       <input type="text" placeholder={isStudentPackage || isChild ? "Aadhaar (Optional)" : "Aadhaar Number"}

@@ -204,6 +204,28 @@ export const CustomDatePicker = ({
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1 justify-items-center">{renderDays()}</div>
+            
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-slate-100 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  const todayStr = getLocalToday();
+                  onChange(todayStr);
+                  setIsOpen(false);
+                }}
+                className="font-bold text-[#1a6b7a] hover:text-[#155763] px-2.5 py-1 rounded-lg hover:bg-[#1a6b7a]/10 transition cursor-pointer text-[11px]"
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="font-semibold text-slate-400 hover:text-slate-600 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition cursor-pointer text-[11px]"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>,
         document.body

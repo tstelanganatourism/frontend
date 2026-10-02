@@ -196,17 +196,12 @@ export const BookingSidebarV3 = ({
   const handleDownloadBrochure = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!brochurePdfUrl) return;
 
-    const rawKey = extractObjectKey(brochurePdfUrl);
+    e.preventDefault();
     const filename = `${packageSlug}-brochure.pdf`;
-
-    if (rawKey) {
-      e.preventDefault();
-      try {
-        const downloadUrl = `/api/v1/documents/download?key=${encodeURIComponent(rawKey)}&filename=${encodeURIComponent(filename)}`;
-        await downloadFileViaFetch(downloadUrl, filename);
-      } catch (err) {
-        console.error("Failed to download brochure:", err);
-      }
+    try {
+      await downloadFileViaFetch(brochurePdfUrl, filename, packageSlug);
+    } catch (err) {
+      console.error("Failed to download brochure:", err);
     }
   };
 

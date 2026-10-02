@@ -1525,10 +1525,13 @@ export default function AdminInventoryPage() {
       else if (activeTab === 'rooms') res = await bulkActionRoomInventory(payload);
       else if (activeTab === 'transport') res = await bulkActionTransportInventory(payload);
       
-      toast.success(res.message || 'Bulk action applied');
+      toast.success(res?.message || 'Bulk action applied');
       refresh();
+      return res;
     } catch (err: any) {
-      toast.error(err.message || 'Failed to apply bulk action');
+      const msg = err.response?.data?.detail || err.message || 'Failed to apply bulk action';
+      toast.error(msg);
+      throw new Error(msg);
     }
   };
 
