@@ -121,6 +121,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="w-full max-w-[100vw] overflow-x-hidden">
       <head>
+        {/* Google tag (gtag.js) for Google Ads AW-18389035084 */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18389035084"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-18389035084');
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         {/* Font loading and preloads managed by Next.js */}
