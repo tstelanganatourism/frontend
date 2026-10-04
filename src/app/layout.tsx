@@ -119,7 +119,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="w-full max-w-[100vw] overflow-x-hidden">
+    <html lang="en" suppressHydrationWarning className="w-full max-w-[100vw] overflow-x-clip">
       <head>
         {/* Google tag (gtag.js) for Google Ads AW-18389035084 */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18389035084"></script>
@@ -226,7 +226,7 @@ export default function RootLayout({
           }}
         ></script>
       </head>
-      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col w-full max-w-[100vw] overflow-x-hidden`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${notoTelugu.variable} font-sans antialiased bg-[#F9F9F7] text-[#0F3D56] min-h-screen flex flex-col w-full max-w-[100vw] overflow-x-clip`}>
         <TopLoader />
         <QueryProvider>
           <AuthProvider>

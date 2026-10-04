@@ -137,7 +137,7 @@ export default function PublicNavbar() {
 
   return (
     <>
-      <header suppressHydrationWarning className={`relative w-full border-b transition-all duration-300 ${
+      <header suppressHydrationWarning className={`fixed top-0 left-0 right-0 z-[100] w-full border-b transition-all duration-300 ${
         showTransparent 
           ? 'border-white/15 bg-gradient-to-b from-[#061826]/90 via-[#061826]/75 to-[#061826]/40 backdrop-blur-md shadow-md' 
           : 'border-slate-200/90 bg-white/95 backdrop-blur-md shadow-sm'
