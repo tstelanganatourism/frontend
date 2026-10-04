@@ -1167,7 +1167,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
               <span>📍 Bhadrachalam Office Map Navigation</span>
             </div>
             <div style={{ fontSize: '11px', color: '#e2e8f0', lineHeight: 1.4 }}>
-              Om Shanti Satram, Kalyana Mandapam Road, Near SBI ATM, Bhadrachalam, Telangana 507111
+              Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111
             </div>
           </div>
           <a 

@@ -14,7 +14,7 @@ interface OfficeVisitPopupProps {
   secret?: string | null;
 }
 
-const OFFICE_ADDRESS = 'Om Shanti satram, Kalyana mandapam road, near SBI ATM, Bhadrachalam, Telangana 507111';
+const OFFICE_ADDRESS = 'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111';
 const GOOGLE_MAPS_URL = 'https://maps.app.goo.gl/ZZynQYDrgaDAipDz6?g_st=awb';
 
 export function OfficeVisitPopup({

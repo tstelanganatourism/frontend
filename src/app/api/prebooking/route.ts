@@ -180,7 +180,7 @@ function buildUserConfirmationEmail(data: PreBookingPayload): string {
       <h3>📞 Reach Us Directly</h3>
       <div class="contact-item"><span class="contact-icon">📱</span><span>+91 99513 69573 (Call / WhatsApp)</span></div>
       <div class="contact-item"><span class="contact-icon">📧</span><span>tstelanganatourism@gmail.com</span></div>
-      <div class="contact-item"><span class="contact-icon">📍</span><span>Om Shanthi Building, Kalyana Mandapam Road, Near SBI ATM, Bhadrachalam — 507111, Telangana</span></div>
+      <div class="contact-item"><span class="contact-icon">📍</span><span>Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam — 507111, Telangana</span></div>
       <div class="contact-item"><span class="contact-icon">🕗</span><span>Open 7 Days a Week · 7:00 AM – 9:00 PM IST</span></div>
     </div>
 

@@ -19,6 +19,32 @@ function cleanImageUrl(url?: string | null): string {
   return url.replace('/upload/f_auto,q_auto/', '/upload/').replace('http://', 'https://');
 }
 
+function sanitizeBoardingPoint(bp: BoardingPt): BoardingPt {
+  let address = bp.address;
+  let contact = bp.contact_number;
+
+  // Sanitize any outdated address
+  if (
+    !address ||
+    address.includes('4-1-78') ||
+    address.toLowerCase().includes('bhavya') ||
+    address.toLowerCase().includes('seetarama')
+  ) {
+    address = 'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111';
+  }
+
+  // Sanitize any outdated phone numbers
+  if (!contact || contact.includes('95420') || contact.includes('98498')) {
+    contact = '+91 99513 69573, +91 77801 19268';
+  }
+
+  return {
+    ...bp,
+    address,
+    contact_number: contact,
+  };
+}
+
 type Itinerary = { day_number: number; title: string; description?: string | null; timing?: string | null; duration_at_stop?: string | null; meal_included: boolean; sort_order: number };
 type Inclusion = { label: string };
 type Exclusion = { label: string };
@@ -589,7 +615,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
             <>
               <div className="section-title">📍 Boarding &amp; Pickup Locations</div>
               <div className="grid-2" style={{ marginBottom: '10px' }}>
-                {pkg.boarding_points.map((bp, i) => (
+                {pkg.boarding_points.map(sanitizeBoardingPoint).map((bp, i) => (
                   <div key={i} className="card">
                     <div style={{ fontWeight: 800, color: '#0f3d56', fontSize: '8pt' }}>{bp.title}</div>
                     {bp.address && <div style={{ fontSize: '7pt', color: '#475569', marginTop: '1px' }}>{bp.address}</div>}

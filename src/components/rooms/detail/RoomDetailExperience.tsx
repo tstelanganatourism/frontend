@@ -1362,7 +1362,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-extrabold text-slate-800">
                       <div className="flex items-center gap-1.5 text-[#0d6e75] min-w-0">
                         <MapPin className="h-4 w-4 shrink-0" />
-                        <span className="break-words min-w-0">Om Shanthi Building Sataram, Kalyana Mandapam Road, Bhadrachalam</span>
+                        <span className="break-words min-w-0">Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111</span>
                       </div>
                       <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-slate-200 text-slate-900">
                         <Phone className="h-3.5 w-3.5 text-[#0d6e75]" />

@@ -1905,8 +1905,8 @@ export default async function PrintTicketPage({
             <div className="rule-card">
               <div className="rule-card-title">📍 Support & Office</div>
               <ul>
-                <li>Support: 9951369573, 7780119268</li>
-                <li>Office: Om Shanti Satram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam</li>
+                <li>Support: +91 99513 69573, +91 77801 19268</li>
+                <li>Office: Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111</li>
                 <li>Arrive 30 mins before reporting time.</li>
               </ul>
             </div>
@@ -1919,7 +1919,7 @@ export default async function PrintTicketPage({
                 <span>📍 Bhadrachalam Collection Office Navigation</span>
               </div>
               <div style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: 1.5 }}>
-                Om Shanti Satram, Kalyana Mandapam Road, Near SBI ATM, Bhadrachalam, Telangana 507111
+                Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111
               </div>
             </div>
             <a

@@ -97,7 +97,7 @@ export const ReportingInfo = ({ boardingPoints = [] }: ReportingInfoProps) => {
             <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-extrabold text-slate-700">
               <div className="flex items-center gap-1.5 text-[#0d6e75]">
                 <MapPin className="h-4 w-4 shrink-0" />
-                <span>Om Shanthi Building Sataram, Kalyana Mandapam Road, Bhadrachalam</span>
+                <span>Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111</span>
               </div>
               <div className="flex items-center gap-2 text-slate-900 bg-white/90 px-3 py-1 rounded-full border border-slate-200">
                 <Phone className="h-3.5 w-3.5 text-[#0d6e75]" />
