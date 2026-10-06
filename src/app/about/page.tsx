@@ -201,8 +201,8 @@ const MOMENTS_PHOTOS = [
 // Feature video — replace these URLs after uploading to Cloudinary
 // To add your video: upload to ts_boat_tourism/videos/gallery/ in Cloudinary
 // Then paste the secure_url below
-const FEATURE_VIDEO_URL = 'https://res.cloudinary.com/r929tquv/video/upload/v1786268917/ts_boat_tourism/videos/gallery/xvoonmz7yc8ncbyzjypv.mp4';
-const FEATURE_VIDEO_POSTER = 'https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill/v1786268917/ts_boat_tourism/videos/gallery/xvoonmz7yc8ncbyzjypv.jpg';
+const FEATURE_VIDEO_URL = 'https://res.cloudinary.com/r929tquv/video/upload/f_auto,q_auto:eco,w_960,vc_auto/v1786268926/ts_boat_tourism/videos/gallery/vy6edx23zdooas1rwhq6.mp4';
+const FEATURE_VIDEO_POSTER = 'https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill,f_auto,q_auto/v1786268926/ts_boat_tourism/videos/gallery/vy6edx23zdooas1rwhq6.jpg';
 
 export default function AboutPage() {
   const language = useLanguageStore((s) => s.language);
