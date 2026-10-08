@@ -68,7 +68,7 @@ export default function AdminAgentsPage() {
       toast.success('Agent removed successfully');
       setIsDeleteModalOpen(false);
       setSelectedAgentId(null);
-      fetchAgents('', statusFilter, agentsPage, agentsLimit);
+      fetchAgents(searchVal, statusFilter, agentsPage, agentsLimit);
     }
   };
 

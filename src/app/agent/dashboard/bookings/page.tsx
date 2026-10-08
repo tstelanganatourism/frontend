@@ -56,11 +56,13 @@ interface BookingListItem {
   student_count?: number;
 }
 
+let agentBookingsCache: { data: BookingListItem[]; hasMore: boolean } | null = null;
+
 export default function AgentBookingsLedgerPage() {
-  const [bookings, setBookings] = useState<BookingListItem[]>([]);
+  const [bookings, setBookings] = useState<BookingListItem[]>(agentBookingsCache?.data || []);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMoreInDB, setHasMoreInDB] = useState(true);
+  const [hasMoreInDB, setHasMoreInDB] = useState(agentBookingsCache ? agentBookingsCache.hasMore : true);
   const [error, setError] = useState<string | null>(null);
 
   // Search & Filter state
@@ -122,17 +124,15 @@ export default function AgentBookingsLedgerPage() {
   useEffect(() => {
     const fetchInitialBookings = async () => {
       try {
-        setLoading(true);
+        if (!agentBookingsCache) setLoading(true);
         setError(null);
         const res = await apiClient.get<BookingListItem[]>('/api/v1/bookings/agent/bookings', {
           params: { limit: 20, offset: 0 }
         });
+        const hasMore = res.data.length >= 20;
+        agentBookingsCache = { data: res.data, hasMore };
         setBookings(res.data);
-        if (res.data.length < 20) {
-          setHasMoreInDB(false);
-        } else {
-          setHasMoreInDB(true);
-        }
+        setHasMoreInDB(hasMore);
       } catch (err: any) {
         setError(err?.response?.data?.detail || 'Failed to load client bookings List.');
       } finally {

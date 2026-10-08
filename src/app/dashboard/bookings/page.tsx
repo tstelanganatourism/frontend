@@ -21,9 +21,11 @@ function getStatusConfig(status: string) {
   return STATUS_CONFIG[status?.toUpperCase()] || { label: status, color: '#64748b', bg: '#f8fafc', dot: '#94a3b8', bar: '#94a3b8' };
 }
 
+let cachedUserBookings: any[] | null = null;
+
 export default function BookingsPage() {
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<any[]>(cachedUserBookings || []);
+  const [loading, setLoading] = useState(!cachedUserBookings);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,6 +47,7 @@ export default function BookingsPage() {
     const fetchBookings = async () => {
       try {
         const res = await apiClient.get<any[]>('/api/v1/bookings/user/bookings');
+        cachedUserBookings = res.data;
         setBookings(res.data);
       } catch (err) {
         console.error('Failed to load bookings:', err);

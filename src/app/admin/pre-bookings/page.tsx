@@ -74,12 +74,10 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
 // ── Row Component ─────────────────────────────────────────────────────────────
 function PreBookingRow({
   pb,
-  accessToken,
   onUpdate,
   onDelete,
 }: {
   pb: PreBooking;
-  accessToken: string | null;
   onUpdate: (id: number, patch: Partial<PreBooking>) => void;
   onDelete: (id: number) => void;
 }) {
@@ -90,8 +88,7 @@ function PreBookingRow({
   const patch = useCallback(async (data: Partial<PreBooking>) => {
     setSaving(true);
     try {
-      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
-      const res = await apiClient.patch(`/api/v1/admin/pre-bookings/${pb.id}`, data, { headers });
+      const res = await apiClient.patch(`/api/v1/admin/pre-bookings/${pb.id}`, data);
       onUpdate(pb.id, res.data);
       toast.success('Updated successfully');
     } catch {
@@ -99,14 +96,13 @@ function PreBookingRow({
     } finally {
       setSaving(false);
     }
-  }, [pb.id, onUpdate, accessToken]);
+  }, [pb.id, onUpdate]);
 
   const handleDelete = useCallback(async () => {
     if (!window.confirm(`Are you sure you want to delete lead ${pb.ref_id} (${pb.customer_name})?`)) return;
     setSaving(true);
     try {
-      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
-      await apiClient.delete(`/api/v1/admin/pre-bookings/${pb.id}`, { headers });
+      await apiClient.delete(`/api/v1/admin/pre-bookings/${pb.id}`);
       onDelete(pb.id);
       toast.success('Lead deleted');
     } catch {
@@ -114,7 +110,7 @@ function PreBookingRow({
     } finally {
       setSaving(false);
     }
-  }, [pb.id, pb.ref_id, pb.customer_name, onDelete, accessToken]);
+  }, [pb.id, pb.ref_id, pb.customer_name, onDelete]);
 
   const pax = `${pb.adult_count}A${pb.child_count > 0 ? ` + ${pb.child_count}C` : ''}`;
 
@@ -260,20 +256,24 @@ function PreBookingRow({
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+let preBookingsCache: { items: PreBooking[]; total: number; stats: Stats } | null = null;
+
 export default function AdminPreBookingsPage() {
-  const { isHydrated, accessToken } = useAuthStore();
-  const [items, setItems] = useState<PreBooking[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, confirmed: 0, not_contacted: 0 });
-  const [loading, setLoading] = useState(true);
+  const { isHydrated } = useAuthStore();
+  const [items, setItems] = useState<PreBooking[]>(() => preBookingsCache?.items || []);
+  const [stats, setStats] = useState<Stats>(() => preBookingsCache?.stats || { total: 0, pending: 0, confirmed: 0, not_contacted: 0 });
+  const [loading, setLoading] = useState(() => !preBookingsCache);
   const [search, setSearch] = useState('');
   const [filterConfirmed, setFilterConfirmed] = useState<'all' | 'yes' | 'no'>('all');
   const [filterContacted, setFilterContacted] = useState<'all' | 'yes' | 'no'>('all');
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(() => preBookingsCache?.total || 0);
   const [offset, setOffset] = useState(0);
   const LIMIT = 20;
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isSilent = false) => {
+    if (!isSilent && items.length === 0) {
+      setLoading(true);
+    }
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
@@ -282,27 +282,33 @@ export default function AdminPreBookingsPage() {
       params.set('limit', String(LIMIT));
       params.set('offset', String(offset));
 
-      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
       const [listRes, statsRes] = await Promise.all([
-        apiClient.get(`/api/v1/admin/pre-bookings?${params.toString()}`, { headers }),
-        apiClient.get('/api/v1/admin/pre-bookings/stats', { headers }),
+        apiClient.get(`/api/v1/admin/pre-bookings?${params.toString()}`),
+        apiClient.get('/api/v1/admin/pre-bookings/stats'),
       ]);
-      setItems(listRes.data?.items ?? []);
-      setTotal(listRes.data?.total ?? 0);
-      setStats(statsRes.data ?? { total: 0, pending: 0, confirmed: 0, not_contacted: 0 });
+      const newItems = listRes.data?.items ?? [];
+      const newTotal = listRes.data?.total ?? 0;
+      const newStats = statsRes.data ?? { total: 0, pending: 0, confirmed: 0, not_contacted: 0 };
+      setItems(newItems);
+      setTotal(newTotal);
+      setStats(newStats);
+
+      if (!search && filterConfirmed === 'all' && filterContacted === 'all' && offset === 0) {
+        preBookingsCache = { items: newItems, total: newTotal, stats: newStats };
+      }
     } catch (err: unknown) {
       console.error('Failed to load pre-bookings:', err);
       toast.error('Failed to load pre-bookings');
     } finally {
       setLoading(false);
     }
-  }, [search, filterConfirmed, filterContacted, offset, accessToken]);
+  }, [search, filterConfirmed, filterContacted, offset, items.length]);
 
   useEffect(() => {
     if (isHydrated) {
-      fetchData();
+      fetchData(items.length > 0);
     }
-  }, [fetchData, isHydrated, accessToken]);
+  }, [fetchData, isHydrated]);
 
   const handleUpdate = (id: number, patch: Partial<PreBooking>) => {
     setItems((prev) => prev.map((pb) => pb.id === id ? { ...pb, ...patch } : pb));
@@ -325,7 +331,7 @@ export default function AdminPreBookingsPage() {
           <p className="text-sm text-slate-500 mt-0.5">Early pre-booking leads from tstelanganatourism.com/prebooking</p>
         </div>
         <button
-          onClick={fetchData}
+          onClick={() => fetchData(false)}
           disabled={loading}
           className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
         >
@@ -443,7 +449,6 @@ export default function AdminPreBookingsPage() {
             <PreBookingRow
               key={pb.id}
               pb={pb}
-              accessToken={accessToken}
               onUpdate={handleUpdate}
               onDelete={handleDelete}
             />

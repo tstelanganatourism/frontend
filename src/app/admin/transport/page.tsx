@@ -494,28 +494,42 @@ function DateCard({ group }: { group: DateGroup }) {
   );
 }
 
+// Module-level cache for transport planning to eliminate ghost loading on tab switches
+const transportPlanningCache = new Map<string, TransportPlanningData>();
+
 export default function TransportPlanningPage() {
-  const [data, setData] = useState<TransportPlanningData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [startDate, setStartDate] = useState(getTodayISO());
-  const [endDate, setEndDate] = useState(getFutureISO(30));
+  const defaultStart = getTodayISO();
+  const defaultEnd = getFutureISO(30);
+  const cacheKey = `${defaultStart}:${defaultEnd}`;
+
+  const [startDate, setStartDate] = useState(defaultStart);
+  const [endDate, setEndDate] = useState(defaultEnd);
   const [isSingleDateMode, setIsSingleDateMode] = useState(false);
+  const [data, setData] = useState<TransportPlanningData | null>(() => transportPlanningCache.get(cacheKey) || null);
+  const [isLoading, setIsLoading] = useState(() => !transportPlanningCache.has(cacheKey));
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'SHARED' | 'SEPARATE' | 'NONE'>('ALL');
   const [filterAddons, setFilterAddons] = useState<'ALL' | 'REFRESHMENTS' | 'NONE'>('ALL');
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const fetchData = useCallback(async (isSilent = false) => {
+    const activeEndDate = isSingleDateMode ? startDate : endDate;
+    const currentKey = `${startDate}:${activeEndDate}`;
+
+    if (!isSilent && !transportPlanningCache.has(currentKey)) {
+      setIsLoading(true);
+      setError(null);
+    }
     try {
-      const activeEndDate = isSingleDateMode ? startDate : endDate;
       const res = await apiClient.get('/api/v1/admin/bookings/transport-planning', {
         params: { start_date: startDate, end_date: activeEndDate },
       });
+      transportPlanningCache.set(currentKey, res.data);
       setData(res.data);
     } catch (err: any) {
-      setError('Failed to load transport data. Please try again.');
+      if (!isSilent) {
+        setError('Failed to load transport data. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -528,8 +542,17 @@ export default function TransportPlanningPage() {
   }, [startDate, endDate]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const activeEndDate = isSingleDateMode ? startDate : endDate;
+    const currentKey = `${startDate}:${activeEndDate}`;
+    const cached = transportPlanningCache.get(currentKey);
+    if (cached) {
+      setData(cached);
+      setIsLoading(false);
+      fetchData(true);
+    } else {
+      fetchData(false);
+    }
+  }, [fetchData, startDate, endDate, isSingleDateMode]);
 
   // Client-side filtering logic
   const filteredDateGroups = useMemo(() => {
@@ -663,7 +686,7 @@ export default function TransportPlanningPage() {
           </p>
         </div>
         <button
-          onClick={fetchData}
+          onClick={() => fetchData(false)}
           disabled={isLoading}
           className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-600 shadow-sm hover:bg-slate-50 transition-all disabled:opacity-50 w-full sm:w-auto"
         >

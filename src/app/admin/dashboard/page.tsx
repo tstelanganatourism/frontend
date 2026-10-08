@@ -239,6 +239,7 @@ export default function AdminDashboardPage() {
           isOpen={!!selectedBookingId}
           onClose={() => setSelectedBookingId(null)}
           publicId={selectedBookingId}
+          initialData={stats?.recent_bookings?.find((b: any) => b.public_id === selectedBookingId) as any}
         />
       )}
 

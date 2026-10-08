@@ -134,12 +134,15 @@ const STATUS_OPTIONS = ['', 'PENDING', 'PARTIAL_PAID', 'FULLY_PAID', 'CANCELLED'
 const SOURCE_OPTIONS = ['', 'USER', 'AGENT', 'ADMIN', 'ADMIN_DIRECT'];
 const TARGET_OPTIONS = ['', 'BOAT RIDE', 'SIGHTSEEING', 'ROOM'];
 
+// Client cache for instant booking list rendering
+let adminBookingsCache: { bookings: BookingItem[]; total: number; summary: BookingSummary | null } | null = null;
+
 export default function AdminBookingsPage() {
-  const [bookings, setBookings] = useState<BookingItem[]>([]);
-  const [summary, setSummary] = useState<BookingSummary | null>(null);
-  const [total, setTotal] = useState(0);
+  const [bookings, setBookings] = useState<BookingItem[]>(() => adminBookingsCache?.bookings || []);
+  const [summary, setSummary] = useState<BookingSummary | null>(() => adminBookingsCache?.summary || null);
+  const [total, setTotal] = useState(() => adminBookingsCache?.total || 0);
   const [offset, setOffset] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !adminBookingsCache);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
@@ -158,8 +161,10 @@ export default function AdminBookingsPage() {
     secret?: string | null;
   } | null>(null);
 
-  const fetchBookings = useCallback(async () => {
-    setIsLoading(true);
+  const fetchBookings = useCallback(async (isSilent = false) => {
+    if (!isSilent && bookings.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const params: Record<string, any> = { limit: PAGE_SIZE, offset };
       if (statusFilter) params.status_filter = statusFilter;
@@ -173,28 +178,37 @@ export default function AdminBookingsPage() {
         apiClient.get('/api/v1/admin/bookings/summary', { params: { start_date: startDate, end_date: endDate } }),
       ]);
 
+      let newBookings = bookings;
+      let newTotal = total;
+      let newSummary = summary;
+
       if (listResult.status === 'fulfilled') {
         const listData = listResult.value.data;
-        setBookings(Array.isArray(listData?.items) ? listData.items : []);
-        setTotal(listData?.total ?? 0);
+        newBookings = Array.isArray(listData?.items) ? listData.items : [];
+        newTotal = listData?.total ?? 0;
+        setBookings(newBookings);
+        setTotal(newTotal);
       } else {
         console.error('Failed to load bookings list:', listResult.reason);
-        setBookings([]);
       }
 
       if (summaryResult.status === 'fulfilled') {
-        setSummary(summaryResult.value.data ?? null);
+        newSummary = summaryResult.value.data ?? null;
+        setSummary(newSummary);
+      }
+
+      if (!search && !statusFilter && !sourceFilter && !targetFilter && !startDate && !endDate && offset === 0) {
+        adminBookingsCache = { bookings: newBookings, total: newTotal, summary: newSummary };
       }
     } catch (err) {
       console.error('Failed to load bookings:', err);
-      setBookings([]);
     } finally {
       setIsLoading(false);
     }
-  }, [offset, statusFilter, sourceFilter, targetFilter, startDate, endDate]);
+  }, [offset, statusFilter, sourceFilter, targetFilter, startDate, endDate, bookings, total, summary, search]);
 
   useEffect(() => {
-    fetchBookings();
+    fetchBookings(bookings.length > 0);
   }, [fetchBookings]);
 
   // Client-side search & filter matching
@@ -267,7 +281,7 @@ export default function AdminBookingsPage() {
             Print Bookings
           </button>
           <button
-            onClick={fetchBookings}
+            onClick={() => fetchBookings(false)}
             disabled={isLoading}
             className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
           >
@@ -617,6 +631,7 @@ export default function AdminBookingsPage() {
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         publicId={selectedPublicId}
+        initialData={bookings.find(b => b.public_id === selectedPublicId) as any}
         onPaymentRecorded={fetchBookings}
       />
 

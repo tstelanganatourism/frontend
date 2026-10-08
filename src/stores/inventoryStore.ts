@@ -232,11 +232,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   // ── Package actions ─────────────────────────────────────────────────────────
 
   fetchAdminInventory: async (variantId, month) => {
-    set({ isLoading: true, error: null });
+    const hasData = get().adminRows.length > 0;
+    if (!hasData) {
+      set({ isLoading: true, error: null });
+    }
     try {
       const res = await apiClient.get<InventoryRow[]>(
         `/api/v1/admin/inventory/packages/${variantId}/calendar`,
-        { params: { month, t: Date.now() } }
+        { params: { month } }
       );
       set({ adminRows: res.data, isLoading: false });
     } catch (err: any) {
@@ -307,11 +310,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   // ── Room actions ────────────────────────────────────────────────────────────
 
   fetchRoomAdminInventory: async (roomVariantId, month) => {
-    set({ roomIsLoading: true, roomError: null });
+    const hasData = get().roomAdminRows.length > 0;
+    if (!hasData) {
+      set({ roomIsLoading: true, roomError: null });
+    }
     try {
       const res = await apiClient.get<RoomInventoryRow[]>(
         `/api/v1/admin/inventory/rooms/${roomVariantId}/calendar`,
-        { params: { month, t: Date.now() } }
+        { params: { month } }
       );
       set({ roomAdminRows: res.data, roomIsLoading: false });
     } catch (err: any) {
@@ -382,11 +388,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   // ── Transport actions ───────────────────────────────────────────────────────
 
   fetchTransportAdminInventory: async (packageId, month) => {
-    set({ transportIsLoading: true, transportError: null });
+    const hasData = Object.keys(get().transportAdminRows).length > 0;
+    if (!hasData) {
+      set({ transportIsLoading: true, transportError: null });
+    }
     try {
       const res = await apiClient.get<TransportInventoryCalendarResponse>(
         `/api/v1/admin/inventory/transport/${packageId}/calendar`,
-        { params: { month, t: Date.now() } }
+        { params: { month } }
       );
       set({
         transportOptions: res.data.options || [],

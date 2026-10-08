@@ -118,6 +118,7 @@ interface BookingDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   publicId: string | null;
+  initialData?: Partial<BookingDetails>;
   onPaymentRecorded?: () => void;
 }
 
@@ -610,13 +611,22 @@ function AdjustTaxesPanel({
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
+// Client-side dossier cache for instant (0ms) reopening
+const bookingDetailsClientCache = new Map<string, BookingDetails>();
+
 export default function BookingDetailsModal({
   isOpen,
   onClose,
   publicId,
+  initialData,
   onPaymentRecorded,
 }: BookingDetailsModalProps) {
-  const [booking, setBooking] = useState<BookingDetails | null>(null);
+  const [booking, setBooking] = useState<BookingDetails | null>(() => {
+    if (publicId && bookingDetailsClientCache.has(publicId)) {
+      return bookingDetailsClientCache.get(publicId)!;
+    }
+    return (initialData as BookingDetails) || null;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
@@ -629,17 +639,24 @@ export default function BookingDetailsModal({
   const { user } = useAuthStore();
 
   // ─── Fetch booking (re-fetchable) ─────────────────────────────────────────
-  const fetchDetails = useCallback(async () => {
+  const fetchDetails = useCallback(async (isSilent = false) => {
     if (!publicId) return;
-    setLoading(true);
-    setError(null);
+    if (!isSilent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await apiClient.get<BookingDetails>(`/api/v1/bookings/${publicId}`);
+      bookingDetailsClientCache.set(publicId, res.data);
       setBooking(res.data);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to fetch detailed booking records.');
+      if (!isSilent) {
+        setError(err?.response?.data?.detail || 'Failed to fetch detailed booking records.');
+      }
     } finally {
-      setLoading(false);
+      if (!isSilent) {
+        setLoading(false);
+      }
     }
   }, [publicId]);
 
@@ -649,14 +666,29 @@ export default function BookingDetailsModal({
       setError(null);
       return;
     }
-    fetchDetails();
-  }, [isOpen, publicId, fetchDetails]);
+    const cached = bookingDetailsClientCache.get(publicId);
+    if (cached) {
+      setBooking(cached);
+      setLoading(false);
+      setError(null);
+      // Revalidate quietly in background
+      fetchDetails(true);
+    } else if (initialData) {
+      setBooking(initialData as BookingDetails);
+      fetchDetails(false);
+    } else {
+      fetchDetails(false);
+    }
+  }, [isOpen, publicId, initialData, fetchDetails]);
 
   // Called after successful cash payment recording
   const handlePaymentRecorded = useCallback(async () => {
-    await fetchDetails(); // refresh ledger without closing modal
+    if (publicId) {
+      bookingDetailsClientCache.delete(publicId);
+    }
+    await fetchDetails(false); // refresh ledger without closing modal
     onPaymentRecorded?.();
-  }, [fetchDetails, onPaymentRecorded]);
+  }, [publicId, fetchDetails, onPaymentRecorded]);
 
 
   const handleDownloadInvoice = () => {

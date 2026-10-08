@@ -44,10 +44,12 @@ function getStatusConfig(status: string) {
   return STATUS_CONFIG[status?.toUpperCase()] || { label: status, color: '#64748b', bg: '#f8fafc', dot: '#94a3b8' };
 }
 
+let touristDashboardCache: { summary: DashboardSummary; recentBookings: any[] } | null = null;
+
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary | null>(touristDashboardCache?.summary || null);
+  const [recentBookings, setRecentBookings] = useState<any[]>(touristDashboardCache?.recentBookings || []);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [greeting, setGreeting] = useState('Good afternoon');
@@ -65,11 +67,12 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        setLoading(true);
+        if (!touristDashboardCache) setLoading(true);
         const [summaryRes, bookingsRes] = await Promise.all([
           apiClient.get<DashboardSummary>('/api/v1/bookings/user/dashboard-summary'),
           apiClient.get<any[]>('/api/v1/bookings/user/bookings'),
         ]);
+        touristDashboardCache = { summary: summaryRes.data, recentBookings: bookingsRes.data.slice(0, 3) };
         setSummary(summaryRes.data);
         setRecentBookings(bookingsRes.data.slice(0, 3));
       } catch (err) {

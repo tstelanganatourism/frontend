@@ -1152,10 +1152,7 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
     const targetClosed = !allClosed;
     try {
       if (mode === 'package') {
-        const promises = rows
-          .filter(r => r.is_closed !== targetClosed)
-          .map(() => patchInventoryRow(entityId, dateStr, { is_closed: targetClosed }));
-        await Promise.all(promises);
+        await patchInventoryRow(entityId, dateStr, { is_closed: targetClosed });
       } else {
         const promises = rows
           .filter(r => r.is_closed !== targetClosed)
@@ -1163,8 +1160,8 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
         await Promise.all(promises);
       }
       toast.success(targetClosed ? `All slots closed for ${dateStr}` : `All slots reopened for ${dateStr}`);
-      onRefresh();
       onClose();
+      onRefresh();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update slots');
     } finally {
@@ -1188,8 +1185,8 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
         await Promise.all(promises);
       }
       toast.success(`All slots deleted for ${dateStr}`);
-      onRefresh();
       onClose();
+      onRefresh();
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete slots');
     } finally {

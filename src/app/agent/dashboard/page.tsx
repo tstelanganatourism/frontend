@@ -42,12 +42,14 @@ function getStatusConfig(status: string) {
   return STATUS_CONFIG[status?.toUpperCase()] || { label: status, color: '#64748b', bg: '#f8fafc', dot: '#94a3b8' };
 }
 
+let agentDashboardCache: { summary: DashboardSummary; recentBookings: any[] } | null = null;
+
 export default function AgentDashboardPage() {
   const { user } = useAuthStore();
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(agentDashboardCache?.summary || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [recentBookings, setRecentBookings] = useState<any[]>(agentDashboardCache?.recentBookings || []);
   const [greeting, setGreeting] = useState('Good afternoon');
   const [mounted, setMounted] = useState(false);
 
@@ -62,11 +64,12 @@ export default function AgentDashboardPage() {
   useEffect(() => {
     const fetchSummaryAndBookings = async () => {
       try {
-        setLoading(true);
+        if (!agentDashboardCache) setLoading(true);
         const [summaryRes, bookingsRes] = await Promise.all([
           apiClient.get<DashboardSummary>('/api/v1/bookings/agent/dashboard-summary'),
           apiClient.get<any[]>('/api/v1/bookings/agent/bookings', { params: { limit: 3 } }),
         ]);
+        agentDashboardCache = { summary: summaryRes.data, recentBookings: bookingsRes.data };
         setSummary(summaryRes.data);
         setRecentBookings(bookingsRes.data);
       } catch (err: any) {

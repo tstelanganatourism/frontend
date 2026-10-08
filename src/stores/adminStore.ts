@@ -152,7 +152,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   error: null,
 
   fetchStats: async () => {
-    set({ isLoading: true, error: null });
+    set((state) => ({ isLoading: state.stats === null, error: null }));
     try {
       const response = await apiClient.get('/api/v1/admin/dashboard/stats');
       set({ stats: response.data, isLoading: false });
@@ -162,7 +162,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   fetchSettings: async () => {
-    set({ isLoading: true, error: null });
+    set((state) => ({ isLoading: state.settings === null, error: null }));
     try {
       const response = await apiClient.get('/api/v1/admin/settings');
       set({ settings: response.data, isLoading: false });
