@@ -2,7 +2,7 @@
 
 import React, { useTransition } from 'react';
 import Image from 'next/image';
-import { BedDouble, Sparkles, LayoutGrid, List } from 'lucide-react';
+import { BedDouble, Sparkles, LayoutGrid, List, ArrowRight } from 'lucide-react';
 import RoomCard from '@/components/ui/RoomCard';
 import RoomFilters from '@/components/rooms/RoomFilters';
 import RoomListPagination from '@/components/rooms/RoomListPagination';
@@ -47,7 +47,7 @@ export default function RoomsList({
   const [isPending, startTransition] = useTransition();
 
   const [allRooms, setAllRooms] = React.useState<RoomItem[]>(data?.items || []);
-  const [isFetching, setIsFetching] = React.useState(!data?.items || data.items.length === 0);
+  const [isFetching, setIsFetching] = React.useState(!data);
   const [searchVal, setSearchVal] = React.useState('');
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [urlQuery, setUrlQuery] = React.useState(typeof window !== 'undefined' ? window.location.search : '');
@@ -80,27 +80,23 @@ export default function RoomsList({
 
   // Update allRooms if initial data changes
   React.useEffect(() => {
-    if (data?.items && data.items.length > 0) {
+    if (data?.items) {
       setAllRooms(data.items);
       setIsFetching(false);
     }
   }, [data]);
 
-  // Fetch complete rooms dataset in background if not provided by SSR (with retry on cold start)
+  // Fetch complete rooms dataset in background if not provided by SSR
   React.useEffect(() => {
-    if (data?.items && data.items.length > 0 && categorySlug) {
+    if (data?.items && categorySlug) {
       setIsFetching(false);
       return;
     }
 
     let isMounted = true;
-    let retryTimeout: NodeJS.Timeout;
 
-    const fetchAllRooms = async (attempt = 1) => {
+    const fetchAllRooms = async () => {
       try {
-        if (!data?.items || data.items.length === 0) {
-          setIsFetching(true);
-        }
         const fetchUrl = categorySlug
           ? `/api/v1/rooms/categories/${categorySlug}`
           : '/api/v1/rooms?size=100';
@@ -108,28 +104,14 @@ export default function RoomsList({
         if (res.ok && isMounted) {
           const json = await res.json();
           const items = categorySlug ? (json.rooms || []) : (json.items || []);
-          if (items && items.length > 0) {
-            setAllRooms(items);
-            setIsFetching(false);
-            return;
-          }
-        }
-        if (attempt < 3 && isMounted) {
-          retryTimeout = setTimeout(() => {
-            if (isMounted) fetchAllRooms(attempt + 1);
-          }, 3000);
+          setAllRooms(items);
+          setIsFetching(false);
           return;
         }
       } catch (err) {
         console.error("Failed to fetch rooms for client-side search:", err);
-        if (attempt < 3 && isMounted) {
-          retryTimeout = setTimeout(() => {
-            if (isMounted) fetchAllRooms(attempt + 1);
-          }, 3000);
-          return;
-        }
       } finally {
-        if (isMounted && attempt >= 3) {
+        if (isMounted) {
           setIsFetching(false);
         }
       }
@@ -138,7 +120,6 @@ export default function RoomsList({
     fetchAllRooms();
     return () => {
       isMounted = false;
-      if (retryTimeout) clearTimeout(retryTimeout);
     };
   }, [categorySlug, data]);
 
@@ -187,9 +168,9 @@ export default function RoomsList({
 
     // 4. Sort
     const sort = params.get('sort');
-    if (sort === 'price_asc') {
+    if (sort === 'price_asc' || sort === 'price_low') {
       list.sort((a, b) => (Number(a.starting_price) || 0) - (Number(b.starting_price) || 0));
-    } else if (sort === 'price_desc') {
+    } else if (sort === 'price_desc' || sort === 'price_high') {
       list.sort((a, b) => (Number(b.starting_price) || 0) - (Number(a.starting_price) || 0));
     } else {
       // Default: sort by order_priority ascending, then by id
@@ -360,6 +341,31 @@ export default function RoomsList({
                     <MobileRoomFilterSheet />
                   </div>
                 </div>
+
+                {/* Highlight banner for Papikondalu Bamboo Huts */}
+                {categorySlug === 'papikondalu-forest-huts' && (
+                  <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-950 via-[#0a3542] to-[#04202c] p-4 sm:p-5 text-white border border-emerald-500/30 shadow-md">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/30 mb-2">
+                          ⛺ Authentic Kolluru Bamboo Huts
+                        </span>
+                        <h3 className="text-sm sm:text-base font-black text-white">
+                          Looking for the Full Boat Cruise + Bamboo Huts Night Stay Package?
+                        </h3>
+                        <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                          Overnight Godavari river camping with round-trip boat cruise, night campfire, and traditional Andhra meals included.
+                        </p>
+                      </div>
+                      <Link
+                        href="/packages/bhadrachalam-kolluru-huts-2-days"
+                        className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer"
+                      >
+                        View 2-Day Package <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
 
                 {/* Listing Items */}
                 {isFetching ? (

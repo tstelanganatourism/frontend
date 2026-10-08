@@ -19,7 +19,17 @@ type RoomCategoryItem = {
   room_count: number;
 };
 
-export default function RoomFilters({ className, sticky = true }: { className?: string; sticky?: boolean }) {
+export default function RoomFilters({ 
+  className, 
+  sticky = true,
+  isMobile = false,
+  onApply,
+}: { 
+  className?: string; 
+  sticky?: boolean;
+  isMobile?: boolean;
+  onApply?: () => void;
+}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -38,39 +48,34 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
 
   React.useEffect(() => {
     let isMounted = true;
-    let retryTimeout: NodeJS.Timeout;
 
-    const fetchCategories = async (attempt = 1) => {
+    const fetchCategories = async () => {
       try {
         const res = await fetch('/api/v1/rooms/categories', { cache: 'no-store' });
         if (res.ok && isMounted) {
           setCategories(await res.json());
-          return;
-        }
-        if (attempt < 3 && isMounted) {
-          retryTimeout = setTimeout(() => fetchCategories(attempt + 1), 3000);
         }
       } catch (err) {
         console.error('Failed to fetch room categories:', err);
-        if (attempt < 3 && isMounted) {
-          retryTimeout = setTimeout(() => fetchCategories(attempt + 1), 3000);
-        }
       }
     };
     fetchCategories();
     return () => {
       isMounted = false;
-      if (retryTimeout) clearTimeout(retryTimeout);
     };
   }, []);
 
   const pushRoomParams = (params: URLSearchParams) => {
     params.delete('page');
     const query = params.toString();
-    const targetPath = pathname.startsWith('/stays/categories/') ? '/stays' : pathname;
-    const newUrl = query ? `${targetPath}?${query}` : `${targetPath}?view=all`;
+    const newUrl = query ? `${pathname}?${query}` : pathname;
+    
+    startTransition(() => {
+      router.push(newUrl, { scroll: false });
+    });
+
     if (typeof window !== 'undefined') {
-      window.location.href = newUrl;
+      window.dispatchEvent(new CustomEvent('app:filter-change'));
     }
   };
 
@@ -99,8 +104,11 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   };
 
   const clearAll = () => {
+    startTransition(() => {
+      router.push(pathname, { scroll: false });
+    });
     if (typeof window !== 'undefined') {
-      window.location.href = '/stays?view=all';
+      window.dispatchEvent(new CustomEvent('app:filter-change'));
     }
   };
 
@@ -109,23 +117,23 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
   return (
     <div
       className={cn(
-        'relative space-y-6 overflow-visible rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all',
+        'relative space-y-5 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all',
         sticky && 'sticky top-24 max-h-[calc(100vh-110px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200',
         className
       )}
     >
       {isPending && (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-white/80 backdrop-blur-xs">
+        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-xs">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#0d6e75]/20 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-[#0d6e75] shadow-md">
             <Loader2 className="h-4 w-4 animate-spin text-[#0d6e75]" />
-            Updating Filters
+            Updating
           </div>
         </div>
       )}
 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+        <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-[#0d6e75]/10 text-[#0d6e75]">
             <Filter className="h-4 w-4" />
           </div>
@@ -162,12 +170,10 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
                 })),
               ]}
               onChange={(value) => {
-                if (typeof window !== 'undefined') {
-                  if (value) {
-                    window.location.href = `/stays/categories/${value}`;
-                  } else {
-                    window.location.href = `/stays?view=all`;
-                  }
+                if (value) {
+                  router.push(`/stays/categories/${value}`);
+                } else {
+                  router.push(`/stays`);
                 }
               }}
               placeholder="Select Stay Category..."
@@ -202,9 +208,9 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
       </button>
 
       {/* Facilities Checkboxes */}
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Facilities</h4>
-        <div className="space-y-1.5">
+        <div className={cn('gap-1.5', isMobile ? 'grid grid-cols-2' : 'space-y-1.5')}>
           {FACILITIES.map((facility) => {
             const isChecked = activeFacilities.includes(facility);
             return (
@@ -220,9 +226,9 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
                     : 'bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50'
                 )}
               >
-                <span>{facility}</span>
+                <span className="truncate">{facility}</span>
                 <div className={cn(
-                  'w-4 h-4 rounded border flex items-center justify-center transition-colors',
+                  'w-4 h-4 rounded border flex items-center justify-center shrink-0 ml-1 transition-colors',
                   isChecked ? 'bg-[#0d6e75] border-[#0d6e75] text-white' : 'border-slate-300'
                 )}>
                   {isChecked && <Check className="h-3 w-3" />}
@@ -247,6 +253,19 @@ export default function RoomFilters({ className, sticky = true }: { className?: 
           disabled={isPending}
         />
       </div>
+
+      {/* Mobile Apply Button inside Drawer */}
+      {isMobile && onApply && (
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onApply}
+            className="w-full py-3.5 px-4 rounded-xl bg-[#0d6e75] hover:bg-[#0b5c62] text-white font-black text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+          >
+            Show Stays
+          </button>
+        </div>
+      )}
     </div>
   );
 }
