@@ -293,18 +293,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const [showFloatingWidget, setShowFloatingWidget] = useState(false);
 
   useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setShowFloatingWidget(window.scrollY > 300);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const timer = setTimeout(() => {
+      setShowFloatingWidget(true);
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
@@ -1758,13 +1750,16 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
       )}
 
       {/* Mobile Floating Bar */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/95 p-3 shadow-[0_-10px_28px_rgba(15,61,86,0.14)] backdrop-blur-md lg:hidden">
+      <div
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))' }}
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/95 p-3 shadow-[0_-10px_28px_rgba(15,61,86,0.14)] backdrop-blur-md lg:hidden"
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
               Total ({roomsCount} {roomsCount === 1 ? 'room' : 'rooms'}){isAgent && prices.agentPayable < prices.grandTotal ? ' · Agent Rate' : ''}
             </p>
-            <p className="text-xl font-black text-[#102231] min-[380px]:text-2xl font-black">
+            <p className="text-xl font-black text-[#102231] min-[380px]:text-2xl">
               {(isAgent ? prices.agentPayable : prices.grandTotal) ? money(isAgent ? prices.agentPayable : prices.grandTotal) : money(price * roomsCount)}
             </p>
           </div>
@@ -1776,10 +1771,10 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
             <button
               type="button"
               onClick={() => setIsBookingModalOpen(true)}
-              className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[#0d6e75] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95"
+              className="group relative overflow-hidden flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#0d6e75] via-[#10838c] to-[#0a585e] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95"
             >
               <span>Reserve Now</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </button>
           )}
         </div>

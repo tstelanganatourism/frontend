@@ -48,22 +48,15 @@ interface BookingDialogV3Props {
 
 export const BookingDialogV3 = (props: BookingDialogV3Props) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showStickyBar, setShowStickyBar] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(props.variants[0]?.id ?? null);
 
   useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setShowStickyBar(window.scrollY > 300);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Reveal immediately upon page load with cinematic entrance and settle animation
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 60);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -110,17 +103,48 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
 
   return (
     <>
+      <style>{`
+        @keyframes bookNowShimmerSweep {
+          0% { transform: translateX(-150%) skewX(-20deg); }
+          25%, 100% { transform: translateX(250%) skewX(-20deg); }
+        }
+        @keyframes settleGlow {
+          0%, 100% { box-shadow: 0 4px 18px rgba(13, 110, 117, 0.35); }
+          50% { box-shadow: 0 8px 28px rgba(13, 110, 117, 0.55), 0 0 14px rgba(21, 152, 161, 0.4); }
+        }
+        .btn-shimmer-sweep {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.45) 50%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          animation: bookNowShimmerSweep 3.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+        }
+        .btn-glow-pulse {
+          animation: settleGlow 3s infinite ease-in-out;
+        }
+      `}</style>
+
       {/* ── Desktop Floating Action Widget (Stacked above WhatsApp) ── */}
       <div
-        className={`hidden lg:flex fixed right-8 bottom-12 z-40 flex-col items-end transition-all duration-500 ${
-          showStickyBar && !isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-90 pointer-events-none'
+        className={`hidden lg:flex fixed right-8 bottom-12 z-40 flex-col items-end transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isMounted && !isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
         }`}
       >
         <button
           onClick={() => setIsOpen(true)}
           type="button"
-          className="group flex items-center gap-3.5 rounded-2xl bg-gradient-to-r from-[#0d6e75] via-[#0a585e] to-[#07464b] p-3 pr-6 text-white shadow-[0_16px_40px_rgba(13,110,117,0.38)] ring-4 ring-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(13,110,117,0.48)] active:scale-[0.98]"
+          className="group relative overflow-hidden flex items-center gap-3.5 rounded-2xl bg-gradient-to-r from-[#0d6e75] via-[#0b5c62] to-[#07464b] p-3 pr-6 text-white shadow-[0_16px_40px_rgba(13,110,117,0.38)] ring-4 ring-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(13,110,117,0.48)] active:scale-[0.98] btn-glow-pulse"
         >
+          <div className="btn-shimmer-sweep" />
+
           {/* Ticket Icon Box */}
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-400 text-slate-950 shadow-md">
             <Ticket className="h-5 w-5 stroke-[2.5]" />
@@ -129,6 +153,10 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
           {/* Fare & Call-to-Action Text */}
           <div className="flex flex-col items-start leading-tight">
             <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+              </span>
               <span className="text-[10px] font-black uppercase tracking-wider text-[#a8e8eb]">
                 {formattedPrice ? `From ₹${formattedPrice}` : 'Instant Seat'}
               </span>
@@ -145,33 +173,45 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
         </button>
       </div>
 
-      {/* ── Mobile Sticky Bottom Bar (Single Unified Bar at bottom-0) ── */}
+      {/* ── Mobile Sticky Bottom Bar (Appears Immediately & Settles Smoothly) ── */}
       <div
-        className={`fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-2.5 flex items-center justify-between gap-3 z-50 lg:hidden shadow-[0_-10px_28px_rgba(15,61,86,0.14)] transition-all duration-300 ${
-          showStickyBar && !isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+        style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom, 0.625rem))' }}
+        className={`fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 pt-2.5 flex items-center justify-between gap-3 z-50 lg:hidden shadow-[0_-10px_28px_rgba(15,61,86,0.14)] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isMounted && !isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
         }`}
       >
         <div className="flex flex-col min-w-0 shrink-0">
-          <span className="text-[9px] font-black uppercase tracking-widest text-[#0d6e75] flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />
-            Fast Booking
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-[#0d6e75] flex items-center gap-1">
+              Fast Booking
+            </span>
+          </div>
           <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-base font-black text-[#0d6e75] tracking-tight">
+            <span className="text-lg font-black text-[#0d6e75] tracking-tight">
               {formattedPrice ? `₹${formattedPrice}` : 'Check Fare'}
             </span>
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
               {props.isStudentPackage ? '/ stud' : '/ adult'}
             </span>
           </div>
+          <span className="text-[8px] font-semibold text-emerald-700 -mt-0.5">
+            Instant Confirmation ✓
+          </span>
         </div>
 
         <button
           onClick={() => setIsOpen(true)}
-          className="group h-11 flex-1 rounded-xl bg-[#0d6e75] hover:bg-[#0b5c62] px-4 text-xs font-black uppercase tracking-wider text-white shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 ml-2"
+          className="group relative overflow-hidden h-11 flex-1 max-w-[210px] rounded-xl bg-gradient-to-r from-[#0d6e75] via-[#10838c] to-[#0a585e] hover:from-[#0b5c62] hover:to-[#08484d] px-4 text-xs font-black uppercase tracking-wider text-white shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 ml-2 btn-glow-pulse"
         >
-          Book Now
-          <ArrowRight className="h-4 w-4 stroke-[3] transition-transform duration-200 group-hover:translate-x-0.5" />
+          <div className="btn-shimmer-sweep" />
+          <span className="relative z-10 flex items-center gap-2">
+            Book Now
+            <ArrowRight className="h-4 w-4 stroke-[3] transition-transform duration-200 group-hover:translate-x-1" />
+          </span>
         </button>
       </div>
 
