@@ -651,7 +651,11 @@ export default function BookingDetailsModal({
       setBooking(res.data);
     } catch (err: any) {
       if (!isSilent) {
-        setError(err?.response?.data?.detail || 'Failed to fetch detailed booking records.');
+        const errorMsg =
+          err?.response?.data?.detail ||
+          (typeof err?.response?.data === 'string' && err.response.data.trim() ? err.response.data : null) ||
+          (err?.response?.status === 429 ? 'Too many requests. Please wait a moment and try again.' : 'Failed to fetch detailed booking records.');
+        setError(errorMsg);
       }
     } finally {
       if (!isSilent) {
@@ -675,11 +679,14 @@ export default function BookingDetailsModal({
       fetchDetails(true);
     } else if (initialData) {
       setBooking(initialData as BookingDetails);
-      fetchDetails(false);
+      setLoading(false);
+      setError(null);
+      // Revalidate quietly in background
+      fetchDetails(true);
     } else {
       fetchDetails(false);
     }
-  }, [isOpen, publicId, initialData, fetchDetails]);
+  }, [isOpen, publicId, fetchDetails]);
 
   // Called after successful cash payment recording
   const handlePaymentRecorded = useCallback(async () => {
