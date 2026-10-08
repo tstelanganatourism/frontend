@@ -2102,7 +2102,6 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                     targetType="ROOM"
                     targetId={room.id}
                     subtotal={stayDetails.totalPrice * roomsCount}
-                    defaultOpen={true}
                   />
 
                   {/* Pricing Details Breakdown */}

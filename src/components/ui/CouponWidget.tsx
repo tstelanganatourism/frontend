@@ -246,46 +246,6 @@ const getCouponDesc = (c: ActiveCoupon) => {
   return parts.join(' ');
 };
 
-/* ── Fallback Coupons (Guarantees offers are ALWAYS visible to customers) ─── */
-const FALLBACK_ACTIVE_COUPONS: ActiveCoupon[] = [
-  {
-    code: 'WELCOME100',
-    discount_type: 'FLAT',
-    discount_value: 100,
-    min_booking_amount: 1000,
-    max_discount_amount: 100,
-  },
-  {
-    code: 'TSBOAT10',
-    discount_type: 'PERCENTAGE',
-    discount_value: 10,
-    min_booking_amount: 1500,
-    max_discount_amount: 300,
-  },
-  {
-    code: 'TSBOAT20',
-    discount_type: 'PERCENTAGE',
-    discount_value: 20,
-    min_booking_amount: 3000,
-    max_discount_amount: 600,
-  },
-  {
-    code: 'GROUP10',
-    discount_type: 'PERCENTAGE',
-    discount_value: 10,
-    min_booking_amount: 5000,
-    max_discount_amount: 1200,
-    min_tickets: 4,
-  },
-  {
-    code: 'BCM-PPK',
-    discount_type: 'PERCENTAGE',
-    discount_value: 5,
-    min_booking_amount: 2000,
-    max_discount_amount: 500,
-  },
-];
-
 /* ── Main CouponWidget Props ─────────────────────────────────────────── */
 export interface CouponWidgetProps {
   couponCode: string;
@@ -325,7 +285,7 @@ export function CouponWidget({
   const [shakeError, setShakeError] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [activeCoupons, setActiveCoupons] = useState<ActiveCoupon[]>(FALLBACK_ACTIVE_COUPONS);
+  const [activeCoupons, setActiveCoupons] = useState<ActiveCoupon[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Inject styles once
@@ -341,14 +301,14 @@ export function CouponWidget({
         if (targetId) params.target_id = targetId;
         const res = await apiClient.get('/api/v1/coupons/active', { params });
         if (isMounted) {
-          if (Array.isArray(res.data) && res.data.length > 0) {
+          if (Array.isArray(res.data)) {
             setActiveCoupons(res.data);
           } else {
-            setActiveCoupons(FALLBACK_ACTIVE_COUPONS);
+            setActiveCoupons([]);
           }
         }
       } catch {
-        if (isMounted) setActiveCoupons(FALLBACK_ACTIVE_COUPONS);
+        if (isMounted) setActiveCoupons([]);
       }
     };
     loadCoupons();
@@ -462,12 +422,18 @@ export function CouponWidget({
           )}
         </div>
         {!appliedCoupon && (
-          <div className="flex items-center gap-1 text-[10px] font-black text-[#0d6e75] bg-[#0d6e75]/5 px-2.5 py-1 rounded-full hover:bg-[#0d6e75]/10 transition-colors">
-            <span>{isOpen ? 'Hide Offers' : 'View Offers'}</span>
+          activeCoupons.length > 0 ? (
+            <div className="flex items-center gap-1 text-[10px] font-black text-[#0d6e75] bg-[#0d6e75]/5 px-2.5 py-1 rounded-full hover:bg-[#0d6e75]/10 transition-colors">
+              <span>{isOpen ? 'Hide Offers' : 'View Offers'}</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 text-[#0d6e75] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+              />
+            </div>
+          ) : (
             <ChevronDown
-              className={`h-3.5 w-3.5 text-[#0d6e75] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+              className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
             />
-          </div>
+          )
         )}
       </button>
 
@@ -622,7 +588,7 @@ export function CouponWidget({
               {/* ── MANUAL INPUT ── */}
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                  Or enter code manually
+                  {activeCoupons.length > 0 ? 'Or enter code manually' : 'Enter promo code manually'}
                 </p>
                 <div
                   className={`relative flex items-stretch gap-0 rounded-2xl border-2 transition-all duration-200 overflow-hidden ${

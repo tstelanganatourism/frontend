@@ -2180,7 +2180,6 @@ export const BookingSidebarV3 = ({
                 targetType="PACKAGE"
                 targetId={packageId}
                 stepNumber={5}
-                defaultOpen={true}
               />
 
 
