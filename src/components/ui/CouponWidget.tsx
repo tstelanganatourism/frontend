@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CheckCircle2, Tag, ChevronDown, Loader2, X, Scissors, Sparkles, AlertTriangle, Copy } from 'lucide-react';
+import { CheckCircle2, Tag, ChevronDown, Loader2, X, Scissors, Sparkles, AlertTriangle, Copy, ArrowRight } from 'lucide-react';
 
 /* ── CSS-in-JS keyframes injected once ──────────────────────────────────── */
 const STYLE_ID = 'coupon-widget-styles';
@@ -246,6 +246,46 @@ const getCouponDesc = (c: ActiveCoupon) => {
   return parts.join(' ');
 };
 
+/* ── Fallback Coupons (Guarantees offers are ALWAYS visible to customers) ─── */
+const FALLBACK_ACTIVE_COUPONS: ActiveCoupon[] = [
+  {
+    code: 'WELCOME100',
+    discount_type: 'FLAT',
+    discount_value: 100,
+    min_booking_amount: 1000,
+    max_discount_amount: 100,
+  },
+  {
+    code: 'TSBOAT10',
+    discount_type: 'PERCENTAGE',
+    discount_value: 10,
+    min_booking_amount: 1500,
+    max_discount_amount: 300,
+  },
+  {
+    code: 'TSBOAT20',
+    discount_type: 'PERCENTAGE',
+    discount_value: 20,
+    min_booking_amount: 3000,
+    max_discount_amount: 600,
+  },
+  {
+    code: 'GROUP10',
+    discount_type: 'PERCENTAGE',
+    discount_value: 10,
+    min_booking_amount: 5000,
+    max_discount_amount: 1200,
+    min_tickets: 4,
+  },
+  {
+    code: 'BCM-PPK',
+    discount_type: 'PERCENTAGE',
+    discount_value: 5,
+    min_booking_amount: 2000,
+    max_discount_amount: 500,
+  },
+];
+
 /* ── Main CouponWidget Props ─────────────────────────────────────────── */
 export interface CouponWidgetProps {
   couponCode: string;
@@ -261,6 +301,7 @@ export interface CouponWidgetProps {
   stepNumber?: number;
   targetType?: 'PACKAGE' | 'ROOM';
   targetId?: number;
+  defaultOpen?: boolean;
 }
 
 /* ── Main Component ──────────────────────────────────────────────────── */
@@ -278,12 +319,13 @@ export function CouponWidget({
   stepNumber,
   targetType,
   targetId,
+  defaultOpen = false,
 }: CouponWidgetProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [shakeError, setShakeError] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [activeCoupons, setActiveCoupons] = useState<ActiveCoupon[]>([]);
+  const [activeCoupons, setActiveCoupons] = useState<ActiveCoupon[]>(FALLBACK_ACTIVE_COUPONS);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Inject styles once
@@ -298,11 +340,15 @@ export function CouponWidget({
         if (targetType) params.target_type = targetType;
         if (targetId) params.target_id = targetId;
         const res = await apiClient.get('/api/v1/coupons/active', { params });
-        if (isMounted && Array.isArray(res.data)) {
-          setActiveCoupons(res.data);
+        if (isMounted) {
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            setActiveCoupons(res.data);
+          } else {
+            setActiveCoupons(FALLBACK_ACTIVE_COUPONS);
+          }
         }
       } catch {
-        if (isMounted) setActiveCoupons([]);
+        if (isMounted) setActiveCoupons(FALLBACK_ACTIVE_COUPONS);
       }
     };
     loadCoupons();
@@ -408,11 +454,20 @@ export function CouponWidget({
               {appliedCoupon.code}
             </span>
           )}
+          {!appliedCoupon && activeCoupons.length > 0 && (
+            <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300/80 px-2 py-0.5 text-[9px] font-black text-amber-800 uppercase tracking-wider">
+              <Sparkles className="h-2.5 w-2.5 text-amber-500 fill-amber-400" />
+              {activeCoupons.length} Offers Available
+            </span>
+          )}
         </div>
         {!appliedCoupon && (
-          <ChevronDown
-            className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-          />
+          <div className="flex items-center gap-1 text-[10px] font-black text-[#0d6e75] bg-[#0d6e75]/5 px-2.5 py-1 rounded-full hover:bg-[#0d6e75]/10 transition-colors">
+            <span>{isOpen ? 'Hide Offers' : 'View Offers'}</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 text-[#0d6e75] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+            />
+          </div>
         )}
       </button>
 
@@ -456,67 +511,110 @@ export function CouponWidget({
               {/* ── DYNAMIC SUGGESTION CARDS (FROM DATABASE) ── */}
               {activeCoupons && activeCoupons.length > 0 && (
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400" />
-                    Available Offers
-                  </p>
-                  <div className="flex gap-2 overflow-x-auto pb-1 cw-scroll-none -mx-0.5 px-0.5"
-                    style={{ scrollSnapType: 'x mandatory' }}>
-                    {activeCoupons.map((s, index) => (
-                      <div
-                        key={s.code}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleSuggestionClick(s.code)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleSuggestionClick(s.code);
-                          }
-                        }}
-                        className={`cw-card-shine group relative flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${getCouponGradient(index)} text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 cursor-pointer`}
-                        style={{
-                          width: 'min(200px, 70vw)',
-                          scrollSnapAlign: 'start',
-                        }}
-                        title={`Apply ${s.code}`}
-                      >
-                        <div className="flex h-full">
-                          {/* Left: discount badge */}
-                          <div className={`flex shrink-0 flex-col items-center justify-center px-3 py-4 ${getCouponBadgeBg(index)} bg-opacity-90`}
-                            style={{ minWidth: '64px' }}>
-                            <span className="text-[11px] font-black text-white leading-none text-center">{getCouponBadge(s)}</span>
-                            <span className="text-[8px] font-bold text-white/80 mt-0.5">OFF</span>
-                          </div>
-                          {/* Divider */}
-                          <div className="cw-ticket-divider self-stretch my-2" />
-                          {/* Right: code + description */}
-                          <div className="flex flex-1 flex-col justify-center px-3 py-4 text-left min-w-0">
-                            <span className="text-[11px] font-black uppercase tracking-wider text-white leading-none truncate">{s.code}</span>
-                            <span className="text-[9px] font-medium text-white/80 mt-1 leading-tight line-clamp-2">{getCouponDesc(s)}</span>
-                            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[8px] font-black text-white/90 uppercase tracking-wider w-fit">
-                              Tap to Apply
-                            </span>
-                          </div>
-                          {/* Copy button */}
-                          <div className="absolute top-1.5 right-1.5">
-                            <button
-                              type="button"
-                              title="Copy code"
-                              onClick={(e) => handleCopyCode(s.code, e)}
-                              className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 transition-colors"
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400" />
+                      Available Offers & Discounts
+                    </p>
+                    <span className="text-[9px] font-semibold text-slate-400">
+                      Tap card or Apply button
+                    </span>
+                  </div>
+                  <div
+                    className="flex gap-2.5 overflow-x-auto pb-1.5 cw-scroll-none -mx-0.5 px-0.5"
+                    style={{ scrollSnapType: 'x mandatory' }}
+                  >
+                    {activeCoupons.map((s, index) => {
+                      const meetsMinBooking = !s.min_booking_amount || (subtotal > 0 && subtotal >= s.min_booking_amount);
+
+                      return (
+                        <div
+                          key={s.code}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleSuggestionClick(s.code)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleSuggestionClick(s.code);
+                            }
+                          }}
+                          className={`cw-card-shine group relative flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${getCouponGradient(index)} text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98] cursor-pointer border border-white/10`}
+                          style={{
+                            width: 'min(270px, 84vw)',
+                            scrollSnapAlign: 'start',
+                          }}
+                          title={`Apply ${s.code}`}
+                        >
+                          <div className="flex h-full min-h-[96px]">
+                            {/* Left: discount badge */}
+                            <div
+                              className={`flex shrink-0 flex-col items-center justify-center px-3 py-3.5 ${getCouponBadgeBg(index)} bg-opacity-95 text-white`}
+                              style={{ minWidth: '70px' }}
                             >
-                              <Copy className="h-3 w-3 text-white" />
-                            </button>
-                            {copiedCode === s.code && (
-                              <span className="cw-copied-toast absolute right-0 top-7 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg z-10">
-                                Copied!
+                              <span className="text-xs font-black text-white leading-none text-center tracking-tight">
+                                {getCouponBadge(s)}
                               </span>
-                            )}
+                              <span className="text-[8px] font-black uppercase text-white/90 mt-1 tracking-wider">
+                                OFF
+                              </span>
+                            </div>
+
+                            {/* Ticket dashed divider */}
+                            <div className="cw-ticket-divider self-stretch my-2" />
+
+                            {/* Right: code + description + action */}
+                            <div className="flex flex-1 flex-col justify-between p-3 text-left min-w-0">
+                              <div>
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <span className="font-mono text-xs font-black uppercase tracking-wider text-white truncate">
+                                    {s.code}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    title="Copy code"
+                                    onClick={(e) => handleCopyCode(s.code, e)}
+                                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/15 hover:bg-white/30 text-white transition-colors"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                <p className="text-[10px] font-medium text-white/85 mt-1 leading-snug line-clamp-2">
+                                  {getCouponDesc(s)}
+                                </p>
+                              </div>
+
+                              <div className="mt-2 flex items-center justify-between gap-1.5 pt-1 border-t border-white/10">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSuggestionClick(s.code);
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0d6e75] shadow-sm hover:bg-white/90 hover:scale-105 active:scale-95 transition-all"
+                                >
+                                  <span>Apply</span>
+                                  <ArrowRight className="h-2.5 w-2.5" />
+                                </button>
+
+                                {s.min_booking_amount && (
+                                  <span className={`text-[8px] font-semibold truncate ${meetsMinBooking ? 'text-white/70' : 'text-amber-200'}`}>
+                                    Min ₹{Math.round(s.min_booking_amount).toLocaleString('en-IN')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
+
+                          {/* Copied toast indicator */}
+                          {copiedCode === s.code && (
+                            <span className="cw-copied-toast absolute right-2 top-2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg z-10">
+                              Copied!
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
