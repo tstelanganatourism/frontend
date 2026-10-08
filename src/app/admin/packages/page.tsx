@@ -98,6 +98,7 @@ export default function AdminPackagesPage() {
   const packagesPage = useAdminStore((s) => s.packagesPage);
   const packagesLimit = useAdminStore((s) => s.packagesLimit);
   const isLoading = useAdminStore((s) => s.isLoading);
+  const error = useAdminStore((s) => s.error);
   const fetchPackages = useAdminStore((s) => s.fetchPackages);
   const updatePackage = useAdminStore((s) => s.updatePackage);
   const deletePackage = useAdminStore((s) => s.deletePackage);
@@ -467,7 +468,22 @@ export default function AdminPackagesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {(!hasFetched && (!packages || packages.length === 0)) ? (
+              {error && (!packages || packages.length === 0) ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <p className="text-sm font-bold text-red-600">{error}</p>
+                      <button
+                        type="button"
+                        onClick={() => fetchPackages('', statusFilter, 1, packagesLimit)}
+                        className="px-4 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        Retry Loading Packages
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (!hasFetched && (!packages || packages.length === 0)) ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12">
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-[#5ac4d7] border-t-transparent inline-block" />

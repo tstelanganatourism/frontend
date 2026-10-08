@@ -162,7 +162,7 @@ export default function AdminBookingsPage() {
   } | null>(null);
 
   const fetchBookings = useCallback(async (isSilent = false) => {
-    if (!isSilent && bookings.length === 0) {
+    if (!isSilent) {
       setIsLoading(true);
     }
     try {
@@ -178,9 +178,9 @@ export default function AdminBookingsPage() {
         apiClient.get('/api/v1/admin/bookings/summary', { params: { start_date: startDate, end_date: endDate } }),
       ]);
 
-      let newBookings = bookings;
-      let newTotal = total;
-      let newSummary = summary;
+      let newBookings: BookingItem[] = [];
+      let newTotal = 0;
+      let newSummary: BookingSummary | null = null;
 
       if (listResult.status === 'fulfilled') {
         const listData = listResult.value.data;
@@ -197,7 +197,7 @@ export default function AdminBookingsPage() {
         setSummary(newSummary);
       }
 
-      if (!search && !statusFilter && !sourceFilter && !targetFilter && !startDate && !endDate && offset === 0) {
+      if (!statusFilter && !sourceFilter && !targetFilter && !startDate && !endDate && offset === 0) {
         adminBookingsCache = { bookings: newBookings, total: newTotal, summary: newSummary };
       }
     } catch (err) {
@@ -205,10 +205,10 @@ export default function AdminBookingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [offset, statusFilter, sourceFilter, targetFilter, startDate, endDate, bookings, total, summary, search]);
+  }, [offset, statusFilter, sourceFilter, targetFilter, startDate, endDate]);
 
   useEffect(() => {
-    fetchBookings(bookings.length > 0);
+    fetchBookings();
   }, [fetchBookings]);
 
   // Client-side search & filter matching

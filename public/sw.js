@@ -68,7 +68,8 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/print/') ||
     url.pathname.startsWith('/admin/') ||
     url.pathname.startsWith('/agent/') ||
-    url.pathname.startsWith('/dashboard/')
+    url.pathname.startsWith('/dashboard/') ||
+    url.pathname.startsWith('/payment-status')
   ) {
     return;
   }

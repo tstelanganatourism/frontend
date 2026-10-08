@@ -302,7 +302,7 @@ export default function AdminPreBookingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterConfirmed, filterContacted, offset, items.length]);
+  }, [search, filterConfirmed, filterContacted, offset]);
 
   useEffect(() => {
     if (isHydrated) {
