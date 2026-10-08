@@ -51,6 +51,7 @@ interface BookingDetails {
   id: number;
   public_id: string;
   target_type: 'PACKAGE' | 'ROOM';
+  source?: string;
   travel_date: string;
   adult_count: number;
   child_count: number;
@@ -171,56 +172,85 @@ function formatDate(iso: string | null) {
 
 // ─── Payment Ledger Component ─────────────────────────────────────────────────
 
-function PaymentLedgerPanel({ ledger, targetTotalAmount }: { ledger: PaymentLedgerEntry[], targetTotalAmount: number }) {
-  if (!ledger || ledger.length === 0) {
+function PaymentLedgerPanel({
+  ledger,
+  targetTotalAmount,
+  fallbackPaidAmount = 0,
+  bookingPublicId,
+  bookingSource,
+  bookingCreatedAt,
+}: {
+  ledger: PaymentLedgerEntry[];
+  targetTotalAmount: number;
+  fallbackPaidAmount?: number;
+  bookingPublicId?: string;
+  bookingSource?: string;
+  bookingCreatedAt?: string | null;
+}) {
+  const effectiveLedger = (ledger && ledger.length > 0)
+    ? ledger
+    : (fallbackPaidAmount > 0
+      ? [{
+          id: 0,
+          amount: fallbackPaidAmount,
+          payment_method: (bookingSource === 'ADMIN_DIRECT' ? 'ADMIN_MANUAL' : (bookingSource === 'AGENT' ? 'AGENT_WALLET' : 'ONLINE')) as any,
+          status: 'CAPTURED' as const,
+          collected_by_type: bookingSource === 'ADMIN_DIRECT' ? 'ADMIN' : 'ONLINE',
+          collected_by_label: bookingSource === 'ADMIN_DIRECT' ? 'Admin Direct Booking' : 'Verified Booking Payment',
+          payment_reference_id: `TXN_${bookingPublicId || 'DIRECT'}`,
+          created_at: bookingCreatedAt || new Date().toISOString(),
+        }]
+      : []);
+
+  if (effectiveLedger.length === 0) {
     return (
-      <div className="flex items-center justify-center py-6 text-slate-400 text-xs font-semibold">
-        No payment records yet.
+      <div className="flex flex-col items-center justify-center py-6 px-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-slate-400 text-xs font-semibold text-center">
+        No payment transactions recorded for this reservation.
       </div>
     );
   }
 
   return (
     <div className="space-y-2.5">
-      {ledger.map((entry, idx) => {
+      {effectiveLedger.map((entry, idx) => {
         const statusStyle = PAYMENT_STATUS_STYLE[entry.status] ?? { label: entry.status, cls: 'bg-slate-50 text-slate-600 border-slate-200' };
         const methodLabel = PAYMENT_METHOD_LABEL[entry.payment_method] ?? entry.payment_method;
         const isOnline = entry.collected_by_type === 'RAZORPAY' || entry.collected_by_type === 'PHONEPE' || entry.collected_by_type === 'CASHFREE' || entry.payment_method === 'PHONEPE' || entry.payment_method === 'CASHFREE';
 
         return (
-          <div key={entry.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-slate-100">
-            <div className={`mt-0.5 h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${
+          <div key={entry.id || idx} className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 transition-colors">
+            <div className={`mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
               entry.status === 'CAPTURED' ? 'bg-emerald-100 text-emerald-700' :
               entry.status === 'CREATED'  ? 'bg-amber-100 text-amber-700' :
               'bg-red-100 text-red-600'
             }`}>
-              {isOnline ? <Wifi className="h-3 w-3" /> : <Banknote className="h-3 w-3" />}
+              {isOnline ? <Wifi className="h-4 w-4" /> : <Banknote className="h-4 w-4" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-black text-slate-800">
                   {idx === 0 
-                    ? (entry.amount >= targetTotalAmount ? 'Full Payment' : 'Advance Payment') 
-                    : `Payment ${idx + 1}`}
+                    ? (entry.amount >= targetTotalAmount ? 'Full Settlement Payment' : 'Advance Token / Initial Payment') 
+                    : `Settlement Tranche ${idx + 1}`}
                 </p>
-                <p className="text-sm font-black text-slate-900">{formatCurrency(entry.amount)}</p>
+                <p className="text-sm font-black text-slate-900 font-mono">{formatCurrency(entry.amount)}</p>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                <span className="text-[9px] font-semibold text-slate-500">{methodLabel}</span>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                <span className="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">{methodLabel}</span>
                 {entry.collected_by_label && (
                   <>
                     <span className="text-slate-300">•</span>
-                    <span className="text-[9px] text-slate-500 font-semibold">{entry.collected_by_label}</span>
+                    <span className="text-[10px] text-slate-600 font-semibold">{entry.collected_by_label}</span>
                   </>
                 )}
                 <span className="text-slate-300">•</span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${statusStyle.cls}`}>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${statusStyle.cls}`}>
                   {statusStyle.label}
                 </span>
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-[8px] text-slate-400 font-mono truncate max-w-[160px]">{entry.payment_reference_id}</p>
-                <p className="text-[8px] text-slate-400 shrink-0">{formatDateTime(entry.created_at)}</p>
+              <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-200/50">
+                <p className="text-[9px] text-slate-500 font-mono truncate max-w-[200px]">Ref: {entry.payment_reference_id}</p>
+                <p className="text-[9px] text-slate-500 font-medium shrink-0">{formatDateTime(entry.created_at)}</p>
               </div>
             </div>
           </div>
@@ -1301,44 +1331,82 @@ export default function BookingDetailsModal({
                           )}
                         </div>
                       ) : (
-                        <>
-                          <div>
-                            <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                              <span>Payment Progress</span>
-                              <span>{parseFloat(progressPct.toFixed(1))}%</span>
+                        <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Payment Fulfillment</span>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                                remainingBalance <= 0 || booking.status === 'FULLY_PAID'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                  : 'bg-amber-100 text-amber-800 border-amber-200'
+                              }`}>
+                                {remainingBalance <= 0 || booking.status === 'FULLY_PAID'
+                                  ? '100% Settled'
+                                  : progressPct < 1
+                                    ? `${progressPct.toFixed(1)}% (Advance Token)`
+                                    : `${progressPct.toFixed(1)}% Paid`}
+                              </span>
                             </div>
-                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full transition-all duration-700"
-                                style={{
-                                  width: `${progressPct}%`,
-                                  background: booking.status === 'FULLY_PAID'
-                                    ? 'linear-gradient(90deg, #10b981, #059669)'
-                                    : 'linear-gradient(90deg, #3b82f6, #6366f1)',
-                                }}
-                              />
+                            <span className="text-xs font-black text-slate-700 font-mono">
+                              {parseFloat(progressPct.toFixed(1))}%
+                            </span>
+                          </div>
+
+                          {/* Thicker, prominent progress bar */}
+                          <div className="h-3 w-full bg-slate-200/70 rounded-full overflow-hidden p-0.5 shadow-inner">
+                            <div
+                              className="h-full rounded-full transition-all duration-700 shadow-sm"
+                              style={{
+                                width: `${Math.min(100, Math.max(progressPct > 0 ? 3 : 0, progressPct))}%`,
+                                background: remainingBalance <= 0 || booking.status === 'FULLY_PAID'
+                                  ? 'linear-gradient(90deg, #10b981, #059669)'
+                                  : 'linear-gradient(90deg, #0ea5e9, #6366f1)',
+                              }}
+                            />
+                          </div>
+
+                          {/* Paid & Remaining info cards */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-white border border-emerald-100 rounded-xl p-2.5 text-center shadow-xs">
+                              <p className="text-[10px] text-emerald-600 font-black uppercase tracking-wider">Amount Paid</p>
+                              <p className="font-black text-emerald-800 text-sm mt-0.5">{formatCurrency(booking.paid_amount)}</p>
+                              <p className="text-[9px] font-semibold text-emerald-600/90 mt-0.5">
+                                {remainingBalance <= 0 ? 'Fully Collected' : (progressPct < 2 ? 'Advance Token' : 'Partial Collected')}
+                              </p>
                             </div>
-                            <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
-                              <div className="bg-emerald-50 rounded-lg p-2 text-center">
-                                <p className="text-emerald-600 font-bold uppercase tracking-wide">Paid</p>
-                                <p className="font-black text-emerald-800">{formatCurrency(booking.paid_amount)}</p>
-                              </div>
-                              <div className={`rounded-lg p-2 text-center ${remainingBalance > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
-                                <p className={`font-bold uppercase tracking-wide ${remainingBalance > 0 ? 'text-amber-600' : 'text-slate-400'}`}>Remaining</p>
-                                <p className={`font-black ${remainingBalance > 0 ? 'text-amber-800' : 'text-slate-500'}`}>
-                                  {remainingBalance > 0 ? formatCurrency(remainingBalance) : 'None'}
-                                </p>
-                              </div>
+                            <div className={`rounded-xl p-2.5 text-center border shadow-xs ${
+                              remainingBalance > 0
+                                ? 'bg-amber-50/70 border-amber-200/80 text-amber-900'
+                                : 'bg-white border-slate-200 text-slate-700'
+                            }`}>
+                              <p className={`text-[10px] font-black uppercase tracking-wider ${
+                                remainingBalance > 0 ? 'text-amber-700' : 'text-slate-400'
+                              }`}>
+                                Remaining Balance
+                              </p>
+                              <p className={`font-black text-sm mt-0.5 ${
+                                remainingBalance > 0 ? 'text-amber-900' : 'text-slate-600'
+                              }`}>
+                                {remainingBalance > 0 ? formatCurrency(remainingBalance) : '₹0.00'}
+                              </p>
+                              <p className={`text-[9px] font-semibold mt-0.5 ${
+                                remainingBalance > 0 ? 'text-amber-700' : 'text-slate-400'
+                              }`}>
+                                {remainingBalance > 0 ? 'Pending Collection' : 'Zero Balance (Nil)'}
+                              </p>
                             </div>
                           </div>
 
                           {remainingBalance > 0 && (
-                            <div className="bg-amber-50 border border-amber-100 text-amber-800 rounded-xl p-3 flex justify-between items-center text-xs font-bold">
-                              <span>Balance Due</span>
-                              <span className="text-sm font-black">{formatCurrency(remainingBalance)}</span>
+                            <div className="bg-amber-100/60 border border-amber-200/90 text-amber-900 rounded-xl p-3 flex justify-between items-center text-xs font-bold">
+                              <div className="flex items-center gap-1.5">
+                                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                                <span>Balance to Collect at Boarding / Office:</span>
+                              </div>
+                              <span className="text-sm font-black font-mono">{formatCurrency(remainingBalance)}</span>
                             </div>
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1381,7 +1449,14 @@ export default function BookingDetailsModal({
                     <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
                       <History className="h-4 w-4 text-slate-400" /> Payment History
                     </h4>
-                    <PaymentLedgerPanel ledger={booking.payment_ledger || []} targetTotalAmount={targetTotalAmount} />
+                    <PaymentLedgerPanel
+                      ledger={booking.payment_ledger || []}
+                      targetTotalAmount={targetTotalAmount}
+                      fallbackPaidAmount={booking.paid_amount}
+                      bookingPublicId={booking.public_id}
+                      bookingSource={booking.source}
+                      bookingCreatedAt={booking.created_at}
+                    />
 
                     {/* Admin: Record cash payment panel */}
                     {isAdmin && isPartialPaid && remainingBalance > 0 && (
