@@ -335,6 +335,7 @@ export default function AdminPackagesPage() {
       delete duplicatedData.starting_price;
       delete duplicatedData.generated_brochure_url;
       delete duplicatedData.brochure_pdf_url; // Clear so new copy gets a clean brochure cycle
+      delete duplicatedData.brochure_generation_status; // Clear so new copy gets clean MISSING status
 
       await createPackage(duplicatedData);
       toast.success('Package duplicated successfully with all details!');

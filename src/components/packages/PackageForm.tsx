@@ -142,6 +142,7 @@ export default function PackageForm({
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const lastRevalidatedBrochureRef = useRef<string | null>(null);
   const prevStatusRef = useRef<string | null>(null);
+  const pollingStartedAtRef = useRef<number | null>(null); // tracks when we started polling
   const activeBrochureUrl = brochurePdfUrl || brochureValidation?.active_brochure_url || initialData?.generated_brochure_url || '';
 
   // SEO Fields
@@ -320,23 +321,49 @@ export default function PackageForm({
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
-    if (['GENERATING', 'QUEUED'].includes(brochureValidation?.status) || isGeneratingBrochure) {
-      intervalId = setInterval(checkBrochureValidation, 4000);
+    const isInProgress = ['GENERATING', 'QUEUED'].includes(brochureValidation?.status);
+    if (isInProgress) {
+      // Record when polling started
+      if (!pollingStartedAtRef.current) {
+        pollingStartedAtRef.current = Date.now();
+      }
+      intervalId = setInterval(async () => {
+        // Safety net: if generation is taking >3 minutes, force a reset
+        const elapsed = Date.now() - (pollingStartedAtRef.current || Date.now());
+        if (elapsed > 3 * 60 * 1000) {
+          clearInterval(intervalId);
+          pollingStartedAtRef.current = null;
+          // Force reset stuck status via backend endpoint
+          if (initialData?.id) {
+            try {
+              await apiClient.post(`/api/v1/admin/packages/${initialData.id}/reset-brochure-status`);
+              toast.warning('Brochure generation timed out. Status has been reset.');
+            } catch (_) {}
+          }
+        }
+        await checkBrochureValidation();
+      }, 4000);
+    } else {
+      // Polling stopped — clear the timer reference
+      pollingStartedAtRef.current = null;
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [brochureValidation?.status, isGeneratingBrochure]);
+  }, [brochureValidation?.status]);
 
-  // Show toast when brochure generation succeeds
+  // Show toast when brochure generation succeeds or fails
   useEffect(() => {
     const currentStatus = brochureValidation?.status;
     if (
       prevStatusRef.current &&
-      ['QUEUED', 'GENERATING'].includes(prevStatusRef.current) &&
-      currentStatus === 'AVAILABLE'
+      ['QUEUED', 'GENERATING'].includes(prevStatusRef.current)
     ) {
-      toast.success('New brochure generated successfully!');
+      if (currentStatus === 'AVAILABLE') {
+        toast.success('Brochure generated successfully!');
+      } else if (currentStatus === 'FAILED') {
+        toast.error('Brochure generation failed. Please try again or upload a custom PDF.');
+      }
     }
     prevStatusRef.current = currentStatus || null;
   }, [brochureValidation?.status]);
@@ -348,15 +375,15 @@ export default function PackageForm({
     }
 
     try {
-      setIsGeneratingBrochure(true);
-      toast.info('Generating PDF brochure in background...');
+      toast.info('Brochure generation queued. Polling for updates...');
       await apiClient.post(`/api/v1/admin/packages/${initialData.id}/regenerate-brochure`);
+      // Immediately check status so the UI shows QUEUED/GENERATING right away
       await checkBrochureValidation();
     } catch (err: any) {
       console.error('Failed to trigger brochure regeneration', err);
       toast.error(err?.response?.data?.detail?.message || 'Failed to start brochure generation');
-    } finally {
-      setIsGeneratingBrochure(false);
+      // Re-check to sync UI with actual backend state
+      await checkBrochureValidation();
     }
   };
 
@@ -710,7 +737,6 @@ export default function PackageForm({
       await onSubmit(getPayload());
       
       if (shouldRegenerateOnSave && initialData?.id) {
-        setIsGeneratingBrochure(true);
         try {
           await apiClient.post(`/api/v1/admin/packages/${initialData.id}/regenerate-brochure`);
           toast.success('Brochure generation started in the background!');
@@ -718,8 +744,6 @@ export default function PackageForm({
           checkBrochureValidation();
         } catch (err: any) {
           toast.error(err.response?.data?.detail?.message || 'Failed to trigger brochure generation');
-        } finally {
-          setIsGeneratingBrochure(false);
         }
       }
     } catch (err: any) {
@@ -941,19 +965,18 @@ export default function PackageForm({
                               </div>
                             )}
 
-                            {/* Generation Button */}
                             <button
                               type="button"
                               onClick={handleGenerateBrochure}
-                              disabled={isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status)}
-                              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer ${isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status)
+                              disabled={['GENERATING', 'QUEUED'].includes(brochureValidation?.status)}
+                              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer ${['GENERATING', 'QUEUED'].includes(brochureValidation?.status)
                                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                   : showRegenConfirm
                                     ? 'bg-rose-50 border-2 border-rose-400 text-rose-700 hover:bg-rose-100 scale-[0.98]'
                                     : 'bg-white border-2 border-[#5ac4d7] text-[#0f3d56] hover:bg-[#5ac4d7]/10'
                                 }`}
                             >
-                              {isGeneratingBrochure || ['GENERATING', 'QUEUED'].includes(brochureValidation?.status) ? (
+                              {['GENERATING', 'QUEUED'].includes(brochureValidation?.status) ? (
                                 <><Loader2 className="h-3.5 w-3.5 animate-spin text-[#5ac4d7]" /> {brochureValidation?.status === 'QUEUED' ? 'Queued...' : 'Generating...'}</>
                               ) : showRegenConfirm ? (
                                 <><AlertTriangle className="h-3.5 w-3.5" /> Click again to confirm</>
