@@ -378,10 +378,27 @@ export default function PackageForm({
       return;
     }
 
-    const response = await apiClient.post('/api/v1/documents/signed-url', {
-      object_key: urlTarget
-    });
-    window.open(response.data.url, '_blank');
+    try {
+      const response = await apiClient.post('/api/v1/documents/signed-url', {
+        object_key: urlTarget
+      });
+      if (response.data?.url) {
+        window.open(response.data.url, '_blank');
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to resolve private document signed URL, attempting fallback:', err);
+    }
+
+    // Fallback: If private signed URL failed, open generated Cloudinary brochure or print page
+    const fallbackUrl = brochureValidation?.generated_brochure_url || initialData?.generated_brochure_url;
+    if (fallbackUrl && fallbackUrl.startsWith('http')) {
+      window.open(fallbackUrl, '_blank');
+    } else if (initialData?.slug) {
+      window.open(`/print/package/${initialData.slug}`, '_blank');
+    } else {
+      throw new Error('Unable to open brochure PDF link');
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -902,13 +919,24 @@ export default function PackageForm({
                         {/* Dynamic PDF Actions in the right box */}
                         {brochureValidation?.is_valid && (
                           <div className="pt-4 border-t border-slate-100 mt-4 space-y-3">
-                            {/* Alert box for failed generation */}
-                            {brochureValidation?.status === 'FAILED' && (
+                            {/* Alert box for failed generation (only if no brochure currently exists) */}
+                            {brochureValidation?.status === 'FAILED' && !activeBrochureUrl && (
                               <div className="bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                                 <AlertTriangle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
                                 <div>
                                   <p className="font-bold">Generation Failed</p>
                                   <p className="text-[10px] font-medium text-red-600 mt-0.5">Please try again or upload a custom PDF manually.</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Badge for available active brochure */}
+                            {activeBrochureUrl && brochureValidation?.status !== 'GENERATING' && brochureValidation?.status !== 'QUEUED' && (
+                              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded-xl text-xs font-semibold flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                                <div>
+                                  <p className="font-bold">Brochure Available</p>
+                                  <p className="text-[10px] font-medium text-emerald-700 mt-0.5">Official brochure is active and ready for viewing or download.</p>
                                 </div>
                               </div>
                             )}
