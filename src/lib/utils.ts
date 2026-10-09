@@ -107,4 +107,11 @@ export function parseValidationError(err: any): string[] {
   return ['An unexpected error occurred'];
 }
 
+export function formatINR(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '0';
+  const num = Number(value);
+  if (isNaN(num)) return '0';
+  return num.toLocaleString('en-IN');
+}
+
 

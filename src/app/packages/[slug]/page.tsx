@@ -35,7 +35,7 @@ import { PackageFaqs } from '@/components/packages/detail/PackageFaqs';
 import { PackagePolicies } from '@/components/packages/detail/PackagePolicies';
 import { BookingDialogV3 } from '@/components/packages/detail/BookingDialogV3';
 import { BookingCalloutCard } from '@/components/packages/detail/BookingCalloutCard';
-import { PackageMeals } from '@/components/packages/detail/PackageMeals';
+import { PackageExtras } from '@/components/packages/detail/PackageExtras';
 import { PackageVideoHero } from '@/components/packages/detail/PackageVideoHero';
 
 // ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
@@ -529,7 +529,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
 
           <FacilitiesInclusions inclusions={pkg.inclusions} exclusions={pkg.exclusions} />
 
-          <PackageMeals meals={pkg.meals} hasRefreshments={pkg.has_refreshments} />
+          <PackageExtras extras={pkg.extras} isStudentPackage={pkg.is_student_package} />
 
           <ReportingInfo boardingPoints={pkg.boarding_points} />
 

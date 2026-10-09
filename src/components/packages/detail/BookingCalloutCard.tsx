@@ -104,9 +104,8 @@ export const BookingCalloutCard = ({
     if (isNaN(num)) return 'N/A';
     return '₹' + num.toLocaleString('en-IN');
   };  const hasValidRefreshments = Boolean(hasRefreshments && (Number(refreshmentAdultPrice) > 0 || Number(refreshmentChildPrice) > 0 || Number(refreshmentStudentPrice) > 0));
-  const hasValidFood = Boolean(hasFoodOption && (Number(foodAdultPrice) > 0 || Number(foodChildPrice) > 0 || Number(foodStudentPrice) > 0));
-  const showAddonsTab = hasValidRefreshments || hasValidFood || (extras && extras.length > 0);
-  const showTransportTab = hasTransport && transportOptions && transportOptions.length > 0;
+  const showAddonsTab = Boolean(hasValidRefreshments || (extras && extras.length > 0));
+  const showTransportTab = Boolean(hasTransport && transportOptions && transportOptions.length > 0);
   const hasTabs = showAddonsTab || showTransportTab;
 
   return (
@@ -267,19 +266,6 @@ export const BookingCalloutCard = ({
               </div>
             )}
 
-            {/* Food Meals Option */}
-            {hasValidFood && (
-              <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50/80 border border-slate-100">
-                <Utensils className="h-4 w-4 text-[#0d6e75] shrink-0 mt-0.5" />
-                <div className="text-[10px]">
-                  <span className="block font-black text-slate-800">Catering & Meals package</span>
-                  <span className="block text-slate-500 font-semibold mt-0.5">
-                    Adult: <strong className="text-[#0d6e75]">{formatINR(foodAdultPrice)}</strong> · Child: {formatINR(foodChildPrice)}
-                  </span>
-                </div>
-              </div>
-            )}
-
             {/* Transport Options */}
             {showTransportTab && transportOptions.map((opt) => (
               <div key={opt.id} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50/80 border border-slate-100">
@@ -306,23 +292,32 @@ export const BookingCalloutCard = ({
               </div>
             ))}
 
-            {/* Extras list */}
-            {extras && extras.length > 0 && (
-              <div className="space-y-2 pt-1">
-                <span className="block text-[8px] font-black uppercase tracking-wider text-slate-450">Additional Extras</span>
-                {extras.map((ex) => (
-                  <div key={ex.id} className="flex justify-between items-center text-[10px] bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
-                    <div>
-                      <span className="block font-bold text-slate-700">{ex.title}</span>
-                      {ex.description && <span className="block text-[8px] text-slate-400 font-semibold">{ex.description}</span>}
-                    </div>
-                    <span className="font-black text-[#0d6e75] shrink-0">
-                      {isStudentPackage ? formatINR(ex.student_price) : formatINR(ex.adult_price)}
+            {/* Custom Extras & Food Add-Ons */}
+            {extras && extras.length > 0 && extras.map((ex) => {
+              const isFood = ex.title.toUpperCase().includes('FOOD') || ex.title.toUpperCase().includes('FISH') || ex.title.toUpperCase().includes('CHICKEN') || ex.title.toUpperCase().includes('MEAL');
+              return (
+                <div key={ex.id} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50/80 border border-slate-100">
+                  {isFood ? (
+                    <Utensils className="h-4 w-4 text-[#0d6e75] shrink-0 mt-0.5" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 text-[#0d6e75] shrink-0 mt-0.5" />
+                  )}
+                  <div className="text-[10px] flex-1">
+                    <span className="block font-black text-slate-800">{ex.title}</span>
+                    {ex.description && <span className="block text-[8px] text-slate-400 font-semibold">{ex.description}</span>}
+                    <span className="block text-slate-500 font-semibold mt-0.5">
+                      {isStudentPackage ? (
+                        <>Fare: <strong className="text-[#0d6e75]">{formatINR(ex.student_price)}</strong> / student</>
+                      ) : Number(ex.adult_price) === Number(ex.child_price) && Number(ex.adult_price) > 0 ? (
+                        <>Fare: <strong className="text-[#0d6e75]">{formatINR(ex.adult_price)}</strong> / person</>
+                      ) : (
+                        <>Adult: <strong className="text-[#0d6e75]">{formatINR(ex.adult_price)}</strong> · Child: {formatINR(ex.child_price)}</>
+                      )}
                     </span>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

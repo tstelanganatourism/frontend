@@ -2119,28 +2119,6 @@ export const BookingSidebarV3 = ({
                     </label>
                   )}
 
-                  {/* Food package */}
-                  {hasFoodOption && (Number(foodAdultPrice) > 0 || Number(foodChildPrice) > 0 || Number(foodStudentPrice) > 0) && (
-                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${includeFoodOption ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
-                      }`}>
-                      <input
-                        type="checkbox"
-                        checked={includeFoodOption}
-                        onChange={(e) => setIncludeFoodOption(e.target.checked)}
-                        className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
-                      />
-                      <div className="flex-1">
-                        <span className="block text-xs font-black text-slate-800 leading-snug">Add Meals Package</span>
-                        <span className="block text-[9px] font-semibold text-slate-400 mt-1">
-                          {isStudentPackage ? `₹${formatINR(foodStudentPrice || 0)}/Student` : `₹${formatINR(foodAdultPrice || 0)}/Adult · ₹${formatINR(foodChildPrice || 0)}/Child`}
-                        </span>
-                      </div>
-                      {includeFoodOption && prices.foodSubtotal > 0 && (
-                        <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(prices.foodSubtotal)}</span>
-                      )}
-                    </label>
-                  )}
-
                   {/* Extras checkbox list */}
                   {extras && extras.length > 0 && (
                     <div className="grid gap-2">
