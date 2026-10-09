@@ -38,8 +38,8 @@ import { BookingCalloutCard } from '@/components/packages/detail/BookingCalloutC
 import { PackageMeals } from '@/components/packages/detail/PackageMeals';
 import { PackageVideoHero } from '@/components/packages/detail/PackageVideoHero';
 
-// ISR: revalidate every 12 hours OR instantly when admin triggers /api/revalidate
-export const revalidate = 43200;
+// ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
+export const revalidate = 60;
 // dynamicParams=true means new slugs added after build are still rendered on-demand
 export const dynamicParams = true;
 
@@ -571,6 +571,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
               videoUrl={pkg.video_url}
               title="Watch the Tour"
               subtitle={`Experience the full ${pkg.title} journey in one video`}
+              posterUrl={pkg.cover_image_url || pkg.gallery?.[0]?.image_url}
             />
           )}
         </div>

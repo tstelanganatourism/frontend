@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { getCloudinaryVideoPosterUrl, getOptimizedCloudinaryVideoUrl } from '@/lib/utils';
 import { X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 
 interface GalleryItem {
@@ -49,7 +50,13 @@ export const RoomGallery = ({ images }: RoomGalleryProps) => {
             >
               {isVid ? (
                 <>
-                  <video src={img.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" preload="metadata" muted />
+                  <Image
+                    src={getCloudinaryVideoPosterUrl(img.image_url) || img.image_url}
+                    alt={img.alt_text || "Room Video Preview"}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    className="object-cover opacity-85 group-hover:opacity-100 transition-opacity"
+                  />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
                     <div className="w-12 h-12 rounded-full bg-white/30 border border-white/50 backdrop-blur-md flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
                       <svg className="w-6 h-6 ml-0.5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" /></svg>
@@ -111,7 +118,14 @@ export const RoomGallery = ({ images }: RoomGalleryProps) => {
 
           <div key={selectedImage} className="relative h-full max-h-[80vh] w-full max-w-6xl flex items-center justify-center">
             {isVideoUrl(images[selectedImage].image_url, images[selectedImage].media_type) ? (
-              <video src={images[selectedImage].image_url} controls autoPlay className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl" />
+              <video
+                src={getOptimizedCloudinaryVideoUrl(images[selectedImage].image_url)}
+                poster={getCloudinaryVideoPosterUrl(images[selectedImage].image_url) || undefined}
+                controls
+                playsInline
+                preload="none"
+                className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl"
+              />
             ) : (
               <Image
                 src={images[selectedImage].image_url}

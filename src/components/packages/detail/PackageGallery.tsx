@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { getHdImageUrl } from '@/lib/utils';
+import { getHdImageUrl, getCloudinaryVideoPosterUrl, getOptimizedCloudinaryVideoUrl } from '@/lib/utils';
 import { useLightbox } from '@/hooks/useLightbox';
 import { Camera, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
@@ -72,7 +72,13 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
               >
                 {isVid ? (
                   <>
-                    <video src={slide.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" preload="metadata" muted />
+                    <Image
+                      src={getCloudinaryVideoPosterUrl(slide.image_url) || getHdImageUrl(slide.image_url)}
+                      alt={slide.alt_text || `Tour Video ${index + 1}`}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      className="object-cover opacity-85 group-hover:opacity-100 transition-opacity"
+                    />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
                       <div className="w-10 h-10 rounded-full bg-white/30 border border-white/50 backdrop-blur-md flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
                         <svg className="w-5 h-5 ml-0.5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" /></svg>
@@ -114,7 +120,14 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
             )}
             <div className="relative w-full max-w-6xl flex items-center justify-center" style={{ height: '70vh' }}>
               {isVideoUrl(activeSlide.image_url, activeSlide.media_type) ? (
-                <video src={activeSlide.image_url} controls autoPlay className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl" />
+                <video
+                  src={getOptimizedCloudinaryVideoUrl(activeSlide.image_url)}
+                  poster={getCloudinaryVideoPosterUrl(activeSlide.image_url) || undefined}
+                  controls
+                  playsInline
+                  preload="none"
+                  className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl"
+                />
               ) : getHdImageUrl(activeSlide.image_url) ? (
                 <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || 'Tour Photo'} fill sizes="100vw" className="object-contain" quality={85} />
               ) : (

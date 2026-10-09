@@ -567,7 +567,7 @@ export default function AboutPage() {
               src={FEATURE_VIDEO_URL}
               poster={FEATURE_VIDEO_POSTER}
               controls
-              autoPlay
+              preload="none"
               playsInline
               controlsList="nodownload noremoteplayback"
               disablePictureInPicture

@@ -86,7 +86,7 @@ export default function VideoUpload({ label = 'Tour Video', value, onChange }: V
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             {/* Compact Video Player */}
             <div className="w-full sm:w-60 md:w-72 aspect-video max-h-[160px] sm:max-h-[180px] bg-black rounded-lg sm:rounded-xl overflow-hidden shrink-0 shadow-inner border border-slate-900/10">
-              <video src={value} controls className="w-full h-full object-contain" preload="metadata" />
+              <video src={value} controls className="w-full h-full object-contain" preload="none" />
             </div>
 
             {/* Video Info & Action Controls */}

@@ -7,9 +7,10 @@ interface RoomVideoHeroProps {
   videoUrl: string;
   title?: string;
   subtitle?: string;
+  posterUrl?: string | null;
 }
 
-export function RoomVideoHero({ videoUrl, title = 'Watch the Room', subtitle }: RoomVideoHeroProps) {
+export function RoomVideoHero({ videoUrl, title = 'Watch the Room', subtitle, posterUrl }: RoomVideoHeroProps) {
   if (!videoUrl) return null;
 
   return (
@@ -23,11 +24,11 @@ export function RoomVideoHero({ videoUrl, title = 'Watch the Room', subtitle }: 
         {subtitle && <p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">{subtitle}</p>}
       </div>
 
-      <ExperienceVideoPlayer videoUrl={videoUrl} label={title} />
+      <ExperienceVideoPlayer videoUrl={videoUrl} label={title} posterUrl={posterUrl} />
 
       <p className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-400">
         <span className="h-px w-6 bg-[#7ce1d7]/70" />
-        Hover over the video to reveal controls.
+        Click play to watch the stay experience.
       </p>
     </section>
   );

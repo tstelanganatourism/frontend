@@ -3,8 +3,8 @@ import { cache } from 'react';
 import { apiFetch } from '@/lib/api';
 import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperience';
 
-// ISR: revalidate every 12 hours OR instantly when admin triggers /api/revalidate
-export const revalidate = 43200;
+// ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
+export const revalidate = 60;
 export const dynamicParams = true;
 
 const KNOWN_STATIC_ROOM_SLUGS = [
@@ -19,7 +19,7 @@ const KNOWN_STATIC_ROOM_SLUGS = [
 export async function generateStaticParams() {
   try {
     const res = await apiFetch('/api/v1/rooms?size=200&page=1', {
-      next: { revalidate: 43200, tags: ['rooms'] }
+      next: { revalidate: 60, tags: ['rooms'] }
     });
     if (!res.ok) return KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
     const data = await res.json();
@@ -64,7 +64,7 @@ type RoomDetail = {
 const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> => {
   try {
     const res = await apiFetch(`/api/v1/rooms/${slug}`, {
-      next: { revalidate: 43200, tags: ['rooms', `room:${slug}`] }
+      next: { revalidate: 60, tags: ['rooms', `room:${slug}`] }
     });
     if (!res.ok) {
       if (res.status === 404) return null;

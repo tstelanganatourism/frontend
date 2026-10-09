@@ -3,9 +3,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Expand, Pause, Play, Volume2, VolumeX, Sparkles } from 'lucide-react';
 
+import { getOptimizedCloudinaryVideoUrl, getCloudinaryVideoPosterUrl } from '@/lib/utils';
+
 interface ExperienceVideoPlayerProps {
   videoUrl: string;
   label: string;
+  posterUrl?: string | null;
 }
 
 const formatTime = (seconds: number) => {
@@ -17,10 +20,10 @@ const formatTime = (seconds: number) => {
 
 /**
  * Premium, glassmorphic presentation player for public package and room videos.
- * Features customizable playback speeds, smooth transition animations, hover controls,
- * custom progress track, double-click fullscreen, and keyboard accessibility.
+ * Strictly on-demand playback (NO AUTOPLAY) to minimize Cloudinary bandwidth costs.
+ * Uses preload="none" and optimized transformations (f_auto, q_auto).
  */
-export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayerProps) {
+export function ExperienceVideoPlayer({ videoUrl, label, posterUrl }: ExperienceVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -32,28 +35,8 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [showControls, setShowControls] = useState(false);
 
-  // Auto-play silent preview when player is scrolled into view
-  useEffect(() => {
-    const video = videoRef.current;
-    const player = playerRef.current;
-    if (!video || !player || hasStarted) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        video.play()
-          .then(() => {
-            setHasStarted(true);
-            setIsPlaying(true);
-          })
-          .catch(() => {});
-      },
-      { threshold: 0.55 }
-    );
-
-    observer.observe(player);
-    return () => observer.disconnect();
-  }, [hasStarted]);
+  const optimizedVideoUrl = getOptimizedCloudinaryVideoUrl(videoUrl);
+  const effectivePoster = posterUrl || getCloudinaryVideoPosterUrl(videoUrl);
 
   // Keyboard accessibility listeners
   useEffect(() => {
@@ -86,6 +69,7 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
     if (!video) return;
 
     if (video.paused) {
+      setHasStarted(true);
       video.play().catch(() => {});
       setIsPlaying(true);
     } else {
@@ -165,12 +149,13 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
         {/* Actual Video */}
         <video
           ref={videoRef}
-          src={videoUrl}
+          src={optimizedVideoUrl}
+          poster={effectivePoster || undefined}
           className="h-full w-full cursor-pointer object-cover"
           muted={isMuted}
           loop
           playsInline
-          preload="metadata"
+          preload="none"
           controlsList="nodownload noplaybackrate"
           disablePictureInPicture
           disableRemotePlayback
@@ -212,18 +197,21 @@ export function ExperienceVideoPlayer({ videoUrl, label }: ExperienceVideoPlayer
 
         {/* Centered Large Pulse Play/Pause Button Overlay */}
         {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/20 backdrop-blur-[2px] transition-all duration-300">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/30 backdrop-blur-[2px] transition-all duration-300">
             <button
               type="button"
               onClick={togglePlay}
               aria-label={`Play ${label} video`}
-              className="group/btn relative flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-2xl backdrop-blur-lg transition-all duration-300 hover:scale-110 hover:bg-white/20 hover:border-white/40 focus:outline-none"
+              className="group/btn relative flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-2xl backdrop-blur-lg transition-all duration-300 hover:scale-110 hover:bg-white/25 hover:border-white/40 focus:outline-none"
             >
               {/* Pulsing visual outer rings */}
               <span className="absolute inset-0 rounded-full bg-white/10 animate-pulse" />
               <span className="absolute -inset-2 rounded-full bg-white/5 animate-ping opacity-60" />
               <Play className="ml-1.5 h-9 w-9 fill-current text-white transition-transform duration-300 group-hover/btn:scale-105" />
             </button>
+            <span className="mt-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold tracking-wide text-white/90 backdrop-blur-md">
+              Click to Play Tour Video
+            </span>
           </div>
         )}
 

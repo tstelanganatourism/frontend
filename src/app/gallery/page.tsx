@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ImageIcon, X, ZoomIn, Camera, ChevronLeft, ChevronRight, Play, Ship, MapPin, Sparkles, Film, Home } from 'lucide-react';
+import { getOptimizedCloudinaryVideoUrl, getCloudinaryVideoPosterUrl } from '@/lib/utils';
 import galleryData from './galleryData.json';
 
 type GalleryItem = {
@@ -317,10 +318,10 @@ export default function GalleryPage() {
                 <video
                   ref={videoRef}
                   key={selectedItem.url}
-                  src={selectedItem.url}
-                  poster={selectedItem.poster_url}
+                  src={getOptimizedCloudinaryVideoUrl(selectedItem.url)}
+                  poster={selectedItem.poster_url || getCloudinaryVideoPosterUrl(selectedItem.url) || undefined}
                   controls
-                  autoPlay
+                  preload="none"
                   playsInline
                   controlsList="nodownload noremoteplayback"
                   disablePictureInPicture

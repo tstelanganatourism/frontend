@@ -17,6 +17,26 @@ export function getHdImageUrl(url: string | null | undefined): string {
   return getOptimizedImageUrl(url, 1200);
 }
 
+export function getOptimizedCloudinaryVideoUrl(url: string | null | undefined): string {
+  if (!url || !url.trim()) return "";
+  if (url.includes("res.cloudinary.com") && url.includes("/video/upload/") && !url.includes("/video/upload/f_auto") && !url.includes("/video/upload/q_auto")) {
+    return url.replace("/video/upload/", "/video/upload/f_auto,q_auto,w_1280,c_limit/");
+  }
+  return url;
+}
+
+export function getCloudinaryVideoPosterUrl(url: string | null | undefined): string {
+  if (!url || !url.trim()) return "";
+  if (url.includes("res.cloudinary.com") && url.includes("/video/upload/")) {
+    const withTransform = url.replace(
+      /\/video\/upload\/(?:[a-zA-Z0-9_,]+\/)?/,
+      "/video/upload/so_0,f_auto,q_auto,w_1280,c_limit/"
+    );
+    return withTransform.replace(/\.(mp4|webm|mov|m4v)$/i, ".jpg");
+  }
+  return "";
+}
+
 export function parseValidationError(err: any): string[] {
   if (!err) return [];
   

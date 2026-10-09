@@ -47,7 +47,7 @@ export const RoomHero = ({
   }, [gallery, coverImage, lodgeName]);
 
   const [activeIdx, setActiveIdx] = useState(0);
-  const [mediaType, setMediaType] = useState<'video' | 'photos'>(videoUrl ? 'video' : 'photos');
+  const [mediaType, setMediaType] = useState<'video' | 'photos'>('photos');
 
   const moveSlide = (direction: 'left' | 'right') => {
     setActiveIdx((prev) => {
@@ -199,7 +199,7 @@ export const RoomHero = ({
 
             {mediaType === 'video' && videoUrl ? (
               <div className="overflow-hidden rounded-xl">
-                <ExperienceVideoPlayer videoUrl={videoUrl} label={lodgeName} />
+                <ExperienceVideoPlayer videoUrl={videoUrl} label={lodgeName} posterUrl={imageUrl || activeSlide?.image_url} />
               </div>
             ) : (
               <>

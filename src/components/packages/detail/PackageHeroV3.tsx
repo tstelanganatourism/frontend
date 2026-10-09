@@ -79,7 +79,7 @@ export const PackageHeroV3 = ({
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [mediaType, setMediaType] = useState<'video' | 'photos'>(videoUrl ? 'video' : 'photos');
+  const [mediaType, setMediaType] = useState<'video' | 'photos'>('photos');
 
   const activeSlide = slides[activeIdx] || slides[0];
   const categoryLabel = type === 'TOUR' ? 'Boat Ride' : 'Sightseeing';
@@ -249,7 +249,7 @@ export const PackageHeroV3 = ({
 
             {mediaType === 'video' && videoUrl ? (
               <div className="overflow-hidden rounded-xl">
-                <ExperienceVideoPlayer videoUrl={videoUrl} label={title} />
+                <ExperienceVideoPlayer videoUrl={videoUrl} label={title} posterUrl={coverImage || slides[0]?.image_url} />
               </div>
             ) : (
               <>
