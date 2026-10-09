@@ -177,7 +177,7 @@ const SITE_ORIGIN = 'https://www.tstelanganatourism.com';
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
     const res = await apiFetch(`/api/v1/packages/${slug}`, {
-      next: { revalidate: 43200, tags: ['packages', `package:${slug}`] }
+      next: { revalidate: 60, tags: ['packages', `package:${slug}`] }
     });
     if (!res.ok) {
       if (res.status === 404) return null;

@@ -6,7 +6,7 @@ import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
-import { getTransportSelections, hasRefreshment, money } from '@/lib/bookingDisplay';
+import { getTransportSelections, hasRefreshment, hasFoodAddon, getSelectedExtrasList, money } from '@/lib/bookingDisplay';
 import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string; bar: string }> = {
@@ -242,6 +242,8 @@ function BookingTicketCard({ booking: b, style, isPast }: { booking: any; style?
   const statusCfg = getStatusConfig(b.status);
   const transports = getTransportSelections(b.pricing_snapshot);
   const refreshmentIncluded = hasRefreshment(b);
+  const foodIncluded = hasFoodAddon(b.pricing_snapshot);
+  const extrasList = getSelectedExtrasList(b.pricing_snapshot);
 
   return (
     <div className="booking-ticket" style={style}>
@@ -300,7 +302,7 @@ function BookingTicketCard({ booking: b, style, isPast }: { booking: any; style?
               </div>
 
               {/* Tags */}
-              {(transports.length > 0 || refreshmentIncluded) && (
+              {(transports.length > 0 || refreshmentIncluded || foodIncluded || extrasList.length > 0) && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {transports.slice(0, 2).map((ts: any, idx: number) => (
                     <span key={idx} className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500" style={{background:'#f1f5f9', border:'1px solid #e2e8f0'}}>
@@ -312,6 +314,16 @@ function BookingTicketCard({ booking: b, style, isPast }: { booking: any; style?
                       Refreshments
                     </span>
                   )}
+                  {foodIncluded && (
+                    <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-teal-700" style={{background:'#f0fdfa', border:'1px solid #99f6e4'}}>
+                      Meals Package
+                    </span>
+                  )}
+                  {extrasList.map((ex: any, idx: number) => (
+                    <span key={`ex-${idx}`} className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-purple-700" style={{background:'#faf5ff', border:'1px solid #e9d5ff'}}>
+                      {ex.title || ex.name || 'Extra'}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>

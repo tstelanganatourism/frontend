@@ -292,6 +292,18 @@ export const BookingSidebarV3 = ({
     }
   }, [isStudentPackage]);
 
+  useEffect(() => {
+    if (!hasFoodOption && includeFoodOption) {
+      setIncludeFoodOption(false);
+    }
+  }, [hasFoodOption, includeFoodOption]);
+
+  useEffect(() => {
+    if (!hasRefreshments && includeRefreshments) {
+      setIncludeRefreshments(false);
+    }
+  }, [hasRefreshments, includeRefreshments]);
+
 
 
   useEffect(() => {

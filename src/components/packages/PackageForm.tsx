@@ -657,14 +657,18 @@ export default function PackageForm({
         day_number: m.day_number ? Number(m.day_number) : null,
         sort_order: idx + 1
       })),
-      extras: extras.map((ex, idx) => ({
-        ...ex,
-        adult_price: ex.adult_price ? Number(ex.adult_price) : null,
-        child_price: ex.child_price ? Number(ex.child_price) : null,
-        student_price: ex.student_price ? Number(ex.student_price) : null,
-        min_passengers: Number(ex.min_passengers || 1),
-        sort_order: idx + 1
-      }))
+      extras: extras
+        .filter((ex) => ex.title && ex.title.trim().length > 0)
+        .map((ex, idx) => ({
+          ...ex,
+          title: ex.title.trim(),
+          description: ex.description ? ex.description.trim() : null,
+          adult_price: ex.adult_price ? Number(ex.adult_price) : null,
+          child_price: ex.child_price ? Number(ex.child_price) : null,
+          student_price: ex.student_price ? Number(ex.student_price) : null,
+          min_passengers: Number(ex.min_passengers || 1),
+          sort_order: idx + 1
+        }))
     };
   };
 

@@ -266,6 +266,18 @@ export const BookingSidebarV2 = ({
   }, [isRefreshmentDisabled, includeRefreshments]);
 
   useEffect(() => {
+    if (!hasFoodOption && includeFoodOption) {
+      setIncludeFoodOption(false);
+    }
+  }, [hasFoodOption, includeFoodOption]);
+
+  useEffect(() => {
+    if (!hasRefreshments && includeRefreshments) {
+      setIncludeRefreshments(false);
+    }
+  }, [hasRefreshments, includeRefreshments]);
+
+  useEffect(() => {
     const handlePageShow = () => {
       setIsProcessingCheckout(false);
     };

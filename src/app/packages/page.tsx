@@ -12,7 +12,7 @@ export const metadata = {
 async function fetchCategories() {
   try {
     const res = await apiFetch('/api/v1/packages/categories', {
-      next: { revalidate: 43200, tags: ['categories', 'package-categories'] },
+      next: { revalidate: 60, tags: ['categories', 'package-categories'] },
     });
     if (!res.ok) return [];
     return await res.json();
@@ -37,7 +37,7 @@ async function fetchInitialPackages(searchParams: Record<string, string | string
 
   try {
     const query = params.toString();
-    const res = await apiFetch(`/api/v1/packages?${query}`, { next: { revalidate: 43200, tags: ['packages'] } }); // 12h
+    const res = await apiFetch(`/api/v1/packages?${query}`, { next: { revalidate: 60, tags: ['packages'] } });
     if (!res.ok) return { query, data: undefined };
     return { query, data: await res.json() };
   } catch {

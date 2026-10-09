@@ -26,8 +26,12 @@ export async function POST(req: NextRequest) {
     if (paths && Array.isArray(paths)) {
       for (const path of paths) {
         if (typeof path === 'string' && path.startsWith('/')) {
-          revalidatePath(path);
-          revalidatedPaths.push(path);
+          try {
+            revalidatePath(path);
+            revalidatedPaths.push(path);
+          } catch (e) {
+            console.warn(`[revalidate] Failed path ${path}:`, e);
+          }
         }
       }
     }
@@ -36,8 +40,17 @@ export async function POST(req: NextRequest) {
     if (tags && Array.isArray(tags)) {
       for (const tag of tags) {
         if (typeof tag === 'string') {
-          revalidateTag(tag, 'default');
-          revalidatedTags.push(tag);
+          try {
+            (revalidateTag as any)(tag, 'max');
+            revalidatedTags.push(tag);
+          } catch (e) {
+            try {
+              (revalidateTag as any)(tag);
+              revalidatedTags.push(tag);
+            } catch (e2) {
+              console.warn(`[revalidate] Failed tag ${tag}:`, e2);
+            }
+          }
         }
       }
     }

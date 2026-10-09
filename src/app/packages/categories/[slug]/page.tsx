@@ -7,13 +7,13 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 43200;
+export const revalidate = 60;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
   try {
     const res = await apiFetch('/api/v1/packages/categories', {
-      next: { revalidate: 43200, tags: ['categories', 'package-categories'] },
+      next: { revalidate: 60, tags: ['categories', 'package-categories'] },
     });
     if (!res.ok) return [];
     const categories = await res.json();
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
     const res = await apiFetch(`/api/v1/packages/categories/${slug}`, {
-      next: { revalidate: 43200, tags: ['categories', `category:${slug}`] }
+      next: { revalidate: 60, tags: ['categories', `category:${slug}`] }
     });
     if (res.status === 404) {
       return {
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function fetchCategoryPackages(slug: string) {
   try {
     const res = await apiFetch(`/api/v1/packages/categories/${slug}`, {
-      next: { revalidate: 43200, tags: ['categories', `category:${slug}`] }
+      next: { revalidate: 60, tags: ['categories', `category:${slug}`] }
     });
     if (res.status === 404) return { notFound: true };
     if (!res.ok) return null;
