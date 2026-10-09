@@ -360,6 +360,18 @@ export default function PackageForm({
     }
   };
 
+  const handleResetBrochureStatus = async () => {
+    if (!initialData?.id) return;
+    try {
+      await apiClient.post(`/api/v1/admin/packages/${initialData.id}/reset-brochure-status`);
+      toast.info('Brochure queue reset. You can now try generating again.');
+      await checkBrochureValidation();
+    } catch (err: any) {
+      console.error('Failed to reset brochure status', err);
+      toast.error('Failed to reset brochure queue status');
+    }
+  };
+
   const openBrochurePdf = async (urlTarget: string) => {
     if (!urlTarget.startsWith('private/')) {
       window.open(urlTarget, '_blank');
@@ -927,6 +939,23 @@ export default function PackageForm({
                                 <><RefreshCw className="h-3.5 w-3.5" /> Generate Brochure</>
                               )}
                             </button>
+
+                            {/* Stuck Queue Reset helper */}
+                            {['GENERATING', 'QUEUED'].includes(brochureValidation?.status) && (
+                              <div className="flex items-center justify-between text-[11px] bg-amber-50/80 border border-amber-200/80 rounded-xl px-3 py-2 text-amber-800 animate-in fade-in duration-200">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
+                                  <span>Task in progress</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleResetBrochureStatus}
+                                  className="font-bold underline text-amber-900 hover:text-amber-950 cursor-pointer"
+                                >
+                                  Reset Queue
+                                </button>
+                              </div>
+                            )}
 
                             {/* View/Download Button */}
                             {activeBrochureUrl && (
