@@ -37,9 +37,9 @@ export function PackageExtras({ extras = [], isStudentPackage = false }: Package
         <Sparkles className="h-5 w-5 text-[#0d6e75]" />
         <p className="text-xs font-black uppercase tracking-wider text-[#0d6e75]">Custom Add-Ons & Extras</p>
       </div>
-      <h2 className="text-2xl font-black text-slate-900 sm:text-3xl">Optional Add-Ons & Food Specials</h2>
+      <h2 className="text-2xl font-black text-slate-900 sm:text-3xl">Optional Add-Ons & Services</h2>
       <p className="text-sm font-medium text-slate-500 mt-2 max-w-2xl">
-        Enhance your tour experience with regional culinary specials and optional add-ons. You can select any of these items directly when booking your tickets.
+        Enhance your tour experience with optional custom add-ons and services. You can select any of these items directly when booking your tickets.
       </p>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
