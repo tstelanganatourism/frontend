@@ -45,6 +45,16 @@ function sanitizeBoardingPoint(bp: BoardingPt): BoardingPt {
   };
 }
 
+function getExtraIcon(title?: string | null): string {
+  if (!title) return '✨';
+  const lower = title.toLowerCase();
+  if (lower.includes('fish') || lower.includes('chapalu') || lower.includes('prawn') || lower.includes('seafood')) return '🐟';
+  if (lower.includes('chicken') || lower.includes('kodi') || lower.includes('mutton') || lower.includes('non veg')) return '🍗';
+  if (lower.includes('veg') || lower.includes('food') || lower.includes('meal') || lower.includes('curry') || lower.includes('lunch') || lower.includes('dinner')) return '🍲';
+  if (lower.includes('room') || lower.includes('stay') || lower.includes('bath') || lower.includes('freshen')) return '🏨';
+  return '✨';
+}
+
 type Itinerary = { day_number: number; title: string; description?: string | null; timing?: string | null; duration_at_stop?: string | null; meal_included: boolean; sort_order: number };
 type Inclusion = { label: string };
 type Exclusion = { label: string };
@@ -525,69 +535,164 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
           )}
 
           {/* Section 3: Meals, Fresh-Up & Add-ons Grid */}
-          <div className="grid-2" style={{ marginBottom: '10px' }}>
-            {/* Meals & Food Experience */}
-            <div>
-              <div className="section-title">🍽 Included Food &amp; Catering Menu</div>
-              <div className="card">
-                {pkg.meals && pkg.meals.length > 0 ? (
-                  pkg.meals.map((m, i) => (
-                    <div key={i} style={{ marginBottom: '4px', paddingBottom: '4px', borderBottom: i < pkg.meals!.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>
-                          {m.is_vegetarian ? '🟢' : '🔴'} {m.name}
-                        </span>
-                        <span style={{ fontSize: '6.5pt', background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px', color: '#475569' }}>
-                          {m.serving_time || m.meal_type}
-                        </span>
-                      </div>
-                      {m.description && <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>{m.description}</div>}
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic' }}>
-                    Standard Veg/Non-Veg meals provided during Godavari boat cruise.
-                  </div>
-                )}
-                {pkg.has_food_option && (
-                  <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontSize: '7pt', color: '#047857', fontWeight: 600 }}>
-                    Optional Food Package: Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
-                  </div>
-                )}
-              </div>
-            </div>
+          {(() => {
+            const hasMeals = Boolean((pkg.meals && pkg.meals.length > 0) || pkg.has_food_option);
+            const hasExtras = Boolean(pkg.has_refreshments || (pkg.extras && pkg.extras.length > 0));
 
-            {/* Fresh Up & Custom Add-on Extras */}
-            <div>
-              <div className="section-title">🏨 Fresh-Up Rooms &amp; Add-on Extras</div>
-              <div className="card">
-                {pkg.has_refreshments && (
-                  <div style={{ marginBottom: '6px', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>Fresh-Up Room Stay (Bath &amp; Change)</div>
-                    <div style={{ fontSize: '7pt', color: '#059669', fontWeight: 600, marginTop: '1px' }}>
-                      Adult: {formatCurrency(pkg.refreshment_adult_price)} | Child: {formatCurrency(pkg.refreshment_child_price)}
-                    </div>
-                  </div>
-                )}
+            if (!hasMeals && !hasExtras) return null;
 
-                {pkg.extras && pkg.extras.length > 0 ? (
-                  pkg.extras.map((e, i) => (
-                    <div key={i} style={{ marginBottom: '4px' }}>
-                      <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>✨ {e.title}</div>
-                      {e.description && <div style={{ fontSize: '6.5pt', color: '#64748b' }}>{e.description}</div>}
-                      <div style={{ fontSize: '7pt', color: '#d97706', fontWeight: 600 }}>
-                        Adult: {formatCurrency(e.adult_price)} | Child: {formatCurrency(e.child_price)}
-                      </div>
+            const totalAddonsCount = (pkg.has_refreshments ? 1 : 0) + (pkg.extras?.length || 0);
+
+            // Case 1: Both meals and extras exist -> Side-by-side 2-column grid
+            if (hasMeals && hasExtras) {
+              return (
+                <div className="grid-2" style={{ marginBottom: '10px' }}>
+                  <div>
+                    <div className="section-title">🍽 Included Food &amp; Catering Menu</div>
+                    <div className="card">
+                      {pkg.meals && pkg.meals.length > 0 && pkg.meals.map((m, i) => (
+                        <div key={i} style={{ marginBottom: '4px', paddingBottom: '4px', borderBottom: i < pkg.meals!.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>
+                              {m.is_vegetarian ? '🟢' : '🔴'} {m.name}
+                            </span>
+                            <span style={{ fontSize: '6.5pt', background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px', color: '#475569' }}>
+                              {m.serving_time || m.meal_type}
+                            </span>
+                          </div>
+                          {m.description && <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>{m.description}</div>}
+                        </div>
+                      ))}
+                      {pkg.has_food_option && (
+                        <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontSize: '7pt', color: '#047857', fontWeight: 600 }}>
+                          Optional Food Package: Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
+                        </div>
+                      )}
                     </div>
-                  ))
-                ) : (
-                  <div style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic' }}>
-                    No custom add-on extras configured.
                   </div>
-                )}
+
+                  <div>
+                    <div className="section-title">🏕️ Fresh-Up Rooms &amp; Add-on Extras</div>
+                    <div className="card">
+                      {pkg.has_refreshments && (
+                        <div style={{ marginBottom: '6px', paddingBottom: '6px', borderBottom: (pkg.extras?.length || 0) > 0 ? '1px solid #f1f5f9' : 'none' }}>
+                          <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>🏨 Fresh-Up Room Stay (Bath &amp; Change)</div>
+                          <div style={{ fontSize: '7pt', color: '#059669', fontWeight: 600, marginTop: '1px' }}>
+                            Adult: {formatCurrency(pkg.refreshment_adult_price)} | Child: {formatCurrency(pkg.refreshment_child_price)}
+                          </div>
+                        </div>
+                      )}
+                      {pkg.extras?.map((e, i) => (
+                        <div key={i} style={{ marginBottom: '4px', paddingBottom: '4px', borderBottom: i < pkg.extras!.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                          <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>{getExtraIcon(e.title)} {e.title}</div>
+                          {e.description && <div style={{ fontSize: '6.5pt', color: '#64748b' }}>{e.description}</div>}
+                          <div style={{ fontSize: '7pt', color: '#d97706', fontWeight: 600 }}>
+                            Adult: {formatCurrency(e.adult_price)} | Child: {formatCurrency(e.child_price)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Case 2: Only meals exist (no extras)
+            if (hasMeals && !hasExtras) {
+              return (
+                <div style={{ marginBottom: '10px' }}>
+                  <div className="section-title">🍽 Included Food &amp; Catering Menu</div>
+                  <div className="card">
+                    {pkg.meals && pkg.meals.length > 0 && pkg.meals.map((m, i) => (
+                      <div key={i} style={{ marginBottom: '4px', paddingBottom: '4px', borderBottom: i < pkg.meals!.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>
+                            {m.is_vegetarian ? '🟢' : '🔴'} {m.name}
+                          </span>
+                          <span style={{ fontSize: '6.5pt', background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px', color: '#475569' }}>
+                            {m.serving_time || m.meal_type}
+                          </span>
+                        </div>
+                        {m.description && <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>{m.description}</div>}
+                      </div>
+                    ))}
+                    {pkg.has_food_option && (
+                      <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontSize: '7pt', color: '#047857', fontWeight: 600 }}>
+                        Optional Food Package: Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            // Case 3: Only extras exist (food was moved to add-on extras) -> Fill 100% full width!
+            const gridCols = totalAddonsCount >= 3 ? 'repeat(3, 1fr)' : totalAddonsCount === 2 ? 'repeat(2, 1fr)' : '1fr';
+
+            return (
+              <div style={{ marginBottom: '10px' }}>
+                <div className="section-title">🏕️ Fresh-Up Rooms &amp; Add-on Extras</div>
+                <div className="card" style={{ padding: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '8px' }}>
+                    {pkg.has_refreshments && (
+                      <div
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '5px',
+                          padding: '7px 9px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt', lineHeight: 1.25 }}>
+                            🏨 Fresh-Up Room Stay (Bath &amp; Change)
+                          </div>
+                          <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '2px', lineHeight: 1.2 }}>
+                            Optional facility for morning arrival &amp; freshening up
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '7pt', color: '#059669', fontWeight: 700, marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1' }}>
+                          Adult: {formatCurrency(pkg.refreshment_adult_price)} | Child: {formatCurrency(pkg.refreshment_child_price)}
+                        </div>
+                      </div>
+                    )}
+
+                    {pkg.extras?.map((e, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '5px',
+                          padding: '7px 9px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt', lineHeight: 1.25 }}>
+                            {getExtraIcon(e.title)} {e.title}
+                          </div>
+                          {e.description && (
+                            <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '2px', lineHeight: 1.2 }}>
+                              {e.description}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '7pt', color: '#d97706', fontWeight: 700, marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1' }}>
+                          Adult: {formatCurrency(e.adult_price)} | Child: {formatCurrency(e.child_price)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Section 4: Day-by-Day Itinerary */}
           <div className="section-title">🗺 Tour Itinerary &amp; Daily Schedule</div>

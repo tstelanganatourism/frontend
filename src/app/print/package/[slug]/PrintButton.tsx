@@ -7,6 +7,8 @@ import { clientSideDownloadPdf } from '@/lib/pdfClientDownload';
 export function PrintButton() {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const isDownloadingRef = React.useRef(false);
+  const autoDownloadedRef = React.useRef(false);
 
   const handleBack = () => {
     if (typeof window !== 'undefined') {
@@ -31,30 +33,46 @@ export function PrintButton() {
   };
 
   const handleDownloadPdf = React.useCallback(async () => {
-    if (downloading) return;
+    if (isDownloadingRef.current) return;
+    isDownloadingRef.current = true;
+    setDownloading(true);
+
     try {
-      setDownloading(true);
-      toast.info('Generating PDF for download...');
+      toast.info('Generating PDF for download...', { id: 'pdf-brochure-download' });
 
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts[pathParts.length - 1] || 'tour';
       const filename = `${slug}-brochure.pdf`;
 
       await clientSideDownloadPdf('.brochure-container, body', filename);
-      toast.success('Brochure PDF downloaded successfully!');
+      toast.success('Brochure PDF downloaded successfully!', { id: 'pdf-brochure-download' });
     } catch (err) {
       console.error('[PrintButton] PDF download error:', err);
-      toast.info('Opening print dialog — please select "Save as PDF".');
+      toast.info('Opening print dialog — please select "Save as PDF".', { id: 'pdf-brochure-download' });
       setTimeout(() => window.print(), 300);
     } finally {
+      isDownloadingRef.current = false;
       setDownloading(false);
     }
-  }, [downloading]);
+  }, []);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('autoDownload') === 'true') {
+        if (autoDownloadedRef.current) return;
+        autoDownloadedRef.current = true;
+
+        // Clean up the URL parameter immediately to prevent any loop on re-render/reload
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('autoDownload');
+          const cleanUrl = url.pathname + (url.search ? url.search : '') + url.hash;
+          window.history.replaceState(window.history.state, '', cleanUrl);
+        } catch {
+          // ignore
+        }
+
         const timer = setTimeout(() => {
           handleDownloadPdf();
         }, 800);
