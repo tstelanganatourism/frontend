@@ -74,7 +74,7 @@ export type RoomItem = {
   facilities: string[];
 };
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
@@ -271,6 +271,7 @@ export default async function HomePage() {
         heroItems={heroItems}
         featuredPackages={featuredPackages}
         rooms={featuredRooms}
+        allPackages={heroPackagesRaw}
       />
     </>
   );

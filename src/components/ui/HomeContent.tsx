@@ -18,6 +18,7 @@ import PackageCard from '@/components/ui/PackageCard';
 import RoomCard from '@/components/ui/RoomCard';
 import GoogleReviewsCarousel from '@/components/ui/GoogleReviewsCarousel';
 import HeroBackgroundSlideshow from '@/components/ui/HeroBackgroundSlideshow';
+import FlipkartPackageAds from '@/components/packages/FlipkartPackageAds';
 import type { HeroItem, FeaturedPackage, RoomItem } from '@/app/page';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -111,11 +112,12 @@ interface HomeContentProps {
   heroItems: HeroItem[];
   featuredPackages: FeaturedPackage[] | null;
   rooms: RoomItem[] | null;
+  allPackages?: FeaturedPackage[] | null;
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────
 
-export default function HomeContent({ heroItems, featuredPackages, rooms }: HomeContentProps) {
+export default function HomeContent({ heroItems, featuredPackages, rooms, allPackages }: HomeContentProps) {
   const language = useLanguageStore((s) => s.language);
   const t = translations[language];
   const isTelugu = language === 'te';
@@ -144,7 +146,6 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
 
   return (
     <main className="w-full overflow-x-clip bg-[#f6faf8] text-[#0f2f3d]">
-
       {/* ─── HERO ─── */}
       <section className="relative isolate overflow-hidden bg-[#07242c]">
         {/* Slideshow renders its own gradient overlay + carousel controls internally */}
@@ -324,6 +325,9 @@ export default function HomeContent({ heroItems, featuredPackages, rooms }: Home
           </div>
         </div>
       </section>
+
+      {/* ─── FEATURED JOURNEYS: modal layer over the homepage hero ─── */}
+      <FlipkartPackageAds packages={allPackages || featuredPackages} />
 
       {/* ─── MOBILE BANNER ─── */}
       <section className="block lg:hidden bg-[#07242c] py-6 border-t border-b border-[#1598a1]/25">
