@@ -6,11 +6,12 @@ import { apiClient } from '@/lib/api';
 import {
   Ticket, Search, RefreshCw, ChevronLeft, ChevronRight,
   CheckCircle2, Clock, XCircle, AlertCircle, IndianRupee,
-  ExternalLink, Filter, Users, Loader2, Plus, Printer
+  ExternalLink, Filter, Users, Loader2, Plus, Printer, ReceiptText
 } from 'lucide-react';
 import BookingDetailsModal from '@/components/ui/BookingDetailsModal';
 import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
 import AdminCreateBookingModal from '@/components/admin/AdminCreateBookingModal';
+import AptdcCreateBookingModal from '@/components/admin/AptdcCreateBookingModal';
 import PrintBookingsModal from '@/components/admin/PrintBookingsModal';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
@@ -41,7 +42,12 @@ interface BookingItem {
   created_at: string | null;
   package_title: string;
   variant_title: string;
-  package_type?: 'TOUR' | 'TRIP';
+  pricing_snapshot?: {
+    receipt_style?: string;
+    transport_selections?: Array<{ quantity?: number; title?: string }>;
+    [key: string]: unknown;
+  } | null;
+  package_type?: 'TOUR' | 'TRIP' | 'APTDC';
   customer: {
     id: number | null;
     full_name: string;
@@ -132,7 +138,7 @@ function AdminOfficePopupHandler() {
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = ['', 'PENDING', 'PARTIAL_PAID', 'FULLY_PAID', 'CANCELLED', 'REFUNDED'];
 const SOURCE_OPTIONS = ['', 'USER', 'AGENT', 'ADMIN', 'ADMIN_DIRECT'];
-const TARGET_OPTIONS = ['', 'BOAT RIDE', 'SIGHTSEEING', 'ROOM'];
+const TARGET_OPTIONS = ['', 'BOAT RIDE', 'SIGHTSEEING', 'ROOM', 'APTDC'];
 
 // Client cache for instant booking list rendering
 let adminBookingsCache: { bookings: BookingItem[]; total: number; summary: BookingSummary | null } | null = null;
@@ -152,6 +158,7 @@ export default function AdminBookingsPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedPublicId, setSelectedPublicId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isAptdcCreateOpen, setIsAptdcCreateOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [activePopupDetails, setActivePopupDetails] = useState<{
     bookingId: string;
@@ -267,15 +274,22 @@ export default function AdminBookingsPage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button
+            onClick={() => setIsAptdcCreateOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-[#43ad4b] px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-md shadow-[#43ad4b]/20 transition-all hover:bg-[#328a39] active:scale-95"
+          >
+            <ReceiptText className="h-4 w-4" />
+            Create APTDC Booking
+          </button>
+          <button
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-violet-700 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-md hover:bg-violet-700 transition-colors active:scale-95"
           >
             <Plus className="h-4 w-4" />
             Create Booking
           </button>
           <button
             onClick={() => setIsPrintOpen(true)}
-            className="flex items-center gap-2 rounded-xl border border-[#0a2351] bg-[#0a2351] px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-[#1a3a6b] transition-colors"
+            className="flex items-center gap-2 rounded-xl border border-[#0a2351] bg-[#0a2351] px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-black text-white shadow-md hover:bg-[#1a3a6b] transition-colors active:scale-95"
           >
             <Printer className="h-4 w-4" />
             Print Bookings
@@ -283,13 +297,24 @@ export default function AdminBookingsPage() {
           <button
             onClick={() => fetchBookings(false)}
             disabled={isLoading}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
       </div>
+
+      {/* Aptdc Create Booking Modal */}
+      <AptdcCreateBookingModal
+        isOpen={isAptdcCreateOpen}
+        onClose={() => setIsAptdcCreateOpen(false)}
+        onSuccess={(publicId) => {
+          fetchBookings();
+          setSelectedPublicId(publicId);
+          setIsDetailsOpen(true);
+        }}
+      />
 
       {/* Admin Create Booking Modal */}
       <AdminCreateBookingModal
@@ -505,14 +530,23 @@ export default function AdminBookingsPage() {
 
                     {/* Package / Room */}
                     <td className="px-5 py-4 hidden lg:table-cell">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                          b.target_type === 'ROOM' ? 'bg-indigo-100 text-indigo-700' : 'bg-pink-100 text-pink-700'
+                          b.target_type === 'ROOM'
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : b.package_type === 'APTDC'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-pink-100 text-pink-700'
                         }`}>
-                          {b.target_type === 'ROOM' ? 'ROOM' : (b.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING')}
+                          {b.target_type === 'ROOM' ? 'ROOM' : (b.package_type === 'APTDC' ? 'APTDC' : b.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING')}
                         </span>
                         <p className="font-bold text-slate-800 text-xs truncate max-w-[140px]">{b.package_title}</p>
                       </div>
+                      {b.pricing_snapshot?.receipt_style === 'APTDC' && (
+                        <span className="mb-1 inline-flex items-center rounded-full bg-[#e8f6df] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#287a31] ring-1 ring-inset ring-[#8bcf70]">
+                          APTDC Admin Ticket
+                        </span>
+                      )}
                       <p className="text-[10px] text-slate-400 truncate max-w-[160px]">{b.variant_title}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
                         {b.student_count && b.student_count > 0 ? (

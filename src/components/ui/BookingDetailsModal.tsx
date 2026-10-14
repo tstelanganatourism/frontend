@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X as CloseIcon, Ticket, Calendar, Clock, CreditCard, ExternalLink,
   Loader2, Users, Phone, FileText, History, Banknote, Wifi,
-  CheckCircle2, AlertCircle, IndianRupee, TrendingUp, MessageCircle, SlidersHorizontal
+  CheckCircle2, AlertCircle, IndianRupee, TrendingUp, MessageCircle, SlidersHorizontal, ReceiptText
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
@@ -749,6 +749,15 @@ export default function BookingDetailsModal({
     }, 1200);
   };
 
+  const handleDownloadAptdcTicket = () => {
+    if (!booking?.public_id || isPreparingTicket) return;
+    setIsPreparingTicket(true);
+    setTimeout(() => {
+      window.open(`/print/aptdc-ticket/${booking.public_id}`, '_blank');
+      setIsPreparingTicket(false);
+    }, 1200);
+  };
+
   const handleDownloadForm = () => {
     if (!booking?.public_id || isPreparingForm) return;
     setIsPreparingForm(true);
@@ -777,11 +786,15 @@ export default function BookingDetailsModal({
       : `Travel Date: ${booking.travel_date || '—'}`;
     const paxStr = `${booking.adult_count} Adults${booking.child_count > 0 ? `, ${booking.child_count} Children` : ''}${booking.student_count > 0 ? `, ${booking.student_count} Students` : ''}`;
     const totalAmount = formatCurrency(booking.total_amount);
+    const isAptdcManualReceipt = booking.pricing_snapshot?.booking_mode === 'APTDC_MANUAL';
 
     const baseUrl = window.location.origin;
-    const ticketUrl = `${baseUrl}/print/ticket/${bookingId}`;
-    const formUrl = booking.target_type === 'PACKAGE' ? `${baseUrl}/print/form/${bookingId}` : '';
-    const invoiceUrl = `${baseUrl}/print/invoice/${bookingId}`;
+    const ticketPath = booking.pricing_snapshot?.receipt_style === 'APTDC'
+      ? `/print/aptdc-ticket/${bookingId}`
+      : `/print/ticket/${bookingId}`;
+    const ticketUrl = `${baseUrl}${ticketPath}`;
+    const formUrl = booking.target_type === 'PACKAGE' && !isAptdcManualReceipt ? `${baseUrl}/print/form/${bookingId}` : '';
+    const invoiceUrl = isAptdcManualReceipt ? '' : `${baseUrl}/print/invoice/${bookingId}`;
 
     let message = `Hello ${primaryName}! Here are the details of your TS Tourism booking:\n\n` +
       `- *Booking ID*: ${bookingId}\n` +
@@ -794,7 +807,8 @@ export default function BookingDetailsModal({
     if (formUrl) {
       message += `- *Form Link*: ${formUrl}\n`;
     }
-    message += `- *Invoice Link*: ${invoiceUrl}\n\n`;
+    if (invoiceUrl) message += `- *Invoice Link*: ${invoiceUrl}\n`;
+    message += '\n';
     message += `Thank you for booking with us!`;
 
     let formattedPhone = primaryPhone.replace(/\D/g, '');
@@ -833,6 +847,7 @@ export default function BookingDetailsModal({
   const isAdmin = user?.role === 'ADMIN';
   const isPartialPaid = booking?.status === 'PARTIAL_PAID';
   const isFullyPaid = booking?.status === 'FULLY_PAID' || booking?.status === 'CONFIRMED';
+  const isAptdcReceipt = booking?.pricing_snapshot?.booking_mode === 'APTDC_MANUAL' || booking?.pricing_snapshot?.receipt_style === 'APTDC';
   const remainingBalance = booking?.remaining_balance ?? 0;
 
   const targetTotalAmount = booking && booking.agent_payable != null && booking.agent_payable > 0
@@ -921,13 +936,22 @@ export default function BookingDetailsModal({
                       </span>
                     )}
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
-                      booking.target_type === 'ROOM' ? 'bg-indigo-100 text-indigo-700 ring-1 ring-inset ring-indigo-200' : 'bg-pink-100 text-pink-700 ring-1 ring-inset ring-pink-200'
+                      booking.target_type === 'ROOM'
+                        ? 'bg-indigo-100 text-indigo-700 ring-1 ring-inset ring-indigo-200'
+                        : booking.package_type === 'APTDC'
+                        ? 'bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-300'
+                        : 'bg-pink-100 text-pink-700 ring-1 ring-inset ring-pink-200'
                     }`}>
-                      {booking.target_type === 'ROOM' ? 'ROOM' : (booking.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING')}
+                      {booking.target_type === 'ROOM' ? 'ROOM' : (booking.package_type === 'APTDC' ? 'APTDC' : booking.package_type === 'TOUR' ? 'BOAT RIDE' : 'SIGHTSEEING')}
                     </span>
                     <span className="font-mono text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1 rounded-lg">
                       {booking.public_id}
                     </span>
+                    {(isAptdcReceipt || booking.pricing_snapshot?.receipt_style === 'APTDC') && (
+                      <span className="inline-flex items-center rounded-full bg-[#e8f6df] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#287a31] ring-1 ring-inset ring-[#8bcf70]">
+                        APTDC Admin Ticket
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">{booking.package_title}</h2>
                   <p className="text-xs font-bold text-[#5ac4d7] uppercase tracking-wider mt-1">{booking.variant_title}</p>
@@ -1548,7 +1572,7 @@ export default function BookingDetailsModal({
                       </button>
                     )}
 
-                    {(isFullyPaid || isAdmin) && (
+                    {(isFullyPaid || isAdmin) && !isAptdcReceipt && (
                       <button
                         onClick={handleDownloadInvoice}
                         disabled={isPreparingInvoice}
@@ -1567,24 +1591,45 @@ export default function BookingDetailsModal({
                       </button>
                     )}
 
-                    <button
-                      onClick={handleDownloadTicket}
-                      disabled={isPreparingTicket}
-                      className="inline-flex justify-center items-center gap-1.5 bg-[#0f3d56] hover:bg-[#134965] text-white px-3.5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95 border border-[#0f3d56] disabled:opacity-80 cursor-pointer"
-                    >
-                      {isPreparingTicket ? (
-                        <>
-                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Ticket className="h-3.5 w-3.5" /> Ticket
-                        </>
-                      )}
-                    </button>
+                    {!isAptdcReceipt && (
+                      <button
+                        onClick={handleDownloadTicket}
+                        disabled={isPreparingTicket}
+                        className="inline-flex justify-center items-center gap-1.5 bg-[#0f3d56] hover:bg-[#134965] text-white px-3.5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95 border border-[#0f3d56] disabled:opacity-80 cursor-pointer"
+                      >
+                        {isPreparingTicket ? (
+                          <>
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <Ticket className="h-3.5 w-3.5" /> Ticket
+                          </>
+                        )}
+                      </button>
+                    )}
 
-                    {booking.target_type === 'PACKAGE' && (
+                    {isAptdcReceipt && (
+                      <button
+                        onClick={handleDownloadAptdcTicket}
+                        disabled={isPreparingTicket}
+                        className="inline-flex justify-center items-center gap-2 rounded-2xl border-2 border-[#287a31] bg-[#e8f6df] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-[#287a31] shadow-sm hover:bg-[#d8efca] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-80 cursor-pointer"
+                      >
+                        {isPreparingTicket ? (
+                          <>
+                            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#287a31] border-t-transparent" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <ReceiptText className="h-4 w-4" /> View APTDC Admin Ticket
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {booking.target_type === 'PACKAGE' && !isAptdcReceipt && (
                       <button
                         onClick={handleDownloadForm}
                         disabled={isPreparingForm}
