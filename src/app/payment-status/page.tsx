@@ -98,17 +98,17 @@ export default function PaymentStatusPage() {
       retryCountRef.current += 1;
       setRetryCount(retryCountRef.current);
 
-      if (retryCountRef.current >= 6) {
-        // Give up polling — payment was not confirmed within 30 seconds.
-        // Transition to failed so the user isn't stuck on the pending screen.
+      if (retryCountRef.current >= 24) {
+        // Give up polling after 2 minutes — but don't show "failed" if pending
+        // because money may have been received and booking is still being created
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         setResult(prev => {
           // Only override if still pending (don't clobber a late success)
           if (prev?.status === 'pending') {
             return {
-              status: 'failed',
+              status: 'pending',
               message:
-                'Your payment was not confirmed within 30 seconds. If money was deducted, it will be refunded automatically within 5-7 business days. You can try booking again below.'
+                'Your payment was received! We are still confirming your booking — this may take a few more minutes. Please check your email or WhatsApp for a booking confirmation. If you don\'t receive it within 30 minutes, contact us with your PhonePe transaction ID.'
             };
           }
           return prev;
@@ -119,6 +119,7 @@ export default function PaymentStatusPage() {
 
       verifyPayment();
     }, 5000);
+
 
     return () => {
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);

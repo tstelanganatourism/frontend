@@ -40,7 +40,8 @@ function LoginContent() {
   const { isAuthenticated, user, isHydrated } = useAuthStore();
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phone, setPhone] = useState('');
+  const queryPhone = searchParams.get('phone') || '';
+  const [phone, setPhone] = useState(queryPhone.replace(/\D/g, '').slice(-10));
   const [phoneError, setPhoneError] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpError, setOtpError] = useState('');
@@ -50,6 +51,16 @@ function LoginContent() {
   const [apiError, setApiError] = useState('');
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { remaining: cooldown, start: startCooldown } = useCountdown(60);
+
+  useEffect(() => {
+    const qp = searchParams.get('phone');
+    if (qp) {
+      const clean = qp.replace(/\D/g, '').slice(-10);
+      if (clean && clean.length === 10) {
+        setPhone(clean);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isHydrated && isAuthenticated && user) {
@@ -226,7 +237,19 @@ function LoginContent() {
             {step === 'phone' ? (
               <motion.div key="phone" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.2 }}>
                 <h1 className="text-2xl font-black text-slate-900 mb-1">Welcome back</h1>
-                <p className="text-sm text-slate-500 mb-8">Sign in with your mobile number — no password needed.</p>
+                <p className="text-sm text-slate-500 mb-6">Sign in with your mobile number — no password needed.</p>
+
+                {redirect?.includes('restore_checkout') && (
+                  <div className="mb-6 p-3.5 bg-emerald-50 border border-emerald-200/90 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-800 shadow-sm animate-in fade-in duration-300">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-emerald-950">Your booking details are safely saved!</p>
+                      <p className="text-[11px] text-emerald-700/90 mt-0.5 leading-relaxed">
+                        Sign in to finalize your reservation. You will immediately return to your prefilled booking screen.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
                   <div>

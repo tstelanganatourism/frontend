@@ -470,6 +470,7 @@ export const BookingSidebarV3 = ({
       if (savedChildren) setChildren(Number(savedChildren));
 
       setShowPassengerModal(true);
+      toast.success("Welcome back! Your booking details have been restored.");
 
       try {
         const url = new URL(window.location.href);
@@ -1341,6 +1342,17 @@ export const BookingSidebarV3 = ({
         passengers_data: passengers.map((p: any) => ({ full_name: p.full_name, age: Number(p.age) || 0, gender: p.gender })),
         payment_gateway: selectedGateway,
       });
+
+      if (!isAuthenticated) {
+        setIsProcessingCheckout(false);
+        toast.info('Please log in with your mobile number to complete your booking. Your details have been saved.');
+        const primaryPhone = passengers[0]?.phone ? String(passengers[0].phone).trim() : '';
+        const searchPrefix = window.location.search ? `${window.location.search}&` : '?';
+        const returnUrl = `${window.location.pathname}${searchPrefix}restore_checkout=true`;
+        const phoneParam = primaryPhone ? `&phone=${encodeURIComponent(primaryPhone)}` : '';
+        router.push(`/login?redirect=${encodeURIComponent(returnUrl)}${phoneParam}`);
+        return;
+      }
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
       const { checkout_data } = res.data;

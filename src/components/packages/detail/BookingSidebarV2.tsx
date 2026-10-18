@@ -322,6 +322,7 @@ export const BookingSidebarV2 = ({
       
       // Auto-open passenger details modal
       setShowPassengerModal(true);
+      toast.success("Welcome back! Your booking details have been restored.");
       
       // Clean up search parameters so refresh doesn't pop it open again
       try {
@@ -1375,6 +1376,17 @@ export const BookingSidebarV2 = ({
         sessionStorage.setItem('last_checkout_include_refreshments', String(includeRefreshments));
         sessionStorage.setItem('last_checkout_adults', String(adults));
         sessionStorage.setItem('last_checkout_children', String(children));
+      }
+
+      if (!isAuthenticated) {
+        setIsProcessingCheckout(false);
+        toast.info('Please log in with your mobile number to complete your booking. Your details have been saved.');
+        const primaryPhone = passengers[0]?.phone ? String(passengers[0].phone).trim() : '';
+        const searchPrefix = window.location.search ? `${window.location.search}&` : '?';
+        const returnUrl = `${window.location.pathname}${searchPrefix}restore_checkout=true`;
+        const phoneParam = primaryPhone ? `&phone=${encodeURIComponent(primaryPhone)}` : '';
+        router.push(`/login?redirect=${encodeURIComponent(returnUrl)}${phoneParam}`);
+        return;
       }
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);

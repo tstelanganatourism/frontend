@@ -86,8 +86,20 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
         if (raw) {
           try {
             const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed) && parsed.length === totalPassengers) {
-              restoredPassengers = parsed;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              restoredPassengers = Array.from({ length: totalPassengers }).map((_, i) => {
+                if (parsed[i]) return parsed[i];
+                return {
+                  full_name: '',
+                  age: isStudentPackage ? 0 : '',
+                  gender: '' as const,
+                  phone: '',
+                  aadhaar: '',
+                  relationship: i === 0 ? 'self' : '',
+                  is_primary: i === 0,
+                  student_class: '',
+                };
+              });
               isRestored = true;
             }
           } catch (e) {

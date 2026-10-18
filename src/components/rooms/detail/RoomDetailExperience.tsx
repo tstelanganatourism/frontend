@@ -839,6 +839,18 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
         sessionStorage.setItem('last_checkout_departure_date', departureDate || '');
         sessionStorage.setItem('last_checkout_guests', String(guests || ''));
         sessionStorage.setItem('last_checkout_selected_slot_index', String(selectedSlotIndex));
+        sessionStorage.setItem('last_checkout_auto_open_modal', 'true');
+      }
+
+      if (!isAuthenticated) {
+        setIsProcessingCheckout(false);
+        toast.info('Please log in with your mobile number to complete your booking. Your details have been saved.');
+        const primaryPhone = passengers[0]?.phone ? String(passengers[0].phone).trim() : '';
+        const searchPrefix = window.location.search ? `${window.location.search}&` : '?';
+        const returnUrl = `${window.location.pathname}${searchPrefix}restore_checkout=true`;
+        const phoneParam = primaryPhone ? `&phone=${encodeURIComponent(primaryPhone)}` : '';
+        router.push(`/login?redirect=${encodeURIComponent(returnUrl)}${phoneParam}`);
+        return;
       }
 
       const res = await apiClient.post('/api/v1/bookings/checkout', payload);
