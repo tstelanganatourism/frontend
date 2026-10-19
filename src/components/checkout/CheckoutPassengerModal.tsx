@@ -174,7 +174,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
       return;
     }
     if (!agreedToAadhaarConsent) {
-      toast.error("Please provide your consent for Aadhaar verification.");
+      toast.error("Please acknowledge the mandatory Aadhaar / Govt ID requirement for boarding pass issuance.");
       return;
     }
 
@@ -420,29 +420,13 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600">
-                        Aadhaar Number {isStudentPackage && <span className="text-[10px] font-semibold text-slate-400">(Optional)</span>}
-                      </label>
-                      <input
-                        type="text"
-                        required={!isStudentPackage}
-                        pattern="[0-9]{12}"
-                        title="12 digit Aadhaar number"
-                        disabled={isProcessing}
-                        value={quickPassenger.aadhaar}
-                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
-                        className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
-                          quickPassenger.aadhaar && quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar)
-                            ? 'border-rose-400 bg-rose-50'
-                            : 'border-slate-300'
-                        }`}
-                        placeholder="12 digit number"
-                      />
-                      {quickPassenger.aadhaar && quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar) && (
-                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar number (checksum failed)</p>
-                      )}
-                    </div>
+                <div className="rounded-xl border border-sky-200 bg-sky-50/90 p-3.5 flex gap-2.5 items-start">
+                  <span className="text-base shrink-0 mt-0.5">🪪</span>
+                  <div className="text-xs font-semibold text-sky-950 leading-relaxed">
+                    <span className="font-bold text-sky-900 block mb-0.5">Government ID Mandatory for Confirmation &amp; Boarding:</span>
+                    Original Government-issued <strong>Aadhaar Card</strong> or valid Photo ID is strictly mandatory for all guests during check-in for physical verification and boarding pass issuance at the TS Boat office counter.
+                  </div>
+                </div>
 
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-600">
@@ -539,14 +523,22 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                 </div>
               </>
             ) : (
-              passengers.map((p, i) => {
-                const isChild = i >= adults;
-                return (
-                  <div key={i} className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#1a6b7a]/30 hover:shadow-md">
-                    <p className="mb-4 text-xs font-black uppercase tracking-wider text-[#1a6b7a]">
-                      {isStudentPackage ? `🎓 Student Card ${i + 1}` : (targetType === 'room' ? `Guest Card ${i + 1}` : (isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`))}
-                      {i === 0 && <span className="ml-2 rounded-full bg-[#1a6b7a]/10 px-2 py-0.5 text-[10px] text-[#1a6b7a]">Primary Contact</span>}
-                    </p>
+              <>
+                <div className="rounded-xl border border-sky-200 bg-sky-50/90 p-3.5 flex gap-2.5 items-start mb-4">
+                  <span className="text-base shrink-0 mt-0.5">🪪</span>
+                  <div className="text-xs font-semibold text-sky-950 leading-relaxed">
+                    <span className="font-bold text-sky-900 block mb-0.5">Government ID Mandatory for Confirmation &amp; Boarding:</span>
+                    Original Government-issued <strong>Aadhaar Card</strong> or valid Photo ID is strictly mandatory for all passengers during check-in for physical verification and boarding pass issuance at the TS Boat office counter.
+                  </div>
+                </div>
+                {passengers.map((p, i) => {
+                  const isChild = i >= adults;
+                  return (
+                    <div key={i} className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#1a6b7a]/30 hover:shadow-md">
+                      <p className="mb-4 text-xs font-black uppercase tracking-wider text-[#1a6b7a]">
+                        {isStudentPackage ? `🎓 Student Card ${i + 1}` : (targetType === 'room' ? `Guest Card ${i + 1}` : (isChild ? `Child Card ${i - adults + 1}` : `Adult Card ${i + 1}`))}
+                        {i === 0 && <span className="ml-2 rounded-full bg-[#1a6b7a]/10 px-2 py-0.5 text-[10px] text-[#1a6b7a]">Primary Contact</span>}
+                      </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                       <div className="space-y-1 sm:col-span-2">
@@ -607,32 +599,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-600">
-                          Aadhaar Number
-                          {(isStudentPackage || (typeof p.age === 'number' && p.age <= 10)) ? (
-                            <span className="ml-1 text-[10px] font-semibold text-slate-400">(Optional)</span>
-                          ) : null}
-                        </label>
-                        <input
-                          type="text"
-                          required={!isStudentPackage && !(typeof p.age === 'number' && p.age <= 10)}
-                          pattern="[0-9]{12}"
-                          title="12 digit Aadhaar number"
-                          disabled={isProcessing}
-                          value={p.aadhaar}
-                          onChange={(e) => handleChange(i, 'aadhaar', e.target.value.replace(/\D/g, '').slice(0, 12))}
-                          className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
-                            p.aadhaar && p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar)
-                              ? 'border-rose-400 bg-rose-50'
-                              : 'border-slate-300'
-                          }`}
-                          placeholder="12 digit number"
-                        />
-                        {p.aadhaar && p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar) && (
-                          <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar number (checksum failed)</p>
-                        )}
-                      </div>
+
 
                       {(!isChild || isStudentPackage) && (
                         <div className="space-y-1">
@@ -665,7 +632,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                     </div>
                   </div>
                 );
-              })
+              })}</>
             )}
           </form>
 
@@ -726,7 +693,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               className="mt-1 h-4 w-4 rounded border-slate-300 text-[#1a6b7a] focus:ring-[#1a6b7a] disabled:opacity-50"
             />
             <label htmlFor="aadhaar-consent-checkbox" className="text-xs font-semibold text-slate-600 leading-relaxed cursor-pointer">
-              I hereby give my consent to TS Boat Tourism to collect, verify, and store my Aadhaar details for government-mandated boarding security checks.
+              I understand and acknowledge that carrying original Government-issued <strong>Aadhaar Card</strong> or valid Photo ID is <strong>mandatory</strong> for all passengers for verification, ticket confirmation, and boarding pass issuance at the TS Boat office counter.
             </label>
           </div>
         </div>
@@ -756,17 +723,14 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       quickPassenger.full_name.trim() !== '' &&
                       quickPassenger.student_class?.trim() !== '' &&
                       quickPassenger.gender !== '' &&
-                      (!quickPassenger.phone || /^\d{10}$/.test(quickPassenger.phone.trim())) &&
-                      (!quickPassenger.aadhaar || (quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar)))
+                      (!quickPassenger.phone || /^\d{10}$/.test(quickPassenger.phone.trim()))
                     )
                   : !(
                       quickPassenger.full_name.trim() !== '' &&
                       typeof quickPassenger.age === 'number' &&
                       quickPassenger.age >= 18 &&
                       quickPassenger.gender !== '' &&
-                      /^\d{10}$/.test(quickPassenger.phone.trim()) &&
-                      quickPassenger.aadhaar.length === 12 &&
-                      isValidAadhaar(quickPassenger.aadhaar)
+                      /^\d{10}$/.test(quickPassenger.phone.trim())
                     )
                   )
                 : (isStudentPackage
@@ -774,9 +738,8 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       const nameOk = p.full_name.trim() !== '';
                       const classOk = p.student_class?.trim() !== '';
                       const genderOk = p.gender !== '';
-                      const aadhaarOk = !p.aadhaar || (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
                       const phoneOk = !p.phone || p.phone.trim().length === 0 || p.phone.trim().length === 10;
-                      return nameOk && classOk && genderOk && aadhaarOk && phoneOk;
+                      return nameOk && classOk && genderOk && phoneOk;
                     })
                   : !passengers.every((p, i) => {
                       const isChild = i >= adults;
@@ -785,11 +748,8 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                       const isPackage = targetType === 'package';
                       const ageOk = typeof p.age === 'number' && (isPackage ? (isChild ? (p.age >= 4 && p.age <= 10) : p.age >= 11) : (p.age >= 0));
                       const genderOk = p.gender !== '';
-                      const aadhaarOk = isChildAge
-                        ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
-                        : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar));
                       const phoneOk = isChild || isChildAge || (i !== 0 && (!p.phone || p.phone.trim().length === 0)) || (p.phone && p.phone.trim().length === 10);
-                      return nameOk && ageOk && genderOk && aadhaarOk && phoneOk;
+                      return nameOk && ageOk && genderOk && phoneOk;
                     })
                   )
               )

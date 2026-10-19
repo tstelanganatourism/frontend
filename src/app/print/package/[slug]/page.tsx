@@ -548,7 +548,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
               return (
                 <div className="grid-2" style={{ marginBottom: '10px' }}>
                   <div>
-                    <div className="section-title">🍽 Included Food &amp; Catering Menu</div>
+                    <div className="section-title">🍱 Optional Food &amp; Catering Add-On Menu</div>
                     <div className="card">
                       {pkg.meals && pkg.meals.length > 0 && pkg.meals.map((m, i) => (
                         <div key={i} style={{ marginBottom: '4px', paddingBottom: '4px', borderBottom: i < pkg.meals!.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
@@ -565,7 +565,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                       ))}
                       {pkg.has_food_option && (
                         <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontSize: '7pt', color: '#047857', fontWeight: 600 }}>
-                          Optional Food Package: Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
+                          Optional Food Add-On (Available on Selection): Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
                         </div>
                       )}
                     </div>
@@ -601,7 +601,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
             if (hasMeals && !hasExtras) {
               return (
                 <div style={{ marginBottom: '10px' }}>
-                  <div className="section-title">🍽 Included Food &amp; Catering Menu</div>
+                  <div className="section-title">🍱 Optional Food &amp; Catering Add-On Menu</div>
                   <div className="card">
                     {pkg.meals && pkg.meals.length > 0 && pkg.meals.map((m, i) => (
                       <div key={i} style={{ marginBottom: '4px', paddingBottom: '4px', borderBottom: i < pkg.meals!.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
@@ -618,7 +618,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                     ))}
                     {pkg.has_food_option && (
                       <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontSize: '7pt', color: '#047857', fontWeight: 600 }}>
-                        Optional Food Package: Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
+                        Optional Food Add-On (Available on Selection): Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
                       </div>
                     )}
                   </div>

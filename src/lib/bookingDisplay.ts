@@ -44,9 +44,11 @@ export function getRefreshmentAmount(pricingSnapshot?: { refreshment_subtotal?: 
   return Number(pricingSnapshot?.refreshment_subtotal || 0);
 }
 
-export function hasFoodAddon(pricingSnapshot?: any) {
+export function hasFoodAddon(pricingSnapshot?: any, booking?: any) {
+  if (pricingSnapshot?.has_food_addon === false) return false;
   const amount = Number(pricingSnapshot?.food_amount || pricingSnapshot?.catering_amount || pricingSnapshot?.food_subtotal || 0);
-  return amount > 0 || !!pricingSnapshot?.has_food_addon;
+  if (booking?.has_food_addon === false && amount === 0) return false;
+  return (amount > 0 && !!(pricingSnapshot?.has_food_addon ?? true)) || !!pricingSnapshot?.has_food_addon || !!booking?.has_food_addon;
 }
 
 export function getFoodAmount(pricingSnapshot?: any) {

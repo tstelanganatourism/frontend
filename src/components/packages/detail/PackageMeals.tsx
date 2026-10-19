@@ -34,9 +34,9 @@ export function PackageMeals({ meals = [], hasRefreshments = false }: PackageMea
         <UtensilsCrossed className="h-5 w-5 text-[#0d6e75]" />
         <p className="text-xs font-black uppercase tracking-wider text-[#0d6e75]">Culinary Details</p>
       </div>
-      <h2 className="text-2xl font-black text-slate-900 sm:text-3xl">Food & Meals Menu</h2>
+      <h2 className="text-2xl font-black text-slate-900 sm:text-3xl">Food &amp; Meals Menu (Optional Add-On)</h2>
       <p className="text-sm font-medium text-slate-500 mt-2">
-        Freshly prepared traditional South Indian meals are served on-board during the Godavari river cruise.
+        Freshly prepared traditional South Indian catering options are available as an optional add-on during booking.
       </p>
 
       {meals.length > 0 ? (
@@ -103,9 +103,9 @@ export function PackageMeals({ meals = [], hasRefreshments = false }: PackageMea
             <UtensilsCrossed className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-slate-900">Fresh food served on-board</h3>
+            <h3 className="text-sm font-black text-slate-900">Fresh food catering available</h3>
             <p className="text-xs font-semibold leading-relaxed text-slate-500 mt-1">
-              Standard local breakfast and lunch meals are prepared fresh and served on the boat during the tour. Specify food options upon check-in.
+              Standard local breakfast and lunch meals can be selected as an optional add-on during booking. Specify catering preferences upon booking.
             </p>
           </div>
         </div>

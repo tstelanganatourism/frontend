@@ -83,6 +83,7 @@ interface BookingDetails {
   meals?: { id?: number; meal_type?: string; name: string; serving_time?: string | null; description?: string | null; is_vegetarian?: boolean; day_number?: number | null }[];
   pricing_snapshot?: any;
   has_refreshment_addon?: boolean;
+  has_food_addon?: boolean;
   payment_ledger?: PaymentLedgerEntry[];
   cover_image_url?: string | null;
   is_rescheduled?: boolean;
@@ -209,7 +210,7 @@ export default async function PrintTicketPage({
   );
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
-  const foodIncluded = hasFoodAddon(booking.pricing_snapshot);
+  const foodIncluded = hasFoodAddon(booking.pricing_snapshot, booking);
   const foodAmount = getFoodAmount(booking.pricing_snapshot);
   const extrasIncluded = hasExtras(booking.pricing_snapshot);
   const extrasAmount = getExtrasAmount(booking.pricing_snapshot);
@@ -1405,7 +1406,7 @@ export default async function PrintTicketPage({
                 <div className="pay-row">
                   <span>
                     Catering &amp; Meals Package
-                    <span className="pay-row-subtext">Full Breakfast, Lunch &amp; Dinner Included</span>
+                    <span className="pay-row-subtext">Catering &amp; Meals Add-On</span>
                   </span>
                   <span>{money(foodAmount, 2)}</span>
                 </div>
@@ -1589,7 +1590,7 @@ export default async function PrintTicketPage({
                               <span style={{ fontSize: '12px', fontWeight: 800, color: '#0a2351' }}>
                                 {ev.title && ev.title !== ev.desc ? ev.title : ev.time}
                               </span>
-                              {ev.meal_included && (
+                              {ev.meal_included && foodIncluded && (
                                 <span style={{ fontSize: '9px', background: '#dcfce7', color: '#15803d', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, whiteSpace: 'nowrap' }}>
                                   🍱 Meal Included
                                 </span>
@@ -1663,12 +1664,34 @@ export default async function PrintTicketPage({
                     </div>
                   </div>
 
-                  {/* 2. MEALS INCLUDED — always for non-room packages */}
-                  {!isRoom && (
-                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #16a34a', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        🍽️ Package Food &amp; Meals Menu
+                  {/* 2. FRESH-UP ROOM — only if selected */}
+                  {refreshmentIncluded && (
+                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #2563eb', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🛁 Fresh-Up Room Add-On
                       </div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '3px' }}>AC Room Access Included</div>
+                      <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.5, fontWeight: 500, marginBottom: '6px' }}>
+                        Washroom &amp; freshening-up facility with short stay before boarding — for all {passengerCount} guests.
+                      </div>
+                      {refreshmentAmount > 0 && (
+                        <div style={{ fontSize: '11px', fontWeight: 900, color: '#1d4ed8' }}>{money(refreshmentAmount)}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 3. FOOD / CATERING ADDON — strictly ONLY if selected/purchased */}
+                  {foodIncluded && !isRoom && (
+                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #ea580c', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🥘 Catering &amp; Meals Add-On
+                      </div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '3px' }}>
+                        Full Catering Package Selected
+                      </div>
+                      {foodAmount > 0 && (
+                        <div style={{ fontSize: '11px', fontWeight: 900, color: '#c2410c', marginBottom: '6px' }}>{money(foodAmount)}</div>
+                      )}
 
                       {(() => {
                         // 1. Try DB meals list from booking
@@ -1678,10 +1701,10 @@ export default async function PrintTicketPage({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               {dbMeals.map((m: any, idx: number) => (
                                 <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                                  <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                                  <span style={{ color: '#ea580c', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
                                   <div>
                                     <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                                      <span style={{ fontSize: '8.5px', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
+                                      <span style={{ fontSize: '8.5px', background: '#ffedd5', color: '#c2410c', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
                                         {m.meal_type || 'MEAL'}{m.day_number ? ` · Day ${m.day_number}` : ''}
                                       </span>
                                       {m.name}
@@ -1708,7 +1731,7 @@ export default async function PrintTicketPage({
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                              <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                              <span style={{ color: '#ea580c', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
                               <div>
                                 <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
                                   <span style={{ fontSize: '8.5px', background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
@@ -1723,7 +1746,7 @@ export default async function PrintTicketPage({
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                              <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                              <span style={{ color: '#ea580c', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
                               <div>
                                 <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
                                   <span style={{ fontSize: '8.5px', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
@@ -1739,7 +1762,7 @@ export default async function PrintTicketPage({
 
                             {isMultiDay ? (
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                                <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                                <span style={{ color: '#ea580c', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
                                 <div>
                                   <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
                                     <span style={{ fontSize: '8.5px', background: '#e0e7ff', color: '#3730a3', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
@@ -1754,7 +1777,7 @@ export default async function PrintTicketPage({
                               </div>
                             ) : (
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                                <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
+                                <span style={{ color: '#ea580c', fontSize: '10px', marginTop: '1px', flexShrink: 0 }}>✓</span>
                                 <div>
                                   <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
                                     <span style={{ fontSize: '8.5px', background: '#ffedd5', color: '#c2410c', padding: '1px 5px', borderRadius: '3px', marginRight: '4px', fontWeight: 900 }}>
@@ -1771,36 +1794,6 @@ export default async function PrintTicketPage({
                           </div>
                         );
                       })()}
-                    </div>
-                  )}
-
-                  {/* 3. FRESH-UP ROOM — only if selected */}
-                  {refreshmentIncluded && (
-                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #2563eb', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        🛁 Fresh-Up Room Add-On
-                      </div>
-                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '3px' }}>AC Room Access Included</div>
-                      <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.5, fontWeight: 500, marginBottom: '6px' }}>
-                        Washroom &amp; freshening-up facility with short stay before boarding — for all {passengerCount} guests.
-                      </div>
-                      {refreshmentAmount > 0 && (
-                        <div style={{ fontSize: '11px', fontWeight: 900, color: '#1d4ed8' }}>{money(refreshmentAmount)}</div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 4. FOOD / CATERING ADDON — only if selected */}
-                  {hasFoodAddon && (
-                    <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #ea580c', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        🥘 Catering &amp; Meals Package
-                      </div>
-                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '3px' }}>Full Catering Package Selected</div>
-                      <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.5, fontWeight: 500, marginBottom: '6px' }}>
-                        All meals — breakfast, lunch &amp; dinner — served on board for {guestSummary}.
-                      </div>
-                      <div style={{ fontSize: '11px', fontWeight: 900, color: '#c2410c' }}>{money(foodAmount)}</div>
                     </div>
                   )}
 
