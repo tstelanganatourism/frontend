@@ -327,7 +327,7 @@ export default function HomeContent({ heroItems, featuredPackages, rooms, allPac
       </section>
 
       {/* ─── FEATURED JOURNEYS: modal layer over the homepage hero ─── */}
-      <FlipkartPackageAds packages={allPackages || featuredPackages} />
+      <FlipkartPackageAds packages={featuredPackages && featuredPackages.length ? featuredPackages : allPackages} />
 
       {/* ─── MOBILE BANNER ─── */}
       <section className="block lg:hidden bg-[#07242c] py-6 border-t border-b border-[#1598a1]/25">

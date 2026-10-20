@@ -92,7 +92,11 @@ export default function FlipkartPackageAds({ packages }: FlipkartPackageAdsProps
   const [isOpen, setIsOpen] = useState(false);
 
   const deals = useMemo(() => {
-    const available = Array.isArray(packages) ? packages.filter((item) => item?.slug) : [];
+    const rawList = Array.isArray(packages) ? packages.filter((item) => item?.slug) : [];
+    // Prioritize explicitly featured packages first
+    const featured = rawList.filter((item) => item.is_featured);
+    const nonFeatured = rawList.filter((item) => !item.is_featured);
+    const available = [...featured, ...nonFeatured];
     const uniqueDeals = [...available];
 
     for (const fallback of FALLBACK_DEALS) {

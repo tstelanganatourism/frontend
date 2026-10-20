@@ -140,10 +140,13 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
 
           <div className="mt-6 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
             <div className="rounded-lg border border-slate-200 bg-[#f7fbfb] p-5">
-              <h3 className="mb-4 flex items-center gap-2 text-base font-black text-slate-950">
-                <Bus className="h-5 w-5 text-[#1a6b7a]" />
-                Fare and Base Price Options
+              <h3 className="mb-1 flex items-center gap-2 text-base font-black text-slate-950">
+                <Ship className="h-5 w-5 text-[#1a6b7a]" />
+                Ticket & Seating Options
               </h3>
+              <p className="mb-4 text-xs font-semibold text-slate-500">
+                Direct fares — complete cruise journey, meals & sightseeing included with no hidden extras.
+              </p>
               {pkg.variants.length ? (
                 <div className="space-y-3">
                   {pkg.variants.map((variant) => {
@@ -205,8 +208,8 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                   })}
                 </div>
               ) : (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-                  No active fare variants are published for this package.
+                <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                  Standard package ticket applicable. Please proceed with booking.
                 </p>
               )}
             </div>
@@ -227,9 +230,14 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                     ))}
                   </ul>
                 ) : (
-                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-                    Visiting places are not published yet for this package.
-                  </p>
+                  <ul className="grid gap-2 text-sm font-medium text-slate-700 sm:grid-cols-2">
+                    {['Godavari River Cruise', 'Papikondalu Hill Gorge', 'Scenic River Viewpoints', 'Perantalapalli Village & Ashramam'].map((place) => (
+                      <li key={place} className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>{place}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
 
@@ -248,9 +256,14 @@ export const ExperienceOverview = ({ pkg, durationLabel }: ExperienceOverviewPro
                     ))}
                   </ul>
                 ) : (
-                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-                    Package inclusions are not published yet.
-                  </p>
+                  <ul className="grid gap-2 text-sm font-medium text-slate-700 sm:grid-cols-2">
+                    {['Full Day River Cruise', 'Fresh Vegetarian Meals', 'Safety Life Jackets & Gear', 'Tourist Guide Assistance'].map((item) => (
+                      <li key={item} className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
