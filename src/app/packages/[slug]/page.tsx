@@ -38,8 +38,8 @@ import { BookingCalloutCard } from '@/components/packages/detail/BookingCalloutC
 import { PackageExtras } from '@/components/packages/detail/PackageExtras';
 import { PackageVideoHero } from '@/components/packages/detail/PackageVideoHero';
 
-// ISR: revalidate every 60 seconds OR instantly when admin triggers /api/revalidate
-export const revalidate = 60;
+// ISR: cached for 24h on Vercel/Edge; instantly purged on-demand when admin updates (/api/revalidate)
+export const revalidate = 86400;
 // dynamicParams=true means new slugs added after build are still rendered on-demand
 export const dynamicParams = true;
 
@@ -177,7 +177,7 @@ const SITE_ORIGIN = 'https://www.tstelanganatourism.com';
 const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | null> => {
   try {
     const res = await apiFetch(`/api/v1/packages/${slug}`, {
-      next: { revalidate: 60, tags: ['packages', `package:${slug}`] }
+      next: { revalidate: 86400, tags: ['packages', `package:${slug}`] }
     });
     if (!res.ok) {
       if (res.status === 404) return null;

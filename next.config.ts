@@ -23,9 +23,8 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   images: {
-    // unoptimized was previously `true` — this caused the browser to download
-    // raw source images (1–5 MB each), resulting in a 12.2s LCP on mobile.
-    // `sharp` is now installed. Next.js will serve compressed WebP/AVIF images.
+    loader: 'custom',
+    loaderFile: './src/lib/imageLoader.ts',
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],

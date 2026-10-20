@@ -110,7 +110,7 @@ async function fetchAllRooms(): Promise<RoomItem[] | null> {
 async function fetchFeaturedRooms(): Promise<RoomItem[] | null> {
   try {
     const res = await apiFetch('/api/v1/rooms?is_featured=true&size=3', {
-      next: { revalidate: 60, tags: ['rooms'] },
+      next: { revalidate: 3600, tags: ['rooms'] },
     });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
