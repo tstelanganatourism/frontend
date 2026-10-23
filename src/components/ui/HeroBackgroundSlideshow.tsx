@@ -13,72 +13,72 @@ export type HeroSlide = {
 // All images use Cloudinary f_auto,q_auto,w_1920 to serve next-gen WebP/AVIF (<100 KB each)
 const HERO_SLIDES: HeroSlide[] = [
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1786273967/200b2b33-a6c8-474a-b9f1-823c5e0c831a_v9mwdp.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     title: 'Papikondalu Hilltop Wooden Resort View',
     tag: '🏡 Luxury Hilltop Stay',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1786268773/ts_boat_tourism/gallery/boats/ovn5jyixd9i8fqm3fxc2.png',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7844.webp',
     title: 'TS Boat Fleet on Godavari River',
     tag: '🚢 Royal Boat Fleet',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1786273972/9b475911-9c60-4bf6-9ffb-b9f1802275a2_k6zmkd.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7845.webp',
     title: 'Riverfront Wooden Cottage Bedroom',
     tag: '🛌 Riverfront Cottage',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1785917171/ts_boat_tourism/images/uadyznucdhwm3ti9k6kx.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7846.webp',
     title: 'Golden Sunset on Godavari River',
     tag: '🌅 Sunset Cruise',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7847.webp',
     title: 'Kolluru Bamboo Huts Night Camping',
     tag: '🏕️ Bamboo Huts Stay',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1786273969/38684131-278f-48aa-8676-49f9dbeb3165_ire1kb.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7848.webp',
     title: 'Scenic Wooden Cottages & Forest Walkway',
     tag: '🌿 Nature Canopy Walkway',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1786268845/ts_boat_tourism/gallery/boats/tjhxguxd5wvpw6znkl99.png',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7849.webp',
     title: 'Punnami Luxury Double Deck Cruiser',
     tag: '✨ Premium Cruise',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7850.webp',
     title: 'Godavari River Campfire & Cultural Night',
     tag: '🔥 Campfire & Dinner',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7852.webp',
     title: 'Papikondalu Hill Valley Cruise Journey',
     tag: '🏞️ Papikondalu Valley',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7853.webp',
     title: 'Punnami A/C Passenger Boat Sailing',
     tag: '🚤 Double Deck Boat',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1784613505/ts_boat_tourism/packages/zncuyaavin7cfwtfvkwg.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7854.webp',
     title: 'Deluxe A/C Riverfront Bedroom Interior',
     tag: '⭐ Luxury Resort Stay',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7856.webp',
     title: 'Bhadrachalam to Rajahmundry River Cruise',
     tag: '🌊 Godavari Voyage',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1786268819/ts_boat_tourism/gallery/boats/hw0ecntb8tj72hcedixc.png',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7857.webp',
     title: 'A/C Luxury Boat — Papikondalu Tour',
     tag: '🚢 A/C Luxury Cruiser',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1920/v1786268796/ts_boat_tourism/gallery/boats/mztoym0vbry5oy707hbn.png',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     title: 'Boat Boarding at Godavari River Ghat',
     tag: '📍 Boarding Ghat',
   },

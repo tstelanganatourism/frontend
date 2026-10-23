@@ -20,8 +20,8 @@ type RoomCategory = {
 };
 
 const DEFAULT_ROOM_CATEGORY_IMAGES: Record<string, string> = {
-  'bhadrachalam-accommodations': 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786273972/9b475911-9c60-4bf6-9ffb-b9f1802275a2_k6zmkd.jpg',
-  'papikondalu-forest-huts': 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+  'bhadrachalam-accommodations': 'https://media.tstelanganatourism.com/gallery/photos/2T9A8482.webp',
+  'papikondalu-forest-huts': 'https://media.tstelanganatourism.com/gallery/photos/2T9A8471.webp',
 };
 
 function getRoomCategoryCoverImage(cat: RoomCategory): string {
@@ -33,9 +33,9 @@ function getRoomCategoryCoverImage(cat: RoomCategory): string {
   }
   const low = (cat.name || '').toLowerCase();
   if (low.includes('papikondalu') || low.includes('hut') || low.includes('forest')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg';
+    return 'https://media.tstelanganatourism.com/gallery/photos/2T9A8471.webp';
   }
-  return 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786273972/9b475911-9c60-4bf6-9ffb-b9f1802275a2_k6zmkd.jpg';
+  return 'https://media.tstelanganatourism.com/gallery/photos/2T9A8482.webp';
 }
 
 function RoomCategoryCoverImage({ cat }: { cat: RoomCategory }) {
@@ -51,7 +51,7 @@ function RoomCategoryCoverImage({ cat }: { cat: RoomCategory }) {
       className="object-cover group-hover:scale-105 transition-transform duration-500"
       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
       onError={() => {
-        setImgSrc('https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786273972/9b475911-9c60-4bf6-9ffb-b9f1802275a2_k6zmkd.jpg');
+        setImgSrc('https://media.tstelanganatourism.com/gallery/photos/2T9A8482.webp');
       }}
     />
   );
@@ -189,10 +189,10 @@ export default function RoomCategoriesGrid({ categories, rooms = [] }: { categor
 
         {/* Photography Background Image */}
         <Image
-          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917195/ts_boat_tourism/images/apggofcaijeekofdotpa.jpg"
+          src="https://media.tstelanganatourism.com/gallery/photos/2T9A8473.webp"
           alt="Stay Categories Canvas Background"
           fill
-          sizes="100vw"
+          sizes="(max-width: 1024px) 100vw, 1920px"
           className="object-cover opacity-25 pointer-events-none"
           priority
         />

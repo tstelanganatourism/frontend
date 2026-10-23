@@ -21,11 +21,12 @@ import {
   Sun, 
   CheckCircle2, 
   ChevronRight,
-  Play,
   X,
-  Camera
+  Camera,
+  Play
 } from 'lucide-react';
 import { useLanguageStore } from '@/stores/languageStore';
+import { getYouTubeEmbedUrl } from '@/lib/utils';
 
 const OFFICE_ADDRESS_EN =
   'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Bhadrachalam, Bhadradri Kothagudem, Telangana 507111';
@@ -67,7 +68,7 @@ const HERITAGE_PLACES: HeritagePlace[] = [
     tagTe: 'ఆధ్యాత్మిక వారసత్వం',
     periodEn: 'Ramayana Era & 17th Century AD',
     periodTe: 'రామాయణ త్రేతా యుగం & 17వ శతాబ్దం',
-    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1785916631/ts_boat_tourism/heritage/bdbrbzsh2gdxsxefhcvu.jpg',
+    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     descriptionEn: 'Bhadrachalam is revered across the world as Dakshina Ayodhya. Situated gracefully along the Godavari river, it stands as the divine abode of Lord Sri Sita Ramachandra Swamy.',
     descriptionTe: 'భద్రాచలం ప్రపంచవ్యాప్తంగా "దక్షిణ అయోధ్య"గా పరమ పవిత్ర పుణ్యక్షేత్రంగా పూజలందుకుంటోంది. పుణ్య గోదావరి నదీ తీరాన వెలసిన శ్రీ సీతారామచంద్ర స్వామివారి దివ్య క్షేత్రం ఇది.',
     historyDetailsEn: [
@@ -96,7 +97,7 @@ const HERITAGE_PLACES: HeritagePlace[] = [
     tagTe: 'ప్రకృతి రమణీయకత & పురాణ క్షేత్రం',
     periodEn: 'Ancient Vedic Times',
     periodTe: 'ప్రాచీన వేద కాలం',
-    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1785916634/ts_boat_tourism/heritage/bte1qkuvermlilay3ohs.jpg',
+    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     descriptionEn: 'A breathtaking natural gorge where the mighty Godavari river narrows down and snakes between majestic, emerald-green peaks of the Eastern Ghats.',
     descriptionTe: 'గోదావరి నది తూర్పు కనుమల పచ్చని పర్వతాల మధ్య సన్నని లోయ గుండా ప్రవహించే కంటికి విందు చేసే ప్రకృతి రమణీయ దృశ్యం.',
     historyDetailsEn: [
@@ -152,7 +153,7 @@ const HERITAGE_PLACES: HeritagePlace[] = [
     tagTe: 'ఇకో పర్యాటకం & గిరిజన సంస్కృతి',
     periodEn: 'Indigenous Tribal Traditions',
     periodTe: 'ప్రాచీన గిరిజన సాంప్రదాయాలు',
-    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1785916639/ts_boat_tourism/heritage/jehnpbngrz8tic8ybfqg.jpg',
+    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     descriptionEn: 'A lush eco-tourism paradise nestled in the dense tropical forests of the Eastern Ghats, celebrated for cascading waterfalls, medicinal herbal reserves, and rich tribal culture.',
     descriptionTe: 'తూర్పు కనుమలలోని దట్టమైన అడవులు, ఎగిసిపడే జలపాతాలు, మూలికా వనాలు మరియు గిరిజన సంస్కృతికి నిలయమైన ప్రకృతి రమణీయ పర్యాటక కేంద్రం.',
     historyDetailsEn: [
@@ -173,36 +174,34 @@ const HERITAGE_PLACES: HeritagePlace[] = [
 // Curated 6-photo showcase for the About page media strip
 const MOMENTS_PHOTOS = [
   {
-    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+    url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     label: 'Papikondalu Gorge'
   },
   {
-    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp',
+    url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     label: 'Godavari River'
   },
   {
-    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+    url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     label: 'Kolluru Bamboo Huts'
   },
   {
-    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1785916631/ts_boat_tourism/heritage/bdbrbzsh2gdxsxefhcvu.jpg',
+    url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     label: 'Bhadrachalam Temple'
   },
   {
-    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
+    url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     label: 'Campfire at Huts'
   },
   {
-    url: 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_700/v1785916639/ts_boat_tourism/heritage/jehnpbngrz8tic8ybfqg.jpg',
+    url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     label: 'Maredumilli Forest'
   },
 ];
 
-// Feature video — replace these URLs after uploading to Cloudinary
-// To add your video: upload to ts_boat_tourism/videos/gallery/ in Cloudinary
-// Then paste the secure_url below
-const FEATURE_VIDEO_URL = 'https://res.cloudinary.com/r929tquv/video/upload/f_auto,q_auto:eco,w_960,vc_auto/v1786268926/ts_boat_tourism/videos/gallery/vy6edx23zdooas1rwhq6.mp4';
-const FEATURE_VIDEO_POSTER = 'https://res.cloudinary.com/r929tquv/video/upload/so_2,w_1200,c_fill,f_auto,q_auto/v1786268926/ts_boat_tourism/videos/gallery/vy6edx23zdooas1rwhq6.jpg';
+// Feature video — YouTube / R2 video
+const FEATURE_VIDEO_URL = 'https://youtu.be/6aSLKxEDli4';
+const FEATURE_VIDEO_POSTER = 'https://media.tstelanganatourism.com/gallery/photos/2T9A7854.webp';
 
 export default function AboutPage() {
   const language = useLanguageStore((s) => s.language);
@@ -340,7 +339,7 @@ export default function AboutPage() {
             {/* Photo Container */}
             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-md">
               <Image
-                src="https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg"
+                src="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
                 alt="Papikondalu Godavari River Cruise TS Boat Tourism"
                 width={700}
                 height={450}
@@ -563,20 +562,32 @@ export default function AboutPage() {
             className="w-full max-w-4xl mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <video
-              src={FEATURE_VIDEO_URL}
-              poster={FEATURE_VIDEO_POSTER}
-              controls
-              preload="none"
-              playsInline
-              controlsList="nodownload noremoteplayback"
-              disablePictureInPicture
-              onContextMenu={(e) => e.preventDefault()}
-              className="w-full rounded-2xl shadow-2xl"
-              style={{ maxHeight: '80vh' }}
-            >
-              <track kind="captions" />
-            </video>
+            {getYouTubeEmbedUrl(FEATURE_VIDEO_URL, true) ? (
+              <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-2xl border border-slate-800 bg-black">
+                <iframe
+                  src={getYouTubeEmbedUrl(FEATURE_VIDEO_URL, true)!}
+                  title="Tour Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              </div>
+            ) : (
+              <video
+                src={FEATURE_VIDEO_URL}
+                poster={FEATURE_VIDEO_POSTER}
+                controls
+                preload="none"
+                playsInline
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
+                onContextMenu={(e) => e.preventDefault()}
+                className="w-full rounded-2xl shadow-2xl"
+                style={{ maxHeight: '80vh' }}
+              >
+                <track kind="captions" />
+              </video>
+            )}
           </div>
         </div>
       )}

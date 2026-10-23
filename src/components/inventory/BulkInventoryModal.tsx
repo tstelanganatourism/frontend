@@ -346,6 +346,7 @@ export function BulkInventoryModal({
                   min="0"
                   max="10000"
                   value={capacity} 
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setCapacity(e.target.value)} 
                   placeholder="Enter new capacity"
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-black text-slate-900 outline-none focus:border-[#0f3d56]"
@@ -381,6 +382,7 @@ export function BulkInventoryModal({
                       min="0"
                       placeholder="Count"
                       value={optionCounts[opt.id] ?? ''}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setOptionCounts({ ...optionCounts, [opt.id]: e.target.value })}
                       className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-right text-xs font-black text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
                     />

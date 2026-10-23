@@ -55,7 +55,7 @@ const FALLBACK_DEALS: FeaturedPackage[] = [
     duration: '2 Days / 1 Night',
     place: 'Kolluru Sandbanks',
     region: 'AP',
-    cover_image_url: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+    cover_image_url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     is_featured: true,
     tags: ['Stay + cruise', 'Campfire'],
     starting_price: 2500,

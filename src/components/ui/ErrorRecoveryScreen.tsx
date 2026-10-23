@@ -108,7 +108,7 @@ export default function ErrorRecoveryScreen({ reset, showShell = true }: ErrorRe
         <section className="mx-auto w-full max-w-2xl">
           <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/70 p-3 shadow-[0_30px_90px_rgba(8,42,58,0.18)] backdrop-blur-xl sm:p-4">
             <Image
-              src="https://res.cloudinary.com/r929tquv/image/upload/v1785917169/ts_boat_tourism/images/kicn3yehp6n9pc101ksq.png"
+              src="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
               alt="Boat tourism support team restoring booking service"
               width={1536}
               height={1152}

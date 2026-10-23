@@ -129,7 +129,7 @@ export function PackageGallery({ gallery }: PackageGalleryProps) {
                   className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl"
                 />
               ) : getHdImageUrl(activeSlide.image_url) ? (
-                <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || 'Tour Photo'} fill sizes="100vw" className="object-contain" quality={85} />
+                <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || 'Tour Photo'} fill sizes="(max-width: 1024px) 100vw, 1200px" className="object-contain" quality={85} />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-white/40">
                   <Camera className="h-16 w-16" />

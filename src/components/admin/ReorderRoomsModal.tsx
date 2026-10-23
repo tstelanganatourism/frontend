@@ -250,12 +250,12 @@ export default function ReorderRoomsModal({
                   {/* Image */}
                   <div className="h-12 w-16 sm:h-14 sm:w-20 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
                     <img
-                      src={room.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp'}
+                      src={room.cover_image_url || 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'}
                       alt={room.lodge_name}
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =
-                          'https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp';
+                          'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
                       }}
                     />
                   </div>

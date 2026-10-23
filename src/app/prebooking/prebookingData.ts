@@ -25,7 +25,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 1350,
     type: 'TRIP',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     tags: ['1 Day Boat Trip', '₹1,350 Adult · ₹1,100 Child', 'Godavari Boat Ride', 'Breakfast & Lunch'],
     description: 'Complete one day Papikondalu boat tour starting from Bhadrachalam with breakfast, veg/non-veg lunch, and tea snacks included.',
   },
@@ -40,7 +40,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 1000,
     type: 'TRIP',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     tags: ['Boat Point Only', '₹1,000 Adult · ₹800 Child', 'Pochavaram Revu', 'Day Tour'],
     description: 'Direct boat ride package from Pochavaram boat point to Papikondalu and back with boat ride and scenic views.',
   },
@@ -55,7 +55,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 4000,
     type: 'TOUR',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     tags: ['Maredumilli Resorts', '₹4,000 / Person', '2 Days Stay', 'All Meals Included'],
     description: '2-Day combo package featuring Papikondalu boat trip and overnight stay at Maredumilli forest resort with waterfalls sightseeing.',
   },
@@ -70,7 +70,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 5500,
     type: 'TOUR',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     tags: ['Papikondalu Resorts', '₹5,500 / Person', 'River View Stay', 'AC / Luxury Cottages'],
     description: '2-Day premium overnight riverside resort stay at Papikondalu with scenic river views, campfire, cultural dance, and all meals.',
   },

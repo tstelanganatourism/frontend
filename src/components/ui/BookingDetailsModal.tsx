@@ -547,6 +547,7 @@ function AdjustTaxesPanel({
               type="number"
               placeholder="Amount"
               value={gstAmount}
+              onFocus={(e) => e.target.select()}
               onChange={e => setGstAmount(e.target.value)}
               className="w-full h-7 rounded border border-slate-200 px-2 text-xs font-bold outline-none focus:border-[#1a6b7a]"
             />
@@ -577,6 +578,7 @@ function AdjustTaxesPanel({
               type="number"
               placeholder="Amount"
               value={serviceChargeAmount}
+              onFocus={(e) => e.target.select()}
               onChange={e => setServiceChargeAmount(e.target.value)}
               className="w-full h-7 rounded border border-slate-200 px-2 text-xs font-bold outline-none focus:border-[#1a6b7a]"
             />
@@ -607,6 +609,7 @@ function AdjustTaxesPanel({
               type="number"
               placeholder="Amount"
               value={gatewayFeeAmount}
+              onFocus={(e) => e.target.select()}
               onChange={e => setGatewayFeeAmount(e.target.value)}
               className="w-full h-7 rounded border border-slate-200 px-2 text-xs font-bold outline-none focus:border-[#1a6b7a]"
             />

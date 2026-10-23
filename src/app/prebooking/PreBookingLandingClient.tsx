@@ -28,7 +28,7 @@ const FALLBACK_PACKAGES = [
     duration: '2 Days / 1 Night',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Sirivaka Bamboo Huts',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     starting_price: 5000,
     type: 'TOUR',
     tags: ['Bamboo Huts', 'Godavari Boat Trip', 'All Meals Included'],
@@ -40,7 +40,7 @@ const FALLBACK_PACKAGES = [
     duration: '2 Days / 1 Night',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Sirivaka Wooden Cottages',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     starting_price: 5500,
     type: 'TOUR',
     tags: ['Wooden Cottages', 'Scenic Hill Stay', 'AC Cottages'],
@@ -52,7 +52,7 @@ const FALLBACK_PACKAGES = [
     duration: '2 Days / 1 Night',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Maredumilli Forest Resorts - Pamuleru Waterfalls',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     starting_price: 5500,
     type: 'TOUR',
     tags: ['Maredumilli Resorts', 'Waterfalls', 'Jungle Safari'],
@@ -64,7 +64,7 @@ const FALLBACK_PACKAGES = [
     duration: '1 Day',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Bhadrachalam',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     starting_price: 990,
     type: 'TRIP',
     tags: ['Day Boat Trip', 'Breakfast & Lunch', 'Temple Visit'],
@@ -76,7 +76,7 @@ const FALLBACK_PACKAGES = [
     duration: '1 Day',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Purushothapatnam - Rajahmundry',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     starting_price: 2200,
     type: 'TOUR',
     tags: ['One-Way Boat Trip', 'Rajahmundry Drop', 'Full Day Trip'],
@@ -88,7 +88,7 @@ const FALLBACK_PACKAGES = [
     duration: '1 Day',
     place: 'Rajahmundry - Purushothapatnam - Papikondalu - Perantapalli - Pochavaram - Bhadrachalam',
     cover_image_url:
-      'https://res.cloudinary.com/r929tquv/image/upload/v1786941607/ts_tours/ou4bikypctyozwhizlic.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     starting_price: 2200,
     type: 'TOUR',
     tags: ['River Gorge Boat Ride', 'Bhadrachalam Drop', 'Temple Darshan'],
@@ -105,17 +105,17 @@ const SEASON_LABEL = 'Sep 2026 Season';
 
 const CLOUDINARY_FALLBACKS: Record<string, string> = {
   'bhadrachalam-to-papikondalu-one-day-package':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
   'bhadrachalam-to-pochavaram-only-boat-point-package':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
   'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
   'bhadrachalam-to-papikondalu-resort-package-2days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
 };
 
 const DEFAULT_TOUR_IMAGE =
-  'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp';
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
 
 function getPackageImage(pkg: PreBookingPackage): string {
   if (pkg.cover_image_url && pkg.cover_image_url.trim() && pkg.cover_image_url.startsWith('http')) {

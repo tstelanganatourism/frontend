@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     description: "Book Papikondalu boat tours, Bhadrachalam temple packages, Godavari boat rides, and Kolluru bamboo hut stays online with TS Boat Tourism.",
     siteName: "TS Boat Tourism",
     images: [{
-      url: "https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg",
+      url: "https://media.tstelanganatourism.com/brand/logo.png",
       width: 1200,
       height: 630,
       alt: "TS Boat Tourism | Official Booking Partner"
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "TS Boat Tourism | Papikondalu Boat Booking & Bhadrachalam Packages",
     description: "Book Papikondalu boat tours, Bhadrachalam temple packages, and Kolluru bamboo hut stays online.",
-    images: ["https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg"],
+    images: ["https://media.tstelanganatourism.com/brand/logo.png"],
   },
   robots: {
     index: true,
@@ -147,7 +147,7 @@ export default function RootLayout({
                 "alternateName": "TS Boat Tourism",
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com",
                 "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
-                "image": "https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_800/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png",
+                "image": "https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp",
                 "description": "Travel agency offering Godavari boat trips, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 99513 69573",
                 "email": "tstelanganatourism@gmail.com",

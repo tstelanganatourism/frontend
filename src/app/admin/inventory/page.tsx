@@ -115,7 +115,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClose: () => void; onSaved: () => void }) {
   const { patchInventoryRow, deleteInventoryRow } = useInventoryStore();
-  const [capacity, setCapacity] = useState(row.total_capacity);
+  const [capacity, setCapacity] = useState<number | ''>(row.total_capacity);
   const [isClosed, setIsClosed] = useState(row.is_closed);
   const [priceOverride, setPriceOverride] = useState<string>(row.price_override != null ? String(row.price_override) : '');
   const [saving, setSaving] = useState(false);
@@ -124,7 +124,7 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
     setSaving(true);
     try {
       await patchInventoryRow(row.variant_id, row.date, {
-        total_capacity: capacity,
+        total_capacity: typeof capacity === 'number' && capacity > 0 ? capacity : row.total_capacity,
         is_closed: isClosed,
         price_override: priceOverride !== '' ? parseFloat(priceOverride) : null,
       });
@@ -200,8 +200,27 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
                 <Users className="h-3.5 w-3.5 text-blue-500" />
                 Maximum Capacity
               </label>
-              <input type="number" min={row.booked_count} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
-                className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10" />
+              <input
+                type="number"
+                min={row.booked_count}
+                value={capacity === '' ? '' : capacity}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setCapacity('' as any);
+                    return;
+                  }
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) setCapacity(parsed);
+                }}
+                onBlur={() => {
+                  if (capacity === '' || Number(capacity) < (row.booked_count || 1)) {
+                    setCapacity(Math.max(row.booked_count || 1, 1));
+                  }
+                }}
+                className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10"
+              />
             </div>
 
             {/* Price Override */}
@@ -245,7 +264,7 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
             <button onClick={onClose} className="rounded-xl bg-white border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900">
               Cancel
             </button>
-            <button onClick={handleSave} disabled={saving || capacity < row.booked_count} 
+            <button onClick={handleSave} disabled={saving || (typeof capacity === 'number' && capacity < row.booked_count)} 
               className="flex items-center gap-2 rounded-xl bg-[#0f3d56] px-6 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Save Changes
             </button>
@@ -260,7 +279,7 @@ function PackageEditDrawer({ row, onClose, onSaved }: { row: InventoryRow; onClo
 
 function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onClose: () => void; onSaved: () => void }) {
   const { patchRoomInventoryRow, deleteRoomInventoryRow } = useInventoryStore();
-  const [capacity, setCapacity] = useState(row.total_rooms);
+  const [capacity, setCapacity] = useState<number | ''>(row.total_rooms);
   const [isClosed, setIsClosed] = useState(row.is_closed);
   const [hotelName, setHotelName] = useState(row.hotel_name || '');
   const [hotelAddress, setHotelAddress] = useState(row.hotel_address || '');
@@ -271,7 +290,7 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
     setSaving(true);
     try {
       await patchRoomInventoryRow(row.id, {
-        total_rooms: capacity,
+        total_rooms: typeof capacity === 'number' && capacity > 0 ? capacity : row.total_rooms,
         is_closed: isClosed,
         hotel_name: hotelName || null,
         hotel_address: hotelAddress || null,
@@ -327,8 +346,27 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
           </div>
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Total Rooms Available</label>
-            <input type="number" min={row.booked_rooms} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+            <input
+              type="number"
+              min={row.booked_rooms}
+              value={capacity === '' ? '' : capacity}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setCapacity('' as any);
+                  return;
+                }
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed)) setCapacity(parsed);
+              }}
+              onBlur={() => {
+                if (capacity === '' || Number(capacity) < (row.booked_rooms || 1)) {
+                  setCapacity(Math.max(row.booked_rooms || 1, 1));
+                }
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400"
+            />
           </div>
           
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
@@ -365,7 +403,7 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
           <button onClick={handleDelete} disabled={saving || row.booked_rooms > 0} className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">Delete</button>
           <div className="flex-1" />
           <button onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
-          <button onClick={handleSave} disabled={saving || capacity < row.booked_rooms} className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-black text-white hover:bg-slate-700">
+          <button onClick={handleSave} disabled={saving || (typeof capacity === 'number' && capacity < row.booked_rooms)} className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-black text-white hover:bg-slate-700">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save
           </button>
         </div>
@@ -378,8 +416,8 @@ function RoomEditDrawer({ row, onClose, onSaved }: { row: RoomInventoryRow; onCl
 
 function TransportEditDrawer({ row, onClose, onSaved }: { row: TransportInventoryRow; onClose: () => void; onSaved: () => void }) {
   const { patchTransportInventoryRow, deleteTransportInventoryRow } = useInventoryStore();
-  const [availableCount, setAvailableCount] = useState(row.available_count);
-  const [capacity, setCapacity] = useState(row.transport_option_capacity);
+  const [availableCount, setAvailableCount] = useState<number | ''>(row.available_count);
+  const [capacity, setCapacity] = useState<number | ''>(row.transport_option_capacity);
   const [isClosed, setIsClosed] = useState(row.is_closed);
   const [priceOverride, setPriceOverride] = useState<string>(row.price_override != null ? String(row.price_override) : '');
   const [saving, setSaving] = useState(false);
@@ -388,8 +426,8 @@ function TransportEditDrawer({ row, onClose, onSaved }: { row: TransportInventor
     setSaving(true);
     try {
       await patchTransportInventoryRow(row.id, {
-        available_count: availableCount,
-        capacity: capacity,
+        available_count: typeof availableCount === 'number' ? availableCount : row.available_count,
+        capacity: typeof capacity === 'number' && capacity > 0 ? capacity : row.transport_option_capacity,
         is_closed: isClosed,
         price_override: priceOverride !== '' ? parseFloat(priceOverride) : null,
       });
@@ -464,16 +502,54 @@ function TransportEditDrawer({ row, onClose, onSaved }: { row: TransportInventor
                   <Users className="h-3 w-3 text-blue-500" />
                   {row.transport_option_type === 'SHARED' ? 'Total Seats Available' : 'Total Vehicles Available'}
                 </label>
-                <input type="number" min={row.booked_count} value={availableCount} onChange={(e) => setAvailableCount(parseInt(e.target.value) || 0)}
-                  className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10" />
+                <input
+                  type="number"
+                  min={row.booked_count}
+                  value={availableCount === '' ? '' : availableCount}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setAvailableCount('' as any);
+                      return;
+                    }
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) setAvailableCount(parsed);
+                  }}
+                  onBlur={() => {
+                    if (availableCount === '' || Number(availableCount) < row.booked_count) {
+                      setAvailableCount(row.booked_count);
+                    }
+                  }}
+                  className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10"
+                />
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
                   <Car className="h-3 w-3 text-blue-500" />
                   {row.transport_option_type === 'SHARED' ? 'Vehicle Size (Default)' : 'Seats per Vehicle'}
                 </label>
-                <input type="number" min={1} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
-                  className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10" />
+                <input
+                  type="number"
+                  min={1}
+                  value={capacity === '' ? '' : capacity}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setCapacity('' as any);
+                      return;
+                    }
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) setCapacity(parsed);
+                  }}
+                  onBlur={() => {
+                    if (capacity === '' || Number(capacity) < 1) {
+                      setCapacity(1);
+                    }
+                  }}
+                  className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10"
+                />
               </div>
             </div>
 
@@ -518,7 +594,7 @@ function TransportEditDrawer({ row, onClose, onSaved }: { row: TransportInventor
             <button onClick={onClose} className="rounded-xl bg-white border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900">
               Cancel
             </button>
-            <button onClick={handleSave} disabled={saving || availableCount < row.booked_count} 
+            <button onClick={handleSave} disabled={saving || (typeof availableCount === 'number' && availableCount < row.booked_count)} 
               className="flex items-center gap-2 rounded-xl bg-[#0f3d56] px-6 py-2.5 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Save Changes
             </button>
@@ -550,7 +626,7 @@ function TransportGenerateModal({
     return formatDateIST(d);
   });
   const [loading, setLoading] = useState(false);
-  const [optionCounts, setOptionCounts] = useState<Record<string, number>>(() => {
+  const [optionCounts, setOptionCounts] = useState<Record<string, number | ''>>(() => {
     return Object.fromEntries(transportOptions.map(o => [String(o.id), o.capacity || 1]));
   });
 
@@ -561,7 +637,9 @@ function TransportGenerateModal({
         package_id: packageId,
         from_date: fromDate,
         to_date: toDate,
-        option_counts: optionCounts,
+        option_counts: Object.fromEntries(
+          Object.entries(optionCounts).map(([k, v]) => [k, typeof v === 'number' && v > 0 ? v : 1])
+        ),
       });
       toast.success(result.message);
       onGenerated();
@@ -620,10 +698,21 @@ function TransportGenerateModal({
                       type="number"
                       min={1}
                       max={9999}
-                      value={optionCounts[key] ?? 1}
+                      value={optionCounts[key] === '' ? '' : (optionCounts[key] ?? 1)}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => {
-                        const next = parseInt(e.target.value) || 1;
-                        setOptionCounts((prev) => ({ ...prev, [key]: Math.max(1, next) }));
+                        const val = e.target.value;
+                        if (val === '') {
+                          setOptionCounts((prev) => ({ ...prev, [key]: '' as any }));
+                          return;
+                        }
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed)) setOptionCounts((prev) => ({ ...prev, [key]: Math.max(1, parsed) }));
+                      }}
+                      onBlur={() => {
+                        if (optionCounts[key] === '' || Number(optionCounts[key]) < 1) {
+                          setOptionCounts((prev) => ({ ...prev, [key]: 1 }));
+                        }
                       }}
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-right text-sm font-black text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
                     />
@@ -662,7 +751,7 @@ function TransportDateManageModal({
 }) {
   const { createTransportInventoryRow, patchTransportInventoryRow, deleteTransportInventoryRow } = useInventoryStore();
   const [loading, setLoading] = useState(false);
-  const [optionCounts, setOptionCounts] = useState<Record<string, number>>(() => {
+  const [optionCounts, setOptionCounts] = useState<Record<string, number | ''>>(() => {
     return Object.fromEntries(transportOptions.map(o => [String(o.id), o.capacity || 1]));
   });
 
@@ -788,10 +877,21 @@ function TransportDateManageModal({
                               type="number"
                               min={1}
                               max={9999}
-                              value={optionCounts[key] ?? 1}
+                              value={optionCounts[key] === '' ? '' : (optionCounts[key] ?? 1)}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) => {
-                                const next = parseInt(e.target.value) || 1;
-                                setOptionCounts((prev) => ({ ...prev, [key]: Math.max(1, next) }));
+                                const val = e.target.value;
+                                if (val === '') {
+                                  setOptionCounts((prev) => ({ ...prev, [key]: '' as any }));
+                                  return;
+                                }
+                                const parsed = parseInt(val, 10);
+                                if (!isNaN(parsed)) setOptionCounts((prev) => ({ ...prev, [key]: Math.max(1, parsed) }));
+                              }}
+                              onBlur={() => {
+                                if (optionCounts[key] === '' || Number(optionCounts[key]) < 1) {
+                                  setOptionCounts((prev) => ({ ...prev, [key]: 1 }));
+                                }
                               }}
                               className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-10 text-right text-sm font-black text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
                             />
@@ -824,10 +924,21 @@ function TransportDateManageModal({
                               type="number"
                               min={1}
                               max={9999}
-                              value={optionCounts[key] ?? 1}
+                              value={optionCounts[key] === '' ? '' : (optionCounts[key] ?? 1)}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) => {
-                                const next = parseInt(e.target.value) || 1;
-                                setOptionCounts((prev) => ({ ...prev, [key]: Math.max(1, next) }));
+                                const val = e.target.value;
+                                if (val === '') {
+                                  setOptionCounts((prev) => ({ ...prev, [key]: '' as any }));
+                                  return;
+                                }
+                                const parsed = parseInt(val, 10);
+                                if (!isNaN(parsed)) setOptionCounts((prev) => ({ ...prev, [key]: Math.max(1, parsed) }));
+                              }}
+                              onBlur={() => {
+                                if (optionCounts[key] === '' || Number(optionCounts[key]) < 1) {
+                                  setOptionCounts((prev) => ({ ...prev, [key]: 1 }));
+                                }
                               }}
                               className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-11 text-right text-sm font-black text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
                             />
@@ -952,10 +1063,10 @@ function GenerateModal({
     d.setMonth(d.getMonth() + 3);
     return formatDateIST(d);
   });
-  const [capacity, setCapacity] = useState(defaultCapacity ?? (mode === 'package' ? 500 : 20));
-  const [slotCapacities, setSlotCapacities] = useState<Record<string, number>>(() => {
-    const fallback = defaultCapacity ?? 20;
-    return Object.fromEntries(roomSlots.map((slot) => [`${slot.slot_start}-${slot.slot_end}`, fallback]));
+  const fallbackCapacity = defaultCapacity ?? (mode === 'package' ? 500 : 20);
+  const [capacity, setCapacity] = useState<number | ''>(fallbackCapacity);
+  const [slotCapacities, setSlotCapacities] = useState<Record<string, number | ''>>(() => {
+    return Object.fromEntries(roomSlots.map((slot) => [`${slot.slot_start}-${slot.slot_end}`, fallbackCapacity]));
   });
   const [loading, setLoading] = useState(false);
   const [hotelName, setHotelName] = useState('');
@@ -965,24 +1076,28 @@ function GenerateModal({
 
   const handleGenerate = async () => {
     setLoading(true);
+    const capNum = typeof capacity === 'number' && capacity > 0 ? capacity : fallbackCapacity;
     try {
       let result;
       if (mode === 'package') {
-        result = await generateInventory({ variant_id: entityId, from_date: fromDate, to_date: toDate, total_capacity: capacity });
+        result = await generateInventory({ variant_id: entityId, from_date: fromDate, to_date: toDate, total_capacity: capNum });
       } else {
         const slot_capacities = hasRoomSlotInputs
-          ? roomSlots.map((slot) => ({
-              slot_start: slot.slot_start,
-              slot_end: slot.slot_end,
-              total_rooms: slotCapacities[`${slot.slot_start}-${slot.slot_end}`] ?? capacity,
-            }))
+          ? roomSlots.map((slot) => {
+              const val = slotCapacities[`${slot.slot_start}-${slot.slot_end}`];
+              return {
+                slot_start: slot.slot_start,
+                slot_end: slot.slot_end,
+                total_rooms: typeof val === 'number' && val >= 0 ? val : capNum,
+              };
+            })
           : undefined;
 
         result = await generateRoomInventory({
           room_variant_id: entityId,
           from_date: fromDate,
           to_date: toDate,
-          override_total_rooms: capacity,
+          override_total_rooms: capNum,
           slot_capacities,
           hotel_name: hotelName || undefined,
           hotel_address: hotelAddress || undefined,
@@ -1020,13 +1135,34 @@ function GenerateModal({
             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
               {mode === 'room' ? 'Default rooms per slot' : 'Default Capacity per day'}
             </label>
-            <input type="number" min={1} max={10000} value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value) || (mode === 'package' ? 500 : 20))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400" />
+            <input
+              type="number"
+              min={1}
+              max={10000}
+              value={capacity === '' ? '' : capacity}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setCapacity('' as any);
+                  return;
+                }
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed)) setCapacity(parsed);
+              }}
+              onBlur={() => {
+                if (capacity === '' || Number(capacity) < 1) {
+                  setCapacity(fallbackCapacity);
+                }
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-400"
+            />
             {hasRoomSlotInputs && (
               <button
                 type="button"
                 onClick={() => {
-                  setSlotCapacities(Object.fromEntries(roomSlots.map((slot) => [`${slot.slot_start}-${slot.slot_end}`, capacity])));
+                  const capNum = typeof capacity === 'number' && capacity > 0 ? capacity : fallbackCapacity;
+                  setSlotCapacities(Object.fromEntries(roomSlots.map((slot) => [`${slot.slot_start}-${slot.slot_end}`, capNum])));
                 }}
                 className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#0f3d56]/20 bg-white px-3 py-2 text-xs font-black text-[#0f3d56] transition-colors hover:bg-[#5ac4d7]/10"
               >
@@ -1079,10 +1215,23 @@ function GenerateModal({
                       type="number"
                       min={0}
                       max={10000}
-                      value={slotCapacities[key] ?? capacity}
+                      value={slotCapacities[key] === '' ? '' : (slotCapacities[key] ?? (typeof capacity === 'number' ? capacity : fallbackCapacity))}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => {
-                        const next = Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : 0;
-                        setSlotCapacities((prev) => ({ ...prev, [key]: Math.max(0, next) }));
+                        const val = e.target.value;
+                        if (val === '') {
+                          setSlotCapacities((prev) => ({ ...prev, [key]: '' as any }));
+                          return;
+                        }
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed)) {
+                          setSlotCapacities((prev) => ({ ...prev, [key]: Math.max(0, parsed) }));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (slotCapacities[key] === ('' as any)) {
+                          setSlotCapacities((prev) => ({ ...prev, [key]: 0 }));
+                        }
                       }}
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-right text-sm font-black text-slate-900 outline-none focus:border-[#0f3d56] focus:bg-white"
                     />
@@ -1106,7 +1255,7 @@ function GenerateModal({
 
 function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: { mode: 'package' | 'room', entityId: number, dateStr: string, rows: any[], onClose: () => void, onRefresh: () => void }) {
   const { generateInventory, generateRoomInventory, patchInventoryRow, patchRoomInventoryRow, deleteInventoryRow, deleteRoomInventoryRow } = useInventoryStore();
-  const [capacity, setCapacity] = useState(mode === 'package' ? 500 : 20);
+  const [capacity, setCapacity] = useState<number | ''>(mode === 'package' ? 500 : 20);
   const [hotelName, setHotelName] = useState('');
   const [hotelAddress, setHotelAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1124,15 +1273,16 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
 
   const handleCreate = async () => {
     setLoading(true);
+    const capNum = typeof capacity === 'number' && capacity > 0 ? capacity : defaultCapacity;
     try {
       if (mode === 'package') {
-        await generateInventory({ variant_id: entityId, from_date: dateStr, to_date: dateStr, total_capacity: capacity });
+        await generateInventory({ variant_id: entityId, from_date: dateStr, to_date: dateStr, total_capacity: capNum });
       } else {
         await generateRoomInventory({
           room_variant_id: entityId,
           from_date: dateStr,
           to_date: dateStr,
-          override_total_rooms: capacity,
+          override_total_rooms: capNum,
           hotel_name: hotelName.trim() || undefined,
           hotel_address: hotelAddress.trim() || undefined,
         });
@@ -1265,8 +1415,22 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
                         type="number"
                         min={1}
                         max={10000}
-                        value={capacity}
-                        onChange={(e) => setCapacity(parseInt(e.target.value) || defaultCapacity)}
+                        value={capacity === '' ? '' : capacity}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setCapacity('' as any);
+                            return;
+                          }
+                          const parsed = parseInt(val, 10);
+                          if (!isNaN(parsed)) setCapacity(parsed);
+                        }}
+                        onBlur={() => {
+                          if (capacity === '' || Number(capacity) < 1) {
+                            setCapacity(defaultCapacity);
+                          }
+                        }}
                         className="w-full rounded-xl border-2 border-slate-200 bg-slate-50 pl-4 pr-20 py-3.5 text-lg font-black text-slate-900 outline-none transition-all focus:border-[#0f3d56] focus:bg-white focus:ring-4 focus:ring-[#0f3d56]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         autoFocus
                       />
@@ -1277,7 +1441,7 @@ function DateManageModal({ mode, entityId, dateStr, rows, onClose, onRefresh }: 
                   </div>
                   <button
                     onClick={handleCreate}
-                    disabled={loading || capacity < 1}
+                    disabled={loading || (typeof capacity === 'number' && capacity < 1)}
                     className="flex h-[56px] items-center justify-center gap-2 rounded-xl bg-[#0f3d56] px-6 text-sm font-black text-white shadow-md transition-all hover:bg-[#1a6b7a] hover:shadow-lg disabled:opacity-50 disabled:hover:shadow-md sm:min-w-[160px]"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}

@@ -795,8 +795,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
             src={
               booking.cover_image_url ||
               (isRoom
-                ? "https://res.cloudinary.com/r929tquv/image/upload/v1787375372/a6c05b58-1a2c-4b7b-b834-8f43a6208d0d_mg5sgc.jpg"
-                : "https://res.cloudinary.com/r929tquv/image/upload/v1786615453/ts_tours/q5v6qzdbkydrzyqk7ygt.png"
+                ? "https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
+                : "https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
               )
             }
             alt={isRoom ? (booking.package_title || "TS Resort & Stays") : (booking.package_title || "TS Boat Tourism")}

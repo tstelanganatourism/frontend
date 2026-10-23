@@ -44,7 +44,7 @@ export default async function SightseeingPage({
   const { data } = await fetchInitialPackages(params);
   return (
     <>
-      <link rel="preload" href="https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp" as="image" type="image/webp" fetchPriority="high" />
+      <link rel="preload" href="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp" as="image" type="image/webp" fetchPriority="high" />
       <PackagesList data={data} pathname="/sightseeing" searchParams={params} />
     </>
   );

@@ -40,7 +40,7 @@ export default async function BoatRidesPage(props: { searchParams: Promise<Recor
   const { data } = await fetchInitialPackages(searchParams);
   return (
     <>
-      <link rel="preload" href="https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_800/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png" as="image" type="image/jpeg" fetchPriority="high" />
+      <link rel="preload" href="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp" as="image" type="image/jpeg" fetchPriority="high" />
       <PackagesList data={data} pathname="/boat-rides" searchParams={searchParams} />
     </>
   );

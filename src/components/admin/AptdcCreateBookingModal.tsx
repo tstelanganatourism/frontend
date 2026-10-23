@@ -613,6 +613,7 @@ export default function AptdcCreateBookingModal({ isOpen, onClose, onSuccess }: 
                   step="0.01"
                   className={inputClass}
                   value={extraCharges}
+                  onFocus={(e) => e.target.select()}
                   onChange={e => setExtraCharges(e.target.value)}
                 />
               </div>
@@ -679,6 +680,7 @@ export default function AptdcCreateBookingModal({ isOpen, onClose, onSuccess }: 
                           required
                           className="h-9 w-full rounded-lg border border-slate-200 px-2.5 font-semibold outline-none focus:border-[#43ad4b]"
                           value={passenger.age}
+                          onFocus={(e) => e.target.select()}
                           onChange={e => updatePassenger(index, { age: e.target.value })}
                           placeholder="Age"
                         />
@@ -691,6 +693,7 @@ export default function AptdcCreateBookingModal({ isOpen, onClose, onSuccess }: 
                           required
                           className="h-9 w-full rounded-lg border border-slate-200 px-2.5 font-semibold outline-none focus:border-[#43ad4b]"
                           value={passenger.fare}
+                          onFocus={(e) => e.target.select()}
                           onChange={e => updatePassenger(index, { fare: e.target.value })}
                           placeholder="0.00"
                         />
@@ -703,6 +706,7 @@ export default function AptdcCreateBookingModal({ isOpen, onClose, onSuccess }: 
                           required
                           className="h-9 w-full rounded-lg border border-slate-200 px-2.5 font-semibold outline-none focus:border-[#43ad4b]"
                           value={passenger.net_fare}
+                          onFocus={(e) => e.target.select()}
                           onChange={e => updatePassenger(index, { net_fare: e.target.value })}
                           placeholder="0.00"
                         />
@@ -792,6 +796,7 @@ export default function AptdcCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         required
                         className="mt-1 h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold outline-none focus:border-[#43ad4b]"
                         value={passenger.age}
+                        onFocus={(e) => e.target.select()}
                         onChange={e => updatePassenger(index, { age: e.target.value })}
                         placeholder="Age"
                       />
@@ -809,6 +814,7 @@ export default function AptdcCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         required
                         className="mt-1 h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold outline-none focus:border-[#43ad4b]"
                         value={passenger.fare}
+                        onFocus={(e) => e.target.select()}
                         onChange={e => updatePassenger(index, { fare: e.target.value })}
                         placeholder="0.00"
                       />
@@ -822,6 +828,7 @@ export default function AptdcCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         required
                         className="mt-1 h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold outline-none focus:border-[#43ad4b]"
                         value={passenger.net_fare}
+                        onFocus={(e) => e.target.select()}
                         onChange={e => updatePassenger(index, { net_fare: e.target.value })}
                         placeholder="0.00"
                       />

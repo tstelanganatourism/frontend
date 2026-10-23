@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getOptimizedImageUrl(url: string | null | undefined, width: number = 800): string {
-  if (!url || !url.trim()) return "https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png";
+  if (!url || !url.trim()) return "https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp";
   if (url.includes("res.cloudinary.com") && !url.includes("/image/upload/w_") && !url.includes("/image/upload/f_auto")) {
     return url.replace("/image/upload/", `/image/upload/w_${width},f_auto,q_auto/`);
   }
@@ -15,6 +15,19 @@ export function getOptimizedImageUrl(url: string | null | undefined, width: numb
 
 export function getHdImageUrl(url: string | null | undefined): string {
   return getOptimizedImageUrl(url, 1200);
+}
+
+export function getYouTubeId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+  return match ? match[1] : null;
+}
+
+export function getYouTubeEmbedUrl(url: string | null | undefined, autoplay: boolean = true): string | null {
+  const id = getYouTubeId(url);
+  if (!id) return null;
+  const ap = autoplay ? '1' : '0';
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=${ap}&rel=0&modestbranding=1&playsinline=1&controls=1`;
 }
 
 export function getOptimizedCloudinaryVideoUrl(url: string | null | undefined): string {

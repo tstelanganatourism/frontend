@@ -20,9 +20,9 @@ type Category = {
 };
 
 const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
-  'papikondalu-tour-packages': 'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
-  'pochavaram-to-papikondalu-tour': 'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
-  'bhadrachalam-packages': 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786268860/ts_boat_tourism/gallery/boats/q6md8goirybznxvajwet.png',
+  'papikondalu-tour-packages': 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+  'pochavaram-to-papikondalu-tour': 'https://media.tstelanganatourism.com/gallery/photos/2T9A7862.webp',
+  'bhadrachalam-packages': 'https://media.tstelanganatourism.com/gallery/photos/2T9A8805.webp',
 };
 
 function getCategoryCoverImage(cat: Category): string {
@@ -34,12 +34,12 @@ function getCategoryCoverImage(cat: Category): string {
   }
   const low = (cat.name || '').toLowerCase();
   if (low.includes('pochavaram')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg';
+    return 'https://media.tstelanganatourism.com/gallery/photos/2T9A7862.webp';
   }
   if (low.includes('bhadrachalam')) {
-    return 'https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1200/v1786268860/ts_boat_tourism/gallery/boats/q6md8goirybznxvajwet.png';
+    return 'https://media.tstelanganatourism.com/gallery/photos/2T9A8805.webp';
   }
-  return 'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp';
+  return 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
 }
 
 function CategoryCoverImage({ cat }: { cat: Category }) {
@@ -55,7 +55,7 @@ function CategoryCoverImage({ cat }: { cat: Category }) {
       className="object-cover group-hover:scale-105 transition-transform duration-500"
       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
       onError={() => {
-        setImgSrc('https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp');
+        setImgSrc('https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp');
       }}
     />
   );
@@ -194,10 +194,10 @@ export default function PackageCategoriesGrid({ categories, packages = [] }: { c
 
         {/* Photography Background Image */}
         <Image
-          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917174/ts_boat_tourism/images/tndmgituyh1ujvpbb2zb.jpg"
+          src="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
           alt="Tour Categories Canvas Background"
           fill
-          sizes="100vw"
+          sizes="(max-width: 1024px) 100vw, 1920px"
           className="object-cover opacity-25 pointer-events-none"
           priority
         />

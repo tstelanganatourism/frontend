@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Expand, Pause, Play, Volume2, VolumeX, Sparkles } from 'lucide-react';
 
-import { getOptimizedCloudinaryVideoUrl, getCloudinaryVideoPosterUrl } from '@/lib/utils';
+import { getOptimizedCloudinaryVideoUrl, getCloudinaryVideoPosterUrl, getYouTubeEmbedUrl } from '@/lib/utils';
 
 interface ExperienceVideoPlayerProps {
   videoUrl: string;
@@ -20,8 +20,7 @@ const formatTime = (seconds: number) => {
 
 /**
  * Premium, glassmorphic presentation player for public package and room videos.
- * Strictly on-demand playback (NO AUTOPLAY) to minimize Cloudinary bandwidth costs.
- * Uses preload="none" and optimized transformations (f_auto, q_auto).
+ * Supports both YouTube (unlisted embeds, zero bandwidth cost) and HTML5 video.
  */
 export function ExperienceVideoPlayer({ videoUrl, label, posterUrl }: ExperienceVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,6 +34,7 @@ export function ExperienceVideoPlayer({ videoUrl, label, posterUrl }: Experience
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [showControls, setShowControls] = useState(false);
 
+  const ytEmbedUrl = getYouTubeEmbedUrl(videoUrl, true);
   const optimizedVideoUrl = getOptimizedCloudinaryVideoUrl(videoUrl);
   const effectivePoster = posterUrl || getCloudinaryVideoPosterUrl(videoUrl);
 
@@ -135,6 +135,32 @@ export function ExperienceVideoPlayer({ videoUrl, label, posterUrl }: Experience
   const preventContextMenu = (event: React.MouseEvent) => event.preventDefault();
   const progress = duration ? Math.min((currentTime / duration) * 100, 100) : 0;
 
+  const handlePlayClick = () => {
+    if (ytEmbedUrl) {
+      setHasStarted(true);
+      setIsPlaying(true);
+      return;
+    }
+    togglePlay();
+  };
+
+  if (ytEmbedUrl && hasStarted) {
+    return (
+      <div
+        ref={playerRef}
+        className="relative w-full aspect-video overflow-hidden rounded-[24px] bg-black shadow-[0_24px_55px_-12px_rgba(7,29,43,0.4)] border border-white/10 sm:rounded-[30px]"
+      >
+        <iframe
+          src={ytEmbedUrl}
+          title={`${label} video`}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          className="h-full w-full border-0"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={playerRef}
@@ -146,37 +172,46 @@ export function ExperienceVideoPlayer({ videoUrl, label, posterUrl }: Experience
       className="relative w-full overflow-hidden rounded-[24px] bg-slate-950 shadow-[0_24px_55px_-12px_rgba(7,29,43,0.4)] border border-white/5 outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:rounded-[30px]"
     >
       <div className="group relative isolate overflow-hidden w-full aspect-video" onContextMenu={preventContextMenu}>
-        {/* Actual Video */}
-        <video
-          ref={videoRef}
-          src={optimizedVideoUrl}
-          poster={effectivePoster || undefined}
-          className="h-full w-full cursor-pointer object-cover"
-          muted={isMuted}
-          loop
-          playsInline
-          preload="none"
-          controlsList="nodownload noplaybackrate"
-          disablePictureInPicture
-          disableRemotePlayback
-          aria-label={`${label} video`}
-          onClick={togglePlay}
-          onDoubleClick={openFullscreen}
-          onContextMenu={preventContextMenu}
-          onLoadedMetadata={(event) => {
-            setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0);
-            // Sync initial state
-            setIsMuted(event.currentTarget.muted);
-            setVolume(event.currentTarget.muted ? 0 : event.currentTarget.volume);
-          }}
-          onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onVolumeChange={(event) => {
-            setIsMuted(event.currentTarget.muted);
-            if (event.currentTarget.muted) setVolume(0);
-          }}
-        />
+        {/* Poster / Video Display */}
+        {ytEmbedUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={effectivePoster || 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'}
+            alt={label}
+            className="h-full w-full cursor-pointer object-cover"
+            onClick={handlePlayClick}
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            src={optimizedVideoUrl}
+            poster={effectivePoster || undefined}
+            className="h-full w-full cursor-pointer object-cover"
+            muted={isMuted}
+            loop
+            playsInline
+            preload="none"
+            controlsList="nodownload noplaybackrate"
+            disablePictureInPicture
+            disableRemotePlayback
+            aria-label={`${label} video`}
+            onClick={togglePlay}
+            onDoubleClick={openFullscreen}
+            onContextMenu={preventContextMenu}
+            onLoadedMetadata={(event) => {
+              setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0);
+              setIsMuted(event.currentTarget.muted);
+              setVolume(event.currentTarget.muted ? 0 : event.currentTarget.volume);
+            }}
+            onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onVolumeChange={(event) => {
+              setIsMuted(event.currentTarget.muted);
+              if (event.currentTarget.muted) setVolume(0);
+            }}
+          />
+        )}
 
         {/* Dynamic Dark Gradients Overlay */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
@@ -200,7 +235,7 @@ export function ExperienceVideoPlayer({ videoUrl, label, posterUrl }: Experience
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/30 backdrop-blur-[2px] transition-all duration-300">
             <button
               type="button"
-              onClick={togglePlay}
+              onClick={handlePlayClick}
               aria-label={`Play ${label} video`}
               className="group/btn relative flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-2xl backdrop-blur-lg transition-all duration-300 hover:scale-110 hover:bg-white/25 hover:border-white/40 focus:outline-none"
             >

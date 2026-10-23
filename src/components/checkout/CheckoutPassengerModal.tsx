@@ -61,7 +61,6 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
     student_class: '',
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [agreedToAadhaarConsent, setAgreedToAadhaarConsent] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
 
   const [guestNames, setGuestNames] = useState<string[]>(() =>
@@ -127,7 +126,6 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
         const savedEmail = sessionStorage.getItem('last_checkout_email') || '';
         setCustomerEmail(savedEmail);
         setAgreedToTerms(true);
-        setAgreedToAadhaarConsent(true);
       } else {
         const initial: PassengerInput[] = Array.from({ length: totalPassengers }).map((_, i) => ({
           full_name: '',
@@ -153,7 +151,6 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
         });
         setGuestNames(Array.from({ length: totalPassengers - 1 }).map(() => ''));
         setAgreedToTerms(false);
-        setAgreedToAadhaarConsent(false);
         setCustomerEmail('');
       }
     }
@@ -171,10 +168,6 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
     e.preventDefault();
     if (!agreedToTerms) {
       toast.error("Please agree to the Terms & Conditions before proceeding.");
-      return;
-    }
-    if (!agreedToAadhaarConsent) {
-      toast.error("Please acknowledge the mandatory Aadhaar / Govt ID requirement for boarding pass issuance.");
       return;
     }
 
@@ -393,6 +386,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                           max={150}
                           disabled={isProcessing}
                           value={quickPassenger.age}
+                          onFocus={(e) => e.target.select()}
                           onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: e.target.value === '' ? '' : parseInt(e.target.value) }))}
                           className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50 ${
                             quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50' : 'border-slate-300'
@@ -423,8 +417,8 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                 <div className="rounded-xl border border-sky-200 bg-sky-50/90 p-3.5 flex gap-2.5 items-start">
                   <span className="text-base shrink-0 mt-0.5">🪪</span>
                   <div className="text-xs font-semibold text-sky-950 leading-relaxed">
-                    <span className="font-bold text-sky-900 block mb-0.5">Government ID Mandatory for Confirmation &amp; Boarding:</span>
-                    Original Government-issued <strong>Aadhaar Card</strong> or valid Photo ID is strictly mandatory for all guests during check-in for physical verification and boarding pass issuance at the TS Boat office counter.
+                    <span className="font-bold text-sky-900 block mb-0.5">Government ID for Confirmation &amp; Boarding:</span>
+                    Original Government-issued Photo ID is required during check-in for physical verification and boarding pass issuance at the TS Boat office counter.
                   </div>
                 </div>
 
@@ -528,7 +522,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                   <span className="text-base shrink-0 mt-0.5">🪪</span>
                   <div className="text-xs font-semibold text-sky-950 leading-relaxed">
                     <span className="font-bold text-sky-900 block mb-0.5">Government ID Mandatory for Confirmation &amp; Boarding:</span>
-                    Original Government-issued <strong>Aadhaar Card</strong> or valid Photo ID is strictly mandatory for all passengers during check-in for physical verification and boarding pass issuance at the TS Boat office counter.
+                    Original Government-issued valid Photo ID is strictly mandatory for all passengers during check-in for physical verification and boarding pass issuance at the TS Boat office counter.
                   </div>
                 </div>
                 {passengers.map((p, i) => {
@@ -577,6 +571,7 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
                             max={targetType === 'package' && isChild ? 10 : 150}
                             disabled={isProcessing}
                             value={p.age}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => handleChange(i, 'age', e.target.value === '' ? '' : parseInt(e.target.value))}
                             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none disabled:bg-slate-50"
                             placeholder={targetType === 'package' ? (isChild ? "4-10" : "11+") : "Age"}
@@ -682,20 +677,6 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
               I acknowledge and agree to the <a href="/terms" target="_blank" className="text-[#1a6b7a] underline hover:text-[#13505c]">Terms & Conditions</a>, <a href="/faq" target="_blank" className="text-[#1a6b7a] underline hover:text-[#13505c]">Cancellation Policy</a>, and confirm that all passenger details provided are accurate and match their government-issued ID proofs.
             </label>
           </div>
-
-          <div className="mt-4 flex items-start gap-3">
-            <input
-              type="checkbox"
-              id="aadhaar-consent-checkbox"
-              checked={agreedToAadhaarConsent}
-              onChange={(e) => setAgreedToAadhaarConsent(e.target.checked)}
-              disabled={isProcessing}
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-[#1a6b7a] focus:ring-[#1a6b7a] disabled:opacity-50"
-            />
-            <label htmlFor="aadhaar-consent-checkbox" className="text-xs font-semibold text-slate-600 leading-relaxed cursor-pointer">
-              I understand and acknowledge that carrying original Government-issued <strong>Aadhaar Card</strong> or valid Photo ID is <strong>mandatory</strong> for all passengers for verification, ticket confirmation, and boarding pass issuance at the TS Boat office counter.
-            </label>
-          </div>
         </div>
 
         {/* Footer */}
@@ -715,7 +696,6 @@ export default function CheckoutPassengerModal({ isOpen, onClose, onSubmit, adul
             disabled={
               isProcessing ||
               !agreedToTerms ||
-              !agreedToAadhaarConsent ||
               (isEmailRequired && (!customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim()))) ||
               (passengerMode === 'quick'
                 ? (isStudentPackage

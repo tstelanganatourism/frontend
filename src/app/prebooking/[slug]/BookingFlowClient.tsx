@@ -39,17 +39,17 @@ function daysInMonth(y: number, m: number) {
 
 const CLOUDINARY_FALLBACKS: Record<string, string> = {
   'bhadrachalam-to-papikondalu-one-day-package':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
   'bhadrachalam-to-pochavaram-only-boat-point-package':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
   'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613500/ts_boat_tourism/packages/xolfujndmsrwgk22xqu2.jpg',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
   'bhadrachalam-to-papikondalu-resort-package-2days':
-    'https://res.cloudinary.com/r929tquv/image/upload/v1784613516/ts_boat_tourism/packages/ioijftrzlz2hzwera7y2.jpg',
+    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
 };
 
 const DEFAULT_TOUR_IMAGE =
-  'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp';
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
 
 function getPackageImage(pkg: PreBookingPackage): string {
   if (pkg.cover_image_url && pkg.cover_image_url.trim() && pkg.cover_image_url.startsWith('http')) {

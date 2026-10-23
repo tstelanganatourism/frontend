@@ -19,7 +19,7 @@ interface RoomHeroProps {
   onOpenLightbox?: (index: number) => void;
 }
 
-const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg';
+const fallbackImage = 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
 
 export const RoomHero = ({
   lodgeName,
@@ -68,7 +68,7 @@ export const RoomHero = ({
           fill
           priority
           className="object-cover opacity-50"
-          sizes="100vw"
+          sizes="(max-width: 1024px) 100vw, 1920px"
           onError={() => setImgError(true)}
         />
         {/* Directional gradient overlays */}

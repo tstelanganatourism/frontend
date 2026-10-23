@@ -50,15 +50,15 @@ const filters = [
 
 const heroImages = [
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     alt: 'Official TS Boat Tourism Banner',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     alt: 'Papikondalu river view',
   },
   {
-    src: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     alt: 'Kolluru bamboo huts',
   },
 ];
@@ -107,7 +107,7 @@ function BrochureCard({ pkg, index }: { pkg: BrochurePackage; index: number }) {
     <article className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,61,86,0.05)] transition duration-300 hover:-translate-y-1 hover:border-[#1a6b7a]/40 hover:shadow-[0_18px_44px_rgba(15,61,86,0.12)]">
       <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
         <Image
-          src={pkg.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg'}
+          src={pkg.cover_image_url || 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'}
           alt={pkg.title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -223,10 +223,10 @@ export default function BrochuresList({ data }: { data?: PackageData }) {
 
         {/* Background image */}
         <Image
-          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917164/ts_boat_tourism/images/gd4pulduucghrnfzel5z.jpg"
+          src="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
           alt="Papikondalu river hills"
           fill
-          sizes="100vw"
+          sizes="(max-width: 1024px) 100vw, 1920px"
           className="object-cover opacity-20 pointer-events-none"
           priority
         />

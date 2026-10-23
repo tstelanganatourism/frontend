@@ -1945,6 +1945,7 @@ export const BookingSidebarV2 = ({
                   type="number"
                   disabled={!isActive || (isPackageInactive && !isAdmin)}
                   value={adults || ''}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
                     if (!isNaN(val)) {

@@ -103,7 +103,7 @@ interface RoomDetailExperienceProps {
   room: RoomDetailViewModel;
 }
 
-const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg';
+const fallbackImage = 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
 const getLocalToday = () => {
   const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -2339,7 +2339,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </button>
             ) : null}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill sizes="100vw" className="object-contain" quality={85} />
+              <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill sizes="(max-width: 1024px) 100vw, 1200px" className="object-contain" quality={85} />
             </div>
             {slides.length > 1 ? (
               <button onClick={() => moveSlide('right')} className="absolute right-2 z-10 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 md:right-8" aria-label="Next photo">

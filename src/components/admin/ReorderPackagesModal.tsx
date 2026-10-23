@@ -264,13 +264,13 @@ export default function ReorderPackagesModal({
                   <img
                     src={
                       pkg.cover_image_url ||
-                      'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png'
+                      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'
                     }
                     alt={pkg.title}
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src =
-                        'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png';
+                        'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
                     }}
                   />
                 </div>

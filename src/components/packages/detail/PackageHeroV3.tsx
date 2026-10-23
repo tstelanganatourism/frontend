@@ -44,7 +44,7 @@ interface PackageHeroV3Props {
   isActive?: boolean;
 }
 
-const fallbackImage = 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg';
+const fallbackImage = 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
 
 const formatPrice = (value?: number | string | null) => {
   const numeric = Number(value || 0);
@@ -382,7 +382,7 @@ export const PackageHeroV3 = ({
               </button>
             )}
             <div className="relative h-full w-full max-w-5xl">
-              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || title} fill sizes="100vw" className="object-contain" quality={85} />
+              <Image src={getHdImageUrl(activeSlide.image_url)} alt={activeSlide.alt_text || title} fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-contain" quality={85} />
             </div>
             {slides.length > 1 && (
               <button

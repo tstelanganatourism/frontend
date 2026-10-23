@@ -609,11 +609,11 @@ export default function AdminRoomsPage() {
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-16 shrink-0 rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
                           <img
-                            src={room.cover_image_url || 'https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp'}
+                            src={room.cover_image_url || 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'}
                             alt={room.lodge_name}
                             className="h-full w-full object-cover"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = 'https://res.cloudinary.com/r929tquv/image/upload/v1785917189/ts_boat_tourism/images/kk1enmetydnvtwall1aw.webp';
+                              (e.currentTarget as HTMLImageElement).src = 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
                             }}
                           />
                         </div>

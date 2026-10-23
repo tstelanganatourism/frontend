@@ -32,7 +32,7 @@ interface PassengerForm {
   age: number | '';
   gender: string;
   phone: string;
-  aadhaar: string;
+  aadhaar?: string;
   relationship: string;
   is_primary: boolean;
   student_class?: string;
@@ -50,9 +50,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const [variantId, setVariantId] = useState('');
   const [roomVariantId, setRoomVariantId] = useState('');
   const [departureDate, setDepartureDate] = useState('');
-  const [adultCount, setAdultCount] = useState(1);
-  const [childCount, setChildCount] = useState(0);
-  const [studentCount, setStudentCount] = useState(1);
+  const [adultCount, setAdultCount] = useState<number | ''>(1);
+  const [childCount, setChildCount] = useState<number | ''>(0);
+  const [studentCount, setStudentCount] = useState<number | ''>(1);
   const [amountPaid, setAmountPaid] = useState<string>('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -115,7 +115,10 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const isStudentPackage = !!selectedPackage?.is_student_package;
 
-  const totalPax = isStudentPackage ? studentCount : (adultCount + childCount);
+  const numAdults = typeof adultCount === 'number' ? adultCount : 1;
+  const numChildren = typeof childCount === 'number' ? childCount : 0;
+  const numStudents = typeof studentCount === 'number' ? studentCount : 1;
+  const totalPax = isStudentPackage ? numStudents : (numAdults + numChildren);
   const [guestNames, setGuestNames] = useState<string[]>([]);
 
   useEffect(() => {
@@ -222,14 +225,17 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   // Sync passenger list with count
   useEffect(() => {
     const isStudentPkg = targetType === 'package' && !!packagesList.find(p => (p.variants || []).some((v: any) => v.id === parseInt(variantId)))?.is_student_package;
-    const totalCount = isStudentPkg ? studentCount : (adultCount + childCount);
+    const aCount = typeof adultCount === 'number' ? adultCount : 1;
+    const cCount = typeof childCount === 'number' ? childCount : 0;
+    const sCount = typeof studentCount === 'number' ? studentCount : 1;
+    const totalCount = isStudentPkg ? sCount : (aCount + cCount);
     setPassengers(prev => {
       if (prev.length === totalCount) return prev;
       const newList: PassengerForm[] = [];
       for (let i = 0; i < totalCount; i++) {
         newList.push(prev[i] || {
           full_name: '',
-          age: isStudentPkg ? 0 : (i < adultCount ? 25 : 5),
+          age: isStudentPkg ? 0 : (i < aCount ? 25 : 5),
           gender: '',
           phone: '',
           aadhaar: '',
@@ -255,7 +261,6 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const separateCapacityOk = useMemo(() => {
     if (transportMode !== 'SEPARATE') return true;
-    const totalPax = isStudentPackage ? studentCount : (adultCount + childCount);
     const totalCapacity = separateOpts.reduce((sum: number, opt: any) => {
       const qty = separateVehicleQtys[opt.id] || 0;
       return sum + qty * (Number(opt.capacity) || 1);
@@ -263,7 +268,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     const hasAnyVehicle = Object.values(separateVehicleQtys).some(q => q > 0);
     if (!hasAnyVehicle) return true;
     return totalCapacity >= totalPax;
-  }, [transportMode, separateVehicleQtys, separateOpts, adultCount, childCount, studentCount, isStudentPackage]);
+  }, [transportMode, separateVehicleQtys, separateOpts, totalPax]);
 
   const hasTransportSelection = useMemo(() => {
     if (targetType !== 'package' || !packageHasTransport || packageTransportOptions.length === 0) return true;
@@ -290,13 +295,11 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       if (isStudentPackage) {
         const classOk = (quickPassenger.student_class || '').trim() !== '';
         const phoneOk = !quickPassenger.phone || /^\d{10}$/.test(quickPassenger.phone.trim());
-        const aadhaarOk = !quickPassenger.aadhaar || (quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar));
-        return nameOk && classOk && genderOk && phoneOk && aadhaarOk;
+        return nameOk && classOk && genderOk && phoneOk;
       } else {
         const ageOk = quickPassenger.age !== '' && Number(quickPassenger.age) >= 18;
         const phoneOk = /^\d{10}$/.test(quickPassenger.phone.trim());
-        const aadhaarOk = quickPassenger.aadhaar.length === 12 && isValidAadhaar(quickPassenger.aadhaar);
-        return nameOk && ageOk && genderOk && phoneOk && aadhaarOk;
+        return nameOk && ageOk && genderOk && phoneOk;
       }
     }
 
@@ -308,14 +311,8 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       const phoneOk = isStudentPackage
         ? (!p.phone || /^\d{10}$/.test(p.phone.trim()))
         : (i === 0 ? /^\d{10}$/.test(p.phone.trim()) : true);
-      const isChild = i >= adultCount;
-      const aadhaarOk = isStudentPackage
-        ? (!p.aadhaar || (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar)))
-        : (isChild
-            ? (!p.aadhaar || p.aadhaar.length === 0 || isValidAadhaar(p.aadhaar))
-            : (p.aadhaar.length === 12 && isValidAadhaar(p.aadhaar)));
       const classOk = isStudentPackage ? (p.student_class || '').trim() !== '' : true;
-      return nameOk && ageOk && genderOk && phoneOk && aadhaarOk && classOk;
+      return nameOk && ageOk && genderOk && phoneOk && classOk;
     });
   };
 
@@ -345,7 +342,6 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
             age: isStudentPackage ? 0 : Number(quickPassenger.age),
             gender: quickPassenger.gender,
             phone: quickPassenger.phone || undefined,
-            aadhaar: quickPassenger.aadhaar || undefined,
             relationship: 'self',
             is_primary: true,
             student_class: isStudentPackage ? (quickPassenger.student_class || 'General') : undefined,
@@ -353,14 +349,13 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         ];
         if (isStudentPackage) {
           // Auto-fill remaining students
-          for (let i = 1; i < studentCount; i++) {
+          for (let i = 1; i < numStudents; i++) {
             const typedName = guestNames[i - 1]?.trim();
             passengersPayload.push({
               full_name: typedName || `Guest Student ${i + 1}`,
               age: 0,
               gender: 'MALE',
               phone: undefined,
-              aadhaar: undefined,
               relationship: '',
               is_primary: false,
               student_class: quickPassenger.student_class || 'General',
@@ -368,28 +363,26 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           }
         } else {
           // Auto-fill remaining adults
-          for (let i = 1; i < adultCount; i++) {
+          for (let i = 1; i < numAdults; i++) {
             const typedName = guestNames[i - 1]?.trim();
             passengersPayload.push({
               full_name: typedName || `Guest Adult ${i + 1}`,
               age: 25,
               gender: 'MALE',
               phone: '',
-              aadhaar: undefined,
               relationship: '',
               is_primary: false,
             });
           }
           // Auto-fill children
-          for (let i = 0; i < childCount; i++) {
-            const guestIdx = (adultCount - 1) + i;
+          for (let i = 0; i < numChildren; i++) {
+            const guestIdx = (numAdults - 1) + i;
             const typedName = guestNames[guestIdx]?.trim();
             passengersPayload.push({
               full_name: typedName || `Guest Child ${i + 1}`,
               age: 7,
               gender: 'MALE',
               phone: '',
-              aadhaar: undefined,
               relationship: '',
               is_primary: false,
             });
@@ -399,7 +392,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         passengersPayload = passengers.map(p => ({
           ...p,
           age: isStudentPackage ? 0 : p.age,
-          aadhaar: p.aadhaar || undefined,
+          aadhaar: undefined,
           phone: p.phone || undefined,
         }));
       }
@@ -407,10 +400,10 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       const payload: any = {
         target_type: targetType,
         travel_date: travelDate,
-        quantity: isStudentPackage ? studentCount : (adultCount + childCount),
-        adult_count: isStudentPackage ? 0 : adultCount,
-        child_count: isStudentPackage ? 0 : childCount,
-        student_count: isStudentPackage ? studentCount : 0,
+        quantity: isStudentPackage ? numStudents : (numAdults + numChildren),
+        adult_count: isStudentPackage ? 0 : numAdults,
+        child_count: isStudentPackage ? 0 : numChildren,
+        student_count: isStudentPackage ? numStudents : 0,
         passengers: passengersPayload,
         transport_selections: transport_selections.length > 0 ? transport_selections : undefined,
         include_refreshments: includeRefreshments,
@@ -502,9 +495,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         if (pkg?.is_student_package) {
           const isWeekend = travelDate ? (new Date(travelDate).getDay() === 0 || new Date(travelDate).getDay() === 6) : false;
           const studentPrice = (isWeekend && v.weekend_student_price) ? Number(v.weekend_student_price) : Number(v.student_price || 0);
-          subtotal = studentCount * studentPrice;
+          subtotal = numStudents * studentPrice;
         } else {
-          subtotal = (adultCount * (Number(v.adult_price) || 0)) + (childCount * (Number(v.child_price) || 0));
+          subtotal = (numAdults * (Number(v.adult_price) || 0)) + (numChildren * (Number(v.child_price) || 0));
         }
       }
       // Transport cost
@@ -514,9 +507,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           if (pkg?.is_student_package) {
             const isWeekend = travelDate ? (new Date(travelDate).getDay() === 0 || new Date(travelDate).getDay() === 6) : false;
             const tPrice = (isWeekend && tOpt.weekend_student_price) ? Number(tOpt.weekend_student_price) : Number(tOpt.student_price || 0);
-            subtotal += studentCount * tPrice;
+            subtotal += numStudents * tPrice;
           } else {
-            subtotal += (adultCount * Number(tOpt.adult_price || 0)) + (childCount * Number(tOpt.child_price || 0));
+            subtotal += (numAdults * Number(tOpt.adult_price || 0)) + (numChildren * Number(tOpt.child_price || 0));
           }
         }
       } else if (transportMode === 'SEPARATE') {
@@ -530,9 +523,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       if (includeRefreshments && packageHasRefreshments) {
         if (pkg?.is_student_package) {
           const rStudent = Number(pkg.refreshment_student_price || pkg.refreshment_adult_price || 0);
-          subtotal += studentCount * rStudent;
+          subtotal += numStudents * rStudent;
         } else {
-          subtotal += (adultCount * packageRefAdultPrice) + (childCount * packageRefChildPrice);
+          subtotal += (numAdults * packageRefAdultPrice) + (numChildren * packageRefChildPrice);
         }
       }
     } else if (targetType === 'room' && roomVariantId && travelDate) {
@@ -544,7 +537,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           const days = Math.ceil((departure.getTime() - arrival.getTime()) / 86400000);
           let current = new Date(arrival);
           let totalPrice = 0;
-          const requiredRooms = Math.ceil((adultCount + childCount) / (selected.capacity_per_room || 2));
+          const requiredRooms = Math.ceil((numAdults + numChildren) / (selected.capacity_per_room || 2));
           for (let i = 0; i < days; i++) {
             const isWeekend = current.getDay() === 0 || current.getDay() === 6;
             const price = isWeekend ? (selected.weekend_price || selected.weekday_price) : selected.weekday_price;
@@ -691,20 +684,74 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
             {isStudentPackage ? (
               <div className="space-y-1 sm:col-span-2">
                 <label className="text-xs font-bold text-slate-600">Students</label>
-                <input type="number" min="1" max="1000" value={studentCount} onChange={(e) => setStudentCount(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={studentCount === '' ? '' : studentCount}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setStudentCount('' as any);
+                      return;
+                    }
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) setStudentCount(Math.max(1, parsed));
+                  }}
+                  onBlur={() => {
+                    if (studentCount === '' || Number(studentCount) < 1) setStudentCount(1);
+                  }}
+                  className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+                />
               </div>
             ) : (
               <>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600">Adults</label>
-                  <input type="number" min="1" max="50" value={adultCount} onChange={(e) => setAdultCount(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={adultCount === '' ? '' : adultCount}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setAdultCount('' as any);
+                        return;
+                      }
+                      const parsed = parseInt(val, 10);
+                      if (!isNaN(parsed)) setAdultCount(Math.max(1, parsed));
+                    }}
+                    onBlur={() => {
+                      if (adultCount === '' || Number(adultCount) < 1) setAdultCount(1);
+                    }}
+                    className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600">Children</label>
-                  <input type="number" min="0" max="50" value={childCount} onChange={(e) => setChildCount(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={childCount === '' ? '' : childCount}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setChildCount('' as any);
+                        return;
+                      }
+                      const parsed = parseInt(val, 10);
+                      if (!isNaN(parsed)) setChildCount(Math.max(0, parsed));
+                    }}
+                    onBlur={() => {
+                      if (childCount === '' || Number(childCount) < 0) setChildCount(0);
+                    }}
+                    className="w-full h-[42px] rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+                  />
                 </div>
               </>
             )}
@@ -776,13 +823,13 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                   {!separateCapacityOk && (
                     <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[10px] font-bold text-rose-600">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      <span>Not enough capacity for {isStudentPackage ? studentCount : (adultCount + childCount)} passengers. Add more vehicles.</span>
+                      <span>Not enough capacity for {isStudentPackage ? numStudents : (numAdults + numChildren)} passengers. Add more vehicles.</span>
                     </div>
                   )}
                   {separateCapacityOk && Object.values(separateVehicleQtys).some(q => q > 0) && (
                     <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-[10px] font-bold text-emerald-700">
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                      <span>Vehicles confirmed for {isStudentPackage ? studentCount : (adultCount + childCount)} passengers</span>
+                      <span>Vehicles confirmed for {isStudentPackage ? numStudents : (numAdults + numChildren)} passengers</span>
                     </div>
                   )}
                 </div>
@@ -1192,7 +1239,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[#1a6b7a]" />
-              <h3 className="text-sm font-black text-slate-800">Passenger Details ({isStudentPackage ? studentCount : (adultCount + childCount)})</h3>
+              <h3 className="text-sm font-black text-slate-800">Passenger Details ({isStudentPackage ? numStudents : (numAdults + numChildren)})</h3>
             </div>
 
             {/* Mode Toggle */}
@@ -1231,7 +1278,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex gap-2 items-start">
                   <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-xs font-semibold text-amber-700">
-                    Quick mode: Only the <strong>{isStudentPackage ? "lead student's" : "lead adult's"}</strong> details are required. The remaining {(isStudentPackage ? studentCount : (adultCount + childCount)) - 1} passenger(s) will be auto-filled as "{isStudentPackage ? "Student" : "Guest"}". You can update their names later from the booking detail screen.
+                    Quick mode: Only the <strong>{isStudentPackage ? "lead student's" : "lead adult's"}</strong> details are required. The remaining {(isStudentPackage ? numStudents : (numAdults + numChildren)) - 1} passenger(s) will be auto-filled as "{isStudentPackage ? "Student" : "Guest"}". You can update their names later from the booking detail screen.
                   </p>
                 </div>
 
@@ -1268,8 +1315,12 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                           min={18}
                           max={120}
                           placeholder="Age (min 18) *"
-                          value={quickPassenger.age}
-                          onChange={(e) => setQuickPassenger(prev => ({ ...prev, age: parseInt(e.target.value) || '' }))}
+                          value={quickPassenger.age === '' ? '' : quickPassenger.age}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setQuickPassenger(prev => ({ ...prev, age: val === '' ? '' : parseInt(val, 10) || '' }));
+                          }}
                           className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
                             quickPassenger.age !== '' && Number(quickPassenger.age) < 18 ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
                           }`}
@@ -1289,20 +1340,6 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                     </div>
                     <div className="sm:col-span-2">
                       <input
-                        type="text"
-                        placeholder={isStudentPackage ? "Aadhaar Number (Optional)" : "Aadhaar Number (12 digits) *"}
-                        value={quickPassenger.aadhaar}
-                        onChange={(e) => setQuickPassenger(prev => ({ ...prev, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
-                        className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-violet-500 focus:ring-1 focus:ring-violet-400 outline-none ${
-                          quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar) ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
-                        }`}
-                      />
-                      {quickPassenger.aadhaar.length === 12 && !isValidAadhaar(quickPassenger.aadhaar) && (
-                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar (checksum failed)</p>
-                      )}
-                    </div>
-                    <div className="sm:col-span-3">
-                      <input
                         type="tel"
                         placeholder={isStudentPackage ? "Phone Number (Optional)" : "Phone Number (10 digits) *"}
                         value={quickPassenger.phone}
@@ -1318,12 +1355,12 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                   </div>
 
                   {/* Auto-generated guests input fields */}
-                  {((isStudentPackage ? studentCount : (adultCount + childCount)) > 1) && (
+                  {((isStudentPackage ? numStudents : (numAdults + numChildren)) > 1) && (
                     <div className="border-t border-violet-100 pt-4 mt-2 space-y-3">
                       <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Guest Names (Optional)</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {isStudentPackage ? (
-                          Array.from({ length: studentCount - 1 }, (_, i) => {
+                          Array.from({ length: numStudents - 1 }, (_, i) => {
                             const guestIdx = i;
                             return (
                               <div key={`qs-${i}`} className="space-y-1">
@@ -1342,7 +1379,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                           })
                         ) : (
                           <>
-                            {Array.from({ length: adultCount - 1 }, (_, i) => {
+                            {Array.from({ length: numAdults - 1 }, (_, i) => {
                               const guestIdx = i;
                               return (
                                 <div key={`qa-${i}`} className="space-y-1">
@@ -1359,8 +1396,8 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                                 </div>
                               );
                             })}
-                            {Array.from({ length: childCount }, (_, i) => {
-                              const guestIdx = (adultCount - 1) + i;
+                            {Array.from({ length: numChildren }, (_, i) => {
+                              const guestIdx = (numAdults - 1) + i;
                               return (
                                 <div key={`qc-${i}`} className="space-y-1">
                                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
@@ -1387,13 +1424,13 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
             {/* ─── FULL DETAILS MODE ─── */}
             {passengerMode === 'full' && passengers.map((p, i) => {
-              const isChild = i >= adultCount;
+              const isChild = i >= numAdults;
               return (
                 <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
                   <p className="text-xs font-black text-[#1a6b7a] uppercase tracking-wider">
                     {isStudentPackage
                       ? `Student ${i + 1}`
-                      : (i < adultCount ? `Adult ${i + 1}` : `Child ${i + 1 - adultCount}`)}{' '}
+                      : (i < numAdults ? `Adult ${i + 1}` : `Child ${i + 1 - numAdults}`)}{' '}
                     {i === 0 && <span className="ml-1 rounded bg-[#1a6b7a] px-1.5 py-0.5 text-[10px] text-white">Primary</span>}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1408,9 +1445,20 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                           onChange={(e) => handlePassengerChange(i, 'student_class', e.target.value)}
                           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
                       ) : (
-                        <input type="number" required min={i < adultCount ? 11 : 4} max={i < adultCount ? 120 : 10} placeholder="Age" value={p.age}
-                          onChange={(e) => handlePassengerChange(i, 'age', parseInt(e.target.value) || '')}
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none" />
+                        <input
+                          type="number"
+                          required
+                          min={i < numAdults ? 11 : 4}
+                          max={i < numAdults ? 120 : 10}
+                          placeholder="Age"
+                          value={p.age === '' ? '' : p.age}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            handlePassengerChange(i, 'age', val === '' ? '' : parseInt(val, 10) || '');
+                          }}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+                        />
                       )}
                     </div>
                     <div>
@@ -1421,22 +1469,17 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         placeholder="Gender"
                       />
                     </div>
-                    <div className="sm:col-span-2">
-                      <input type="text" placeholder={isStudentPackage || isChild ? "Aadhaar (Optional)" : "Aadhaar Number"}
-                        required={!isStudentPackage && !isChild} value={p.aadhaar}
-                        onChange={(e) => handlePassengerChange(i, 'aadhaar', e.target.value.replace(/\D/g, '').slice(0, 12))}
-                        className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none ${p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar) ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
-                          }`} />
-                      {p.aadhaar.length === 12 && !isValidAadhaar(p.aadhaar) && (
-                        <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Invalid Aadhaar (checksum failed)</p>
-                      )}
-                    </div>
                     {(i === 0 || isStudentPackage) && (
-                      <div className="sm:col-span-3">
-                        <input type="tel" required={i === 0 && !isStudentPackage} placeholder={isStudentPackage ? "Phone Number (Optional)" : "Phone Number"} value={p.phone}
+                      <div className="sm:col-span-2">
+                        <input
+                          type="tel"
+                          required={i === 0 && !isStudentPackage}
+                          placeholder={isStudentPackage ? "Phone Number (Optional)" : "Phone Number (10 digits)"}
+                          value={p.phone}
                           onChange={(e) => handlePassengerChange(i, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                           className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none ${p.phone.length > 0 && p.phone.length !== 10 ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
-                            }`} />
+                            }`}
+                        />
                         {p.phone.length > 0 && p.phone.length !== 10 && (
                           <p className="text-[11px] font-semibold text-rose-600 mt-0.5">Phone number must be exactly 10 digits</p>
                         )}

@@ -29,8 +29,9 @@ export default function imageLoader({ src, width, quality }: ImageLoaderProps): 
 
   // Cloudinary images: rewrite URL to let Cloudinary transform at the edge
   if (src.includes('res.cloudinary.com')) {
+    const safeWidth = Math.min(width, 1920);
     const qParam = quality ? `q_${quality}` : 'q_auto:good';
-    const transform = `f_auto,${qParam},w_${width},c_limit`;
+    const transform = `f_auto,${qParam},w_${safeWidth},c_limit`;
 
     // Handle standard Cloudinary upload URL format:
     // https://res.cloudinary.com/<cloud>/image/upload/<transforms>/<version>/<public_id>

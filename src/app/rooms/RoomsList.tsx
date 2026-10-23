@@ -213,10 +213,10 @@ export default function RoomsList({
         <div className="absolute right-0 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl" />
         
         <Image
-          src="https://res.cloudinary.com/r929tquv/image/upload/v1785917195/ts_boat_tourism/images/apggofcaijeekofdotpa.jpg"
+          src="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
           alt="Riverside stays and accommodation banner"
           fill
-          sizes="100vw"
+          sizes="(max-width: 1024px) 100vw, 1920px"
           className="object-cover opacity-65"
           priority
         />

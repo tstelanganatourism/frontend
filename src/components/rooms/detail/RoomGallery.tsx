@@ -131,7 +131,7 @@ export const RoomGallery = ({ images }: RoomGalleryProps) => {
                 src={images[selectedImage].image_url}
                 alt={images[selectedImage].alt_text || "Lodge Detail"}
                 fill
-                sizes="100vw"
+                sizes="(max-width: 1024px) 100vw, 1200px"
                 className="object-contain"
               />
             )}

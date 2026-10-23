@@ -298,10 +298,10 @@ export default function PackagesList({
   const resultLabel = isBoatRide ? 'boat ride experiences' : isSightseeing ? 'sightseeing trips' : 'experiences';
 
   const backgroundImage = isBoatRide
-    ? 'https://res.cloudinary.com/r929tquv/image/upload/v1784836276/e62df8f4-a296-43b0-aa24-c63cb3a8f38f_n6bdp6.png'
+    ? 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'
     : isSightseeing
-      ? 'https://res.cloudinary.com/r929tquv/image/upload/v1785917181/ts_boat_tourism/images/haotjawjrhmnnzvm7yqz.webp'
-      : 'https://res.cloudinary.com/r929tquv/image/upload/v1785917174/ts_boat_tourism/images/tndmgituyh1ujvpbb2zb.jpg';
+      ? 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'
+      : 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp';
 
   const heroImagePosition = isBoatRide ? 'center 58%' : isSightseeing ? 'center 54%' : 'center';
 
@@ -318,7 +318,7 @@ export default function PackagesList({
           src={backgroundImage}
           alt="Tourism Canvas Background"
           fill
-          sizes="100vw"
+          sizes="(max-width: 1024px) 100vw, 1920px"
           className="object-cover opacity-60"
           style={{ objectPosition: heroImagePosition }}
           priority

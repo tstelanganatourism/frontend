@@ -127,7 +127,7 @@ const HERO_ITEMS_FALLBACK: HeroItem[] = [
     title: 'Papikondalu Boat Trip',
     desc: 'Godavari river trip through hill valleys with meals and boarding guidance.',
     href: '/packages?place=papikondalu',
-    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     meta: 'Boat Tour',
     itemType: 'package',
   },
@@ -135,7 +135,7 @@ const HERO_ITEMS_FALLBACK: HeroItem[] = [
     title: 'Kolluru Bamboo River Huts',
     desc: 'Kolluru Sandbanks, Papikondalu',
     href: '/stays',
-    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     meta: 'River Stay',
     itemType: 'room',
   },
@@ -143,7 +143,7 @@ const HERO_ITEMS_FALLBACK: HeroItem[] = [
     title: 'Bhadrachalam Temple + Boat',
     desc: 'Plan Sri Rama darshan with transport and river timing support.',
     href: '/packages?place=bhadrachalam',
-    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1784613527/ts_boat_tourism/packages/njh2in4fbo0vuwmjiczg.jpg',
+    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     meta: 'Sightseeing',
     itemType: 'package',
   },
@@ -160,8 +160,8 @@ export default async function HomePage() {
     description:
       'Official partner portal for Papikondalu boat tours, Bhadrachalam temple packages, Godavari boat trips, Maredumilli trips, and Kolluru bamboo hut stays.',
     url: 'https://www.tstelanganatourism.com',
-    logo: 'https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg',
-    image: 'https://res.cloudinary.com/r929tquv/image/upload/v1787818364/ts_boat_tourism/brand/logo_og_1200x630.jpg',
+    logo: 'https://media.tstelanganatourism.com/brand/logo.png',
+    image: 'https://media.tstelanganatourism.com/brand/logo.png',
     telephone: '+919951369573',
     email: 'tstelanganatourism@gmail.com',
     priceRange: '₹1000 - ₹5500',
@@ -220,7 +220,7 @@ export default async function HomePage() {
     href: `/packages/${pkg.slug}`,
     image:
       pkg.cover_image_url ||
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613510/ts_boat_tourism/packages/aj0lva1rynjpuv6xayzg.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     meta:
       pkg.type === 'TOUR'
         ? 'Boat Tour'
@@ -236,7 +236,7 @@ export default async function HomePage() {
     href: `/stays/${room.slug}`,
     image:
       room.cover_image_url ||
-      'https://res.cloudinary.com/r929tquv/image/upload/v1784613514/ts_boat_tourism/packages/zkxrdmxykszetgupmi8d.jpg',
+      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
     meta: 'River Stay',
     itemType: 'room',
   }));
@@ -257,7 +257,7 @@ export default async function HomePage() {
       {/* High-priority LCP Preloads */}
       <link
         rel="preload"
-        href="https://res.cloudinary.com/r929tquv/image/upload/f_auto,q_auto,w_1600/v1786273967/200b2b33-a6c8-474a-b9f1-823c5e0c831a_v9mwdp.jpg"
+        href="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
         as="image"
         type="image/jpeg"
         media="(min-width: 768px)"
