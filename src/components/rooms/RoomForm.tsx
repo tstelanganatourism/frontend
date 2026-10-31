@@ -91,6 +91,9 @@ export function CustomSelect({
   );
 }
 
+export const DEFAULT_OFFICE_ADDRESS = 'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111';
+export const DEFAULT_OFFICE_MAP_URL = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.6249326203515!2d80.8842764!3d17.6679145!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9430aa06acf%3A0xc16caef81e0d09c9!2sTelangana%20Boat%20Tourism!5e0!3m2!1sen!2sin!4v1782409791475!5m2!1sen!2sin" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+
 interface RoomFormProps {
   initialData?: any;
   onSubmit: (data: any) => Promise<void>;
@@ -147,8 +150,8 @@ export default function RoomForm({
   const [lodgeName, setLodgeName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('');
-  const [mapUrl, setMapUrl] = useState('');
+  const [address, setAddress] = useState(DEFAULT_OFFICE_ADDRESS);
+  const [mapUrl, setMapUrl] = useState(DEFAULT_OFFICE_MAP_URL);
   const [facilities, setFacilities] = useState<string[]>([]);
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
@@ -185,8 +188,8 @@ export default function RoomForm({
       setLodgeName(initialData.lodge_name || '');
       setSlug(initialData.slug || '');
       setDescription(initialData.description || '');
-      setAddress(initialData.address || '');
-      setMapUrl(initialData.map_url || '');
+      setAddress(initialData.address || DEFAULT_OFFICE_ADDRESS);
+      setMapUrl(initialData.map_url || DEFAULT_OFFICE_MAP_URL);
       setFacilities(initialData.facilities || []);
       setCoverImageUrl(initialData.cover_image_url || '');
       setVideoUrl(initialData.video_url || '');
@@ -415,10 +418,18 @@ export default function RoomForm({
           is_active: true
         }
       ],
-      gallery,
-      highlights,
-      faqs,
-      policies
+      gallery: gallery
+        .filter((g) => g.image_url && g.image_url.trim())
+        .map((g, idx) => ({ ...g, sort_order: idx + 1 })),
+      highlights: highlights
+        .filter((h) => h.title && h.title.trim())
+        .map((h, idx) => ({ ...h, sort_order: idx + 1 })),
+      faqs: faqs
+        .filter((f) => f.question && f.question.trim() && f.answer && f.answer.trim())
+        .map((f, idx) => ({ ...f, sort_order: idx + 1 })),
+      policies: policies
+        .filter((p) => p.title && p.title.trim() && p.description && p.description.trim())
+        .map((p, idx) => ({ ...p, sort_order: idx + 1 }))
     };
 
     try {
@@ -652,7 +663,20 @@ export default function RoomForm({
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Default Physical Address (Optional)</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Default Physical Address (Optional)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddress(DEFAULT_OFFICE_ADDRESS);
+                      setMapUrl(DEFAULT_OFFICE_MAP_URL);
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-bold text-[#0f3d56] bg-sky-50 border border-sky-200 hover:bg-sky-100 rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                    title="Fill with default official office address & map"
+                  >
+                    🏢 Use Default Office Address
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={address}

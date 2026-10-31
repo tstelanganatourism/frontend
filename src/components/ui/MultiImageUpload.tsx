@@ -91,26 +91,27 @@ export default function MultiImageUpload({ value, onChange, label, helperText }:
           <div key={`${url}-${index}`} className="relative group aspect-video rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
             <img src={url} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2">
-              <div className="flex justify-between items-start">
-                {index === 0 ? (
-                  <span className="bg-[#5ac4d7] text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shadow-sm">
-                    Cover
-                  </span>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  className="p-1.5 bg-red-500 hover:bg-red-600 rounded-full text-white transition-transform transform hover:scale-110 shadow-sm"
-                  title="Remove image"
-                >
-                  <CloseIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            {/* Cover badge — always visible on mobile, hover-only on desktop */}
+            {index === 0 && (
+              <span className="absolute top-2 left-2 bg-[#5ac4d7] text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shadow-sm z-10">
+                Cover
+              </span>
+            )}
+
+            {/* Delete button — always visible on mobile, hover-only on desktop */}
+            <button
+              type="button"
+              onClick={() => handleRemove(index)}
+              className="absolute top-2 right-2 z-10 p-1.5 bg-red-500 hover:bg-red-600 rounded-full text-white shadow-md
+                         md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200
+                         transition-transform transform hover:scale-110"
+              title="Remove image"
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+
+            {/* Hover overlay (desktop only) */}
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:block pointer-events-none" />
           </div>
         ))}
 

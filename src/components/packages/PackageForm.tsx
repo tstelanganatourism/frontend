@@ -81,6 +81,18 @@ const POLICY_CATEGORIES = [
   { value: 'STAY_RULES', label: 'Stay Rules' }
 ];
 
+export const DEFAULT_OFFICE_BOARDING_POINT = {
+  title: 'Bhadrachalam Office',
+  departure_time: '07:30 AM',
+  address: 'Door No. 10-1-2/1, Ground Floor, Om Shanthi Building Sataram, Kalyana Mandapam Road, near SBI ATM, Bhadrachalam, Telangana 507111',
+  map_url: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3801.6249326203515!2d80.8842764!3d17.6679145!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a36a9430aa06acf%3A0xc16caef81e0d09c9!2sTelangana%20Boat%20Tourism!5e0!3m2!1sen!2sin!4v1782409791475!5m2!1sen!2sin" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>',
+  landmark: 'opp SBI ATM',
+  contact_number: '+91 99513 69573, +91 77801 19268',
+  pickup_instructions: 'Please report at our Bhadrachalam collection office 30 minutes before departure for ticket verification and boarding pass collection.',
+  return_drop_info: 'Drop-off at Bhadrachalam Office / Bus Stand',
+  sort_order: 1,
+};
+
 interface PackageFormProps {
   initialData?: any;
   onSubmit: (data: any) => Promise<void>;
@@ -158,7 +170,9 @@ export default function PackageForm({
   const [highlights, setHighlights] = useState<any[]>([]);
   const [inclusions, setInclusions] = useState<any[]>([]);
   const [exclusions, setExclusions] = useState<any[]>([]);
-  const [boardingPoints, setBoardingPoints] = useState<any[]>([]);
+  const [boardingPoints, setBoardingPoints] = useState<any[]>(() => [
+    { ...DEFAULT_OFFICE_BOARDING_POINT, sort_order: 1 }
+  ]);
   const [faqs, setFaqs] = useState<any[]>([]);
   const [policies, setPolicies] = useState<any[]>([]);
   const [transportOptions, setTransportOptions] = useState<any[]>([]);
@@ -208,7 +222,11 @@ export default function PackageForm({
       setHighlights(initialData.highlights || []);
       setInclusions(initialData.inclusions || []);
       setExclusions(initialData.exclusions || []);
-      setBoardingPoints(initialData.boarding_points || []);
+      if (initialData.boarding_points && initialData.boarding_points.length > 0) {
+        setBoardingPoints(initialData.boarding_points);
+      } else {
+        setBoardingPoints([{ ...DEFAULT_OFFICE_BOARDING_POINT, sort_order: 1 }]);
+      }
       setFaqs(initialData.faqs || []);
       setPolicies(initialData.policies || []);
       setTransportOptions(initialData.transport_options || []);
@@ -574,7 +592,13 @@ export default function PackageForm({
 
   // Boarding Points management
   const addBoardingPoint = () => {
-    setBoardingPoints(prev => [...prev, { title: '', address: '', map_url: '', departure_time: '', landmark: '', contact_number: '', pickup_instructions: '', return_drop_info: '', sort_order: prev.length + 1 }]);
+    setBoardingPoints(prev => [
+      ...prev,
+      {
+        ...DEFAULT_OFFICE_BOARDING_POINT,
+        sort_order: prev.length + 1
+      }
+    ]);
   };
   const updateBoardingPoint = (index: number, key: string, value: any) => {
     setBoardingPoints(prev => {
@@ -699,14 +723,30 @@ export default function PackageForm({
         fixed_price: t.fixed_price ? Number(t.fixed_price) : null,
         weekend_fixed_price: t.weekend_fixed_price ? Number(t.weekend_fixed_price) : null
       })) : [],
-      gallery: gallery.map((g, idx) => ({ ...g, sort_order: idx + 1 })),
-      itinerary: itinerary.map((i, idx) => ({ ...i, day_number: Number(i.day_number), sort_order: idx + 1 })),
-      highlights: highlights.map((h, idx) => ({ ...h, sort_order: idx + 1 })),
-      inclusions: inclusions.map((i, idx) => ({ ...i, sort_order: idx + 1 })),
-      exclusions: exclusions.map((e, idx) => ({ ...e, sort_order: idx + 1 })),
-      boarding_points: boardingPoints.map((b, idx) => ({ ...b, sort_order: idx + 1 })),
-      faqs: faqs.map((f, idx) => ({ ...f, sort_order: idx + 1 })),
-      policies: policies.map((p, idx) => ({ ...p, sort_order: idx + 1 })),
+      gallery: gallery
+        .filter((g) => g.image_url && g.image_url.trim())
+        .map((g, idx) => ({ ...g, sort_order: idx + 1 })),
+      itinerary: itinerary
+        .filter((i) => i.title && i.title.trim())
+        .map((i, idx) => ({ ...i, day_number: Number(i.day_number), sort_order: idx + 1 })),
+      highlights: highlights
+        .filter((h) => h.title && h.title.trim())
+        .map((h, idx) => ({ ...h, sort_order: idx + 1 })),
+      inclusions: inclusions
+        .filter((i) => i.label && i.label.trim())
+        .map((i, idx) => ({ ...i, sort_order: idx + 1 })),
+      exclusions: exclusions
+        .filter((e) => e.label && e.label.trim())
+        .map((e, idx) => ({ ...e, sort_order: idx + 1 })),
+      boarding_points: boardingPoints
+        .filter((b) => b.title && b.title.trim())
+        .map((b, idx) => ({ ...b, sort_order: idx + 1 })),
+      faqs: faqs
+        .filter((f) => f.question && f.question.trim() && f.answer && f.answer.trim())
+        .map((f, idx) => ({ ...f, sort_order: idx + 1 })),
+      policies: policies
+        .filter((p) => p.title && p.title.trim() && p.description && p.description.trim())
+        .map((p, idx) => ({ ...p, sort_order: idx + 1 })),
       meals: [],
       extras: extras
         .filter((ex) => ex.title && ex.title.trim().length > 0)
@@ -2020,7 +2060,23 @@ export default function PackageForm({
                   <div key={index} className="p-5 bg-slate-50 border border-slate-200 rounded-3xl shadow-sm relative hover:border-[#5ac4d7]/40 transition-colors">
                     <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
                       <span className="text-xs font-black uppercase text-[#0f3d56] tracking-wider">Boarding Point #{index + 1}</span>
-                      <button type="button" onClick={() => removeBoardingPoint(index)} className="p-1.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-lg shadow-sm"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBoardingPoints(prev => {
+                              const updated = [...prev];
+                              updated[index] = { ...updated[index], ...DEFAULT_OFFICE_BOARDING_POINT, sort_order: index + 1 };
+                              return updated;
+                            });
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-bold text-[#0f3d56] bg-sky-50 border border-sky-200 hover:bg-sky-100 rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                          title="Reset / fill with default office address"
+                        >
+                          🏢 Use Default Office Address
+                        </button>
+                        <button type="button" onClick={() => removeBoardingPoint(index)} className="p-1.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-lg shadow-sm"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
