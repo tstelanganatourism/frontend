@@ -136,7 +136,7 @@ export default function InstallPromptModal() {
         {/* Header */}
         <div className="flex gap-3.5 items-center mb-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0f3d56] p-1.5 shadow-md">
-            <img src="/logo.png" alt="TS Boat Tourism" className="h-full w-full object-contain" />
+            <img src="/logo-small.png" alt="TS Boat Tourism" className="h-full w-full object-contain" />
           </div>
           <div className="flex-1 min-w-0 pr-6">
             <h3 className="text-sm font-black text-slate-900 leading-tight">Install TS Tourism App</h3>

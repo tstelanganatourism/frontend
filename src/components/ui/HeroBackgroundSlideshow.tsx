@@ -13,9 +13,9 @@ export type HeroSlide = {
 // All images use Cloudinary f_auto,q_auto,w_1920 to serve next-gen WebP/AVIF (<100 KB each)
 const HERO_SLIDES: HeroSlide[] = [
   {
-    src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
-    title: 'Papikondalu Hilltop Wooden Resort View',
-    tag: '🏡 Luxury Hilltop Stay',
+    src: '/home/hero-boat.webp',
+    title: 'Papikondalu boat on the Godavari River',
+    tag: '🚢 Papikondalu Boat Tour',
   },
   {
     src: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7844.webp',
@@ -91,43 +91,30 @@ export default function HeroBackgroundSlideshow() {
 
   const nextIdx = (currentIdx + 1) % HERO_SLIDES.length;
 
-  // Preload upcoming slide
+  // Keep only the active and upcoming slides mounted. Retaining every visited
+  // full-screen image makes mobile browsers decode and hold the whole gallery.
   useEffect(() => {
-    setMountedIndices((prev) => {
-      if (prev.has(nextIdx)) return prev;
-      const next = new Set(prev);
-      next.add(nextIdx);
-      return next;
-    });
-  }, [nextIdx]);
+    setMountedIndices(new Set([currentIdx, nextIdx]));
+  }, [currentIdx, nextIdx]);
 
-  // Auto-advance slides every 6 seconds
+  // Avoid background work in hidden tabs and honor reduced-motion preferences.
   useEffect(() => {
     if (isPaused) return;
     const timer = setInterval(() => {
+      if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       setCurrentIdx((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [currentIdx, isPaused]);
+  }, [isPaused]);
 
   const currentSlide = HERO_SLIDES[currentIdx];
 
   const handlePrev = () => {
     const prev = (currentIdx - 1 + HERO_SLIDES.length) % HERO_SLIDES.length;
-    setMountedIndices((s) => {
-      const n = new Set(s);
-      n.add(prev);
-      return n;
-    });
     setCurrentIdx(prev);
   };
 
   const handleNext = () => {
-    setMountedIndices((s) => {
-      const n = new Set(s);
-      n.add(nextIdx);
-      return n;
-    });
     setCurrentIdx(nextIdx);
   };
 

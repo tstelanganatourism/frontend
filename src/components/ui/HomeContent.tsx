@@ -334,10 +334,12 @@ export default function HomeContent({ heroItems, featuredPackages, rooms, allPac
         <div className="mx-auto max-w-[1800px] px-4 sm:px-6">
           <div className="overflow-hidden rounded-xl border border-teal-400/25 bg-[#021c24] p-1.5 shadow-2xl">
             <img
-              src="/ts-boat-tourism-banner.jpg"
+              src="/home/ts-boat-tourism-banner.webp"
               alt="TS Boat Tourism Official Banner — Discover Divinity, Sail Through Serenity"
+              width={900}
+              height={514}
               className="w-full h-auto rounded-lg"
-              loading="eager"
+              loading="lazy"
               decoding="async"
             />
           </div>

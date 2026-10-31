@@ -24,6 +24,7 @@ export default function GoogleReviewsCarousel({
   writeReviewUrl,
 }: GoogleReviewsCarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const scrollFrameRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -76,17 +77,21 @@ export default function GoogleReviewsCarousel({
   };
 
   const handleScroll = () => {
-    const track = trackRef.current;
-    if (!track) return;
+    if (scrollFrameRef.current !== null) return;
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+      const track = trackRef.current;
+      if (!track) return;
 
-    const children = Array.from(track.children) as HTMLElement[];
-    const closestIndex = children.reduce((closest, child, index) => {
-      const distance = Math.abs(child.offsetLeft - track.scrollLeft);
-      const closestDistance = Math.abs(children[closest].offsetLeft - track.scrollLeft);
-      return distance < closestDistance ? index : closest;
-    }, 0);
+      const children = Array.from(track.children) as HTMLElement[];
+      const closestIndex = children.reduce((closest, child, index) => {
+        const distance = Math.abs(child.offsetLeft - track.scrollLeft);
+        const closestDistance = Math.abs(children[closest].offsetLeft - track.scrollLeft);
+        return distance < closestDistance ? index : closest;
+      }, 0);
 
-    setActiveIndex(closestIndex);
+      setActiveIndex((current) => current === closestIndex ? current : closestIndex);
+    });
   };
 
   return (

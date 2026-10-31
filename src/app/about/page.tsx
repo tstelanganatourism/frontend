@@ -126,7 +126,7 @@ const HERITAGE_PLACES: HeritagePlace[] = [
     tagTe: 'రామాయణ చారిత్రక క్షేత్రం',
     periodEn: 'Treta Yuga',
     periodTe: 'త్రేతా యుగం',
-    image: '/ts-boat-tourism-banner.jpg',
+    image: '/home/ts-boat-tourism-banner.webp',
     descriptionEn: 'Located 35 km from Bhadrachalam, Parnasala is the exact legendary location where Lord Rama constructed a simple leaf hut (Parna-Sala) during his forest exile.',
     descriptionTe: 'భద్రాచలం నుండి 35 కి.మీ దూరంలో ఉన్న పర్ణశాల, శ్రీరాముడు తన అరణ్యవాస సమయంలో ఆకులతో కుటీరాన్ని (పర్ణశాల) నిర్మించుకొని నివసించిన పవిత్ర స్థలం.',
     historyDetailsEn: [

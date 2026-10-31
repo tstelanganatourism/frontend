@@ -74,14 +74,15 @@ export type RoomItem = {
   facilities: string[];
 };
 
-export const dynamic = 'force-dynamic';
+// Serve a cached homepage and refresh its public catalog data periodically.
+export const revalidate = 300;
 
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
-/** Fetches up to 20 packages for the hero scrolling card and featured section */
+/** Fetches a small catalog slice for the hero list and featured section. */
 async function fetchHeroPackages(): Promise<FeaturedPackage[] | null> {
   try {
-    const res = await apiFetch('/api/v1/packages?size=20', {
+    const res = await apiFetch('/api/v1/packages?size=8', {
       next: { revalidate: 3600, tags: ['packages'] },
     });
     if (!res.ok) throw new Error('Failed');
@@ -92,10 +93,10 @@ async function fetchHeroPackages(): Promise<FeaturedPackage[] | null> {
   }
 }
 
-/** Fetches ALL rooms (up to 20) for the hero scrolling card */
+/** Fetches a small room slice for the hero list and featured section. */
 async function fetchAllRooms(): Promise<RoomItem[] | null> {
   try {
-    const res = await apiFetch('/api/v1/rooms?size=20', {
+    const res = await apiFetch('/api/v1/rooms?size=8', {
       next: { revalidate: 3600, tags: ['rooms'] },
     });
     if (!res.ok) throw new Error('Failed');
@@ -212,7 +213,7 @@ export default async function HomePage() {
   // Build unified hero items: packages first, then rooms, interleaved
   let heroItems: HeroItem[] = HERO_ITEMS_FALLBACK;
 
-  const pkgItems: HeroItem[] = (heroPackagesRaw ?? []).map((pkg) => ({
+  const pkgItems: HeroItem[] = (heroPackagesRaw ?? []).slice(0, 3).map((pkg) => ({
     title: pkg.title,
     desc:
       pkg.duration ||
@@ -230,7 +231,7 @@ export default async function HomePage() {
     itemType: 'package',
   }));
 
-  const roomItems: HeroItem[] = (allRoomsRaw ?? []).map((room) => ({
+  const roomItems: HeroItem[] = (allRoomsRaw ?? []).slice(0, 3).map((room) => ({
     title: room.lodge_name,
     desc: room.address || 'Riverside accommodation',
     href: `/stays/${room.slug}`,
@@ -257,10 +258,9 @@ export default async function HomePage() {
       {/* High-priority LCP Preloads */}
       <link
         rel="preload"
-        href="https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp"
+        href="/home/hero-boat.webp"
         as="image"
-        type="image/jpeg"
-        media="(min-width: 768px)"
+        type="image/webp"
         fetchPriority="high"
       />
       <script

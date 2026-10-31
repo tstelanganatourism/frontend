@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
+import FooterMapSection from './FooterMapSection';
 import {
   Clock,
   Mail,
@@ -12,23 +12,6 @@ import {
   ShieldCheck,
   Star,
 } from 'lucide-react';
-
-const FooterMapSection = dynamic(() => import('./FooterMapSection'), {
-  ssr: false,
-  loading: () => (
-    <section className="overflow-hidden rounded-md border border-white/10 bg-white/[0.04] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
-      <div className="relative flex h-[15.5rem] w-full flex-col items-center justify-center rounded-md border border-white/10 bg-[#082834]/80 p-6 text-center md:h-[17.5rem] lg:h-full lg:min-h-[18rem]">
-        <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-[#1598a1]/20 text-[#8eecee] shadow-inner">
-          <MapPin className="h-6 w-6 text-[#8eecee]" />
-        </div>
-        <h4 className="text-sm font-bold text-white">Bhadrachalam Tourism Office</h4>
-        <p className="mt-1 max-w-[240px] text-xs text-white/60">
-          Om Shanthi Building, Near Bus Stand &amp; Godavari River Ghats
-        </p>
-      </div>
-    </section>
-  ),
-});
 
 const exploreLinks = [
   { label: 'Packages', href: '/packages' },
@@ -70,10 +53,10 @@ export default function PublicFooter({ isDashboard = false, isBooking = false }:
           : isDashboard
           ? 'pb-[calc(7rem_+_env(safe-area-inset-bottom))] md:pb-8'
           : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-8'
-      } min-h-[100svh] pt-8 md:min-h-[48svh] md:pt-10`}
+      } pt-8 md:min-h-[48svh] md:pt-10`}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#8eecee]/60 to-transparent" />
-      <div className="mx-auto flex min-h-[calc(100svh-8rem)] w-full max-w-[1800px] flex-col justify-between px-4 sm:px-6 md:min-h-0 lg:px-8 xl:px-12">
+      <div className="mx-auto flex w-full max-w-[1800px] flex-col justify-between px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="grid gap-4 lg:grid-cols-[minmax(14rem,0.68fr)_minmax(17rem,0.82fr)_minmax(22rem,1fr)_minmax(32rem,1.55fr)]">
           <section className="rounded-md border border-white/10 bg-white/[0.04] p-4">
             <Link href="/" className="flex min-w-0 items-center gap-3">

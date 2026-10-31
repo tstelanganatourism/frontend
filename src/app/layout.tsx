@@ -26,11 +26,11 @@ export const metadata: Metadata = {
   description: "Book trusted Papikondalu boat tours, Bhadrachalam temple packages, Godavari boat rides, and Kolluru bamboo hut stays online with TS Boat Tourism.",
   icons: {
     icon: [
-      { url: "/icon-192x192.png?v=5", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512x512.png?v=5", sizes: "512x512", type: "image/png" },
+      { url: "/icon-192x192.png?v=6", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png?v=6", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/apple-touch-icon.png?v=5", sizes: "512x512", type: "image/png" },
+      { url: "/apple-touch-icon.png?v=6", sizes: "180x180", type: "image/png" },
     ],
   },
   keywords: [
@@ -146,7 +146,7 @@ export default function RootLayout({
                 "name": "TS Boat Tourism",
                 "alternateName": "TS Boat Tourism",
                 "url": process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com",
-                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=3`,
+                "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.tstelanganatourism.com"}/logo.png?v=4`,
                 "image": "https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp",
                 "description": "Travel agency offering Godavari boat trips, Papikondalu tours, and Bhadrachalam travel packages.",
                 "telephone": "+91 99513 69573",
