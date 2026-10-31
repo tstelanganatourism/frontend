@@ -233,16 +233,10 @@ export const BookingSidebarV3 = ({
   // Auto-select first transport option if available and 'NONE' is not allowed
   useEffect(() => {
     if (hasTransport && transportOptions.length > 0) {
-      if (selectedTransportMode === 'NONE') {
-        const sharedOpts = transportOptions.filter(o => o.type === 'SHARED');
-        const separateOpts = transportOptions.filter(o => o.type === 'SEPARATE_VEHICLE');
-        if (sharedOpts.length > 0) {
-          setSelectedTransportMode('SHARED');
-          setSelectedSharedOptionId(sharedOpts[0].id);
-        } else if (separateOpts.length > 0) {
-          setSelectedTransportMode('SEPARATE');
-        }
-      }
+      // Do NOT auto-force a transport selection — 'NONE' means "own vehicle / no add-on" which is valid.
+      // Only pre-select if mode was already set to something other than NONE
+      // (i.e., user explicitly navigated back without clearing their choice).
+      // This allows users to stay on 'NONE' (own vehicle) if they choose.
     } else if (selectedTransportMode !== 'NONE') {
       setSelectedTransportMode('NONE');
       setSelectedSharedOptionId(null);
@@ -1113,6 +1107,8 @@ export const BookingSidebarV3 = ({
 
   const hasTransportSelection = useMemo(() => {
     if (!hasTransport || transportOptions.length === 0) return true;
+    // 'NONE' = user travels in their own vehicle — always valid, no transport add-on needed
+    if (selectedTransportMode === 'NONE') return true;
     if (selectedTransportMode === 'SHARED') {
       return selectedSharedOptionId !== null;
     }
@@ -1957,6 +1953,13 @@ export const BookingSidebarV3 = ({
                   {hasTransport && transportOptions.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex gap-2">
+                        {/* Own Vehicle / No Transport option — always shown */}
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedTransportMode('NONE'); setSelectedSharedOptionId(null); setSeparateVehicleQtys({}); }}
+                          className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${selectedTransportMode === 'NONE' ? 'bg-[#0d6e75] border-[#0d6e75] text-white shadow-2xs' : 'bg-white border-slate-200 text-slate-500'
+                            }`}
+                        >🚗 Own Vehicle</button>
                         {sharedOptions.length > 0 && (
                           <button
                             type="button"
@@ -1981,7 +1984,7 @@ export const BookingSidebarV3 = ({
                             }}
                             className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${selectedTransportMode === 'SEPARATE' ? 'bg-[#0d6e75] border-[#0d6e75] text-white shadow-2xs' : 'bg-white border-slate-200 text-slate-500'
                               }`}
-                          >🚗 Private Cab</button>
+                          >🚕 Private Cab</button>
                         )}
                       </div>
 

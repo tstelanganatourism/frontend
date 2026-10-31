@@ -157,6 +157,9 @@ export default function PackageForm({
   const pollingStartedAtRef = useRef<number | null>(null); // tracks when we started polling
   const activeBrochureUrl = brochurePdfUrl || brochureValidation?.active_brochure_url || initialData?.generated_brochure_url || '';
 
+  // Track unsaved changes so we can show sticky save bar
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   // SEO Fields
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
@@ -294,8 +297,9 @@ export default function PackageForm({
     } else {
       setCoverImageUrl('');
     }
+    setHasUnsavedChanges(true);
+    toast.info("Photo added. Click 'Save Changes' to publish it to the website.", { duration: 5000, id: 'gallery-unsaved' });
   };
-
   // Brochure Validation & Polling
   const checkBrochureValidation = async () => {
     if (!initialData?.id) return;
@@ -763,8 +767,7 @@ export default function PackageForm({
     };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async () => {
     if (!title.trim()) {
       toast.error('Package title is required');
       return;
@@ -775,6 +778,7 @@ export default function PackageForm({
     }
     try {
       await onSubmit(getPayload());
+      setHasUnsavedChanges(false);
       
       if (shouldRegenerateOnSave && initialData?.id) {
         try {
@@ -789,6 +793,11 @@ export default function PackageForm({
     } catch (err: any) {
       // Error handled by parent
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await doSave();
   };
 
   const tabs = [
@@ -808,6 +817,7 @@ export default function PackageForm({
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-5 sm:space-y-8">
 
       {/* Validation Errors Global Alert */}
@@ -2237,5 +2247,23 @@ export default function PackageForm({
         )}
       </div>
     </form>
+
+      {/* Sticky floating save bar — appears when there are unsaved changes */}
+      {hasUnsavedChanges && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl bg-amber-50 border-2 border-amber-400 shadow-2xl px-5 py-3 animate-in slide-in-from-bottom-4 duration-300">
+          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+          <span className="text-xs font-bold text-amber-800 whitespace-nowrap">Unsaved changes — Save to publish to the live site</span>
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={doSave}
+            className="flex items-center gap-1.5 rounded-xl bg-[#0f3d56] px-4 py-2 text-xs font-black text-white shadow-md hover:bg-[#1a4f6d] disabled:opacity-50 transition-all"
+          >
+            {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Save Changes
+          </button>
+        </div>
+      )}
+    </>
   );
 }
