@@ -39,13 +39,13 @@ function daysInMonth(y: number, m: number) {
 
 const CLOUDINARY_FALLBACKS: Record<string, string> = {
   'bhadrachalam-to-papikondalu-one-day-package':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg',
   'bhadrachalam-to-pochavaram-only-boat-point-package':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/pochavaram-boat-point.jpg',
   'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/maredumilli-forest-resort.jpg',
   'bhadrachalam-to-papikondalu-resort-package-2days':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/kolluru-bamboo-resort-1.png',
 };
 
 const DEFAULT_TOUR_IMAGE =

@@ -75,7 +75,7 @@ export type RoomItem = {
 };
 
 // Serve a cached homepage and refresh its public catalog data periodically.
-export const revalidate = 300;
+export const revalidate = 60;
 
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ export const revalidate = 300;
 async function fetchHeroPackages(): Promise<FeaturedPackage[] | null> {
   try {
     const res = await apiFetch('/api/v1/packages?size=8', {
-      next: { revalidate: 3600, tags: ['packages'] },
+      next: { revalidate: 60, tags: ['packages'] },
     });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
@@ -97,7 +97,7 @@ async function fetchHeroPackages(): Promise<FeaturedPackage[] | null> {
 async function fetchAllRooms(): Promise<RoomItem[] | null> {
   try {
     const res = await apiFetch('/api/v1/rooms?size=8', {
-      next: { revalidate: 3600, tags: ['rooms'] },
+      next: { revalidate: 60, tags: ['rooms'] },
     });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
@@ -111,7 +111,7 @@ async function fetchAllRooms(): Promise<RoomItem[] | null> {
 async function fetchFeaturedRooms(): Promise<RoomItem[] | null> {
   try {
     const res = await apiFetch('/api/v1/rooms?is_featured=true&size=3', {
-      next: { revalidate: 3600, tags: ['rooms'] },
+      next: { revalidate: 60, tags: ['rooms'] },
     });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
@@ -128,7 +128,7 @@ const HERO_ITEMS_FALLBACK: HeroItem[] = [
     title: 'Papikondalu Boat Trip',
     desc: 'Godavari river trip through hill valleys with meals and boarding guidance.',
     href: '/packages?place=papikondalu',
-    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    image: 'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg',
     meta: 'Boat Tour',
     itemType: 'package',
   },
@@ -136,7 +136,7 @@ const HERO_ITEMS_FALLBACK: HeroItem[] = [
     title: 'Kolluru Bamboo River Huts',
     desc: 'Kolluru Sandbanks, Papikondalu',
     href: '/stays',
-    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    image: 'https://media.tstelanganatourism.com/gallery/tours/kolluru-bamboo-resort-1.png',
     meta: 'River Stay',
     itemType: 'room',
   },
@@ -144,7 +144,7 @@ const HERO_ITEMS_FALLBACK: HeroItem[] = [
     title: 'Bhadrachalam Temple + Boat',
     desc: 'Plan Sri Rama darshan with transport and river timing support.',
     href: '/packages?place=bhadrachalam',
-    image: 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    image: 'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-parnashala-temple.jpg',
     meta: 'Sightseeing',
     itemType: 'package',
   },

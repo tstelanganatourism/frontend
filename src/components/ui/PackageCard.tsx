@@ -109,8 +109,34 @@ function getTransportType(transport_info: string | null | undefined, title: stri
   return 'Boat Tour Only';
 }
 
+const R2_CARD_FALLBACKS = [
+  'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/pochavaram-boat-point.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/papikondalu-rajahmundry.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/gandipochamma-revu.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/kolluru-bamboo-resort-1.png',
+  'https://media.tstelanganatourism.com/gallery/tours/kolluru-river-cottage.webp',
+  'https://media.tstelanganatourism.com/gallery/tours/maredumilli-forest-resort.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/rajahmundry-boat-cruise.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-river-drop.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-parnashala-temple.jpg',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7844.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7846.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7848.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A8471.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A8805.webp',
+];
+
+function getCardFallback(pkgId: number | string | undefined, title: string | undefined): string {
+  let seed = typeof pkgId === 'number' ? pkgId : 0;
+  if (title) {
+    for (let i = 0; i < title.length; i++) seed += title.charCodeAt(i);
+  }
+  return R2_CARD_FALLBACKS[Math.abs(seed) % R2_CARD_FALLBACKS.length];
+}
+
 function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOverride }: PackageProps) {
-  const [imgSrc, setImgSrc] = React.useState<string>(pkg.cover_image_url || 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp');
+  const [imgSrc, setImgSrc] = React.useState<string>(pkg.cover_image_url || getCardFallback(pkg.id, pkg.title));
   const isTrip = pkg.type?.toUpperCase() === 'TRIP';
   const isInactive = pkg.is_active === false;
 
@@ -173,7 +199,7 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
             priority={priority}
             sizes="(max-width: 640px) 50vw, 20vw"
             quality={70}
-            onError={() => setImgSrc('https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp')}
+            onError={() => setImgSrc(getCardFallback(pkg.id, pkg.title))}
             className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isInactive ? 'opacity-85 grayscale-[20%]' : ''}`}
           />
           <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(7,25,35,0.68)_0%,transparent_55%)]" />
@@ -311,7 +337,7 @@ function PackageCard({ pkg, priority = false, variant = 'default', href: hrefOve
           priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           quality={75}
-          onError={() => setImgSrc('https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp')}
+          onError={() => setImgSrc(getCardFallback(pkg.id, pkg.title))}
           className={`object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${isInactive ? 'opacity-85 grayscale-[15%]' : ''}`}
         />
         

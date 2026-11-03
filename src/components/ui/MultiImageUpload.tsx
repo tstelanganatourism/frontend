@@ -98,16 +98,18 @@ export default function MultiImageUpload({ value, onChange, label, helperText }:
               </span>
             )}
 
-            {/* Delete button — always visible on mobile, hover-only on desktop */}
+            {/* Delete button — always prominently visible on all screen sizes (mobile & desktop) */}
             <button
               type="button"
-              onClick={() => handleRemove(index)}
-              className="absolute top-2 right-2 z-10 p-1.5 bg-red-500 hover:bg-red-600 rounded-full text-white shadow-md
-                         md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200
-                         transition-transform transform hover:scale-110"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove(index);
+              }}
+              className="absolute top-2 right-2 z-30 flex items-center justify-center h-8 w-8 bg-red-600 hover:bg-red-700 active:scale-95 rounded-full text-white shadow-lg border-2 border-white transition-all"
               title="Remove image"
+              aria-label={`Remove photo ${index + 1}`}
             >
-              <CloseIcon className="h-4 w-4" />
+              <CloseIcon className="h-4 w-4 stroke-[2.5]" />
             </button>
 
             {/* Hover overlay (desktop only) */}

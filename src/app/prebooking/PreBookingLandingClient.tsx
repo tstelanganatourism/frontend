@@ -28,7 +28,7 @@ const FALLBACK_PACKAGES = [
     duration: '2 Days / 1 Night',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Sirivaka Bamboo Huts',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/kolluru-bamboo-resort-1.png',
     starting_price: 5000,
     type: 'TOUR',
     tags: ['Bamboo Huts', 'Godavari Boat Trip', 'All Meals Included'],
@@ -40,7 +40,7 @@ const FALLBACK_PACKAGES = [
     duration: '2 Days / 1 Night',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Sirivaka Wooden Cottages',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/kolluru-river-cottage.webp',
     starting_price: 5500,
     type: 'TOUR',
     tags: ['Wooden Cottages', 'Scenic Hill Stay', 'AC Cottages'],
@@ -52,7 +52,7 @@ const FALLBACK_PACKAGES = [
     duration: '2 Days / 1 Night',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Maredumilli Forest Resorts - Pamuleru Waterfalls',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/maredumilli-forest-resort.jpg',
     starting_price: 5500,
     type: 'TOUR',
     tags: ['Maredumilli Resorts', 'Waterfalls', 'Jungle Safari'],
@@ -64,7 +64,7 @@ const FALLBACK_PACKAGES = [
     duration: '1 Day',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Bhadrachalam',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg',
     starting_price: 990,
     type: 'TRIP',
     tags: ['Day Boat Trip', 'Breakfast & Lunch', 'Temple Visit'],
@@ -76,7 +76,7 @@ const FALLBACK_PACKAGES = [
     duration: '1 Day',
     place: 'Bhadrachalam - Pochavaram - Papikondalu - Perantapalli - Purushothapatnam - Rajahmundry',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-river-drop.jpg',
     starting_price: 2200,
     type: 'TOUR',
     tags: ['One-Way Boat Trip', 'Rajahmundry Drop', 'Full Day Trip'],
@@ -88,7 +88,7 @@ const FALLBACK_PACKAGES = [
     duration: '1 Day',
     place: 'Rajahmundry - Purushothapatnam - Papikondalu - Perantapalli - Pochavaram - Bhadrachalam',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/rajahmundry-boat-cruise.jpg',
     starting_price: 2200,
     type: 'TOUR',
     tags: ['River Gorge Boat Ride', 'Bhadrachalam Drop', 'Temple Darshan'],
@@ -105,13 +105,13 @@ const SEASON_LABEL = 'Sep 2026 Season';
 
 const CLOUDINARY_FALLBACKS: Record<string, string> = {
   'bhadrachalam-to-papikondalu-one-day-package':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg',
   'bhadrachalam-to-pochavaram-only-boat-point-package':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/pochavaram-boat-point.jpg',
   'bhadrachalam-to-papikondalu-maredumilli-resort-package-2days':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/maredumilli-forest-resort.jpg',
   'bhadrachalam-to-papikondalu-resort-package-2days':
-    'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+    'https://media.tstelanganatourism.com/gallery/tours/kolluru-bamboo-resort-1.png',
 };
 
 const DEFAULT_TOUR_IMAGE =

@@ -5,10 +5,46 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+const R2_FALLBACK_IMAGES = [
+  'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/pochavaram-boat-point.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/papikondalu-rajahmundry.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/gandipochamma-revu.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/kolluru-bamboo-resort-1.png',
+  'https://media.tstelanganatourism.com/gallery/tours/kolluru-river-cottage.webp',
+  'https://media.tstelanganatourism.com/gallery/tours/maredumilli-forest-resort.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/rajahmundry-boat-cruise.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-river-drop.jpg',
+  'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-parnashala-temple.jpg',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7844.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7846.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A7848.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A8471.webp',
+  'https://media.tstelanganatourism.com/gallery/photos/2T9A8805.webp',
+];
+
+function stringHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 export function getOptimizedImageUrl(url: string | null | undefined, width: number = 800): string {
-  if (!url || !url.trim()) return "https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp";
-  if (url.includes("res.cloudinary.com") && !url.includes("/image/upload/w_") && !url.includes("/image/upload/f_auto")) {
-    return url.replace("/image/upload/", `/image/upload/w_${width},f_auto,q_auto/`);
+  if (!url || !url.trim()) return R2_FALLBACK_IMAGES[0];
+  if (url.includes("res.cloudinary.com")) {
+    const lower = url.toLowerCase();
+    if (lower.includes('pochavaram')) return 'https://media.tstelanganatourism.com/gallery/tours/pochavaram-boat-point.jpg';
+    if (lower.includes('papikondalu') && lower.includes('rajahmundry')) return 'https://media.tstelanganatourism.com/gallery/tours/papikondalu-rajahmundry.jpg';
+    if (lower.includes('bhadrachalam') && lower.includes('papikondalu')) return 'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg';
+    if (lower.includes('kolluru') || lower.includes('bamboo') || lower.includes('cottage')) return 'https://media.tstelanganatourism.com/gallery/tours/kolluru-river-cottage.webp';
+    if (lower.includes('maredumilli')) return 'https://media.tstelanganatourism.com/gallery/tours/maredumilli-forest-resort.jpg';
+    if (lower.includes('parnashala')) return 'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-parnashala-temple.jpg';
+    if (lower.includes('gandipochamma')) return 'https://media.tstelanganatourism.com/gallery/tours/gandipochamma-revu.jpg';
+    const idx = stringHash(url) % R2_FALLBACK_IMAGES.length;
+    return R2_FALLBACK_IMAGES[idx];
   }
   return url;
 }

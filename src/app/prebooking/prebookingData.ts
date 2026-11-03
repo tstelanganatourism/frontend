@@ -25,7 +25,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 1350,
     type: 'TRIP',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/bhadrachalam-papikondalu-cruise.jpg',
     tags: ['1 Day Boat Trip', '₹1,350 Adult · ₹1,100 Child', 'Godavari Boat Ride', 'Breakfast & Lunch'],
     description: 'Complete one day Papikondalu boat tour starting from Bhadrachalam with breakfast, veg/non-veg lunch, and tea snacks included.',
   },
@@ -40,7 +40,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 1000,
     type: 'TRIP',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/pochavaram-boat-point.jpg',
     tags: ['Boat Point Only', '₹1,000 Adult · ₹800 Child', 'Pochavaram Revu', 'Day Tour'],
     description: 'Direct boat ride package from Pochavaram boat point to Papikondalu and back with boat ride and scenic views.',
   },
@@ -55,7 +55,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 4000,
     type: 'TOUR',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/maredumilli-forest-resort.jpg',
     tags: ['Maredumilli Resorts', '₹4,000 / Person', '2 Days Stay', 'All Meals Included'],
     description: '2-Day combo package featuring Papikondalu boat trip and overnight stay at Maredumilli forest resort with waterfalls sightseeing.',
   },
@@ -70,7 +70,7 @@ export const PREBOOKING_PACKAGES: PreBookingPackage[] = [
     starting_price: 5500,
     type: 'TOUR',
     cover_image_url:
-      'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+      'https://media.tstelanganatourism.com/gallery/tours/kolluru-bamboo-resort-1.png',
     tags: ['Papikondalu Resorts', '₹5,500 / Person', 'River View Stay', 'AC / Luxury Cottages'],
     description: '2-Day premium overnight riverside resort stay at Papikondalu with scenic river views, campfire, cultural dance, and all meals.',
   },

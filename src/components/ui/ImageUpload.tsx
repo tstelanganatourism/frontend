@@ -69,15 +69,18 @@ export default function ImageUpload({ value, onChange, label }: ImageUploadProps
       {value ? (
         <div className="relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 h-48 flex items-center justify-center">
           <img src={value} alt="Preview" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-          {/* Delete button — always visible on mobile, hover-only on desktop */}
+          {/* Delete button — always prominently visible on all screen sizes */}
           <button 
             type="button"
-            onClick={() => onChange('')} 
-            className="absolute top-3 right-3 z-10 p-2.5 bg-red-600 hover:bg-red-500 rounded-full text-white shadow-md
-                       md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200
-                       transition-transform transform hover:scale-110"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange('');
+            }} 
+            className="absolute top-3 right-3 z-30 flex items-center justify-center h-9 w-9 bg-red-600 hover:bg-red-700 active:scale-95 rounded-full text-white shadow-lg border-2 border-white transition-all"
+            title="Remove image"
+            aria-label="Remove image"
           >
-            <CloseIcon className="h-5 w-5" />
+            <CloseIcon className="h-5 w-5 stroke-[2.5]" />
           </button>
           {/* Hover overlay — desktop only */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block pointer-events-none" />
