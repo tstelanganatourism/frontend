@@ -19,7 +19,7 @@ export function getHdImageUrl(url: string | null | undefined): string {
 
 export function getYouTubeId(url: string | null | undefined): string | null {
   if (!url) return null;
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+  const match = url.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
   return match ? match[1] : null;
 }
 
@@ -32,6 +32,7 @@ export function getYouTubeEmbedUrl(url: string | null | undefined, autoplay: boo
 
 export function getOptimizedCloudinaryVideoUrl(url: string | null | undefined): string {
   if (!url || !url.trim()) return "";
+  if (url.includes("youtube") || url.includes("youtu.be")) return url;
   if (url.includes("res.cloudinary.com") && url.includes("/video/upload/") && !url.includes("/video/upload/f_auto") && !url.includes("/video/upload/q_auto")) {
     return url.replace("/video/upload/", "/video/upload/f_auto,q_auto,w_1280,c_limit/");
   }
@@ -40,6 +41,8 @@ export function getOptimizedCloudinaryVideoUrl(url: string | null | undefined): 
 
 export function getCloudinaryVideoPosterUrl(url: string | null | undefined): string {
   if (!url || !url.trim()) return "";
+  const ytId = getYouTubeId(url);
+  if (ytId) return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
   if (url.includes("res.cloudinary.com") && url.includes("/video/upload/")) {
     const withTransform = url.replace(
       /\/video\/upload\/(?:[a-zA-Z0-9_,]+\/)?/,

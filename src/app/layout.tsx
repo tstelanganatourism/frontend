@@ -133,6 +133,8 @@ export default function RootLayout({
             `,
           }}
         />
+        <link rel="preconnect" href="https://media.tstelanganatourism.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://media.tstelanganatourism.com" />
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         {/* Font loading and preloads managed by Next.js */}
