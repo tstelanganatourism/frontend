@@ -1176,11 +1176,19 @@ export const BookingSidebarV2 = ({
     return false;
   }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, totalSeparateCapacity, adults, children]);
 
+  const isAcBoat = (title?: string) => {
+    if (!title) return false;
+    const lower = title.toLowerCase();
+    return (lower.includes('a/c') || lower.includes('ac')) && !lower.includes('non') && !lower.includes('cab') && !lower.includes('vehicle');
+  };
+  const isSelectedVariantAcBoat = isAcBoat(selectedVariant?.title);
+
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
   const isBookingDisabled =
     isProcessingCheckout ||
     isSuspended ||
+    (!isAdmin && isSelectedVariantAcBoat) ||
     (!isAdmin && isPackageInactive) ||
     validVariants.length === 0 ||
     !selectedDate ||
@@ -1194,6 +1202,7 @@ export const BookingSidebarV2 = ({
     if (isSuspended) return 'Booking Suspended';
     if (!isActive) return 'Bookings Suspended';
     if (isPackageInactive && !isAdmin) return 'Bookings Closed / Inactive';
+    if (!isAdmin && isSelectedVariantAcBoat) return 'A/C Boat Dates Closed';
     if (validVariants.length === 0) return 'Fare updating';
     if (!selectedDate) return 'Select a date';
 
@@ -1236,6 +1245,10 @@ export const BookingSidebarV2 = ({
 
   const handleBookingClick = (e: React.MouseEvent) => {
     if ((isPackageInactive && !isAdmin) || !isActive) return;
+    if (!isAdmin && isSelectedVariantAcBoat) {
+      toast.error('A/C Boat bookings are currently closed. Please choose Non-A/C Boat to book.');
+      return;
+    }
     if (!isAdmin && availabilityState.kind !== 'open') {
       toast.error(availabilityState.message || 'Schedule has not been opened yet for online booking.');
       return;
@@ -1328,6 +1341,21 @@ export const BookingSidebarV2 = ({
         toast.success(`Booking ${res.data.public_id} created successfully!`);
         router.push(`/admin/bookings?new_booking=${res.data.public_id}`);
         return;
+      }
+
+      if (!isAdmin && isSelectedVariantAcBoat) {
+        toast.error('A/C Boat bookings are currently closed. Please select Non-A/C Boat to book.');
+        setIsProcessingCheckout(false);
+        return;
+      }
+
+      if (hasTransport && transportOptions.length > 0) {
+        const tSels = buildTransportSelections();
+        if (!tSels || tSels.length === 0) {
+          toast.error('Please select a transport option before proceeding to checkout.');
+          setIsProcessingCheckout(false);
+          return;
+        }
       }
 
       const payload: any = {

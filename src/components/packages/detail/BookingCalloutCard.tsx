@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldCheck, Compass, Info, Check, Plus, Utensils, Home, Car, Calendar, Sparkles, Ticket, ArrowRight } from 'lucide-react';
 
 interface PackageVariant {
@@ -67,7 +67,19 @@ export const BookingCalloutCard = ({
   extras = [],
   isActive = true,
 }: BookingCalloutCardProps) => {
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(variants[0]?.id ?? null);
+  const isAcBoat = (title?: string) => {
+    if (!title) return false;
+    const lower = title.toLowerCase();
+    return (lower.includes('a/c') || lower.includes('ac')) && !lower.includes('non') && !lower.includes('cab') && !lower.includes('vehicle');
+  };
+
+  const initialVariant = useMemo(() => {
+    if (!variants || variants.length === 0) return null;
+    const nonAc = variants.find(v => !isAcBoat(v.title));
+    return nonAc || variants[0];
+  }, [variants]);
+
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(initialVariant?.id ?? null);
 
   useEffect(() => {
     const handleVariantSelect = (e: Event) => {
@@ -80,7 +92,7 @@ export const BookingCalloutCard = ({
     return () => window.removeEventListener('select-variant', handleVariantSelect);
   }, []);
 
-  const activeVariant = variants.find((v) => v.id === selectedVariantId) || variants[0];
+  const activeVariant = variants.find((v) => v.id === selectedVariantId) || initialVariant || variants[0];
   const activePrice = activeVariant
     ? (isStudentPackage ? activeVariant.student_price : activeVariant.adult_price)
     : startingPrice;
@@ -90,6 +102,14 @@ export const BookingCalloutCard = ({
     : 'Check Fare';
 
   const handleBookNowClick = () => {
+    if (isAcBoat(activeVariant?.title)) {
+      const nonAc = variants.find(v => !isAcBoat(v.title));
+      if (nonAc) {
+        setSelectedVariantId(nonAc.id);
+        window.dispatchEvent(new CustomEvent('open-booking-modal', { detail: { variantId: nonAc.id } }));
+        return;
+      }
+    }
     window.dispatchEvent(new CustomEvent('open-booking-modal', { detail: { variantId: activeVariant?.id } }));
   };
 
@@ -169,9 +189,14 @@ export const BookingCalloutCard = ({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-start gap-1.5 min-w-0 flex-1">
+                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-start gap-1.5 min-w-0 flex-1 flex-wrap">
                       <Compass className="h-3.5 w-3.5 text-[#0d6e75] shrink-0 mt-0.5" />
                       <span>{v.title}</span>
+                      {isAcBoat(v.title) && (
+                        <span className="rounded-full bg-rose-100 text-rose-700 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider border border-rose-200">
+                          Dates Closed
+                        </span>
+                      )}
                     </h4>
                     {isSelected && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-[#0d6e75] px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-widest shrink-0 whitespace-nowrap self-start">

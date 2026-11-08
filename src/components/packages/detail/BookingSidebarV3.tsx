@@ -210,50 +210,76 @@ export const BookingSidebarV3 = ({
   const isAfterCutoff = today.getHours() >= 6;
   const minDateStr = isAfterCutoff ? toYYYYMMDD(new Date(today.getTime() + 86400000)) : todayDateStr;
 
+  const isAcBoat = (title?: string) => {
+    if (!title) return false;
+    const lower = title.toLowerCase();
+    return (lower.includes('a/c') || lower.includes('ac')) && !lower.includes('non') && !lower.includes('cab') && !lower.includes('vehicle');
+  };
+
   const validVariants = useMemo(() => {
-    return variants.filter(
+    const list = variants.filter(
       (v) => v.title && v.title.trim() !== '' && (isStudentPackage ? Number(v.student_price) > 0 : Number(v.adult_price) > 0)
     );
+    // Sort so Non-A/C boat variants are primary / default, AC boat variants secondary
+    return [...list].sort((a, b) => {
+      const aAc = isAcBoat(a.title);
+      const bAc = isAcBoat(b.title);
+      if (aAc && !bAc) return 1;
+      if (!aAc && bAc) return -1;
+      return 0;
+    });
   }, [variants, isStudentPackage]);
 
   const [selectedDate, setSelectedDate] = useState('');
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(initialVariantId || null);
   const [selectedTransportMode, setSelectedTransportMode] = useState<'NONE' | 'SHARED' | 'SEPARATE'>('NONE');
+  const [selectedSharedOptionId, setSelectedSharedOptionId] = useState<number | null>(null);
+  const [separateVehicleQtys, setSeparateVehicleQtys] = useState<Record<number, number>>({});
+  const [adults, setAdults] = useState<number>(Math.max(1, minPassengers));
+  const [children, setChildren] = useState<number>(0);
 
   // Auto-select variant if initialVariantId changes or none selected
   useEffect(() => {
     if (initialVariantId && validVariants.some((v) => v.id === initialVariantId)) {
       setSelectedVariantId(initialVariantId);
     } else if (selectedVariantId === null && validVariants.length > 0) {
-      setSelectedVariantId(validVariants[0].id);
+      // Prioritize Non-A/C variant if available
+      const nonAc = validVariants.find(v => !isAcBoat(v.title));
+      setSelectedVariantId(nonAc ? nonAc.id : validVariants[0].id);
     }
   }, [validVariants, initialVariantId]);
 
-  // Auto-select first transport option if available and 'NONE' is not allowed
+  // Auto-select mandatory transport option when package has transport available
   useEffect(() => {
     if (hasTransport && transportOptions.length > 0) {
-      // Do NOT auto-force a transport selection — 'NONE' means "own vehicle / no add-on" which is valid.
-      // Only pre-select if mode was already set to something other than NONE
-      // (i.e., user explicitly navigated back without clearing their choice).
-      // This allows users to stay on 'NONE' (own vehicle) if they choose.
+      const sharedOpts = transportOptions.filter(o => o.type === 'SHARED');
+      const separateOpts = transportOptions.filter(o => o.type === 'SEPARATE_VEHICLE');
+      if (selectedTransportMode === 'NONE' || (selectedTransportMode === 'SHARED' && !selectedSharedOptionId)) {
+        if (sharedOpts.length > 0) {
+          setSelectedTransportMode('SHARED');
+          setSelectedSharedOptionId(sharedOpts[0].id);
+        } else if (separateOpts.length > 0) {
+          setSelectedTransportMode('SEPARATE');
+          const primaryOpt = separateOpts[0];
+          const cap = positiveNumber(primaryOpt.capacity) || 6;
+          const totalPax = adults + children;
+          setSeparateVehicleQtys({ [primaryOpt.id]: Math.max(1, Math.ceil(totalPax / cap)) });
+        }
+      }
     } else if (selectedTransportMode !== 'NONE') {
       setSelectedTransportMode('NONE');
       setSelectedSharedOptionId(null);
       setSeparateVehicleQtys({});
     }
-  }, [hasTransport, transportOptions, selectedTransportMode]);
+  }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, adults, children]);
 
-  const [selectedSharedOptionId, setSelectedSharedOptionId] = useState<number | null>(null);
-  const [separateVehicleQtys, setSeparateVehicleQtys] = useState<Record<number, number>>({});
   const [includeRefreshments, setIncludeRefreshments] = useState<boolean>(false);
   const [includeFoodOption, setIncludeFoodOption] = useState<boolean>(false);
   const [selectedExtraIds, setSelectedExtraIds] = useState<number[]>([]);
   const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(today));
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [calYear, setCalYear] = useState(today.getFullYear());
-  const [adults, setAdults] = useState<number>(Math.max(1, minPassengers));
-  const [children, setChildren] = useState<number>(0);
   const [paymentPercentage, setPaymentPercentage] = useState(100);
   const [customPayAmount, setCustomPayAmount] = useState<string>('');
   const [isAdvanceSelected, setIsAdvanceSelected] = useState<boolean>(false);
@@ -1107,8 +1133,7 @@ export const BookingSidebarV3 = ({
 
   const hasTransportSelection = useMemo(() => {
     if (!hasTransport || transportOptions.length === 0) return true;
-    // 'NONE' = user travels in their own vehicle — always valid, no transport add-on needed
-    if (selectedTransportMode === 'NONE') return true;
+    // Transport selection is MANDATORY when transport options are available
     if (selectedTransportMode === 'SHARED') {
       return selectedSharedOptionId !== null;
     }
@@ -1119,11 +1144,14 @@ export const BookingSidebarV3 = ({
     return false;
   }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, totalSeparateCapacity, adults, children]);
 
+  const isSelectedVariantAcBoat = isAcBoat(selectedVariant?.title);
+
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
   const isBookingDisabled =
     isProcessingCheckout ||
     isSuspended ||
+    (!isAdmin && isSelectedVariantAcBoat) ||
     (!isAdmin && isPackageInactive) ||
     validVariants.length === 0 ||
     !selectedDate ||
@@ -1137,6 +1165,7 @@ export const BookingSidebarV3 = ({
     if (isSuspended) return 'Booking Suspended';
     if (!isActive) return 'Bookings Suspended';
     if (isPackageInactive && !isAdmin) return 'Bookings Closed';
+    if (!isAdmin && isSelectedVariantAcBoat) return 'A/C Boat Dates Closed';
     if (validVariants.length === 0) return 'Updating Fares';
     if (!selectedDate) return 'Select Travel Date';
 
@@ -1144,6 +1173,7 @@ export const BookingSidebarV3 = ({
     if (!isAdmin && (availabilityState.kind === 'closed' || availabilityState.kind === 'sold_out')) return 'Bookings Unavailable';
 
     if (hasTransport && transportOptions.length > 0) {
+      if (selectedTransportMode === 'NONE' || !hasTransportSelection) return 'Select Transport Option';
       if (selectedTransportMode === 'SEPARATE') {
         const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
         if (totalVehicles === 0) return 'Select Vehicle';
@@ -1152,7 +1182,7 @@ export const BookingSidebarV3 = ({
         if (!isAdmin && !separateCapacityOk) return 'Vehicle Sold Out';
       }
       if (selectedTransportMode === 'SHARED') {
-        if (!selectedSharedOptionId) return 'Select Shared Bus';
+        if (!selectedSharedOptionId) return 'Select Shared Coach';
         if (!isAdmin && !sharedCapacityOk) return 'Not Enough Shared Seats';
       }
     }
@@ -1160,7 +1190,7 @@ export const BookingSidebarV3 = ({
     if (isAdmin) return 'Book Now (Admin)';
     if (availabilityState.kind === 'open') return 'Book Now';
     return 'Bookings Unavailable';
-  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind, separateVehicleQtys, adults, children, totalSeparateCapacity, selectedSharedOptionId]);
+  }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, isSelectedVariantAcBoat, validVariants.length, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind, separateVehicleQtys, adults, children, totalSeparateCapacity, selectedSharedOptionId]);
 
   // Handle auto-clear selected date if sold out / closed
   useEffect(() => {
@@ -1173,6 +1203,10 @@ export const BookingSidebarV3 = ({
 
   const handleBookingClick = (e: React.MouseEvent) => {
     if ((isPackageInactive && !isAdmin) || !isActive) return;
+    if (!isAdmin && isSelectedVariantAcBoat) {
+      toast.error('A/C Boat bookings are currently closed. Please select Non-A/C Boat to book.');
+      return;
+    }
     if (!isAdmin && availabilityState.kind !== 'open') {
       toast.error(availabilityState.message || 'Schedule has not been opened yet for online booking.');
       return;
@@ -1186,6 +1220,10 @@ export const BookingSidebarV3 = ({
     }
 
     if (hasTransport && transportOptions.length > 0) {
+      if (selectedTransportMode === 'NONE' || !hasTransportSelection) {
+        toast.error('Please select a transport option before proceeding. Transport is required for this package.');
+        return;
+      }
       if (selectedTransportMode === 'SEPARATE') {
         const totalVehicles = Object.values(separateVehicleQtys).reduce((a, b) => a + b, 0);
         if (totalVehicles === 0) {
@@ -1267,6 +1305,21 @@ export const BookingSidebarV3 = ({
         toast.success(`Booking ${res.data.public_id} created successfully!`);
         router.push(`/admin/bookings?new_booking=${res.data.public_id}`);
         return;
+      }
+
+      if (!isAdmin && isSelectedVariantAcBoat) {
+        toast.error('A/C Boat bookings are currently closed. Please select Non-A/C Boat to book.');
+        setIsProcessingCheckout(false);
+        return;
+      }
+
+      if (hasTransport && transportOptions.length > 0) {
+        const tSels = buildTransportSelections();
+        if (!tSels || tSels.length === 0) {
+          toast.error('Please select a transport option before proceeding to checkout.');
+          setIsProcessingCheckout(false);
+          return;
+        }
       }
 
       const payload: any = {
@@ -1767,9 +1820,14 @@ export const BookingSidebarV3 = ({
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="block text-xs font-black text-slate-900">{variant.title}</span>
                               {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#0d6e75] animate-pulse" />}
+                              {isAcBoat(variant.title) && (
+                                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-rose-700 border border-rose-200">
+                                  Dates Closed
+                                </span>
+                              )}
                             </div>
                             {variant.transport_info && (
                               <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{variant.transport_info}</span>
@@ -1788,6 +1846,17 @@ export const BookingSidebarV3 = ({
                     );
                   })}
                 </div>
+                {isSelectedVariantAcBoat && (
+                  <div className="mt-2.5 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-800 font-bold flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
+                    <div>
+                      <p className="font-black text-rose-900">A/C Boat Dates Closed</p>
+                      <p className="text-rose-700 font-medium text-[10px] mt-0.5 leading-relaxed">
+                        Online bookings for A/C Boat are currently closed across all packages. Please select the <strong>Non-A/C Boat</strong> variant above to book.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Block 2: Date Select (Sleek Compact Calendar Picker) */}
@@ -1946,20 +2015,17 @@ export const BookingSidebarV3 = ({
                 <div className="pt-3 border-t border-slate-100 space-y-2.5">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0d6e75] text-[9px] font-black text-white">4</span>
-                    Optional Add-ons & Transport
+                    Transport & Add-ons
                   </label>
 
-                  {/* Transport Toggles */}
+                  {/* Transport Toggles — Mandatory Selection */}
                   {hasTransport && transportOptions.length > 0 && (
                     <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">Select Transport *</span>
+                        <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Required</span>
+                      </div>
                       <div className="flex gap-2">
-                        {/* Own Vehicle / No Transport option — always shown */}
-                        <button
-                          type="button"
-                          onClick={() => { setSelectedTransportMode('NONE'); setSelectedSharedOptionId(null); setSeparateVehicleQtys({}); }}
-                          className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${selectedTransportMode === 'NONE' ? 'bg-[#0d6e75] border-[#0d6e75] text-white shadow-2xs' : 'bg-white border-slate-200 text-slate-500'
-                            }`}
-                        >🚗 Own Vehicle</button>
                         {sharedOptions.length > 0 && (
                           <button
                             type="button"
