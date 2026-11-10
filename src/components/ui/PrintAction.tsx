@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { clientSideDownloadPdf, triggerBlobDownload } from '@/lib/pdfClientDownload';
+import { clientSideDownloadPdf } from '@/lib/pdfClientDownload';
 
 interface PrintActionProps {
   showClose?: boolean;
@@ -33,27 +33,7 @@ export default function PrintAction({
         ? (filename.endsWith('.pdf') ? filename : `${filename}.pdf`)
         : `${docType.toUpperCase()}_${bookingId || 'document'}.pdf`;
 
-      // ── 1. Next.js internal PDF proxy (for ticket/invoice/form with bookingId) ──
-      if (bookingId && ['ticket', 'invoice', 'form'].includes(docType)) {
-        try {
-          const proxyUrl = `/api/pdf/${encodeURIComponent(docType)}/${encodeURIComponent(bookingId)}`;
-          const response = await fetch(proxyUrl, { cache: 'no-store' });
-          if (response.ok) {
-            const blob = await response.blob();
-            if (blob.size > 100) {
-              triggerBlobDownload(blob, defaultFilename);
-              toast.success('PDF downloaded successfully!');
-              setDownloading(false);
-              return;
-            }
-          }
-          console.warn(`[PrintAction] Proxy returned ${response.status} or empty blob, falling back to client-side generator`);
-        } catch (proxyErr) {
-          console.warn('[PrintAction] Proxy fetch failed:', proxyErr);
-        }
-      }
-
-      // ── 2. Client-side html2canvas-pro + jsPDF with base64-inlined images ─────
+      // ── 1. Client-side html2canvas-pro + jsPDF (0 backend RAM, exact layout) ──
       toast.info('Generating PDF for download...');
       try {
         await clientSideDownloadPdf(targetSelector, defaultFilename);
@@ -64,7 +44,7 @@ export default function PrintAction({
         console.warn('[PrintAction] Client-side PDF generation failed:', clientErr);
       }
 
-      // ── 3. Final fallback: open print dialog (user can choose "Save as PDF") ───
+      // ── 2. Fallback: open print dialog (user can choose "Save as PDF") ───
       toast.info('Opening print dialog — please select "Save as PDF".');
       setTimeout(() => window.print(), 300);
     } catch (err) {
