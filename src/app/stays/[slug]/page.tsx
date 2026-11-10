@@ -3,34 +3,9 @@ import { cache } from 'react';
 import { apiFetch } from '@/lib/api';
 import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperience';
 
-// ISR: cached for 5m on Vercel/Edge; instantly purged on-demand when admin updates (/api/revalidate)
-export const revalidate = 300;
-export const dynamicParams = true;
-
-const KNOWN_STATIC_ROOM_SLUGS = [
-  'family-mini-suite-ac',
-];
-
-/**
- * Pre-build all published room/stay pages at compile time.
- * Without this, the first visitor to any stay URL waits for a full SSR round-trip.
- */
-export async function generateStaticParams() {
-  try {
-    const res = await apiFetch('/api/v1/rooms?size=200&page=1', {
-      next: { revalidate: 300, tags: ['rooms', 'stays'] }
-    });
-    if (!res.ok) return KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
-    const data = await res.json();
-    const items: Array<{ slug: string }> = data?.items ?? [];
-    const slugs = items
-      .filter((r) => typeof r.slug === 'string' && r.slug.length > 0)
-      .map((r) => ({ slug: r.slug }));
-    return slugs.length > 0 ? slugs : KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
-  } catch {
-    return KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
-  }
-}
+// Dynamic SSR with private edge headers (prevents Cloudflare caching stale PRERENDER HTML), backed by fast 30s data cache + on-demand /api/revalidate
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 
 type RoomVariant = { id: number; variant_name: string; weekday_price: number; weekend_price: number; capacity_per_room?: number };

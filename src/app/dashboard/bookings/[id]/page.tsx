@@ -812,7 +812,7 @@ export default function BookingDetailPage() {
                   {booking.target_type === 'ROOM' ? booking.variant_title : booking.package_title}
                 </h1>
                 <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">
-                  {booking.target_type === 'ROOM' ? booking.package_title : booking.variant_title}
+                  {booking.target_type === 'ROOM' ? (displayHotelName || booking.package_title) : booking.variant_title}
                 </p>
               </div>
               <div className="text-left sm:text-right shrink-0">
@@ -913,7 +913,7 @@ export default function BookingDetailPage() {
                         <p className="font-extrabold text-indigo-900 text-sm">{displayHotelName}</p>
                       )}
                       <p className="font-bold text-indigo-800 text-xs mt-1">
-                        {booking.variant_title || booking.package_title} ({booking.package_title})
+                        {booking.variant_title || displayHotelName || booking.package_title}
                       </p>
                       <p className="text-[11px] text-indigo-750 font-semibold mt-1.5">
                         🗓️ Check-in: {booking.room_checkin || 'TBA'} • Check-out: {booking.room_checkout || 'TBA'}

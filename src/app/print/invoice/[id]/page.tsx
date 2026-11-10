@@ -56,6 +56,7 @@ interface BookingDetails {
   created_at: string | null;
   package_title: string;
   variant_title: string;
+  hotel_name?: string | null;
   target_type?: 'PACKAGE' | 'ROOM';
   boarding_point?: { title: string; departure_time: string; address?: string | null; landmark?: string | null; contact_number?: string | null } | null;
   booked_by_name?: string | null;
@@ -184,8 +185,9 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   const isFullyPaid = booking.status === 'FULLY_PAID';
 
   const isRoom = booking.target_type === 'ROOM';
-  const allocatedHotelName = booking.pricing_snapshot?.hotel_name || 
-                             (booking.room_address ? booking.room_address.split(',')[0].trim() : null) || 
+  const allocatedHotelName = (isRoom && (booking.hotel_name || booking.pricing_snapshot?.hotel_name || booking.package_title)) ||
+                             booking.pricing_snapshot?.hotel_name ||
+                             (booking.room_address ? booking.room_address.split(',')[0].trim() : null) ||
                              'Assigned Luxury Hotel (Details at Check-in)';
 
   // Determine HSN code
@@ -955,7 +957,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                     <td style={{ textAlign: 'center' }}>{sNo++}</td>
                     <td>
                       <span className="tax-table-line-title">
-                        {isRoom ? (booking.variant_title || booking.package_title) : booking.package_title} — {isRoom ? booking.package_title : booking.variant_title}
+                        {isRoom ? (booking.variant_title || allocatedHotelName) : booking.package_title} — {isRoom ? allocatedHotelName : booking.variant_title}
                       </span>
                       <span className="tax-table-line-sub">
                         Travel Date: {travelDateFormatted} | Guests: {guestSummary}

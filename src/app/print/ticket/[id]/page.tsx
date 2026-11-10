@@ -1092,11 +1092,11 @@ export default async function PrintTicketPage({
             </div>
           </div>
 
-          {/* Ribbon — for rooms show variant_title (room type) as primary, hotel name as secondary */}
+          {/* Ribbon — for rooms show variant_title (room type) as primary, assigned hotel name as secondary */}
           <div className="pkg-ribbon-bar">
-            <span>{isRoom ? (booking.variant_title || booking.package_title) : booking.package_title}</span>
+            <span>{isRoom ? (booking.variant_title || allocatedHotelName) : booking.package_title}</span>
             {isRoom
-              ? (booking.variant_title && booking.package_title && <span className="pkg-ribbon-variant">{booking.package_title}</span>)
+              ? (booking.variant_title && allocatedHotelName && <span className="pkg-ribbon-variant">{allocatedHotelName}</span>)
               : (booking.variant_title && <span className="pkg-ribbon-variant">{booking.variant_title}</span>)
             }
           </div>
@@ -1647,9 +1647,14 @@ export default async function PrintTicketPage({
                       🎫 Selected Package
                     </div>
                     <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0a2351', lineHeight: 1.3, marginBottom: '3px' }}>
-                      {booking.variant_title || booking.package_title}
+                      {isRoom ? (booking.variant_title || allocatedHotelName) : booking.package_title}
                     </div>
-                    {booking.package_title && booking.variant_title && (
+                    {isRoom && allocatedHotelName && booking.variant_title && (
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 500, marginBottom: '6px' }}>
+                        {allocatedHotelName}
+                      </div>
+                    )}
+                    {!isRoom && booking.package_title && booking.variant_title && (
                       <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 500, marginBottom: '6px' }}>
                         {booking.package_title}
                       </div>

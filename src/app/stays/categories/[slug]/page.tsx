@@ -3,24 +3,8 @@ import RoomsList from '../../../rooms/RoomsList';
 import { apiFetch } from '@/lib/api';
 import { Metadata } from 'next';
 
-export const revalidate = 60;
-export const dynamicParams = true;
-
-export async function generateStaticParams() {
-  try {
-    const res = await apiFetch('/api/v1/rooms/categories', {
-      next: { revalidate: 60, tags: ['categories', 'room-categories'] }
-    });
-    if (!res.ok) return [];
-    const categories = await res.json();
-    if (!Array.isArray(categories)) return [];
-    return categories
-      .filter((c: { slug?: string }) => typeof c.slug === 'string' && c.slug.length > 0)
-      .map((c: { slug: string }) => ({ slug: c.slug }));
-  } catch {
-    return [];
-  }
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type Props = {
   params: Promise<{ slug: string }>;
