@@ -75,8 +75,9 @@ export type RoomItem = {
   facilities: string[];
 };
 
-// Serve a cached homepage and refresh its public catalog data periodically.
-export const revalidate = 60;
+// Keep homepage HTML private so CDN edges don't freeze stale SSR responses; data fetches stay cached via Next.js tags & revalidation.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
