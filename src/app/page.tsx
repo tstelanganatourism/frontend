@@ -66,6 +66,7 @@ export type RoomItem = {
   id: number;
   slug: string;
   lodge_name: string;
+  public_title?: string | null;
   cover_image_url: string | null;
   is_featured: boolean;
   starting_price: number | null | string;
@@ -232,7 +233,7 @@ export default async function HomePage() {
   }));
 
   const roomItems: HeroItem[] = (allRoomsRaw ?? []).slice(0, 3).map((room) => ({
-    title: room.lodge_name,
+    title: room.public_title || room.lodge_name,
     desc: room.address || 'Riverside accommodation',
     href: `/stays/${room.slug}`,
     image:

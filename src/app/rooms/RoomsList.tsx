@@ -20,6 +20,7 @@ type RoomItem = {
   id: number;
   slug: string;
   lodge_name: string;
+  public_title?: string | null;
   cover_image_url: string | null;
   is_featured: boolean;
   starting_price: number | null | string;
@@ -86,21 +87,16 @@ export default function RoomsList({
     }
   }, [data]);
 
-  // Fetch complete rooms dataset in background if not provided by SSR
+  // Fetch fresh rooms dataset in background so category/room updates reflect even during SSR ISR window
   React.useEffect(() => {
-    if (data?.items && categorySlug) {
-      setIsFetching(false);
-      return;
-    }
-
     let isMounted = true;
 
     const fetchAllRooms = async () => {
       try {
         const fetchUrl = categorySlug
-          ? `/api/v1/rooms/categories/${categorySlug}`
+          ? `/api/v1/rooms/categories/${encodeURIComponent(categorySlug)}`
           : '/api/v1/rooms?size=100';
-        const res = await fetch(fetchUrl);
+        const res = await fetch(fetchUrl, { cache: 'no-store' });
         if (res.ok && isMounted) {
           const json = await res.json();
           const items = categorySlug ? (json.rooms || []) : (json.items || []);
@@ -121,7 +117,7 @@ export default function RoomsList({
     return () => {
       isMounted = false;
     };
-  }, [categorySlug, data]);
+  }, [categorySlug]);
 
   // INSTANT Client-Side Search & Filter Engine
   const filteredItems = React.useMemo(() => {
@@ -139,6 +135,7 @@ export default function RoomsList({
       const queryWords = query.split(/\s+/);
       list = list.filter((item) => {
         const textToSearch = [
+          item.public_title,
           item.lodge_name,
           item.slug,
           item.address,

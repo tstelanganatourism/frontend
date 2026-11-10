@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/api';
  * Bust Next.js ISR cache for the given paths.
  * Fires silently — does not block or throw if it fails.
  */
-async function revalidateStorefront(paths: string[], tags?: string[]) {
+export async function revalidateStorefront(paths: string[], tags?: string[]) {
   try {
     await fetch('/api/revalidate', {
       method: 'POST',
@@ -389,8 +389,8 @@ export const useAdminStore = create<AdminState>((set) => ({
     try {
       const response = await apiClient.post('/api/v1/admin/rooms', data);
       set({ isLoading: false });
-      // Bust storefront cache for stays listing + homepage
-      revalidateStorefront(['/', '/stays'], ['stays']);
+      // Bust storefront cache for stays listing + categories + homepage
+      revalidateStorefront(['/', '/stays', '/rooms'], ['rooms', 'stays', 'categories', 'room-categories', 'carousel']);
       return response.data;
     } catch (err: any) {
       let errMsg = 'Failed to create room';
@@ -426,14 +426,27 @@ export const useAdminStore = create<AdminState>((set) => ({
         ),
       }));
       const slug = response.data?.slug;
-      // Bust storefront cache for the specific stay page + listing pages
+      const catPaths = Array.isArray(response.data?.categories)
+        ? response.data.categories.map((c: any) => `/stays/categories/${c.slug}`)
+        : [];
+      const catTags = Array.isArray(response.data?.categories)
+        ? response.data.categories.map((c: any) => `room-category:${c.slug}`)
+        : [];
+      // Bust storefront cache for the specific stay page + listing + categories
       revalidateStorefront([
         '/',
         '/stays',
-        ...(slug ? [`/stays/${slug}`] : []),
+        '/rooms',
+        ...catPaths,
+        ...(slug ? [`/stays/${slug}`, `/rooms/${slug}`] : []),
       ], [
+        'rooms',
         'stays',
-        ...(slug ? [`stay:${slug}`] : []),
+        'categories',
+        'room-categories',
+        'carousel',
+        ...catTags,
+        ...(slug ? [`room:${slug}`, `stay:${slug}`] : []),
       ]);
       return response.data;
     } catch (err: any) {
@@ -465,11 +478,13 @@ export const useAdminStore = create<AdminState>((set) => ({
       revalidateStorefront([
         '/',
         '/stays',
-        '/stays/categories',
+        '/rooms',
       ], [
         'rooms',
         'stays',
+        'categories',
         'room-categories',
+        'carousel',
       ]);
       return response.data;
     } catch (err: any) {
@@ -486,7 +501,7 @@ export const useAdminStore = create<AdminState>((set) => ({
         rooms: state.rooms.filter((r) => r.id !== id),
         isLoading: false
       }));
-      revalidateStorefront(['/', '/stays'], ['stays']);
+      revalidateStorefront(['/', '/stays', '/rooms'], ['rooms', 'stays', 'categories', 'room-categories', 'carousel']);
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to delete room', isLoading: false });
     }

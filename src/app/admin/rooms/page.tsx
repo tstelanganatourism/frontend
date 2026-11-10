@@ -207,9 +207,11 @@ export default function AdminRoomsPage() {
       // 2. Clone the full data
       const duplicatedData = {
         ...fullRoom,
+        public_title: `${fullRoom.public_title || fullRoom.lodge_name} (Copy)`,
         lodge_name: `${fullRoom.lodge_name} (Copy)`,
         slug: `${fullRoom.slug}-copy-${Date.now()}`,
         status: 'DRAFT',
+        category_ids: Array.isArray(fullRoom.categories) ? fullRoom.categories.map((c: any) => c.id) : [],
       };
 
       // Helper function to remove database primary/foreign/timestamp keys from children
@@ -241,6 +243,7 @@ export default function AdminRoomsPage() {
       delete duplicatedData.updated_at;
       delete duplicatedData.deleted_at;
       delete duplicatedData.starting_price;
+      delete duplicatedData.categories;
 
       await createRoom(duplicatedData);
       toast.success('Lodge duplicated successfully with all details!');
@@ -489,6 +492,7 @@ export default function AdminRoomsPage() {
                 let filteredRooms = Array.isArray(rooms)
                   ? rooms.filter(room => 
                       searchVal === '' || 
+                      (room.public_title && room.public_title.toLowerCase().includes(searchVal.toLowerCase())) ||
                       (room.lodge_name && room.lodge_name.toLowerCase().includes(searchVal.toLowerCase())) || 
                       (room.slug && room.slug.toLowerCase().includes(searchVal.toLowerCase()))
                     )
@@ -618,7 +622,14 @@ export default function AdminRoomsPage() {
                           />
                         </div>
                         <div>
-                          <h4 className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{room.lodge_name}</h4>
+                          <h4 className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                            {room.public_title || room.lodge_name}
+                          </h4>
+                          {room.lodge_name && room.lodge_name !== (room.public_title || room.lodge_name) && (
+                            <p className="text-[11px] font-semibold text-amber-700 mt-0.5">
+                              Default Hotel: {room.lodge_name}
+                            </p>
+                          )}
                           <div className="flex items-center gap-1.5 flex-wrap mt-1">
                             <span className="text-[11px] text-slate-400 max-w-[140px] truncate">{room.slug}</span>
                             {room.categories && room.categories.length > 0 ? (

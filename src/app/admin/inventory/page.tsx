@@ -1806,7 +1806,12 @@ export default function AdminInventoryPage() {
                 label="Lodge / Property"
                 value={selectedRoomId}
                 onChange={(val) => setSelectedRoomId(val ? Number(val) : null)}
-                options={roomList.map((r) => ({ value: r.id, label: r.lodge_name }))}
+                options={roomList.map((r: any) => ({
+                  value: r.id,
+                  label: r.public_title && r.public_title !== r.lodge_name
+                    ? `${r.public_title} (${r.lodge_name})`
+                    : r.lodge_name,
+                }))}
                 placeholder="— Select a lodge —"
               />
             </div>

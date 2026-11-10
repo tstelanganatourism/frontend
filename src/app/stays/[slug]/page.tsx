@@ -3,13 +3,12 @@ import { cache } from 'react';
 import { apiFetch } from '@/lib/api';
 import { RoomDetailExperience } from '@/components/rooms/detail/RoomDetailExperience';
 
-// ISR: cached for 24h on Vercel/Edge; instantly purged on-demand when admin updates (/api/revalidate)
-export const revalidate = 86400;
+// ISR: cached for 5m on Vercel/Edge; instantly purged on-demand when admin updates (/api/revalidate)
+export const revalidate = 300;
 export const dynamicParams = true;
 
 const KNOWN_STATIC_ROOM_SLUGS = [
   'family-mini-suite-ac',
-  'vashista-residency-bhadrachalam',
 ];
 
 /**
@@ -19,7 +18,7 @@ const KNOWN_STATIC_ROOM_SLUGS = [
 export async function generateStaticParams() {
   try {
     const res = await apiFetch('/api/v1/rooms?size=200&page=1', {
-      next: { revalidate: 86400, tags: ['rooms'] }
+      next: { revalidate: 300, tags: ['rooms', 'stays'] }
     });
     if (!res.ok) return KNOWN_STATIC_ROOM_SLUGS.map((slug) => ({ slug }));
     const data = await res.json();
@@ -39,6 +38,7 @@ type RoomDetail = {
   id: number;
   slug: string;
   lodge_name: string;
+  public_title?: string | null;
   description?: string | null;
   address?: string | null;
   cover_image_url?: string | null;
@@ -64,7 +64,7 @@ type RoomDetail = {
 const fetchRoomDetail = cache(async (slug: string): Promise<RoomDetail | null> => {
   try {
     const res = await apiFetch(`/api/v1/rooms/${slug}`, {
-      next: { revalidate: 86400, tags: ['rooms', `room:${slug}`] }
+      next: { revalidate: 300, tags: ['rooms', 'stays', `room:${slug}`, `stay:${slug}`] }
     });
     if (!res.ok) {
       if (res.status === 404) return null;
@@ -100,24 +100,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       },
     };
   }
-  const description = room.meta_description || room.description?.replace(/<[^>]+>/g, '').slice(0, 160) || `${room.lodge_name} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
+  const roomDisplayTitle = room.public_title || room.lodge_name;
+  const description = room.meta_description || room.description?.replace(/<[^>]+>/g, '').slice(0, 160) || `${roomDisplayTitle} stay booking in Bhadrachalam with modern amenities, policies, and verified tourism lodging support.`;
 
   const image = room.og_image_url || room.cover_image_url;
   const absImage = image ? (image.startsWith('http') ? image : `https://www.tstelanganatourism.com${image}`) : undefined;
 
   return {
-    title: room.meta_title || `${room.lodge_name} | Premium Riverside Stay`,
+    title: room.meta_title || `${roomDisplayTitle} | Premium Riverside Stay`,
     description,
     alternates: { canonical: room.canonical_url || `/stays/${room.slug}` },
     openGraph: {
-      title: room.meta_title || room.lodge_name,
+      title: room.meta_title || roomDisplayTitle,
       description,
       images: absImage ? [{ url: absImage }] : [],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: room.meta_title || room.lodge_name,
+      title: room.meta_title || roomDisplayTitle,
       description,
       images: absImage ? [absImage] : [],
     },
@@ -129,6 +130,7 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
   const room = await fetchRoomDetail(slug);
   if (!room) notFound();
 
+  const roomDisplayTitle = room.public_title || room.lodge_name;
   const gallery = room.gallery || [];
   const heroImage = room.cover_image_url || gallery.find((image) => image?.is_cover)?.image_url || gallery[0]?.image_url;
   const variants = room.variants || [];
@@ -147,7 +149,7 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
     {
       '@context': 'https://schema.org',
       '@type': 'Hotel',
-      name: room.lodge_name,
+      name: roomDisplayTitle,
       description: room.description,
       image: absoluteHeroImage,
       url: absoluteCanonical,
@@ -155,7 +157,7 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
       priceRange: price > 0 ? `₹${price}+` : undefined,
       address: {
         '@type': 'PostalAddress',
-        streetAddress: room.address || '',
+        streetAddress: room.address || 'Godavari Riverfront Region, Bhadrachalam',
         addressLocality: 'Bhadrachalam',
         addressRegion: 'Telangana',
         addressCountry: 'IN',
@@ -179,7 +181,7 @@ export default async function RoomDetailPage({ params }: { params: Promise<{ slu
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
         { '@type': 'ListItem', position: 2, name: 'Stays', item: `${SITE_ORIGIN}/stays` },
-        { '@type': 'ListItem', position: 3, name: room.lodge_name, item: absoluteCanonical },
+        { '@type': 'ListItem', position: 3, name: roomDisplayTitle, item: absoluteCanonical },
       ],
     },
   ];

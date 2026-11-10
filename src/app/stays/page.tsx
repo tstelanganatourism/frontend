@@ -2,6 +2,8 @@ import RoomsList from '../rooms/RoomsList';
 import RoomCategoriesGrid from './RoomCategoriesGrid';
 import { apiFetch } from '@/lib/api';
 
+export const revalidate = 60;
+
 export const metadata = {
   title: "Bamboo Huts & Stays | Bhadrachalam & Kolluru — TS Boat Tourism",
   description: "Book Godavari riverside bamboo huts, forest resorts, and comfortable hotel rooms in Bhadrachalam and Kolluru. Instant online booking.",
@@ -12,7 +14,7 @@ export const metadata = {
 async function fetchRoomCategories() {
   try {
     const res = await apiFetch('/api/v1/rooms/categories', {
-      next: { revalidate: 43200, tags: ['categories', 'room-categories'] },
+      next: { revalidate: 60, tags: ['categories', 'room-categories'] },
     });
     if (!res.ok) return [];
     return await res.json();
@@ -44,7 +46,7 @@ async function fetchInitialRooms(searchParams: Record<string, string | string[] 
 
   try {
     const query = params.toString();
-    const res = await apiFetch(`/api/v1/rooms${query ? `?${query}` : ''}`, { next: { revalidate: 43200, tags: ['stays'] } }); // 12h
+    const res = await apiFetch(`/api/v1/rooms${query ? `?${query}` : ''}`, { next: { revalidate: 60, tags: ['rooms', 'stays'] } }); // 60s ISR + on-demand revalidation
     if (!res.ok) return { query, data: undefined };
     return { query, data: await res.json() };
   } catch {

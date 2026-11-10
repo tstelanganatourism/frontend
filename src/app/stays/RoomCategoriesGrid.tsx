@@ -61,6 +61,7 @@ type RoomItem = {
   id: number;
   slug: string;
   lodge_name: string;
+  public_title?: string | null;
   address?: string | null;
   starting_price?: number | string | null;
   cover_image_url?: string | null;
@@ -97,7 +98,7 @@ function InfiniteMarqueeStays({ categories, rooms = [] }: { categories: RoomCate
   const roomItems: StayMarqueeItem[] = rooms.map((r) => ({
     id: `room-${r.slug}`,
     type: 'room',
-    name: r.lodge_name,
+    name: r.public_title || r.lodge_name,
     badge: 'Bamboo Hut / Stay',
     badgeClass: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/40',
     dotClass: 'bg-emerald-400 shadow-[0_0_6px_1px_rgba(52,211,153,0.7)]',

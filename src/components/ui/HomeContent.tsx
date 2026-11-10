@@ -50,9 +50,9 @@ const FALLBACK_PACKAGES: FeaturedPackage[] = [
 ];
 
 const FALLBACK_ROOMS: RoomItem[] = [
-  { id: 1, slug: 'bhadrachalam-riverside-lodge', lodge_name: 'Bhadrachalam Temple View Lodge', cover_image_url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A8805.webp', is_featured: true, starting_price: 1800, starting_weekend_price: 2200, address: 'Near Temple Road, Bhadrachalam', facilities: ['A/C', 'Wi-Fi', 'Hot Water', 'Room Service'] },
-  { id: 2, slug: 'kolluru-river-huts', lodge_name: 'Kolluru Bamboo River Huts', cover_image_url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A8471.webp', is_featured: true, starting_price: 2500, starting_weekend_price: 3000, address: 'Kolluru Sandbanks, Papikondalu', facilities: ['Meals Included', 'River View', 'Hot Water'] },
-  { id: 3, slug: 'rajahmundry-deluxe-stay', lodge_name: 'Godavari View Deluxe Stay', cover_image_url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A8485.webp', is_featured: true, starting_price: 1500, starting_weekend_price: 1800, address: 'Rajahmundry Pushkar Ghat Road', facilities: ['A/C', 'Car Parking', 'Wi-Fi'] },
+  { id: 1, slug: 'bhadrachalam-deluxe-room', lodge_name: 'Bhadrachalam Deluxe A/C Room', public_title: 'Bhadrachalam Deluxe A/C Room', cover_image_url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A8805.webp', is_featured: true, starting_price: 1800, starting_weekend_price: 2200, address: 'Bhadrachalam, Telangana', facilities: ['A/C', 'Wi-Fi', 'Hot Water', 'Room Service'] },
+  { id: 2, slug: 'kolluru-river-huts', lodge_name: 'Kolluru Bamboo River Huts', public_title: 'Kolluru Bamboo River Huts', cover_image_url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A8471.webp', is_featured: true, starting_price: 2500, starting_weekend_price: 3000, address: 'Kolluru, Papikondalu Region', facilities: ['Meals Included', 'River View', 'Hot Water'] },
+  { id: 3, slug: 'rajahmundry-deluxe-stay', lodge_name: 'Godavari View Deluxe Stay', public_title: 'Godavari View Deluxe Stay', cover_image_url: 'https://media.tstelanganatourism.com/gallery/photos/2T9A8485.webp', is_featured: true, starting_price: 1500, starting_weekend_price: 1800, address: 'Rajahmundry, Godavari Region', facilities: ['A/C', 'Car Parking', 'Wi-Fi'] },
 ];
 
 // ─── Item Row (hero scroll card) ───────────────────────────────────────────

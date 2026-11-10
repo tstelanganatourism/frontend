@@ -499,7 +499,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const roomOptions = roomsList.flatMap(room =>
     (room.variants || []).map((v: any) => ({
       value: String(v.id),
-      label: `${room.status !== 'PUBLISHED' ? `[${room.status}] ` : ''}${room.lodge_name || room.title} — ${v.variant_name || v.title}`,
+      label: `${room.status !== 'PUBLISHED' ? `[${room.status}] ` : ''}${room.public_title ? `${room.public_title}${room.public_title !== room.lodge_name ? ` (${room.lodge_name})` : ''}` : (room.lodge_name || room.title)} — ${v.variant_name || v.title}`,
       weekday_price: v.weekday_price,
       weekend_price: v.weekend_price,
       capacity_per_room: v.capacity_per_room

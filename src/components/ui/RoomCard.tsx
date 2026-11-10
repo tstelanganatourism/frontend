@@ -26,6 +26,7 @@ interface RoomProps {
     id: number;
     slug: string;
     lodge_name: string;
+    public_title?: string | null;
     cover_image_url: string | null;
     is_featured: boolean;
     starting_price: number | null | string;
@@ -60,34 +61,13 @@ function getFacilityIcon(name: string): React.ElementType {
   return FACILITY_ICON_MAP[key] || CheckCircle2;
 }
 
-function getStayDisplayTitle(room: { lodge_name: string; slug?: string }) {
-  const name = (room.lodge_name || '').trim();
-  const lowerName = name.toLowerCase();
-  const isVendorName = lowerName.includes('hotel') || lowerName.includes('residency') || lowerName.includes('resort') || lowerName.includes('punnami') || lowerName.includes('lodge');
-  
-  if (!isVendorName && name.length > 0) {
-    return name;
+function getStayDisplayTitle(room: { lodge_name: string; public_title?: string | null; slug?: string }) {
+  const explicitTitle = (room.public_title || '').trim();
+  if (explicitTitle.length > 0) {
+    return explicitTitle;
   }
-
-  const slug = (room.slug || '').toLowerCase();
-  if (slug.includes('godavari-haritha-resort')) return 'Standard A/C Room';
-  if (slug.includes('vashista-residency')) return 'Deluxe & Family Suite A/C';
-  if (slug.includes('hotel-anand-regency')) return '2-Bed & 4-Bed A/C Deluxe Room';
-  if (slug.includes('family-mini-suite')) return 'Family Mini Suite A/C';
-
-  if (slug.includes('suite') || slug.includes('deluxe') || slug.includes('bed') || slug.includes('hut') || slug.includes('room') || slug.includes('cottage')) {
-    const parts = slug.split('-');
-    const clean = parts.map(p => {
-      const lower = p.toLowerCase();
-      if (lower === 'ac') return 'A/C';
-      if (lower === 'nonac') return 'Non-A/C';
-      if (/^\d+$/.test(p)) return '';
-      return p.charAt(0).toUpperCase() + p.slice(1);
-    }).filter(Boolean);
-    if (clean.length > 0) return clean.join(' ');
-  }
-
-  return name || 'Luxury Room & Suite';
+  const fallbackName = (room.lodge_name || '').trim();
+  return fallbackName || 'Luxury Room & Suite';
 }
 
 function RoomCard({ room, variant = 'list', priority = false, href: hrefOverride }: RoomProps) {

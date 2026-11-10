@@ -79,6 +79,7 @@ export type RoomDetailViewModel = {
   id: number;
   slug: string;
   lodge_name: string;
+  public_title?: string | null;
   description?: string | null;
   address?: string | null;
   cover_image_url?: string | null;
@@ -1109,14 +1110,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
     }
   }, [price, roomsCount, stayDetails.totalPrice, room.id]);
 
+  const displayTitle = room.public_title || room.lodge_name;
   const totalPrice = prices.rawSubtotal;
   const nights = stayDetails.nightsCount;
   const activeImage = slides[activeSlide] || slides[0];
   const facilities = room.facilities.filter(Boolean);
   const selectedSlot = slots[selectedSlotIndex] || slots[0];
-  const embedUrl = getMapEmbedUrl(room.map_url, room.address, room.lodge_name);
+  const embedUrl = getMapEmbedUrl(room.map_url, room.address, displayTitle);
   const bookingText = encodeURIComponent(
-    `Hi, I want to reserve ${room.lodge_name}${selectedVariant ? ` - ${selectedVariant.variant_name}` : ''}. Rooms: ${roomsCount}, Guests: ${guests}. Dates: ${arrivalDate || 'not selected'} to ${departureDate || 'not selected'}. Timing Slot: ${selectedSlot ? `${selectedSlot.title} (${cleanTime(selectedSlot.slot_start)} to ${cleanTime(selectedSlot.slot_end)})` : 'Standard'}.`
+    `Hi, I want to reserve ${displayTitle}${selectedVariant ? ` - ${selectedVariant.variant_name}` : ''}. Rooms: ${roomsCount}, Guests: ${guests}. Dates: ${arrivalDate || 'not selected'} to ${departureDate || 'not selected'}. Timing Slot: ${selectedSlot ? `${selectedSlot.title} (${cleanTime(selectedSlot.slot_start)} to ${cleanTime(selectedSlot.slot_end)})` : 'Standard'}.`
   );
 
   const moveSlide = (direction: 'left' | 'right') => {
@@ -1136,7 +1138,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   return (
     <main className="bg-[#fafaf7] pb-20 text-slate-900 lg:pb-0 w-full max-w-full">
       <RoomHero
-        lodgeName={room.lodge_name}
+        lodgeName={displayTitle}
         coverImage={room.cover_image_url}
         address="Godavari Riverfront Region, Bhadrachalam"
         isFeatured={room.is_featured}
@@ -1667,7 +1669,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               <RoomVideoHero
                 videoUrl={room.video_url}
                 title="Watch the Room"
-                subtitle={`Take a virtual tour of ${room.lodge_name}`}
+                subtitle={`Take a virtual tour of ${displayTitle}`}
               />
             </div>
           )}
@@ -1803,7 +1805,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           </div>
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-[#e5dac5]">From {money(price || room.starting_price)} · Live Fare</p>
-            <p className="text-xs font-black">{room.lodge_name}</p>
+            <p className="text-xs font-black">{displayTitle}</p>
           </div>
           <button
             type="button"
@@ -1869,7 +1871,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                 <h2 className="text-base sm:text-lg font-black text-white leading-tight">
                   Configure Stay Reservation
                 </h2>
-                <p className="text-[10px] font-bold text-white/70 truncate max-w-[280px]">{room.lodge_name}</p>
+                <p className="text-[10px] font-bold text-white/70 truncate max-w-[280px]">{displayTitle}</p>
               </div>
               <button
                 type="button"
@@ -2394,7 +2396,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               </button>
             ) : null}
             <div className="relative h-full w-full max-w-6xl">
-              <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || room.lodge_name} fill sizes="(max-width: 1024px) 100vw, 1200px" className="object-contain" quality={85} />
+              <Image src={getHdImageUrl(activeImage?.image_url || fallbackImage)} alt={activeImage?.alt_text || displayTitle} fill sizes="(max-width: 1024px) 100vw, 1200px" className="object-contain" quality={85} />
             </div>
             {slides.length > 1 ? (
               <button onClick={() => moveSlide('right')} className="absolute right-2 z-10 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 md:right-8" aria-label="Next photo">

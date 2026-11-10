@@ -23,11 +23,15 @@ import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/stores/authStore';
+import { revalidateStorefront } from '@/stores/adminStore';
 
 type CategoryRoom = {
   id: number;
   lodge_name: string;
+  public_title?: string | null;
   slug: string;
+  status?: string;
+  is_active?: boolean;
   starting_price: number | null;
   cover_image_url: string | null;
 };
@@ -47,7 +51,10 @@ type RoomCategory = {
 type AllRoomItem = {
   id: number;
   lodge_name: string;
+  public_title?: string | null;
   slug: string;
+  status?: string;
+  is_active?: boolean;
   cover_image_url: string | null;
 };
 
@@ -148,6 +155,13 @@ export default function AdminRoomCategoriesPage() {
     }
   };
 
+  const revalidateCategoryPages = (slug?: string) => {
+    revalidateStorefront(
+      ['/', '/stays', '/rooms', ...(slug ? [`/stays/categories/${slug}`] : [])],
+      ['categories', 'room-categories', 'rooms', 'stays', ...(slug ? [`room-category:${slug}`] : [])]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
@@ -158,9 +172,11 @@ export default function AdminRoomCategoriesPage() {
       setIsSubmitting(true);
       if (editingCategory) {
         await apiClient.patch(`/api/v1/admin/rooms/categories/${editingCategory.id}`, formData);
+        revalidateCategoryPages(editingCategory.slug);
         toast.success(`Room category "${formData.name}" updated`);
       } else {
-        await apiClient.post('/api/v1/admin/rooms/categories', formData);
+        const res = await apiClient.post('/api/v1/admin/rooms/categories', formData);
+        revalidateCategoryPages(res.data?.slug);
         toast.success(`Room category "${formData.name}" created`);
       }
       setIsModalOpen(false);
@@ -175,7 +191,9 @@ export default function AdminRoomCategoriesPage() {
   const handleDelete = async () => {
     if (!deletingCatId) return;
     try {
+      const catObj = categories.find(c => c.id === deletingCatId);
       await apiClient.delete(`/api/v1/admin/rooms/categories/${deletingCatId}`);
+      revalidateCategoryPages(catObj?.slug);
       toast.success('Room category deleted');
       setDeletingCatId(null);
       fetchData();
@@ -186,7 +204,9 @@ export default function AdminRoomCategoriesPage() {
 
   const handleRemoveRoom = async (catId: number, roomId: number) => {
     try {
+      const catObj = categories.find(c => c.id === catId);
       await apiClient.delete(`/api/v1/admin/rooms/categories/${catId}/rooms/${roomId}`);
+      revalidateCategoryPages(catObj?.slug);
       toast.success('Stay removed from category');
       fetchData();
       if (assigningCat && assigningCat.id === catId) {
@@ -208,6 +228,7 @@ export default function AdminRoomCategoriesPage() {
       await apiClient.post(`/api/v1/admin/rooms/categories/${assigningCat.id}/rooms`, {
         room_ids: selectedRoomIds,
       });
+      revalidateCategoryPages(assigningCat.slug);
       toast.success(`Added ${selectedRoomIds.length} stay(s) to "${assigningCat.name}"`);
       setSelectedRoomIds([]);
       fetchData();
@@ -326,11 +347,25 @@ export default function AdminRoomCategoriesPage() {
                       <span className="text-xs text-slate-400 italic block py-1">No stays assigned yet</span>
                     ) : (
                       cat.rooms.slice(0, 4).map((r) => (
-                        <div key={r.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
-                          <span className="font-semibold truncate max-w-[200px]">{r.lodge_name}</span>
+                        <div key={r.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 gap-2">
+                          <div className="min-w-0 flex-1">
+                            <span className="font-semibold truncate block">
+                              {r.public_title || r.lodge_name}
+                            </span>
+                            {r.public_title && r.public_title !== r.lodge_name && (
+                              <span className="text-[10px] text-amber-700 truncate block">
+                                Hotel: {r.lodge_name}
+                              </span>
+                            )}
+                          </div>
+                          {(r.status && r.status !== 'PUBLISHED') || r.is_active === false ? (
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
+                              {r.status !== 'PUBLISHED' ? r.status : 'Closed'}
+                            </span>
+                          ) : null}
                           <button
                             onClick={() => handleRemoveRoom(cat.id, r.id)}
-                            className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer"
+                            className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer shrink-0"
                             title="Remove stay from category"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -560,10 +595,15 @@ export default function AdminRoomCategoriesPage() {
                   <div className="space-y-2">
                     {assigningCat.rooms.map((r) => (
                       <div key={r.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/60">
-                        <span className="font-semibold text-sm text-slate-800">{r.lodge_name}</span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-sm text-slate-800 block">{r.public_title || r.lodge_name}</span>
+                          {r.public_title && r.public_title !== r.lodge_name && (
+                            <span className="text-[11px] font-medium text-amber-700 block">Default Hotel: {r.lodge_name}</span>
+                          )}
+                        </div>
                         <button
                           onClick={() => handleRemoveRoom(assigningCat.id, r.id)}
-                          className="flex items-center gap-1 text-xs font-bold text-rose-600 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                          className="flex items-center gap-1 text-xs font-bold text-rose-600 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
                         >
                           <X className="w-3.5 h-3.5" /> Remove
                         </button>
@@ -595,7 +635,7 @@ export default function AdminRoomCategoriesPage() {
                 <div className="max-h-48 overflow-y-auto space-y-1.5 border border-slate-200 rounded-xl p-2 bg-slate-50/50">
                   {allRooms
                     .filter((r) => !assigningCat.rooms.some((ar) => ar.id === r.id))
-                    .filter((r) => r.lodge_name.toLowerCase().includes(searchRoomQuery.toLowerCase()))
+                    .filter((r) => `${r.public_title || ''} ${r.lodge_name}`.toLowerCase().includes(searchRoomQuery.toLowerCase()))
                     .map((room) => {
                       const isChecked = selectedRoomIds.includes(room.id);
                       return (
@@ -607,7 +647,12 @@ export default function AdminRoomCategoriesPage() {
                               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
                           }`}
                         >
-                          <span>{room.lodge_name}</span>
+                          <span className="min-w-0 pr-2">
+                            <span className="block">{room.public_title || room.lodge_name}</span>
+                            {room.public_title && room.public_title !== room.lodge_name && (
+                              <span className="text-[10px] font-medium text-amber-700 block">Default Hotel: {room.lodge_name}</span>
+                            )}
+                          </span>
                           <input
                             type="checkbox"
                             checked={isChecked}

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 interface RoomItem {
   id: number;
   lodge_name: string;
+  public_title?: string | null;
   slug: string;
   order_priority: number;
   is_featured: boolean;
@@ -251,7 +252,7 @@ export default function ReorderRoomsModal({
                   <div className="h-12 w-16 sm:h-14 sm:w-20 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
                     <img
                       src={room.cover_image_url || 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp'}
-                      alt={room.lodge_name}
+                      alt={room.public_title || room.lodge_name}
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =
@@ -263,10 +264,12 @@ export default function ReorderRoomsModal({
                   {/* Title & Info */}
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-sm sm:text-base text-slate-900 truncate">
-                      {room.lodge_name}
+                      {room.public_title || room.lodge_name}
                     </h4>
                     <p className="text-xs text-slate-400 truncate mt-0.5">
-                      {room.address || room.slug}
+                      {room.public_title && room.public_title !== room.lodge_name
+                        ? `Hotel: ${room.lodge_name}`
+                        : (room.address || room.slug)}
                     </p>
                   </div>
 

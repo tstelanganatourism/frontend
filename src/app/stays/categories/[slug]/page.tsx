@@ -3,13 +3,13 @@ import RoomsList from '../../../rooms/RoomsList';
 import { apiFetch } from '@/lib/api';
 import { Metadata } from 'next';
 
-export const revalidate = 43200;
+export const revalidate = 60;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
   try {
     const res = await apiFetch('/api/v1/rooms/categories', {
-      next: { revalidate: 43200, tags: ['categories'] }
+      next: { revalidate: 60, tags: ['categories', 'room-categories'] }
     });
     if (!res.ok) return [];
     const categories = await res.json();
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
     const res = await apiFetch(`/api/v1/rooms/categories/${slug}`, {
-      next: { revalidate: 43200, tags: ['categories', `room-category:${slug}`] }
+      next: { revalidate: 60, tags: ['categories', 'room-categories', 'rooms', 'stays', `room-category:${slug}`] }
     });
     if (!res.ok) {
       return {
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function fetchRoomCategoryData(slug: string) {
   try {
     const res = await apiFetch(`/api/v1/rooms/categories/${slug}`, {
-      next: { revalidate: 43200, tags: ['categories', `room-category:${slug}`] }
+      next: { revalidate: 60, tags: ['categories', 'room-categories', 'rooms', 'stays', `room-category:${slug}`] }
     });
     if (!res.ok) {
       if (res.status === 404) return null;
