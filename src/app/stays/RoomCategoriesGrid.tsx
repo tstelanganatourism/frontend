@@ -175,7 +175,42 @@ function InfiniteMarqueeStays({ categories, rooms = [] }: { categories: RoomCate
   );
 }
 
-export default function RoomCategoriesGrid({ categories, rooms = [] }: { categories: RoomCategory[]; rooms?: RoomItem[] }) {
+export default function RoomCategoriesGrid({ categories: initialCategories, rooms: initialRooms = [] }: { categories: RoomCategory[]; rooms?: RoomItem[] }) {
+  const [categories, setCategories] = React.useState<RoomCategory[]>(initialCategories || []);
+  const [rooms, setRooms] = React.useState<RoomItem[]>(initialRooms || []);
+
+  React.useEffect(() => {
+    setCategories(initialCategories || []);
+  }, [initialCategories]);
+
+  React.useEffect(() => {
+    setRooms(initialRooms || []);
+  }, [initialRooms]);
+
+  React.useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [catsRes, roomsRes] = await Promise.all([
+          fetch('/api/v1/rooms/categories', { cache: 'no-store' }),
+          fetch('/api/v1/rooms?size=100', { cache: 'no-store' }),
+        ]);
+        if (!active) return;
+        if (catsRes.ok) {
+          const catsJson = await catsRes.json();
+          if (Array.isArray(catsJson)) setCategories(catsJson);
+        }
+        if (roomsRes.ok) {
+          const roomsJson = await roomsRes.json();
+          if (Array.isArray(roomsJson?.items)) setRooms(roomsJson.items);
+        }
+      } catch {
+        // Keep initial SSR categories/rooms if background sync fails
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   if (!categories || categories.length === 0) return null;
 
   return (

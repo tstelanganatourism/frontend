@@ -123,6 +123,62 @@ export default function HomeContent({ heroItems, featuredPackages, rooms, allPac
   const isTelugu = language === 'te';
   const tc = isTelugu ? 'font-telugu' : '';
 
+  const [liveRooms, setLiveRooms] = React.useState<RoomItem[] | null>(rooms);
+  const [liveHeroItems, setLiveHeroItems] = React.useState<HeroItem[]>(heroItems);
+
+  React.useEffect(() => {
+    setLiveRooms(rooms);
+  }, [rooms]);
+
+  React.useEffect(() => {
+    setLiveHeroItems(heroItems);
+  }, [heroItems]);
+
+  React.useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [featRes, allRes] = await Promise.all([
+          fetch('/api/v1/rooms?is_featured=true&size=3', { cache: 'no-store' }),
+          fetch('/api/v1/rooms?size=8', { cache: 'no-store' }),
+        ]);
+        if (!active) return;
+        if (featRes.ok) {
+          const featJson = await featRes.json();
+          if (Array.isArray(featJson?.items)) {
+            setLiveRooms(featJson.items);
+          }
+        }
+        if (allRes.ok) {
+          const allJson = await allRes.json();
+          if (Array.isArray(allJson?.items)) {
+            const roomHeroList: HeroItem[] = allJson.items.slice(0, 3).map((room: RoomItem) => ({
+              title: room.public_title || room.lodge_name,
+              desc: room.address || 'Bhadrachalam, Telangana',
+              href: `/stays/${room.slug}`,
+              image: room.cover_image_url || 'https://media.tstelanganatourism.com/gallery/photos/2T9A7843.webp',
+              meta: 'River Stay',
+              itemType: 'room' as const,
+            }));
+            setLiveHeroItems((prev) => {
+              const pkgOnly = prev.filter((item) => item.itemType !== 'room');
+              const combined: HeroItem[] = [];
+              const maxLen = Math.max(pkgOnly.length, roomHeroList.length);
+              for (let i = 0; i < maxLen; i++) {
+                if (i < pkgOnly.length) combined.push(pkgOnly[i]);
+                if (i < roomHeroList.length) combined.push(roomHeroList[i]);
+              }
+              return combined;
+            });
+          }
+        }
+      } catch {
+        // Ignore network errors and preserve SSR items
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   const trustLabels = [
     t.trust.yearsOfService,
     t.trust.happyTravellers,
@@ -133,7 +189,7 @@ export default function HomeContent({ heroItems, featuredPackages, rooms, allPac
   const displayPkgs = featuredPackages && featuredPackages.length > 0
     ? featuredPackages.slice(0, 3)
     : null;
-  const displayRooms = rooms && rooms.length > 0 ? rooms.slice(0, 3) : FALLBACK_ROOMS;
+  const displayRooms = liveRooms && liveRooms.length > 0 ? liveRooms.slice(0, 3) : FALLBACK_ROOMS;
 
   const experienceItems = [
     { title: t.experience.boat.title, desc: t.experience.boat.desc, image: EXPERIENCE_IMAGES[0], points: t.experience.boat.points },
@@ -141,7 +197,7 @@ export default function HomeContent({ heroItems, featuredPackages, rooms, allPac
   ];
 
   // Duplicate the hero items for seamless infinite scroll
-  const scrollItems = heroItems.length > 0 ? heroItems : [];
+  const scrollItems = liveHeroItems.length > 0 ? liveHeroItems : [];
   const animDuration = `${Math.max(scrollItems.length * 5, 20)}s`;
 
   return (
@@ -472,7 +528,7 @@ export default function HomeContent({ heroItems, featuredPackages, rooms, allPac
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-3">
                 {displayRooms.map((room, index) => {
-                  const isLiveFetch = rooms && rooms.length > 0;
+                  const isLiveFetch = liveRooms && liveRooms.length > 0;
                   return (
                     <RoomCard
                       key={room.id}

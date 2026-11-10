@@ -44,7 +44,23 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const noCacheHtmlHeaders = [
+      { key: 'Cache-Control', value: 'private, no-cache, no-store, max-age=0, must-revalidate' },
+      { key: 'CDN-Cache-Control', value: 'no-store' },
+      { key: 'Cloudflare-CDN-Cache-Control', value: 'no-store' },
+      { key: 'Surrogate-Control', value: 'no-store' },
+    ];
     const headersList = [
+      // Prevent CDN / Cloudflare from caching dynamic storefront HTML or API JSON across deployments
+      { source: '/', headers: noCacheHtmlHeaders },
+      { source: '/stays', headers: noCacheHtmlHeaders },
+      { source: '/stays/:path*', headers: noCacheHtmlHeaders },
+      { source: '/rooms', headers: noCacheHtmlHeaders },
+      { source: '/rooms/:path*', headers: noCacheHtmlHeaders },
+      { source: '/packages', headers: noCacheHtmlHeaders },
+      { source: '/packages/:path*', headers: noCacheHtmlHeaders },
+      { source: '/boat-rides', headers: noCacheHtmlHeaders },
+      { source: '/sightseeing', headers: noCacheHtmlHeaders },
       // Security headers for all routes
       {
         source: '/(.*)',

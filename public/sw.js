@@ -7,11 +7,11 @@
 //   Cross-origin     →  Network-Only (CDN images/videos bypass)
 // ──────────────────────────────────────────────────────────────────────────────
 
-const STATIC_CACHE = 'ts-static-v6';
-const SHELL_CACHE = 'ts-shell-v6';
+const STATIC_CACHE = 'ts-static-v7';
+const SHELL_CACHE = 'ts-shell-v7';
 
-// HTML pages to pre-cache on install for offline capability
-const SHELL_URLS = ['/', '/contact'];
+// Keep only static offline contact shell; never pre-cache dynamic `/` HTML with hashed CSS links
+const SHELL_URLS = ['/contact'];
 
 // ─── Install: pre-cache shell pages ──────────────────────────────────────────
 self.addEventListener('install', (event) => {
