@@ -1,14 +1,16 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Sheet, SheetContent, SheetDescription, 
-  SheetHeader, SheetTitle, SheetTrigger 
+  SheetHeader, SheetTitle
 } from '@/components/ui/sheet';
 import { BookingSidebarV3 } from './BookingSidebarV3';
 import { Sparkles } from 'lucide-react';
 import { useInventoryStore } from '@/stores/inventoryStore';
 import { useAuthStore } from '@/stores/authStore';
+import { ensureAuthenticatedForBooking } from '@/lib/bookingAuthGate';
 import { API_BASE } from '@/lib/api';
 import { downloadFileViaFetch } from '@/lib/downloadUtils';
 
@@ -86,8 +88,9 @@ export const MobileBookingSheet = ({
   advancePaymentValue = 0,
   extras = [],
 }: MobileBookingSheetProps) => {
+  const router = useRouter();
   const { publicAvailability, publicLoading } = useInventoryStore();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, isHydrated } = useAuthStore();
   const isPackageInactive = !publicLoading && (!publicAvailability || !isActive);
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
@@ -106,11 +109,24 @@ export const MobileBookingSheet = ({
 
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('restore_checkout=true')) {
-      setSheetOpen(true);
+  const handleOpenSheet = () => {
+    if (!ensureAuthenticatedForBooking({ router })) {
+      return;
     }
-  }, []);
+    setSheetOpen(true);
+  };
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !isHydrated) return;
+    const hasIntent = window.location.search.includes('restore_checkout=true') || window.location.search.includes('open_booking=true');
+    if (hasIntent) {
+      if (!isAuthenticated) {
+        ensureAuthenticatedForBooking({ router });
+      } else {
+        setSheetOpen(true);
+      }
+    }
+  }, [isHydrated, isAuthenticated, router]);
 
   return (
     <div className="fixed inset-x-0 bottom-16 z-50 border-t border-slate-200 bg-white/95 p-3 shadow-md backdrop-blur lg:hidden">
@@ -161,14 +177,13 @@ export const MobileBookingSheet = ({
           </button>
         ) : (
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-[#0d6e75] px-6 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:bg-[#0b5c62] active:scale-95"
-              >
-                Book Now
-              </button>
-            </SheetTrigger>
+            <button
+              type="button"
+              onClick={handleOpenSheet}
+              className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-[#0d6e75] px-6 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:bg-[#0b5c62] active:scale-95"
+            >
+              Book Now
+            </button>
             <SheetContent side="bottom" className="!h-[92dvh] flex flex-col rounded-t-[20px] border-t border-slate-200 bg-white px-0 pb-0 pt-6 overflow-hidden" showCloseButton>
               <SheetHeader className="mb-4 text-left shrink-0 px-4">
                 <SheetTitle className="text-lg font-black text-[#0d6e75] flex items-center gap-1.5">

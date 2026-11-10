@@ -239,7 +239,7 @@ function LoginContent() {
                 <h1 className="text-2xl font-black text-slate-900 mb-1">Welcome back</h1>
                 <p className="text-sm text-slate-500 mb-6">Sign in with your mobile number — no password needed.</p>
 
-                {redirect?.includes('restore_checkout') && (
+                {(redirect?.includes('restore_checkout') || redirect?.includes('restore_pkg_checkout')) ? (
                   <div className="mb-6 p-3.5 bg-emerald-50 border border-emerald-200/90 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-800 shadow-sm animate-in fade-in duration-300">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
@@ -249,7 +249,17 @@ function LoginContent() {
                       </p>
                     </div>
                   </div>
-                )}
+                ) : redirect?.includes('open_booking') ? (
+                  <div className="mb-6 p-3.5 bg-[#1a6b7a]/8 border border-[#1a6b7a]/25 rounded-2xl flex items-start gap-2.5 text-xs text-[#0f3d56] shadow-sm animate-in fade-in duration-300">
+                    <CheckCircle2 className="h-4 w-4 text-[#1a6b7a] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-[#0f3d56]">Sign in to book your tickets</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                        Verify your mobile number via OTP to continue. You will return right back to the booking screen.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
 
                 <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
                   <div>

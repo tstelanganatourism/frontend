@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { BookingSidebarV3, PackageTransportOption } from './BookingSidebarV3';
+import { useAuthStore } from '@/stores/authStore';
+import { BOOKING_AUTH_STORAGE_KEYS, ensureAuthenticatedForBooking } from '@/lib/bookingAuthGate';
 import { ArrowRight, Sparkles, ShieldCheck, Ticket, X, Phone, MessageCircle } from 'lucide-react';
 
 interface PackageVariant {
@@ -47,9 +50,28 @@ interface BookingDialogV3Props {
 }
 
 export const BookingDialogV3 = (props: BookingDialogV3Props) => {
+  const router = useRouter();
+  const { isAuthenticated, isHydrated } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(props.variants[0]?.id ?? null);
+
+  const openBookingOrLogin = useCallback((variantIdOverride?: number | null) => {
+    const chosenVariantId = variantIdOverride ?? selectedVariantId;
+    if (variantIdOverride) {
+      setSelectedVariantId(variantIdOverride);
+    }
+    if (
+      !ensureAuthenticatedForBooking({
+        router,
+        storageKey: BOOKING_AUTH_STORAGE_KEYS.packageVariantId,
+        variantId: chosenVariantId,
+      })
+    ) {
+      return;
+    }
+    setIsOpen(true);
+  }, [router, selectedVariantId]);
 
   useEffect(() => {
     // Reveal immediately upon page load with cinematic entrance and settle animation
@@ -59,17 +81,63 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Re-open automatically after returning from /login (or gate direct ?open_booking=true visits)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isHydrated) return;
+
+    const url = new URL(window.location.href);
+    const hasBookingIntent =
+      url.searchParams.has('open_booking') ||
+      url.searchParams.has('restore_pkg_checkout') ||
+      url.searchParams.has('restore_checkout');
+
+    if (!isAuthenticated) {
+      if (isOpen || hasBookingIntent) {
+        setIsOpen(false);
+        ensureAuthenticatedForBooking({
+          router,
+          storageKey: BOOKING_AUTH_STORAGE_KEYS.packageVariantId,
+          variantId: selectedVariantId,
+        });
+      }
+      return;
+    }
+
+    if (hasBookingIntent) {
+      let hasAutoOpenPassenger = false;
+      try {
+        hasAutoOpenPassenger = sessionStorage.getItem('last_pkg_checkout_auto_open') === 'true';
+        const savedVariant = sessionStorage.getItem(BOOKING_AUTH_STORAGE_KEYS.packageVariantId);
+        const parsedVariantId = savedVariant ? Number(savedVariant) : NaN;
+        if (!Number.isNaN(parsedVariantId) && props.variants.some((v) => v.id === parsedVariantId)) {
+          setSelectedVariantId(parsedVariantId);
+        }
+      } catch {}
+
+      let urlChanged = false;
+      if (url.searchParams.has('open_booking')) {
+        url.searchParams.delete('open_booking');
+        urlChanged = true;
+      }
+      if (!hasAutoOpenPassenger && url.searchParams.has('restore_pkg_checkout')) {
+        url.searchParams.delete('restore_pkg_checkout');
+        urlChanged = true;
+      }
+      if (urlChanged) {
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
+      setIsOpen(true);
+    }
+  }, [isHydrated, isAuthenticated, isOpen, router, selectedVariantId, props.variants]);
+
   useEffect(() => {
     const handleOpen = (e: Event) => {
       const customEv = e as CustomEvent<{ variantId?: number }>;
-      if (customEv.detail?.variantId) {
-        setSelectedVariantId(customEv.detail.variantId);
-      }
-      setIsOpen(true);
+      openBookingOrLogin(customEv.detail?.variantId);
     };
     window.addEventListener('open-booking-modal', handleOpen);
     return () => window.removeEventListener('open-booking-modal', handleOpen);
-  }, []);
+  }, [openBookingOrLogin]);
 
   useEffect(() => {
     const handleVariantSelect = (e: Event) => {
@@ -139,7 +207,7 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
         }`}
       >
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => openBookingOrLogin(selectedVariantId)}
           type="button"
           className="group relative overflow-hidden flex items-center gap-3.5 rounded-2xl bg-gradient-to-r from-[#0d6e75] via-[#0b5c62] to-[#07464b] p-3 pr-6 text-white shadow-[0_16px_40px_rgba(13,110,117,0.38)] ring-4 ring-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(13,110,117,0.48)] active:scale-[0.98] btn-glow-pulse"
         >
@@ -204,7 +272,7 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
         </div>
 
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => openBookingOrLogin(selectedVariantId)}
           className="group relative overflow-hidden h-11 flex-1 max-w-[210px] rounded-xl bg-gradient-to-r from-[#0d6e75] via-[#10838c] to-[#0a585e] hover:from-[#0b5c62] hover:to-[#08484d] px-4 text-xs font-black uppercase tracking-wider text-white shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 ml-2 btn-glow-pulse"
         >
           <div className="btn-shimmer-sweep" />

@@ -9,6 +9,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { BOOKING_AUTH_STORAGE_KEYS, ensureAuthenticatedForBooking } from '@/lib/bookingAuthGate';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { apiClient } from '@/lib/api';
 import CheckoutPassengerModal from '@/components/checkout/CheckoutPassengerModal';
@@ -224,7 +225,7 @@ const getMapEmbedUrl = (rawUrl?: string | null, address?: string | null, lodgeNa
 
 export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isHydrated } = useAuthStore();
 
   const isSpecialUser = false;
 
@@ -290,6 +291,23 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
+  const openRoomBookingOrLogin = (variantIdOverride?: number | null) => {
+    const chosenVariantId = variantIdOverride ?? selectedVariantId;
+    if (variantIdOverride) {
+      setSelectedVariantId(variantIdOverride);
+    }
+    if (
+      !ensureAuthenticatedForBooking({
+        router,
+        storageKey: BOOKING_AUTH_STORAGE_KEYS.roomVariantId,
+        variantId: chosenVariantId,
+      })
+    ) {
+      return;
+    }
+    setIsBookingModalOpen(true);
+  };
   const [showFloatingWidget, setShowFloatingWidget] = useState(false);
 
   useEffect(() => {
@@ -329,7 +347,25 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window.location.search.includes('restore_checkout=true') || sessionStorage.getItem('last_checkout_auto_open_modal') === 'true')) {
+    if (typeof window === 'undefined' || !isHydrated) return;
+
+    const url = new URL(window.location.href);
+    const hasOpenIntent = url.searchParams.has('open_booking');
+    const hasRestoreIntent = url.searchParams.has('restore_checkout') || sessionStorage.getItem('last_checkout_auto_open_modal') === 'true';
+
+    if (!isAuthenticated) {
+      if (isBookingModalOpen || hasOpenIntent || hasRestoreIntent) {
+        setIsBookingModalOpen(false);
+        ensureAuthenticatedForBooking({
+          router,
+          storageKey: BOOKING_AUTH_STORAGE_KEYS.roomVariantId,
+          variantId: selectedVariantId,
+        });
+      }
+      return;
+    }
+
+    if (hasRestoreIntent) {
       const savedCustomPay = sessionStorage.getItem('last_checkout_custom_pay');
       const savedGateway = sessionStorage.getItem('last_checkout_gateway');
       const savedVariantId = sessionStorage.getItem('last_checkout_selected_variant_id');
@@ -371,14 +407,25 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
       // Clean up search parameters so refresh doesn't pop it open again
       try {
-        const url = new URL(window.location.href);
         url.searchParams.delete('restore_checkout');
+        url.searchParams.delete('open_booking');
         window.history.replaceState({}, '', url.pathname + url.search);
       } catch (e) {
         console.error("Failed to clean restore_checkout search parameter", e);
       }
+    } else if (hasOpenIntent) {
+      try {
+        const savedVariantId = sessionStorage.getItem(BOOKING_AUTH_STORAGE_KEYS.roomVariantId);
+        const parsedId = savedVariantId ? Number(savedVariantId) : NaN;
+        if (!Number.isNaN(parsedId) && validVariants.some((v) => v.id === parsedId)) {
+          setSelectedVariantId(parsedId);
+        }
+        url.searchParams.delete('open_booking');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      } catch {}
+      setIsBookingModalOpen(true);
     }
-  }, []);
+  }, [isHydrated, isAuthenticated, isBookingModalOpen, router, selectedVariantId, validVariants]);
 
 
   // Coupon state
@@ -753,6 +800,15 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
 
   const handleBookingClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (
+      !ensureAuthenticatedForBooking({
+        router,
+        storageKey: BOOKING_AUTH_STORAGE_KEYS.roomVariantId,
+        variantId: selectedVariantId,
+      })
+    ) {
+      return;
+    }
     if (isLodgeInactive) return;
     if (!arrivalDate || !departureDate) {
       toast.error('Please select both arrival and departure dates first.');
@@ -1306,8 +1362,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedVariantId(variant.id);
-                                setIsBookingModalOpen(true);
+                                openRoomBookingOrLogin(variant.id);
                               }}
                               className={`ml-2 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors shrink-0 ${
                                 active
@@ -1644,7 +1699,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               <button
                 type="button"
                 disabled={isLodgeInactive}
-                onClick={() => setIsBookingModalOpen(true)}
+                onClick={() => openRoomBookingOrLogin()}
                 className="inline-flex items-center gap-2 rounded-full bg-[#0d6e75] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-[#0b5c62] hover:scale-105 active:scale-95 disabled:opacity-50"
               >
                 <span>Reserve Now</span>
@@ -1729,7 +1784,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
               <button
                 type="button"
                 disabled={isLodgeInactive}
-                onClick={() => setIsBookingModalOpen(true)}
+                onClick={() => openRoomBookingOrLogin()}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#0d6e75] py-3 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-[#0b5c62] hover:shadow-lg active:scale-98 disabled:opacity-50"
               >
                 <span>Reserve Stay Now</span>
@@ -1752,7 +1807,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           </div>
           <button
             type="button"
-            onClick={() => setIsBookingModalOpen(true)}
+            onClick={() => openRoomBookingOrLogin()}
             className="ml-2 flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-black text-[#0d6e75] uppercase tracking-wider transition hover:bg-slate-100"
           >
             <span>Book Now</span>
@@ -1782,7 +1837,7 @@ export const RoomDetailExperience = ({ room }: RoomDetailExperienceProps) => {
           ) : (
             <button
               type="button"
-              onClick={() => setIsBookingModalOpen(true)}
+              onClick={() => openRoomBookingOrLogin()}
               className="group relative overflow-hidden flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#0d6e75] via-[#10838c] to-[#0a585e] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-md cursor-pointer active:scale-95"
             >
               <span>Reserve Now</span>

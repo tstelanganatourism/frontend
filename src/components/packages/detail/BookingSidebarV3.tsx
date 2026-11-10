@@ -6,6 +6,7 @@ import { API_BASE } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useInventoryStore, PublicDateAvailability } from '@/stores/inventoryStore';
 import { useRouter } from 'next/navigation';
+import { BOOKING_AUTH_STORAGE_KEYS, ensureAuthenticatedForBooking } from '@/lib/bookingAuthGate';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import BusWarningModal from '@/components/ui/BusWarningModal';
 import { apiClient } from '@/lib/api';
@@ -346,9 +347,11 @@ export const BookingSidebarV3 = ({
       if (savedAdults) setAdults(Number(savedAdults));
       if (savedChildren) setChildren(Number(savedChildren));
 
-      setShowPassengerModal(true);
+      if (savedDate) {
+        setShowPassengerModal(true);
+        toast.success("Welcome back! Your package configuration has been restored.");
+      }
       sessionStorage.removeItem('last_pkg_checkout_auto_open');
-      toast.success("Welcome back! Your package configuration has been restored.");
 
       try {
         const url = new URL(window.location.href);
@@ -1202,6 +1205,15 @@ export const BookingSidebarV3 = ({
   }, [selectedDate, availabilityState.kind, availabilityState.message, isAdmin]);
 
   const handleBookingClick = (e: React.MouseEvent) => {
+    if (
+      !ensureAuthenticatedForBooking({
+        router,
+        storageKey: BOOKING_AUTH_STORAGE_KEYS.packageVariantId,
+        variantId: selectedVariantId,
+      })
+    ) {
+      return;
+    }
     if ((isPackageInactive && !isAdmin) || !isActive) return;
     if (!isAdmin && isSelectedVariantAcBoat) {
       toast.error('A/C Boat bookings are currently closed. Please select Non-A/C Boat to book.');
