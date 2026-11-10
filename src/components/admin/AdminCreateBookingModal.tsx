@@ -94,6 +94,11 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const [showTaxCustomizer, setShowTaxCustomizer] = useState<boolean>(false);
 
+  // Custom price override state
+  const [enableCustomPrice, setEnableCustomPrice] = useState(false);
+  const [customTotalAmount, setCustomTotalAmount] = useState<string>('');
+  const [customAdvanceAmount, setCustomAdvanceAmount] = useState<string>('');
+
   // Quick booking mode
   const [passengerMode, setPassengerMode] = useState<'full' | 'quick'>('full');
   const [quickPassenger, setQuickPassenger] = useState<PassengerForm>({
@@ -164,6 +169,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       setGatewayFeeMode('percent');
       setGatewayFeeFixedAmount('');
       setShowTaxCustomizer(false);
+      setEnableCustomPrice(false);
+      setCustomTotalAmount('');
+      setCustomAdvanceAmount('');
     }
   }, [isOpen]);
 
@@ -433,6 +441,17 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       if (amountPaid) {
         payload.amount_paid = parseFloat(amountPaid);
       }
+
+      // Custom price override — sends admin-specified total/advance to backend
+      if (enableCustomPrice && customTotalAmount) {
+        payload.custom_total_amount = parseFloat(customTotalAmount);
+        // custom advance: either customAdvanceAmount or falls back to full custom total
+        if (customAdvanceAmount) {
+          payload.custom_advance_amount = parseFloat(customAdvanceAmount);
+        }
+        // Also clear auto amount_paid if using custom flow
+        delete payload.amount_paid;
+      }
       
       if (targetType === 'package') {
         payload.variant_id = parseInt(variantId);
@@ -444,8 +463,10 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       const res = await apiClient.post('/api/v1/admin/bookings/create', payload);
       toast.success(`Booking ${res.data.public_id} created successfully!`);
       
-      const isPartial = payload.amount_paid !== undefined && payload.amount_paid < estimatedTotal;
-      const remainingBalance = isPartial ? estimatedTotal - (payload.amount_paid || 0) : 0;
+      const effectiveTotal = (enableCustomPrice && customTotalAmount) ? parseFloat(customTotalAmount) : estimatedTotal;
+      const effectivePaid = (enableCustomPrice && customAdvanceAmount) ? parseFloat(customAdvanceAmount) : (payload.amount_paid ?? effectiveTotal);
+      const isPartial = effectivePaid < effectiveTotal;
+      const remainingBalance = isPartial ? effectiveTotal - effectivePaid : 0;
       onSuccess(res.data.public_id, {
         targetType: targetType.toUpperCase() as 'ROOM' | 'PACKAGE',
         isPartial,
@@ -1159,64 +1180,178 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
           {/* Payment Info */}
           <div className="rounded-xl border border-[#1a6b7a]/20 bg-[#1a6b7a]/5 p-4 space-y-4">
-            <div className="flex items-center justify-between gap-4">
+            {/* Custom Price Override Toggle */}
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#1a6b7a]/20">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-[#1a6b7a]">Total Amount</p>
-                <p className="text-xl font-black text-slate-900">₹{estimatedTotal.toFixed(2)}</p>
-                {couponDiscount > 0 && (
-                  <p className="text-[10px] text-emerald-600 font-bold">Includes -₹{couponDiscount.toFixed(2)} coupon discount</p>
-                )}
-                <p className="text-[10px] text-slate-500 font-semibold">
-                  Subtotal: ₹{estimatedSubtotal.toFixed(2)} | GST: ₹{taxBreakdown.gst.toFixed(2)} | Ts Boat SC: ₹{taxBreakdown.serviceCharge.toFixed(2)} | GW: ₹{taxBreakdown.gatewayFee.toFixed(2)}
-                </p>
+                <p className="text-xs font-black text-[#1a6b7a] uppercase tracking-wider">Custom Price Override</p>
+                <p className="text-[10px] text-slate-500 font-medium mt-0.5">Set any amount for this booking, ignoring calculated prices</p>
               </div>
-              <div className="w-1/2 flex flex-col items-end">
-                <div className="flex items-center justify-between w-full mb-1">
-                  <label className="text-xs font-bold text-slate-600">Amount Collected Now</label>
+              <button
+                type="button"
+                onClick={() => {
+                  setEnableCustomPrice(prev => {
+                    if (!prev) {
+                      // Pre-fill with estimated total when enabling
+                      setCustomTotalAmount(estimatedTotal > 0 ? estimatedTotal.toFixed(2) : '');
+                      setCustomAdvanceAmount('');
+                    }
+                    return !prev;
+                  });
+                }}
+                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none ${enableCustomPrice ? 'bg-[#1a6b7a]' : 'bg-slate-300'}`}
+                aria-pressed={enableCustomPrice}
+              >
+                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enableCustomPrice ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {enableCustomPrice ? (
+              /* ── Custom price mode ─────────────────────────────────────── */
+              <div className="space-y-4">
+                <div className="rounded-lg border-2 border-violet-300 bg-violet-50 px-3 py-2 text-[11px] text-violet-700 font-bold flex items-center gap-2">
+                  <span>✏️</span>
+                  <span>Custom price mode active — the values below will be used for the booking, overriding all calculated amounts.</span>
                 </div>
-                <div className="flex items-center gap-2 w-full">
-                  <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setAmountPaid('')}
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${amountPaid === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
-                    >
-                      Full
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const minAdv = Math.ceil(estimatedTotal * 0.35);
-                        setAmountPaid(String(minAdv));
-                      }}
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${amountPaid !== '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
-                    >
-                      Advance
-                    </button>
-                  </div>
-                  <div className="relative flex-1">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
+                {/* Custom Total */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">Total Booking Amount <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-[#1a6b7a]">₹</span>
                     <input
                       type="number"
                       min="0"
-                      placeholder="Amount"
-                      value={amountPaid}
-                      onChange={(e) => setAmountPaid(e.target.value)}
-                      className="w-full h-[36px] rounded-lg border border-slate-300 pl-6 pr-2 py-1 text-xs font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+                      step="0.01"
+                      placeholder="e.g. 1500"
+                      value={customTotalAmount}
+                      onChange={(e) => setCustomTotalAmount(e.target.value)}
+                      className="w-full h-11 rounded-lg border-2 border-violet-300 pl-7 pr-3 text-sm font-black text-slate-900 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none bg-white"
                     />
                   </div>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">Auto-calculated would be ₹{estimatedTotal.toFixed(2)} — you can set any value here</p>
                 </div>
+                {/* Custom Advance */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">Amount Collected Now (Advance / Full)</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setCustomAdvanceAmount('')}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customAdvanceAmount === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                      >
+                        Full
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tot = parseFloat(customTotalAmount || '0');
+                          setCustomAdvanceAmount(tot > 0 ? Math.ceil(tot * 0.35).toString() : '');
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customAdvanceAmount !== '' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500'}`}
+                      >
+                        35% Adv
+                      </button>
+                    </div>
+                    <div className="relative flex-1">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder={customTotalAmount ? `Full = ₹${customTotalAmount}` : 'Amount'}
+                        value={customAdvanceAmount}
+                        onChange={(e) => setCustomAdvanceAmount(e.target.value)}
+                        className="w-full h-[36px] rounded-lg border border-slate-300 pl-6 pr-2 py-1 text-xs font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Summary */}
+                {customTotalAmount && (
+                  <div className="flex justify-between items-center text-[11px] font-bold border-t border-violet-200 pt-2 flex-wrap gap-1">
+                    <span className="text-violet-700 bg-violet-100 px-2 py-1 rounded border border-violet-200">
+                      Custom Total: ₹{parseFloat(customTotalAmount || '0').toFixed(2)}
+                    </span>
+                    {customAdvanceAmount ? (
+                      <>
+                        <span className="text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                          Advance: ₹{parseFloat(customAdvanceAmount || '0').toFixed(2)}
+                        </span>
+                        <span className="text-slate-500">
+                          Balance: ₹{Math.max(0, parseFloat(customTotalAmount || '0') - parseFloat(customAdvanceAmount || '0')).toFixed(2)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                        Collecting Full Amount
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-            {amountPaid !== '' && (
-              <div className="flex justify-between items-center text-[11px] font-bold border-t border-[#1a6b7a]/20 pt-2 flex-wrap gap-1">
-                <span className="text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                  Advance Paid: ₹{parseFloat(amountPaid || '0').toFixed(2)}
-                </span>
-                <span className="text-slate-500">
-                  Pending Balance: ₹{Math.max(0, estimatedTotal - parseFloat(amountPaid || '0')).toFixed(2)}
-                </span>
-              </div>
+            ) : (
+              /* ── Normal auto-calculated mode ───────────────────────────── */
+              <>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#1a6b7a]">Total Amount</p>
+                    <p className="text-xl font-black text-slate-900">₹{estimatedTotal.toFixed(2)}</p>
+                    {couponDiscount > 0 && (
+                      <p className="text-[10px] text-emerald-600 font-bold">Includes -₹{couponDiscount.toFixed(2)} coupon discount</p>
+                    )}
+                    <p className="text-[10px] text-slate-500 font-semibold">
+                      Subtotal: ₹{estimatedSubtotal.toFixed(2)} | GST: ₹{taxBreakdown.gst.toFixed(2)} | Ts Boat SC: ₹{taxBreakdown.serviceCharge.toFixed(2)} | GW: ₹{taxBreakdown.gatewayFee.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="w-1/2 flex flex-col items-end">
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <label className="text-xs font-bold text-slate-600">Amount Collected Now</label>
+                    </div>
+                    <div className="flex items-center gap-2 w-full">
+                      <div className="flex bg-slate-200/60 rounded-lg p-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setAmountPaid('')}
+                          className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${amountPaid === '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                        >
+                          Full
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const minAdv = Math.ceil(estimatedTotal * 0.35);
+                            setAmountPaid(String(minAdv));
+                          }}
+                          className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${amountPaid !== '' ? 'bg-[#1a6b7a] text-white shadow-sm' : 'text-slate-500'}`}
+                        >
+                          Advance
+                        </button>
+                      </div>
+                      <div className="relative flex-1">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Amount"
+                          value={amountPaid}
+                          onChange={(e) => setAmountPaid(e.target.value)}
+                          className="w-full h-[36px] rounded-lg border border-slate-300 pl-6 pr-2 py-1 text-xs font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {amountPaid !== '' && (
+                  <div className="flex justify-between items-center text-[11px] font-bold border-t border-[#1a6b7a]/20 pt-2 flex-wrap gap-1">
+                    <span className="text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                      Advance Paid: ₹{parseFloat(amountPaid || '0').toFixed(2)}
+                    </span>
+                    <span className="text-slate-500">
+                      Pending Balance: ₹{Math.max(0, estimatedTotal - parseFloat(amountPaid || '0')).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
