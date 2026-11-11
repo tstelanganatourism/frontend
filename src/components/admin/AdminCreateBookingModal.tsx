@@ -94,9 +94,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const [showTaxCustomizer, setShowTaxCustomizer] = useState<boolean>(false);
 
-  // Custom price override state
+  // Custom price override state (pre-tax base amount, divided equally per ticket with taxes added on top)
   const [enableCustomPrice, setEnableCustomPrice] = useState(false);
-  const [customTotalAmount, setCustomTotalAmount] = useState<string>('');
+  const [customBaseAmount, setCustomBaseAmount] = useState<string>('');
   const [customAdvanceAmount, setCustomAdvanceAmount] = useState<string>('');
 
   // Quick booking mode
@@ -170,7 +170,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       setGatewayFeeFixedAmount('');
       setShowTaxCustomizer(false);
       setEnableCustomPrice(false);
-      setCustomTotalAmount('');
+      setCustomBaseAmount('');
       setCustomAdvanceAmount('');
     }
   }, [isOpen]);
@@ -280,6 +280,8 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const hasTransportSelection = useMemo(() => {
     if (targetType !== 'package' || !packageHasTransport || packageTransportOptions.length === 0) return true;
+    // Admin can explicitly book without transport ("NONE" override) or choose Shared / Private
+    if (transportMode === 'NONE') return true;
     if (transportMode === 'SHARED') {
       return selectedSharedOptId !== null;
     }
@@ -290,39 +292,54 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     return false;
   }, [targetType, packageHasTransport, packageTransportOptions, transportMode, selectedSharedOptId, separateVehicleQtys]);
 
-  const canSubmit = () => {
-    if (!travelDate) return false;
-    if (targetType === 'package' && !variantId) return false;
-    if (targetType === 'room' && !roomVariantId) return false;
-    if (!separateCapacityOk) return false;
-    if (targetType === 'package' && !hasTransportSelection) return false;
-
-    if (passengerMode === 'quick') {
-      const nameOk = quickPassenger.full_name.trim() !== '';
-      const genderOk = quickPassenger.gender !== '';
-      if (isStudentPackage) {
-        const classOk = (quickPassenger.student_class || '').trim() !== '';
-        const phoneOk = !quickPassenger.phone || /^\d{10}$/.test(quickPassenger.phone.trim());
-        return nameOk && classOk && genderOk && phoneOk;
-      } else {
-        const ageOk = quickPassenger.age !== '' && Number(quickPassenger.age) >= 18;
-        const phoneOk = /^\d{10}$/.test(quickPassenger.phone.trim());
-        return nameOk && ageOk && genderOk && phoneOk;
+  const getSubmitBlockerReason = (): string | null => {
+    if (!travelDate) return targetType === 'room' ? 'Select check-in date' : 'Select travel date';
+    if (targetType === 'package' && !variantId) return 'Select a package variant';
+    if (targetType === 'room' && !roomVariantId) return 'Select a room variant';
+    if (!separateCapacityOk) return 'Private vehicle capacity is less than passenger count';
+    if (targetType === 'package' && !hasTransportSelection) {
+      return transportMode === 'SHARED'
+        ? 'Select a Shared transport option (or switch to None)'
+        : 'Select at least 1 private vehicle (or switch to None)';
+    }
+    if (enableCustomPrice) {
+      const parsedVal = parseFloat(customBaseAmount);
+      if (customBaseAmount.trim() === '' || !Number.isFinite(parsedVal) || parsedVal < 0) {
+        return 'Enter a valid Custom Base Amount (₹0 or more)';
       }
     }
 
-    if (passengers.length === 0) return false;
-    return passengers.every((p, i) => {
-      const nameOk = p.full_name.trim() !== '';
-      const ageOk = isStudentPackage ? true : p.age !== '';
-      const genderOk = p.gender !== '';
-      const phoneOk = isStudentPackage
-        ? (!p.phone || /^\d{10}$/.test(p.phone.trim()))
-        : (i === 0 ? /^\d{10}$/.test(p.phone.trim()) : true);
-      const classOk = isStudentPackage ? (p.student_class || '').trim() !== '' : true;
-      return nameOk && ageOk && genderOk && phoneOk && classOk;
-    });
+    if (passengerMode === 'quick') {
+      if (quickPassenger.full_name.trim() === '') return 'Enter Lead Contact full name';
+      if (quickPassenger.gender === '') return 'Select Lead Contact gender';
+      if (isStudentPackage) {
+        if ((quickPassenger.student_class || '').trim() === '') return 'Enter Lead Student class';
+        if (quickPassenger.phone && !/^\d{10}$/.test(quickPassenger.phone.trim())) return 'Lead phone must be 10 digits';
+      } else {
+        if (quickPassenger.age === '' || Number(quickPassenger.age) < 18) return 'Lead Adult age must be 18 or older';
+        if (!/^\d{10}$/.test(quickPassenger.phone.trim())) return 'Enter a valid 10-digit Lead Adult mobile number';
+      }
+      return null;
+    }
+
+    if (passengers.length === 0) return 'Add at least 1 passenger';
+    for (let i = 0; i < passengers.length; i++) {
+      const p = passengers[i];
+      const label = i === 0 ? (isStudentPackage ? 'Lead Student' : 'Lead Adult') : `Passenger ${i + 1}`;
+      if (p.full_name.trim() === '') return `Enter ${label} full name`;
+      if (!isStudentPackage && p.age === '') return `Enter ${label} age`;
+      if (p.gender === '') return `Select ${label} gender`;
+      if (isStudentPackage) {
+        if ((p.student_class || '').trim() === '') return `Enter ${label} class`;
+        if (p.phone && !/^\d{10}$/.test(p.phone.trim())) return `${label} phone must be 10 digits`;
+      } else {
+        if (i === 0 && !/^\d{10}$/.test(p.phone.trim())) return 'Enter a valid 10-digit Lead Adult mobile number';
+      }
+    }
+    return null;
   };
+
+  const canSubmit = () => getSubmitBlockerReason() === null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -442,14 +459,20 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         payload.amount_paid = parseFloat(amountPaid);
       }
 
-      // Custom price override — sends admin-specified total/advance to backend
-      if (enableCustomPrice && customTotalAmount) {
-        payload.custom_total_amount = parseFloat(customTotalAmount);
-        // custom advance: either customAdvanceAmount or falls back to full custom total
-        if (customAdvanceAmount) {
-          payload.custom_advance_amount = parseFloat(customAdvanceAmount);
+      // Custom price override — sends admin-specified pre-tax base amount (taxes calculated on top by backend)
+      if (enableCustomPrice && customBaseAmount.trim() !== '') {
+        const parsedBase = parseFloat(customBaseAmount);
+        if (Number.isFinite(parsedBase) && parsedBase >= 0) {
+          payload.custom_base_amount = parsedBase;
         }
-        // Also clear auto amount_paid if using custom flow
+        // custom advance: either customAdvanceAmount or falls back to full calculated total
+        if (customAdvanceAmount.trim() !== '') {
+          const parsedAdv = parseFloat(customAdvanceAmount);
+          if (Number.isFinite(parsedAdv) && parsedAdv >= 0) {
+            payload.custom_advance_amount = parsedAdv;
+          }
+        }
+        // Also clear auto amount_paid if using custom advance/base flow
         delete payload.amount_paid;
       }
       
@@ -463,8 +486,8 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       const res = await apiClient.post('/api/v1/admin/bookings/create', payload);
       toast.success(`Booking ${res.data.public_id} created successfully!`);
       
-      const effectiveTotal = (enableCustomPrice && customTotalAmount) ? parseFloat(customTotalAmount) : estimatedTotal;
-      const effectivePaid = (enableCustomPrice && customAdvanceAmount) ? parseFloat(customAdvanceAmount) : (payload.amount_paid ?? effectiveTotal);
+      const effectiveTotal = estimatedTotal;
+      const effectivePaid = (enableCustomPrice && customAdvanceAmount.trim() !== '') ? parseFloat(customAdvanceAmount) : (payload.amount_paid ?? effectiveTotal);
       const isPartial = effectivePaid < effectiveTotal;
       const remainingBalance = isPartial ? effectiveTotal - effectivePaid : 0;
       onSuccess(res.data.public_id, {
@@ -572,8 +595,31 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     return subtotal;
   }, [targetType, variantId, roomVariantId, packagesList, packageOptions, roomOptions, adultCount, childCount, studentCount, travelDate, departureDate, transportMode, selectedSharedOptId, separateVehicleQtys, packageTransportOptions, includeRefreshments, packageHasRefreshments, packageRefAdultPrice, packageRefChildPrice]);
 
+  const customDivisionInfo = useMemo(() => {
+    if (targetType === 'room') {
+      const selected = roomOptions.find(o => o.value === roomVariantId);
+      const arrival = travelDate ? new Date(travelDate) : null;
+      const departure = arrival ? (departureDate ? new Date(departureDate) : new Date(arrival.getTime() + 86400000)) : null;
+      const days = (arrival && departure && departure > arrival) ? Math.ceil((departure.getTime() - arrival.getTime()) / 86400000) : 1;
+      const requiredRooms = selected ? Math.max(1, Math.ceil((numAdults + numChildren) / (selected.capacity_per_room || 2))) : 1;
+      const unitCount = Math.max(1, requiredRooms * days);
+      return { unitCount, unitLabel: unitCount === 1 ? 'room-night' : 'room-nights', singularLabel: 'room-night' };
+    }
+    const unitCount = Math.max(1, totalPax);
+    return { unitCount, unitLabel: unitCount === 1 ? 'ticket' : 'tickets', singularLabel: 'ticket' };
+  }, [targetType, roomOptions, roomVariantId, travelDate, departureDate, numAdults, numChildren, totalPax]);
+
+  const parsedCustomBase = useMemo(() => {
+    if (!enableCustomPrice || customBaseAmount.trim() === '') return null;
+    const val = parseFloat(customBaseAmount);
+    return Number.isFinite(val) && val >= 0 ? val : null;
+  }, [enableCustomPrice, customBaseAmount]);
+
+  const effectiveBaseSubtotal = parsedCustomBase !== null ? parsedCustomBase : estimatedSubtotal;
+  const perTicketCustomCost = parsedCustomBase !== null ? parsedCustomBase / customDivisionInfo.unitCount : null;
+
   const taxBreakdown = useMemo(() => {
-    const discounted = Math.max(0, estimatedSubtotal - couponDiscount);
+    const discounted = Math.max(0, effectiveBaseSubtotal - couponDiscount);
     const gst = gstMode === 'fixed' 
       ? Math.max(0, parseFloat(gstFixedAmount || '0')) 
       : (discounted * (gstRate / 100));
@@ -592,7 +638,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       gatewayFee,
       total,
     };
-  }, [estimatedSubtotal, couponDiscount, gstRate, gstMode, gstFixedAmount, serviceChargeRate, serviceChargeMode, serviceChargeFixedAmount, gatewayFeeRate, gatewayFeeMode, gatewayFeeFixedAmount]);
+  }, [effectiveBaseSubtotal, couponDiscount, gstRate, gstMode, gstFixedAmount, serviceChargeRate, serviceChargeMode, serviceChargeFixedAmount, gatewayFeeRate, gatewayFeeMode, gatewayFeeFixedAmount]);
 
   const estimatedTotal = taxBreakdown.total;
 
@@ -602,7 +648,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
     try {
       const res = await apiClient.post('/api/v1/coupons/validate', {
         code: couponCode.trim(),
-        booking_amount: estimatedSubtotal,
+        booking_amount: effectiveBaseSubtotal,
         target_type: targetType === 'package' ? 'PACKAGE' : 'ROOM',
         target_id: targetType === 'package' ? (selectedPackage?.id || 1) : 1,
         ticket_count: totalPax,
@@ -800,6 +846,11 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                     className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${transportMode === 'SEPARATE' ? 'bg-[#1a6b7a] border-[#1a6b7a] text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-[#1a6b7a]/60'}`}>🚗 Private</button>
                 )}
               </div>
+              {transportMode === 'NONE' && (
+                <p className="text-[11px] font-medium text-slate-500 bg-white/70 border border-indigo-100 rounded-lg px-3 py-1.5">
+                  No bus transport selected (admin override — tickets/package only).
+                </p>
+              )}
               {transportMode === 'SHARED' && sharedOpts.map((opt: any) => (
                 <label key={opt.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedSharedOptId === opt.id ? 'border-[#1a6b7a] bg-[#1a6b7a]/5' : 'border-slate-200 bg-white hover:border-[#1a6b7a]/40'}`}>
                   <input type="radio" name="adminSharedTransport" checked={selectedSharedOptId === opt.id} onChange={() => setSelectedSharedOptId(opt.id)} className="text-[#1a6b7a]" />
@@ -1184,15 +1235,15 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
             <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#1a6b7a]/20">
               <div>
                 <p className="text-xs font-black text-[#1a6b7a] uppercase tracking-wider">Custom Price Override</p>
-                <p className="text-[10px] text-slate-500 font-medium mt-0.5">Set any amount for this booking, ignoring calculated prices</p>
+                <p className="text-[10px] text-slate-500 font-medium mt-0.5">Set a custom base cost (equally divided per ticket; taxes added on top)</p>
               </div>
               <button
                 type="button"
                 onClick={() => {
                   setEnableCustomPrice(prev => {
                     if (!prev) {
-                      // Pre-fill with estimated total when enabling
-                      setCustomTotalAmount(estimatedTotal > 0 ? estimatedTotal.toFixed(2) : '');
+                      // Pre-fill with pre-tax catalog subtotal when enabling
+                      setCustomBaseAmount(estimatedSubtotal > 0 ? estimatedSubtotal.toFixed(2) : '');
                       setCustomAdvanceAmount('');
                     }
                     return !prev;
@@ -1210,24 +1261,34 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
               <div className="space-y-4">
                 <div className="rounded-lg border-2 border-violet-300 bg-violet-50 px-3 py-2 text-[11px] text-violet-700 font-bold flex items-center gap-2">
                   <span>✏️</span>
-                  <span>Custom price mode active — the values below will be used for the booking, overriding all calculated amounts.</span>
+                  <span>Custom base price active — divided equally across all {customDivisionInfo.unitCount} {customDivisionInfo.unitLabel}, with Taxes &amp; Surcharges added on top.</span>
                 </div>
-                {/* Custom Total */}
+                {/* Custom Pre-Tax Base */}
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">Total Booking Amount <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">Custom Base Amount (Before Taxes) <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-[#1a6b7a]">₹</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
-                      placeholder="e.g. 1500"
-                      value={customTotalAmount}
-                      onChange={(e) => setCustomTotalAmount(e.target.value)}
+                      placeholder="e.g. 10000"
+                      value={customBaseAmount}
+                      onChange={(e) => setCustomBaseAmount(e.target.value)}
                       className="w-full h-11 rounded-lg border-2 border-violet-300 pl-7 pr-3 text-sm font-black text-slate-900 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none bg-white"
                     />
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium mt-1">Auto-calculated would be ₹{estimatedTotal.toFixed(2)} — you can set any value here</p>
+                  {perTicketCustomCost !== null && (
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs">
+                      <span className="font-bold text-emerald-800">
+                        Equal Split ({customDivisionInfo.unitCount} {customDivisionInfo.unitLabel}):
+                      </span>
+                      <span className="font-black text-emerald-900">
+                        ₹{perTicketCustomCost.toFixed(2)} / {customDivisionInfo.singularLabel}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">Catalog pre-tax subtotal would be ₹{estimatedSubtotal.toFixed(2)} — taxes configured above add on top of this amount</p>
                 </div>
                 {/* Custom Advance */}
                 <div>
@@ -1244,8 +1305,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                       <button
                         type="button"
                         onClick={() => {
-                          const tot = parseFloat(customTotalAmount || '0');
-                          setCustomAdvanceAmount(tot > 0 ? Math.ceil(tot * 0.35).toString() : '');
+                          setCustomAdvanceAmount(estimatedTotal > 0 ? Math.ceil(estimatedTotal * 0.35).toString() : '');
                         }}
                         className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${customAdvanceAmount !== '' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500'}`}
                       >
@@ -1258,7 +1318,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                         type="number"
                         min="0"
                         step="0.01"
-                        placeholder={customTotalAmount ? `Full = ₹${customTotalAmount}` : 'Amount'}
+                        placeholder={`Full = ₹${estimatedTotal.toFixed(2)}`}
                         value={customAdvanceAmount}
                         onChange={(e) => setCustomAdvanceAmount(e.target.value)}
                         className="w-full h-[36px] rounded-lg border border-slate-300 pl-6 pr-2 py-1 text-xs font-semibold focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none"
@@ -1267,25 +1327,41 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                   </div>
                 </div>
                 {/* Summary */}
-                {customTotalAmount && (
-                  <div className="flex justify-between items-center text-[11px] font-bold border-t border-violet-200 pt-2 flex-wrap gap-1">
-                    <span className="text-violet-700 bg-violet-100 px-2 py-1 rounded border border-violet-200">
-                      Custom Total: ₹{parseFloat(customTotalAmount || '0').toFixed(2)}
-                    </span>
-                    {customAdvanceAmount ? (
-                      <>
-                        <span className="text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                          Advance: ₹{parseFloat(customAdvanceAmount || '0').toFixed(2)}
-                        </span>
-                        <span className="text-slate-500">
-                          Balance: ₹{Math.max(0, parseFloat(customTotalAmount || '0') - parseFloat(customAdvanceAmount || '0')).toFixed(2)}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-                        Collecting Full Amount
-                      </span>
+                {parsedCustomBase !== null && (
+                  <div className="space-y-2 border-t border-violet-200 pt-2.5">
+                    <div className="flex items-center justify-between text-xs text-slate-600 font-semibold">
+                      <span>Base ({customDivisionInfo.unitCount} × ₹{(perTicketCustomCost ?? 0).toFixed(2)})</span>
+                      <span className="font-bold text-slate-800">₹{parsedCustomBase.toFixed(2)}</span>
+                    </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex items-center justify-between text-xs text-emerald-600 font-semibold">
+                        <span>Coupon Discount ({appliedCouponCode})</span>
+                        <span>-₹{couponDiscount.toFixed(2)}</span>
+                      </div>
                     )}
+                    <div className="flex items-center justify-between text-xs text-slate-600 font-semibold">
+                      <span>Taxes &amp; Charges On Top (GST + SC + GW)</span>
+                      <span className="font-bold text-slate-800">+₹{(taxBreakdown.gst + taxBreakdown.serviceCharge + taxBreakdown.gatewayFee).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] font-bold pt-1.5 border-t border-violet-200/70 flex-wrap gap-1.5">
+                      <span className="text-violet-800 bg-violet-100 px-2.5 py-1 rounded border border-violet-200 font-black">
+                        Grand Total: ₹{estimatedTotal.toFixed(2)}
+                      </span>
+                      {customAdvanceAmount.trim() !== '' ? (
+                        <>
+                          <span className="text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                            Advance: ₹{(parseFloat(customAdvanceAmount) || 0).toFixed(2)}
+                          </span>
+                          <span className="text-slate-600 font-bold">
+                            Balance: ₹{Math.max(0, estimatedTotal - (parseFloat(customAdvanceAmount) || 0)).toFixed(2)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                          Collecting Full (₹{estimatedTotal.toFixed(2)})
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1628,16 +1704,26 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         </form>
 
         {/* Footer */}
-        <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50/50">
-          <button type="button" onClick={onClose} disabled={isSubmitting}
-            className="rounded-lg border border-slate-200 bg-white px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50">
-            Cancel
-          </button>
-          <button form="admin-booking-form" type="submit" disabled={isSubmitting || !canSubmit()}
-            className="rounded-lg bg-violet-600 px-8 py-2.5 text-sm font-black text-white shadow-md hover:bg-violet-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Create Booking
-          </button>
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50/50">
+          {getSubmitBlockerReason() ? (
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+              <span>{getSubmitBlockerReason()}</span>
+            </div>
+          ) : (
+            <div />
+          )}
+          <div className="flex items-center gap-3 ml-auto">
+            <button type="button" onClick={onClose} disabled={isSubmitting}
+              className="rounded-lg border border-slate-200 bg-white px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50">
+              Cancel
+            </button>
+            <button form="admin-booking-form" type="submit" disabled={isSubmitting || !canSubmit()}
+              className="rounded-lg bg-violet-600 px-8 py-2.5 text-sm font-black text-white shadow-md hover:bg-violet-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Create Booking
+            </button>
+          </div>
         </div>
 
         {/* Processing overlay */}

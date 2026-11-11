@@ -147,8 +147,20 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   }).toUpperCase();
 
   const halfGst = booking.gst_amount / 2;
+  const gstRate = Number(booking.pricing_snapshot?.gst_rate ?? (booking.gst_amount > 0 ? 5 : 0));
+  const scRate = Number(booking.pricing_snapshot?.service_charge_rate ?? (booking.service_charge && booking.service_charge > 0 ? 1 : 0));
+  const gwRate = Number(booking.pricing_snapshot?.gateway_fee_rate ?? (booking.gateway_fee > 0 ? 1 : 0));
+  const formatPct = (r: number) => (Number.isInteger(r) ? `${r}` : r.toFixed(2).replace(/\.?0+$/, ''));
+  const halfGstRateLabel = formatPct(gstRate / 2);
+  const gstRateLabel = `${gstRate.toFixed(1)}%`;
+  const gstMultiplier = 1 + gstRate / 100;
   const totalPaid = (booking.paid_amount ?? (booking.total_amount - booking.remaining_balance)) || 0;
   const passengerCount = booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count;
+  const customPerTicket = booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price
+    ? Number(booking.pricing_snapshot.per_ticket_price)
+    : null;
+  const customUnitCount = booking.pricing_snapshot?.unit_count ? Number(booking.pricing_snapshot.unit_count) : Math.max(1, passengerCount);
+  const customUnitLabel = booking.pricing_snapshot?.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket');
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
@@ -961,12 +973,15 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                       </span>
                       <span className="tax-table-line-sub">
                         Travel Date: {travelDateFormatted} | Guests: {guestSummary}
+                        {customPerTicket !== null && (
+                          <> | Custom Rate: {money(customPerTicket, 2)} / {customUnitLabel} × {customUnitCount}</>
+                        )}
                       </span>
                     </td>
                     <td>{hsnCode}</td>
                     <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
-                    <td style={{ textAlign: 'right' }}>5.0%</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(baseFare) * 1.05, 2)}</td>
+                    <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                    <td style={{ textAlign: 'right' }}>{money(Number(baseFare) * gstMultiplier, 2)}</td>
                   </tr>
 
                   {transportSelections.map((ts, idx) => (
@@ -978,8 +993,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                       </td>
                       <td>996411</td>
                       <td style={{ textAlign: 'right' }}>{money(ts.item_total || 0, 2)}</td>
-                      <td style={{ textAlign: 'right' }}>5.0%</td>
-                      <td style={{ textAlign: 'right' }}>{money(Number(ts.item_total || 0) * 1.05, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(ts.item_total || 0) * gstMultiplier, 2)}</td>
                     </tr>
                   ))}
 
@@ -992,8 +1007,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                       </td>
                       <td>996331</td>
                       <td style={{ textAlign: 'right' }}>{money(refreshmentAmount, 2)}</td>
-                      <td style={{ textAlign: 'right' }}>5.0%</td>
-                      <td style={{ textAlign: 'right' }}>{money(Number(refreshmentAmount) * 1.05, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(refreshmentAmount) * gstMultiplier, 2)}</td>
                     </tr>
                   )}
 
@@ -1006,8 +1021,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                       </td>
                       <td>996332</td>
                       <td style={{ textAlign: 'right' }}>{money(foodAmount, 2)}</td>
-                      <td style={{ textAlign: 'right' }}>5.0%</td>
-                      <td style={{ textAlign: 'right' }}>{money(Number(foodAmount) * 1.05, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(foodAmount) * gstMultiplier, 2)}</td>
                     </tr>
                   )}
 
@@ -1024,8 +1039,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                           </td>
                           <td>999799</td>
                           <td style={{ textAlign: 'right' }}>{money(finalVal, 2)}</td>
-                          <td style={{ textAlign: 'right' }}>5.0%</td>
-                          <td style={{ textAlign: 'right' }}>{money(Number(finalVal) * 1.05, 2)}</td>
+                          <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                          <td style={{ textAlign: 'right' }}>{money(Number(finalVal) * gstMultiplier, 2)}</td>
                         </tr>
                       );
                     })
@@ -1038,8 +1053,8 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                       </td>
                       <td>999799</td>
                       <td style={{ textAlign: 'right' }}>{money(extrasAmount, 2)}</td>
-                      <td style={{ textAlign: 'right' }}>5.0%</td>
-                      <td style={{ textAlign: 'right' }}>{money(Number(extrasAmount) * 1.05, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(extrasAmount) * gstMultiplier, 2)}</td>
                     </tr>
                   )}
                 </>
@@ -1112,22 +1127,22 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                   </tr>
                 )}
                 <tr>
-                  <td>CGST (2.5%)</td>
+                  <td>CGST ({halfGstRateLabel}%)</td>
                   <td>{money(halfGst, 2)}</td>
                 </tr>
                 <tr>
-                  <td>SGST (2.5%)</td>
+                  <td>SGST ({halfGstRateLabel}%)</td>
                   <td>{money(halfGst, 2)}</td>
                 </tr>
                 {booking.service_charge != null && booking.service_charge > 0 && (
                   <tr>
-                    <td>Ts Boat Service Charge (1%)</td>
+                    <td>Ts Boat Service Charge ({formatPct(scRate)}%)</td>
                     <td>{money(booking.service_charge, 2)}</td>
                   </tr>
                 )}
                 {booking.gateway_fee > 0 && (
                   <tr>
-                    <td>Gateway Convenience Fee</td>
+                    <td>Gateway Convenience Fee{gwRate > 0 ? ` (${formatPct(gwRate)}%)` : ''}</td>
                     <td>{money(booking.gateway_fee, 2)}</td>
                   </tr>
                 )}

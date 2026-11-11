@@ -1239,7 +1239,14 @@ export default function BookingDetailsModal({
                     </h4>
                     <div className="bg-slate-50/40 border border-slate-100 rounded-2xl p-5 space-y-4">
                       <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-500">
-                        <div>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</div>
+                        <div className="flex flex-col">
+                          <span>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</span>
+                          {booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price && (
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {booking.pricing_snapshot.unit_count} × {formatCurrency(Number(booking.pricing_snapshot.per_ticket_price))} / {booking.pricing_snapshot.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket')}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-right font-bold text-slate-700">{formatCurrency(baseFare)}</div>
                         {transportSelections.map((ts, idx) => (
                           <React.Fragment key={`billing-transport-${idx}`}>

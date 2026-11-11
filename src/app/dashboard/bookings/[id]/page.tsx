@@ -1097,7 +1097,14 @@ export default function BookingDetailPage() {
 
             <div className="space-y-3 text-xs">
               <div className="flex justify-between text-slate-500 font-semibold">
-                <span>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</span>
+                <span className="flex flex-col">
+                  <span>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</span>
+                  {booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price && (
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {booking.pricing_snapshot.unit_count || passengerCount} × {formatINR(Number(booking.pricing_snapshot.per_ticket_price))} / {booking.pricing_snapshot.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket')}
+                    </span>
+                  )}
+                </span>
                 <span className="font-bold text-slate-700">{formatINR(baseFare)}</span>
               </div>
               {transportSelections.map((ts, idx) => (
@@ -1119,18 +1126,18 @@ export default function BookingDetailPage() {
                 </div>
               )}
               <div className="flex justify-between text-slate-500 font-semibold">
-                <span>GST (5%)</span>
+                <span>GST ({Number(booking.pricing_snapshot?.gst_rate ?? (booking.gst_amount > 0 ? 5 : 0))}%)</span>
                 <span className="font-bold text-slate-700">{formatINR(booking.gst_amount)}</span>
               </div>
               {booking.service_charge != null && booking.service_charge > 0 && (
                 <div className="flex justify-between text-slate-500 font-semibold">
-                  <span>Ts Boat Service Charge (1%)</span>
+                  <span>Ts Boat Service Charge ({Number(booking.pricing_snapshot?.service_charge_rate ?? 1)}%)</span>
                   <span className="font-bold text-slate-700">{formatINR(booking.service_charge)}</span>
                 </div>
               )}
               {booking.gateway_fee > 0 && (
                 <div className="flex justify-between text-slate-500 font-semibold">
-                  <span>Payment Gateway Fee</span>
+                  <span>Payment Gateway Fee{booking.pricing_snapshot?.gateway_fee_rate ? ` (${Number(booking.pricing_snapshot.gateway_fee_rate)}%)` : ''}</span>
                   <span className="font-bold text-slate-700">{formatINR(booking.gateway_fee)}</span>
                 </div>
               )}

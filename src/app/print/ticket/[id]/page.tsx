@@ -217,6 +217,15 @@ export default async function PrintTicketPage({
   const selectedExtrasList = getSelectedExtrasList(booking.pricing_snapshot);
   const baseFare = getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot);
   const capturedPayments = getCapturedPayments(booking.payment_ledger);
+  const ticketGstRate = Number(booking.pricing_snapshot?.gst_rate ?? (booking.gst_amount > 0 ? 5 : 0));
+  const ticketScRate = Number(booking.pricing_snapshot?.service_charge_rate ?? (booking.service_charge && booking.service_charge > 0 ? 1 : 0));
+  const ticketGwRate = Number(booking.pricing_snapshot?.gateway_fee_rate ?? (booking.gateway_fee > 0 ? 1 : 0));
+  const formatTicketPct = (r: number) => (Number.isInteger(r) ? `${r}` : r.toFixed(2).replace(/\.?0+$/, ''));
+  const customPerTicket = booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price
+    ? Number(booking.pricing_snapshot.per_ticket_price)
+    : null;
+  const customUnitCount = booking.pricing_snapshot?.unit_count ? Number(booking.pricing_snapshot.unit_count) : Math.max(1, passengerCount);
+  const customUnitLabel = booking.pricing_snapshot?.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket');
   const gstNumber = '';
 
   const replaceCruiseWithBoat = (text: string) => {
@@ -1377,7 +1386,10 @@ export default async function PrintTicketPage({
               <div className="pay-row">
                 <span>
                   {isRoom ? 'Accommodation Fare' : 'Base Fare'}
-                  <span className="pay-row-subtext">{booking.variant_title} ({guestSummary})</span>
+                  <span className="pay-row-subtext">
+                    {booking.variant_title} ({guestSummary})
+                    {customPerTicket !== null && ` • ${customUnitCount} × ${money(customPerTicket, 2)} / ${customUnitLabel}`}
+                  </span>
                 </span>
                 <span>{money(baseFare, 2)}</span>
               </div>
@@ -1442,21 +1454,23 @@ export default async function PrintTicketPage({
               )}
 
               <div className="pay-row">
-                <span>GST (5%)</span>
+                <span>GST ({formatTicketPct(ticketGstRate)}%)</span>
                 <span>{money(booking.gst_amount, 2)}</span>
               </div>
 
               {booking.service_charge != null && booking.service_charge > 0 && (
                 <div className="pay-row">
-                  <span>Ts Boat Service Charge (1%)</span>
+                  <span>Ts Boat Service Charge ({formatTicketPct(ticketScRate)}%)</span>
                   <span>{money(booking.service_charge, 2)}</span>
                 </div>
               )}
 
-              <div className="pay-row">
-                <span>Gateway &amp; Processing Fee</span>
-                <span>{money(booking.gateway_fee, 2)}</span>
-              </div>
+              {booking.gateway_fee > 0 && (
+                <div className="pay-row">
+                  <span>Gateway &amp; Processing Fee{ticketGwRate > 0 ? ` (${formatTicketPct(ticketGwRate)}%)` : ''}</span>
+                  <span>{money(booking.gateway_fee, 2)}</span>
+                </div>
+              )}
 
               <div className="pay-row grand-total">
                 <span>Total Bill Amount</span>
