@@ -63,6 +63,10 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
     if (variantIdOverride) {
       setSelectedVariantId(variantIdOverride);
     }
+    if (props.hasAccommodation) {
+      setIsOpen(true);
+      return;
+    }
     if (
       !ensureAuthenticatedForBooking({
         router,
@@ -73,7 +77,7 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
       return;
     }
     setIsOpen(true);
-  }, [router, selectedVariantId]);
+  }, [router, selectedVariantId, props.hasAccommodation]);
 
   useEffect(() => {
     // Reveal immediately upon page load with cinematic entrance and settle animation
@@ -94,6 +98,12 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
       url.searchParams.has('restore_checkout');
 
     if (!isAuthenticated) {
+      if (props.hasAccommodation) {
+        if (hasBookingIntent) {
+          setIsOpen(true);
+        }
+        return;
+      }
       if (isOpen || hasBookingIntent) {
         setIsOpen(false);
         ensureAuthenticatedForBooking({
