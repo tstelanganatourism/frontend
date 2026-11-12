@@ -35,6 +35,7 @@ import { PackageFaqs } from '@/components/packages/detail/PackageFaqs';
 import { PackagePolicies } from '@/components/packages/detail/PackagePolicies';
 import { BookingDialogV3 } from '@/components/packages/detail/BookingDialogV3';
 import { BookingCalloutCard } from '@/components/packages/detail/BookingCalloutCard';
+import { BookingSidebarV2 } from '@/components/packages/detail/BookingSidebarV2';
 import { PackageExtras } from '@/components/packages/detail/PackageExtras';
 import { PackageVideoHero } from '@/components/packages/detail/PackageVideoHero';
 
@@ -90,8 +91,12 @@ type Variant = {
   title: string; 
   adult_price: number; 
   child_price: number; 
+  weekend_adult_price?: number | string;
+  weekend_child_price?: number | string;
   student_price?: number; 
   weekend_student_price?: number; 
+  occupancy?: number | null;
+  combination_pricing?: any;
   transport_info?: string | null 
 };
 type Item = { id: number; title?: string; label?: string; icon?: string | null; sort_order?: number };
@@ -116,6 +121,7 @@ type PackageDetail = {
   tags: string[];
   starting_price?: number | null;
   has_transport?: boolean;
+  has_accommodation?: boolean;
   transport_options?: Array<{
     id: number;
     type: 'SHARED' | 'SEPARATE_VEHICLE';
@@ -508,7 +514,9 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
       <SectionNav />
 
       {/* Main Content Grid with a wider booking column for long fare and transport rows */}
-      <div className="mx-auto grid w-full max-w-[1800px] items-start gap-7 px-3 py-6 sm:px-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-6 lg:py-10 xl:gap-8 2xl:px-8">
+      <div className={`mx-auto grid w-full max-w-[1800px] items-start gap-7 px-3 py-6 sm:px-5 ${
+        pkg.has_accommodation ? 'lg:grid-cols-[minmax(0,1fr)_520px]' : 'lg:grid-cols-[minmax(0,1fr)_420px]'
+      } lg:px-6 lg:py-10 xl:gap-8 2xl:px-8`}>
 
         {/* Left Content Column */}
         <div className="space-y-10">
@@ -576,26 +584,49 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
           )}
         </div>
 
-        {/* Right Sticky Booking Callout Card with full fare variants, weekday/weekend, transport & add-ons breakdown */}
+        {/* Right Sticky Booking Sidebar / Callout Card */}
         <aside className="hidden lg:block sticky top-[92px] self-start w-full">
-          <BookingCalloutCard
-            startingPrice={getPositiveStartingPrice(pkg)}
-            isStudentPackage={pkg.is_student_package}
-            brochurePdfUrl={(pkg.brochure_pdf_url || pkg.generated_brochure_url) ?? undefined}
-            variants={pkg.variants}
-            hasTransport={pkg.has_transport}
-            transportOptions={pkg.transport_options}
-            hasRefreshments={pkg.has_refreshments}
-            refreshmentAdultPrice={pkg.refreshment_adult_price}
-            refreshmentChildPrice={pkg.refreshment_child_price}
-            refreshmentStudentPrice={pkg.refreshment_student_price}
-            hasFoodOption={pkg.has_food_option}
-            foodAdultPrice={pkg.food_adult_price}
-            foodChildPrice={pkg.food_child_price}
-            foodStudentPrice={pkg.food_student_price}
-            extras={pkg.extras}
-            isActive={pkg.is_active}
-          />
+          {pkg.has_accommodation ? (
+            <BookingSidebarV2
+              startingPrice={getPositiveStartingPrice(pkg)}
+              variants={pkg.variants}
+              packageId={pkg.id}
+              packageSlug={pkg.slug}
+              brochurePdfUrl={(pkg.brochure_pdf_url || pkg.generated_brochure_url) ?? undefined}
+              hasTransport={pkg.has_transport}
+              transportOptions={pkg.transport_options}
+              hasRefreshments={pkg.has_refreshments}
+              refreshmentAdultPrice={pkg.refreshment_adult_price}
+              refreshmentChildPrice={pkg.refreshment_child_price}
+              refreshmentStudentPrice={pkg.refreshment_student_price}
+              minPassengers={pkg.min_passengers}
+              isStudentPackage={pkg.is_student_package}
+              isActive={pkg.is_active}
+              hasAccommodation={pkg.has_accommodation}
+              agentCommissionType={pkg.agent_commission_type}
+              agentCommissionPercentage={pkg.agent_commission_percentage}
+              agentCommissionFixedAmount={pkg.agent_commission_fixed_amount}
+            />
+          ) : (
+            <BookingCalloutCard
+              startingPrice={getPositiveStartingPrice(pkg)}
+              isStudentPackage={pkg.is_student_package}
+              brochurePdfUrl={(pkg.brochure_pdf_url || pkg.generated_brochure_url) ?? undefined}
+              variants={pkg.variants}
+              hasTransport={pkg.has_transport}
+              transportOptions={pkg.transport_options}
+              hasRefreshments={pkg.has_refreshments}
+              refreshmentAdultPrice={pkg.refreshment_adult_price}
+              refreshmentChildPrice={pkg.refreshment_child_price}
+              refreshmentStudentPrice={pkg.refreshment_student_price}
+              hasFoodOption={pkg.has_food_option}
+              foodAdultPrice={pkg.food_adult_price}
+              foodChildPrice={pkg.food_child_price}
+              foodStudentPrice={pkg.food_student_price}
+              extras={pkg.extras}
+              isActive={pkg.is_active}
+            />
+          )}
         </aside>
 
       </div>
@@ -621,6 +652,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         isStudentPackage={pkg.is_student_package}
         refreshmentsMinPassengers={pkg.refreshments_min_passengers}
         isActive={pkg.is_active}
+        hasAccommodation={pkg.has_accommodation}
         advancePaymentType={pkg.advance_payment_type}
         advancePaymentValue={pkg.advance_payment_value}
         extras={pkg.extras}

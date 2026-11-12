@@ -18,6 +18,39 @@ export interface PaymentLedgerEntry {
   created_at: string | null;
 }
 
+export function formatIndianDate(
+  dateInput: string | Date | null | undefined,
+  options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' }
+): string {
+  if (!dateInput) return '';
+
+  let dateObj: Date;
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    // YYYY-MM-DD pattern: parse components directly to avoid UTC midnight timezone rollback in US/EU
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const [_, y, m, d] = match;
+      dateObj = new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
+    } else {
+      dateObj = new Date(trimmed);
+    }
+  } else {
+    dateObj = dateInput;
+  }
+
+  if (isNaN(dateObj.getTime())) return '';
+
+  return dateObj.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    ...options,
+  });
+}
+
+export function getIndianTodayDate(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+}
+
 export function money(amount: number | string | null | undefined, digits = 2) {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookingSidebarV3, PackageTransportOption } from './BookingSidebarV3';
+import { BookingSidebarV2 } from './BookingSidebarV2';
 import { useAuthStore } from '@/stores/authStore';
 import { BOOKING_AUTH_STORAGE_KEYS, ensureAuthenticatedForBooking } from '@/lib/bookingAuthGate';
 import { ArrowRight, Sparkles, ShieldCheck, Ticket, X, Phone, MessageCircle } from 'lucide-react';
@@ -47,6 +48,7 @@ interface BookingDialogV3Props {
   agentCommissionFixedAmount?: number | string | null;
   agentDailyQuota?: number | null;
   agentIsAllowed?: boolean | null;
+  hasAccommodation?: boolean;
 }
 
 export const BookingDialogV3 = (props: BookingDialogV3Props) => {
@@ -319,8 +321,14 @@ export const BookingDialogV3 = (props: BookingDialogV3Props) => {
             </div>
 
             {/* ── Body ── */}
-            <div className="flex-1 overflow-hidden">
-              <BookingSidebarV3 {...props} initialVariantId={selectedVariantId || undefined} layoutMode="dialog" />
+            <div className="flex-1 overflow-y-auto">
+              {props.hasAccommodation ? (
+                <div className="p-3 sm:p-5">
+                  <BookingSidebarV2 {...props} />
+                </div>
+              ) : (
+                <BookingSidebarV3 {...props} initialVariantId={selectedVariantId || undefined} layoutMode="dialog" />
+              )}
             </div>
           </div>
         </div>
