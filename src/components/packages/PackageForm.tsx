@@ -37,7 +37,9 @@ import {
   UtensilsCrossed,
   Clock,
   Leaf,
-  DollarSign
+  DollarSign,
+  Users,
+  Package
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -218,7 +220,11 @@ export default function PackageForm({
       setOgImageUrl(initialData.og_image_url || '');
       setCanonicalUrl(initialData.canonical_url || '');
 
-      setVariants(initialData.variants || []);
+      setVariants(initialData.variants ? [...initialData.variants].map((v: any) => ({
+        ...v,
+        occupancy: v.occupancy || 1,
+        combination_pricing: v.combination_pricing || null,
+      })) : []);
       setGallery(initialData.gallery || []);
       setBrochurePdfUrl(initialData.brochure_pdf_url || '');
       setItinerary(initialData.itinerary || []);
@@ -486,8 +492,8 @@ export default function PackageForm({
     setVariants(prev => [
       ...prev,
       isStudentPackage
-        ? { title: '', adult_price: 0, child_price: 0, student_price: 500, weekend_student_price: 600, is_active: true }
-        : { title: '', adult_price: 1500, child_price: 1000, weekend_adult_price: 1700, weekend_child_price: 1200, is_active: true }
+        ? { title: '', adult_price: 0, child_price: 0, student_price: 500, weekend_student_price: 600, occupancy: 1, is_active: true }
+        : { title: '', adult_price: 1500, child_price: 1000, weekend_adult_price: 1700, weekend_child_price: 1200, occupancy: 1, is_active: true }
     ]);
   };
   const updateVariant = (index: number, key: string, value: any) => {
@@ -499,6 +505,15 @@ export default function PackageForm({
   };
   const removeVariant = (index: number) => {
     setVariants(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const getValidCombinations = (occupancy: number) => {
+    const combos: Array<{ adults: number; children: number }> = [];
+    const occ = Math.max(1, occupancy || 1);
+    for (let a = occ; a >= 1; a--) {
+      combos.push({ adults: a, children: occ - a });
+    }
+    return combos;
   };
 
   // Transport Options management
@@ -713,6 +728,15 @@ export default function PackageForm({
         weekend_child_price: v.weekend_child_price ? Number(v.weekend_child_price) : null,
         student_price: v.student_price ? Number(v.student_price) : null,
         weekend_student_price: v.weekend_student_price ? Number(v.weekend_student_price) : null,
+        occupancy: Math.max(1, parseInt(v.occupancy, 10) || 1),
+        combination_pricing: ((v.occupancy || 1) > 1 && Array.isArray(v.combination_pricing))
+          ? v.combination_pricing.map((c: any) => ({
+              adults: Number(c.adults),
+              children: Number(c.children),
+              price: c.price !== '' && c.price !== null && c.price !== undefined ? Number(c.price) : null,
+              weekend_price: c.weekend_price !== '' && c.weekend_price !== null && c.weekend_price !== undefined ? Number(c.weekend_price) : null,
+            }))
+          : null,
         sort_order: idx + 1
       })),
       transport_options: hasTransport ? transportOptions.map((t) => ({
@@ -1689,6 +1713,182 @@ export default function PackageForm({
                           </div>
                         </>
                       )}
+                      {/* Package Group Capacity (Booking Step) */}
+                      <div className="lg:col-span-4 min-w-0 max-w-full bg-white/90 p-3 rounded-2xl border border-slate-200/90 shadow-sm space-y-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                              <Users className="h-4 w-4 text-[#1a6b7a]" /> Package Group Capacity (Booking Step)
+                            </span>
+                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                              How many guests book this package option together (for example, 2 or 4 guests per package).
+                            </p>
+                          </div>
+                          <div className="grid w-full grid-cols-2 items-center gap-1.5 rounded-xl bg-slate-100 p-1 sm:flex sm:w-auto sm:flex-wrap">
+                            {[1, 2, 3, 4, 5].map((num) => {
+                              const isSelected = (variant.occupancy || 1) === num;
+                              return (
+                                <button
+                                  key={num}
+                                  type="button"
+                                  onClick={() => updateVariant(index, 'occupancy', num)}
+                                  className={`min-w-0 rounded-lg px-2 py-2 text-[10px] font-bold leading-tight transition-all sm:px-3 sm:py-1.5 sm:text-xs ${
+                                    isSelected
+                                      ? 'bg-[#1a6b7a] text-white shadow-sm shadow-[#1a6b7a]/20 scale-105'
+                                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                  }`}
+                                >
+                                  {num === 1 ? '1 Guest (Per Person)' : `${num} Guests per Package (+${num})`}
+                                </button>
+                              );
+                            })}
+                            <div className="col-span-2 flex items-center justify-end gap-1.5 border-t border-slate-300 pt-1 sm:col-span-1 sm:border-l sm:border-t-0 sm:pl-2 sm:pt-0">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">Custom</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={50}
+                                value={variant.occupancy === undefined || variant.occupancy === null || variant.occupancy === '' ? '' : variant.occupancy}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  updateVariant(index, 'occupancy', raw === '' ? '' : parseInt(raw, 10));
+                                }}
+                                onBlur={() => {
+                                  if (variant.occupancy === '' || !variant.occupancy || Number(variant.occupancy) < 1) {
+                                    updateVariant(index, 'occupancy', 1);
+                                  }
+                                }}
+                                placeholder="1"
+                                className="w-12 h-7 text-center rounded-lg border border-slate-300 bg-white text-xs font-black text-slate-800 outline-none focus:border-[#1a6b7a]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Dynamic Helper Info */}
+                        {(variant.occupancy || 1) > 1 ? (
+                          <div className="flex flex-wrap items-center gap-3 pt-2.5 border-t border-slate-100 text-xs">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-50 text-sky-800 font-bold border border-sky-200">
+                              <Package className="h-3.5 w-3.5 text-sky-600" />
+                              {variant.occupancy}-Guest Package
+                            </span>
+                            <span className="text-slate-600 font-medium text-[11px]">
+                              Customers must book in multiples of <strong>+{variant.occupancy}</strong> ({variant.occupancy}, {variant.occupancy * 2}, {variant.occupancy * 3} guests).
+                            </span>
+                            {variant.adult_price ? (
+                              <span className="sm:ml-auto font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs">
+                                Package Total: ₹{(Number(variant.adult_price) * (variant.occupancy || 1)).toLocaleString('en-IN')} (₹{Number(variant.adult_price).toLocaleString('en-IN')} / person × {variant.occupancy})
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400 font-medium">
+                            Standard per-person booking: Guests can select 1, 2, 3, 4 individual passengers.
+                          </div>
+                        )}
+
+                        {/* Adult + Child Combination Pricing Override Section */}
+                        {(variant.occupancy || 1) > 1 && (
+                          <div className="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/40 p-3.5 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                  <Users className="h-3.5 w-3.5 text-[#1a6b7a]" />
+                                  Adult &amp; Child Combination Pricing ({variant.occupancy} Members / Package)
+                                </h4>
+                                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                  Configure package prices for each adult + child combination (at least 1 adult required). Leave blank to use calculated per-person rates.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-2xs">
+                              <table className="min-w-[700px] text-left text-xs sm:w-full">
+                                <thead className="bg-slate-50/80 text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                                  <tr>
+                                    <th className="px-3 py-2.5">Guest Combination</th>
+                                    <th className="px-3 py-2.5">Calculated Rate</th>
+                                    <th className="px-3 py-2.5">Custom Weekday Price (₹)</th>
+                                    <th className="px-3 py-2.5">Custom Weekend Price (₹)</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {getValidCombinations(variant.occupancy || 1).map((combo) => {
+                                    const currentCombos = Array.isArray(variant.combination_pricing) ? variant.combination_pricing : [];
+                                    const existing = currentCombos.find((c: any) => Number(c.adults) === combo.adults && Number(c.children) === combo.children);
+                                    const calcWeekday = (combo.adults * Number(variant.adult_price || 0)) + (combo.children * Number(variant.child_price || 0));
+                                    const calcWeekend = (combo.adults * Number(variant.weekend_adult_price || variant.adult_price || 0)) + (combo.children * Number(variant.weekend_child_price || variant.child_price || 0));
+
+                                    const updateComboPrice = (field: 'price' | 'weekend_price', val: string) => {
+                                      const numVal = val === '' ? null : Number(val);
+                                      let nextCombos = [...currentCombos];
+                                      const cIdx = nextCombos.findIndex((c: any) => Number(c.adults) === combo.adults && Number(c.children) === combo.children);
+                                      if (cIdx >= 0) {
+                                        nextCombos[cIdx] = { ...nextCombos[cIdx], [field]: numVal };
+                                      } else {
+                                        nextCombos.push({
+                                          adults: combo.adults,
+                                          children: combo.children,
+                                          price: field === 'price' ? numVal : null,
+                                          weekend_price: field === 'weekend_price' ? numVal : null,
+                                        });
+                                      }
+                                      nextCombos = nextCombos.filter((c: any) => (c.price !== null && c.price !== undefined && c.price !== '') || (c.weekend_price !== null && c.weekend_price !== undefined && c.weekend_price !== ''));
+                                      updateVariant(index, 'combination_pricing', nextCombos.length > 0 ? nextCombos : null);
+                                    };
+
+                                    return (
+                                      <tr key={`${combo.adults}-${combo.children}`} className="hover:bg-slate-50/60 transition-colors">
+                                        <td className="px-3 py-2.5">
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 text-sky-900 font-extrabold text-[11px] border border-sky-200/80">
+                                            {combo.adults} {combo.adults === 1 ? 'Adult' : 'Adults'}
+                                            {combo.children > 0 ? ` + ${combo.children} ${combo.children === 1 ? 'Child' : 'Children'}` : ''}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2.5 text-slate-500 font-medium text-[11px]">
+                                          <span className="font-semibold text-slate-700">₹{calcWeekday.toLocaleString('en-IN')}</span>
+                                          {Number(variant.weekend_adult_price || 0) > 0 && (
+                                            <span className="text-amber-700 font-semibold ml-2 text-[10px] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                              Wknd: ₹{calcWeekend.toLocaleString('en-IN')}
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                          <div className="relative w-32">
+                                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              value={existing?.price !== undefined && existing?.price !== null ? existing.price : ''}
+                                              onChange={(e) => updateComboPrice('price', e.target.value)}
+                                              placeholder={String(calcWeekday)}
+                                              className="w-full h-8 pl-6 pr-2 rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none placeholder:text-slate-300"
+                                            />
+                                          </div>
+                                        </td>
+                                        <td className="px-3 py-2">
+                                          <div className="relative w-32">
+                                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              value={existing?.weekend_price !== undefined && existing?.weekend_price !== null ? existing.weekend_price : ''}
+                                              onChange={(e) => updateComboPrice('weekend_price', e.target.value)}
+                                              placeholder={String(calcWeekend)}
+                                              className="w-full h-8 pl-6 pr-2 rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-800 focus:border-[#1a6b7a] focus:ring-1 focus:ring-[#1a6b7a] outline-none placeholder:text-slate-300"
+                                            />
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="lg:col-span-2 pt-2">
                         <label className="flex items-center gap-3 cursor-pointer">
                           <input
