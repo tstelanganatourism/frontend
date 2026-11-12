@@ -127,6 +127,8 @@ export default function PackageForm({
   const [videoUrl, setVideoUrl] = useState('');
   const [orderPriority, setOrderPriority] = useState(0);
   const [hasTransport, setHasTransport] = useState(false);
+  const [hasAccommodation, setHasAccommodation] = useState(false);
+  const isAccommodationEnabled = Boolean(hasAccommodation || type === 'ACCOMMODATION');
   const [hasRefreshments, setHasRefreshments] = useState(false);
   const [refreshmentAdultPrice, setRefreshmentAdultPrice] = useState<number | ''>('');
   const [refreshmentChildPrice, setRefreshmentChildPrice] = useState<number | ''>('');
@@ -197,6 +199,7 @@ export default function PackageForm({
       setVideoUrl(initialData.video_url || '');
       setOrderPriority(initialData.order_priority || 0);
       setHasTransport(initialData.has_transport || false);
+      setHasAccommodation(Boolean(initialData.has_accommodation || initialData.type === 'ACCOMMODATION'));
       setHasRefreshments(initialData.has_refreshments || false);
       setRefreshmentAdultPrice(initialData.refreshment_adult_price ?? '');
       setRefreshmentChildPrice(initialData.refreshment_child_price ?? '');
@@ -493,6 +496,8 @@ export default function PackageForm({
       ...prev,
       isStudentPackage
         ? { title: '', adult_price: 0, child_price: 0, student_price: 500, weekend_student_price: 600, occupancy: 1, is_active: true }
+        : isAccommodationEnabled
+        ? { title: '', adult_price: 1500, child_price: 1000, weekend_adult_price: 1700, weekend_child_price: 1200, occupancy: 2, is_active: true }
         : { title: '', adult_price: 1500, child_price: 1000, weekend_adult_price: 1700, weekend_child_price: 1200, occupancy: 1, is_active: true }
     ]);
   };
@@ -698,6 +703,7 @@ export default function PackageForm({
       brochure_pdf_url: brochurePdfUrl || null,
       order_priority: Number(orderPriority),
       has_transport: hasTransport,
+      has_accommodation: isAccommodationEnabled,
       has_refreshments: hasRefreshments,
       is_student_package: isStudentPackage,
       refreshment_adult_price: !isStudentPackage && hasRefreshments && refreshmentAdultPrice !== '' ? Number(refreshmentAdultPrice) : null,
@@ -728,8 +734,8 @@ export default function PackageForm({
         weekend_child_price: v.weekend_child_price ? Number(v.weekend_child_price) : null,
         student_price: v.student_price ? Number(v.student_price) : null,
         weekend_student_price: v.weekend_student_price ? Number(v.weekend_student_price) : null,
-        occupancy: Math.max(1, parseInt(v.occupancy, 10) || 1),
-        combination_pricing: ((v.occupancy || 1) > 1 && Array.isArray(v.combination_pricing))
+        occupancy: isAccommodationEnabled ? Math.max(1, parseInt(v.occupancy, 10) || 1) : 1,
+        combination_pricing: (isAccommodationEnabled && (v.occupancy || 1) > 1 && Array.isArray(v.combination_pricing))
           ? v.combination_pricing.map((c: any) => ({
               adults: Number(c.adults),
               children: Number(c.children),
@@ -1276,7 +1282,7 @@ export default function PackageForm({
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 grid gap-4 sm:grid-cols-3">
+            <div className="pt-4 border-t border-slate-100 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Transport Toggle */}
               <label className="flex items-center gap-3 cursor-pointer group bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-xl border border-indigo-200/60 hover:border-indigo-400/50 transition-all">
                 <input
@@ -1290,6 +1296,35 @@ export default function PackageForm({
                   <span className="block text-xs font-medium text-slate-500 mt-0.5">Enable if this package provides transport choices (Shared/Separate)</span>
                 </div>
               </label>
+
+              {/* Accommodation included in this package */}
+              <div className="flex flex-col gap-3 group bg-gradient-to-br from-cyan-50 to-sky-50 p-4 rounded-xl border border-cyan-200/60 hover:border-cyan-400/50 transition-all">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAccommodationEnabled}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasAccommodation(checked);
+                      if (!checked && type === 'ACCOMMODATION') {
+                        setType('TOUR');
+                      }
+                    }}
+                    className="h-5 w-5 rounded border-slate-300 text-[#1a6b7a] focus:ring-[#1a6b7a]"
+                  />
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                      <BedDouble className="h-4 w-4 text-[#1a6b7a]" /> Accommodation Included
+                    </span>
+                    <span className="block text-xs font-medium text-slate-500 mt-0.5">Accommodation is included with the package. Set the group size for each package option.</span>
+                  </div>
+                </label>
+                {isAccommodationEnabled && (
+                  <div className="ml-8 px-3 py-2 bg-cyan-100/70 rounded-lg border border-cyan-200 text-xs font-semibold text-cyan-900">
+                    ✓ Set package capacity and guest group sizes (2, 3, 4 members) in the <strong>Package Categories</strong> tab.
+                  </div>
+                )}
+              </div>
 
               {/* Student Package Toggle */}
               <div className="flex flex-col gap-3 group bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/60 hover:border-amber-400/50 transition-all">
@@ -1713,7 +1748,8 @@ export default function PackageForm({
                           </div>
                         </>
                       )}
-                      {/* Package Group Capacity (Booking Step) */}
+                      {/* Package Group Capacity (Booking Step) - shown when Accommodation is enabled */}
+                      {isAccommodationEnabled && (
                       <div className="lg:col-span-4 min-w-0 max-w-full bg-white/90 p-3 rounded-2xl border border-slate-200/90 shadow-sm space-y-3 sm:p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div>
@@ -1888,6 +1924,7 @@ export default function PackageForm({
                           </div>
                         )}
                       </div>
+                      )}
 
                       <div className="lg:col-span-2 pt-2">
                         <label className="flex items-center gap-3 cursor-pointer">
