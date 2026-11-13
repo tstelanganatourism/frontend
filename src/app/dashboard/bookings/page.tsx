@@ -6,7 +6,7 @@ import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
-import { getTransportSelections, hasRefreshment, hasFoodAddon, getSelectedExtrasList, money } from '@/lib/bookingDisplay';
+import { getTransportSelections, hasRefreshment, hasFoodAddon, getSelectedExtrasList, money, getRoomSelections, formatAccommodationPackageLabel } from '@/lib/bookingDisplay';
 import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string; bar: string }> = {
@@ -241,6 +241,7 @@ export default function BookingsPage() {
 function BookingTicketCard({ booking: b, style, isPast }: { booking: any; style?: React.CSSProperties; isPast?: boolean }) {
   const statusCfg = getStatusConfig(b.status);
   const transports = getTransportSelections(b.pricing_snapshot);
+  const roomSelections = getRoomSelections(b.pricing_snapshot);
   const refreshmentIncluded = hasRefreshment(b);
   const foodIncluded = hasFoodAddon(b.pricing_snapshot);
   const extrasList = getSelectedExtrasList(b.pricing_snapshot);
@@ -286,6 +287,13 @@ function BookingTicketCard({ booking: b, style, isPast }: { booking: any; style?
 
               {/* Package name */}
               <h3 className="font-extrabold text-slate-800 text-sm sm:text-base leading-tight">{b.package_title}</h3>
+              {roomSelections.length > 0 ? (
+                <p className="text-xs font-bold text-emerald-700 mt-0.5">
+                  {roomSelections.map((r: any) => formatAccommodationPackageLabel(r)).join(' • ')}
+                </p>
+              ) : b.variant_title ? (
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">{b.variant_title}</p>
+              ) : null}
 
               {/* Date */}
               <div className="mt-1">
@@ -302,8 +310,13 @@ function BookingTicketCard({ booking: b, style, isPast }: { booking: any; style?
               </div>
 
               {/* Tags */}
-              {(transports.length > 0 || refreshmentIncluded || foodIncluded || extrasList.length > 0) && (
+              {(roomSelections.length > 0 || transports.length > 0 || refreshmentIncluded || foodIncluded || extrasList.length > 0) && (
                 <div className="mt-2 flex flex-wrap gap-1">
+                  {roomSelections.map((room: any, idx: number) => (
+                    <span key={`room-${idx}`} className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-emerald-800" style={{background:'#ecfdf5', border:'1px solid #a7f3d0'}}>
+                      🏡 {formatAccommodationPackageLabel(room)}
+                    </span>
+                  ))}
                   {transports.slice(0, 2).map((ts: any, idx: number) => (
                     <span key={idx} className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500" style={{background:'#f1f5f9', border:'1px solid #e2e8f0'}}>
                       {Number(ts.quantity || 1) > 1 ? `${ts.quantity}x ` : ''}{ts.title}

@@ -633,14 +633,22 @@ export const BookingSidebarV2 = ({
     toast.info(`Package selection updated to match available seats (${dateAvailableSeats}) on this date.`);
   }, [isAccommodationMode, selectedDate, publicLoading, publicAvailability, validVariants, roomCart, roomConfigs]);
 
-  // Primary variant for checkout = the variant with the highest qty, fallback to first selected
+  // Primary variant for checkout = the variant with the highest qty / occupancy, fallback to first selected
   const primaryRoomVariant = useMemo(() => {
     if (!isAccommodationMode) return undefined;
     let best: PackageVariant | undefined;
     let bestQty = 0;
+    let bestOcc = 0;
     for (const v of validVariants) {
-      const qty = roomCart[v.id] || 0;
-      if (qty > bestQty) { bestQty = qty; best = v; }
+      const qty = Number(roomCart[v.id] ?? (roomCart as any)[String(v.id)] ?? 0);
+      const occ = Number(v.occupancy || 1);
+      if (qty > 0) {
+        if (qty > bestQty || (qty === bestQty && occ > bestOcc)) {
+          bestQty = qty;
+          bestOcc = occ;
+          best = v;
+        }
+      }
     }
     if (!best && selectedVariantId) {
       best = validVariants.find(v => v.id === selectedVariantId);
@@ -1848,7 +1856,7 @@ export const BookingSidebarV2 = ({
   const isSuspended = user?.account_status === 'BLOCKED' || user?.account_status === 'DISABLED';
 
   // Absolute validation rules that apply to EVERYONE (including Admins - because a vehicle cannot physically hold more than its capacity)
-  const isCapacityInvalid = !separateCapacityOk || !sharedCapacityOk;
+  const isCapacityInvalid = Boolean(hasTransport && (!separateCapacityOk || !sharedCapacityOk));
   const isSelectionIncomplete =
     validVariants.length === 0 ||
     !selectedDate ||
@@ -1902,13 +1910,13 @@ export const BookingSidebarV2 = ({
     return 'Call to confirm availability';
   }, [isProcessingCheckout, isSuspended, isActive, isPackageInactive, isAdmin, validVariants.length, isAccommodationMode, roomCartTotalGuests, selectedVariantId, isAuthenticated, hasPassengerSelection, isStudentPackage, selectedDate, separateCapacityOk, sharedCapacityOk, hasTransport, transportOptions.length, hasTransportSelection, selectedTransportMode, availabilityState.kind]);
 
-  // Strict Real-Time Locking: Force-close CheckoutPassengerModal
+  // Strict Real-Time Locking: Force-close CheckoutPassengerModal ONLY if vehicle capacity is actually invalid and not during checkout submission
   useEffect(() => {
-    if ((isButtonDisabled || isBookingDisabled || isCapacityInvalid) && showPassengerModal) {
+    if (hasTransport && isCapacityInvalid && showPassengerModal && !isProcessingCheckout) {
       setShowPassengerModal(false);
       toast.error('Booking is not available: vehicle capacity is insufficient for the selected passengers.', { duration: 5000 });
     }
-  }, [isButtonDisabled, isBookingDisabled, isCapacityInvalid, showPassengerModal]);
+  }, [hasTransport, isCapacityInvalid, showPassengerModal, isProcessingCheckout]);
 
   // Strict Real-Time Locking: Clear invalid selections instantly
   useEffect(() => {
@@ -1977,18 +1985,22 @@ export const BookingSidebarV2 = ({
   const buildRoomSelections = () => {
     if (!isAccommodationMode) return undefined;
     const selections: Array<{ variant_id: number; quantity: number; adults: number; children: number }> = [];
-    Object.entries(roomConfigs).forEach(([varIdStr, configs]) => {
+    Object.entries(roomCart).forEach(([varIdStr, rawQty]) => {
       const varId = Number(varIdStr);
-      const qty = roomCart[varId] || 0;
+      const qty = Number(rawQty || 0);
       if (qty > 0) {
-        configs.slice(0, qty).forEach(c => {
+        const v = validVariants.find(x => x.id === varId);
+        const occ = Math.max(1, Number(v?.occupancy || 1));
+        const configs = roomConfigs[varId] || (roomConfigs as any)[String(varId)] || [];
+        for (let i = 0; i < qty; i++) {
+          const cfg = configs[i] || { adults: occ, children: 0 };
           selections.push({
             variant_id: varId,
             quantity: 1,
-            adults: c.adults,
-            children: c.children,
+            adults: Number(cfg.adults ?? occ),
+            children: Number(cfg.children ?? 0),
           });
-        });
+        }
       }
     });
     return selections.length > 0 ? selections : undefined;

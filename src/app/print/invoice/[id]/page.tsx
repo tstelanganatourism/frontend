@@ -14,6 +14,8 @@ import {
   getRefreshmentAmount,
   getSelectedExtrasList,
   getTransportSelections,
+  getRoomSelections,
+  formatAccommodationPackageLabel,
   hasExtras,
   hasFoodAddon,
   hasRefreshment,
@@ -162,6 +164,7 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
   const customUnitCount = booking.pricing_snapshot?.unit_count ? Number(booking.pricing_snapshot.unit_count) : Math.max(1, passengerCount);
   const customUnitLabel = booking.pricing_snapshot?.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket');
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
+  const roomSelections = getRoomSelections(booking.pricing_snapshot);
   const refreshmentIncluded = hasRefreshment(booking);
   const refreshmentAmount = getRefreshmentAmount(booking.pricing_snapshot);
   const foodIncluded = hasFoodAddon(booking.pricing_snapshot);
@@ -965,24 +968,46 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
               let sNo = 1;
               return (
                 <>
-                  <tr>
-                    <td style={{ textAlign: 'center' }}>{sNo++}</td>
-                    <td>
-                      <span className="tax-table-line-title">
-                        {isRoom ? (booking.variant_title || allocatedHotelName) : booking.package_title} — {isRoom ? allocatedHotelName : booking.variant_title}
-                      </span>
-                      <span className="tax-table-line-sub">
-                        Travel Date: {travelDateFormatted} | Guests: {guestSummary}
-                        {customPerTicket !== null && (
-                          <> | Custom Rate: {money(customPerTicket, 2)} / {customUnitLabel} × {customUnitCount}</>
-                        )}
-                      </span>
-                    </td>
-                    <td>{hsnCode}</td>
-                    <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
-                    <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(baseFare) * gstMultiplier, 2)}</td>
-                  </tr>
+                  {roomSelections.length > 0 ? (
+                    roomSelections.map((rs, idx) => (
+                      <tr key={`room-${idx}`}>
+                        <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                        <td>
+                          <span className="tax-table-line-title">
+                            {rs.title?.replace(/persons?/i, 'Members Package') || `${rs.occupancy || 1} Members Package`}
+                          </span>
+                          <span className="tax-table-line-sub">
+                            {rs.quantity > 1 ? `${rs.quantity} Packages • ` : ''}
+                            {rs.occupancy ? `${rs.occupancy} Members Package ` : ''}
+                            ({rs.adults || rs.occupancy || 1} Adults{rs.children && rs.children > 0 ? ` + ${rs.children} Children` : ''}) | Travel Date: {travelDateFormatted}
+                          </span>
+                        </td>
+                        <td>{hsnCode}</td>
+                        <td style={{ textAlign: 'right' }}>{money(rs.item_total || rs.price_per_room || baseFare, 2)}</td>
+                        <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                        <td style={{ textAlign: 'right' }}>{money(Number(rs.item_total || rs.price_per_room || baseFare) * gstMultiplier, 2)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td style={{ textAlign: 'center' }}>{sNo++}</td>
+                      <td>
+                        <span className="tax-table-line-title">
+                          {isRoom ? (booking.variant_title || allocatedHotelName) : booking.package_title} — {isRoom ? allocatedHotelName : booking.variant_title.replace(/persons?/i, 'Members Package')}
+                        </span>
+                        <span className="tax-table-line-sub">
+                          Travel Date: {travelDateFormatted} | Guests: {guestSummary}
+                          {customPerTicket !== null && (
+                            <> | Custom Rate: {money(customPerTicket, 2)} / {customUnitLabel} × {customUnitCount}</>
+                          )}
+                        </span>
+                      </td>
+                      <td>{hsnCode}</td>
+                      <td style={{ textAlign: 'right' }}>{money(baseFare, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(baseFare) * gstMultiplier, 2)}</td>
+                    </tr>
+                  )}
 
                   {transportSelections.map((ts, idx) => (
                     <tr key={`trans-${idx}`}>

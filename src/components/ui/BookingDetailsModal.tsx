@@ -21,6 +21,9 @@ import {
   hasExtras,
   getExtrasAmount,
   getSelectedExtrasList,
+  getRoomSelections,
+  formatAccommodationPackageLabel,
+  formatAccommodationPackageNameOnly,
 } from '@/lib/bookingDisplay';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
@@ -861,6 +864,7 @@ export default function BookingDetailsModal({
     ? Math.min(100, (booking.paid_amount / targetTotalAmount) * 100)
     : 0;
   const transportSelections = booking ? getTransportSelections(booking.pricing_snapshot) : [];
+  const roomSelections = booking ? getRoomSelections(booking.pricing_snapshot) : [];
   const has25Seater = transportSelections.some(ts => 
     Number(ts.capacity) === 25 ||
     (ts.title && (
@@ -957,7 +961,11 @@ export default function BookingDetailsModal({
                     )}
                   </div>
                   <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">{booking.package_title}</h2>
-                  <p className="text-xs font-bold text-[#5ac4d7] uppercase tracking-wider mt-1">{booking.variant_title}</p>
+                  <p className="text-xs font-bold text-[#5ac4d7] uppercase tracking-wider mt-1">
+                    {roomSelections.length > 0 
+                      ? roomSelections.map(r => formatAccommodationPackageLabel(r)).join(' • ')
+                      : booking.variant_title}
+                  </p>
                 </div>
 
                 {/* Scrollable Body */}
@@ -1005,6 +1013,23 @@ export default function BookingDetailsModal({
                         }
                       </span>
                     </div>
+                    {roomSelections.length > 0 && (
+                      <div className="col-span-2 sm:col-span-3 pt-3 border-t border-slate-100">
+                        <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider block mb-1.5">
+                          Booked Accommodation &amp; Capacity
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {roomSelections.map((room, idx) => (
+                            <span
+                              key={`modal-room-${idx}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-sm"
+                            >
+                              🏡 {formatAccommodationPackageLabel(room)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Passenger Roster */}
@@ -1239,15 +1264,35 @@ export default function BookingDetailsModal({
                     </h4>
                     <div className="bg-slate-50/40 border border-slate-100 rounded-2xl p-5 space-y-4">
                       <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-500">
-                        <div className="flex flex-col">
-                          <span>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</span>
-                          {booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price && (
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {booking.pricing_snapshot.unit_count} × {formatCurrency(Number(booking.pricing_snapshot.per_ticket_price))} / {booking.pricing_snapshot.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket')}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-right font-bold text-slate-700">{formatCurrency(baseFare)}</div>
+                        {roomSelections.length > 0 ? (
+                          roomSelections.map((room, idx) => (
+                            <React.Fragment key={`billing-room-${idx}`}>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-800">
+                                  🏡 {formatAccommodationPackageNameOnly(room)}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {room.quantity > 1 ? `${room.quantity} × ` : ''}{room.adults} Adults{(room.children ?? 0) > 0 ? ` + ${room.children} Children` : ''} ({room.occupancy} Members Package)
+                                </span>
+                              </div>
+                              <div className="text-right font-bold text-slate-700">
+                                {formatCurrency(Number(room.item_total || (room.price_per_room ? room.price_per_room * room.quantity : baseFare)))}
+                              </div>
+                            </React.Fragment>
+                          ))
+                        ) : (
+                          <>
+                            <div className="flex flex-col">
+                              <span>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</span>
+                              {booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price && (
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {booking.pricing_snapshot.unit_count} × {formatCurrency(Number(booking.pricing_snapshot.per_ticket_price))} / {booking.pricing_snapshot.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-right font-bold text-slate-700">{formatCurrency(baseFare)}</div>
+                          </>
+                        )}
                         {transportSelections.map((ts, idx) => (
                           <React.Fragment key={`billing-transport-${idx}`}>
                             <div className="flex flex-col">

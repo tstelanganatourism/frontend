@@ -16,6 +16,9 @@ import {
   getRefreshmentAmount,
   getTransportSelections,
   hasRefreshment,
+  getRoomSelections,
+  formatAccommodationPackageLabel,
+  formatAccommodationPackageNameOnly,
 } from '@/lib/bookingDisplay';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
@@ -493,6 +496,7 @@ export default function BookingDetailPage() {
   const displayRemaining = remainingAmount;
   const progressPct = displayTotal > 0 ? Math.min(100, (displayPaid / displayTotal) * 100) : 0;
   const transportSelections = booking ? getTransportSelections(booking.pricing_snapshot) : [];
+  const roomSelections = booking ? getRoomSelections(booking.pricing_snapshot) : [];
   const refreshmentIncluded = booking ? hasRefreshment(booking) : false;
   const refreshmentAmount = booking ? getRefreshmentAmount(booking.pricing_snapshot) : 0;
   const baseFare = booking ? getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot) : 0;
@@ -812,7 +816,9 @@ export default function BookingDetailPage() {
                   {booking.target_type === 'ROOM' ? booking.variant_title : booking.package_title}
                 </h1>
                 <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">
-                  {booking.target_type === 'ROOM' ? (displayHotelName || booking.package_title) : booking.variant_title}
+                  {booking.target_type === 'ROOM' 
+                    ? (displayHotelName || booking.package_title) 
+                    : (roomSelections.length > 0 ? roomSelections.map(r => formatAccommodationPackageLabel(r)).join(' • ') : booking.variant_title)}
                 </p>
               </div>
               <div className="text-left sm:text-right shrink-0">
@@ -863,6 +869,24 @@ export default function BookingDetailPage() {
                 </div>
               )}
             </div>
+
+            {roomSelections.length > 0 && (
+              <div className="mb-8 p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                <span className="text-[10px] font-black text-emerald-800 uppercase tracking-widest block mb-2">
+                  Booked Accommodation &amp; Capacity
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {roomSelections.map((room, idx) => (
+                    <span
+                      key={`room-${idx}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-emerald-900 border border-emerald-200 shadow-sm"
+                    >
+                      🏡 {formatAccommodationPackageLabel(room)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {booking.boarding_point && (
               <div className="mb-8 p-4 rounded-2xl bg-slate-50 border border-slate-100">
@@ -1096,17 +1120,31 @@ export default function BookingDetailPage() {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="flex justify-between text-slate-500 font-semibold">
-                <span className="flex flex-col">
-                  <span>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</span>
-                  {booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price && (
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {booking.pricing_snapshot.unit_count || passengerCount} × {formatINR(Number(booking.pricing_snapshot.per_ticket_price))} / {booking.pricing_snapshot.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket')}
+              {roomSelections.length > 0 ? (
+                roomSelections.map((room, idx) => (
+                  <div key={`bill-room-${idx}`} className="flex justify-between text-slate-500 font-semibold">
+                    <span className="flex flex-col">
+                      <span className="font-bold text-slate-800">🏡 {formatAccommodationPackageNameOnly(room)}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {room.quantity > 1 ? `${room.quantity} × ` : ''}{room.adults} Adults{(room.children ?? 0) > 0 ? ` + ${room.children} Children` : ''} ({room.occupancy} Members Package)
+                      </span>
                     </span>
-                  )}
-                </span>
-                <span className="font-bold text-slate-700">{formatINR(baseFare)}</span>
-              </div>
+                    <span className="font-bold text-slate-700">{formatINR(Number(room.item_total || (room.price_per_room ? room.price_per_room * room.quantity : baseFare)))}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex justify-between text-slate-500 font-semibold">
+                  <span className="flex flex-col">
+                    <span>{booking.target_type === 'ROOM' ? 'Room Tariff' : 'Package Fare'}</span>
+                    {booking.pricing_snapshot?.admin_price_override && booking.pricing_snapshot?.per_ticket_price && (
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {booking.pricing_snapshot.unit_count || passengerCount} × {formatINR(Number(booking.pricing_snapshot.per_ticket_price))} / {booking.pricing_snapshot.unit_label || (booking.target_type === 'ROOM' ? 'room-night' : 'ticket')}
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-bold text-slate-700">{formatINR(baseFare)}</span>
+                </div>
+              )}
               {transportSelections.map((ts, idx) => (
                 <div key={`bill-transport-${idx}`} className="flex justify-between text-slate-500 font-semibold">
                   <span>{ts.title || 'Transport'}</span>

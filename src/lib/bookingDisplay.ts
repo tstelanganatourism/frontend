@@ -7,6 +7,18 @@ export interface TransportSelection {
   fixed_price?: number | string | null;
 }
 
+export interface RoomSelectionSnapshot {
+  variant_id: number;
+  title?: string;
+  category_title?: string;
+  occupancy?: number;
+  quantity: number;
+  adults?: number;
+  children?: number;
+  price_per_room?: number;
+  item_total?: number;
+}
+
 export interface PaymentLedgerEntry {
   id: number;
   amount: number;
@@ -155,4 +167,33 @@ export function getPaymentMethodLabel(method?: string | null) {
 
 export function getCapturedPayments(ledger?: PaymentLedgerEntry[] | null) {
   return (ledger || []).filter(payment => payment.status === 'CAPTURED');
+}
+
+export function getRoomSelections(pricingSnapshot?: any): RoomSelectionSnapshot[] {
+  if (Array.isArray(pricingSnapshot?.room_selections) && pricingSnapshot.room_selections.length > 0) {
+    return pricingSnapshot.room_selections;
+  }
+  return [];
+}
+
+export function formatAccommodationPackageLabel(item: RoomSelectionSnapshot): string {
+  const occ = Number(item.occupancy || 1);
+  const qty = Number(item.quantity || 1);
+  const adults = item.adults !== undefined ? Number(item.adults) : occ;
+  const children = item.children !== undefined ? Number(item.children) : 0;
+  
+  let cleanTitle = item.title || `${occ} Members Package`;
+  
+  const guestBreakdown = children > 0 
+    ? `${adults} Adult${adults > 1 ? 's' : ''} + ${children} Child${children > 1 ? 'ren' : ''}`
+    : `${adults} Adult${adults > 1 ? 's' : ''}`;
+
+  return `${qty > 1 ? `${qty} × ` : ''}${cleanTitle} (${guestBreakdown})`;
+}
+
+export function formatAccommodationPackageNameOnly(item: RoomSelectionSnapshot): string {
+  const occ = Number(item.occupancy || 1);
+  const qty = Number(item.quantity || 1);
+  let cleanTitle = item.title || `${occ} Members Package`;
+  return `${qty > 1 ? `${qty} × ` : ''}${cleanTitle}`;
 }

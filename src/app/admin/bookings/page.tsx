@@ -547,7 +547,18 @@ export default function AdminBookingsPage() {
                           APTDC Admin Ticket
                         </span>
                       )}
-                      <p className="text-[10px] text-slate-400 truncate max-w-[160px]">{b.variant_title}</p>
+                      {(b as any).pricing_snapshot?.room_selections?.length > 0 ? (
+                        <div className="mt-1 space-y-0.5">
+                          {(b as any).pricing_snapshot.room_selections.map((rs: any, rIdx: number) => (
+                            <span key={rIdx} className="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200/70 px-1.5 py-0.5 text-[9.5px] font-black text-teal-800">
+                              🏡 {rs.quantity > 1 ? `${rs.quantity} × ` : ''}{rs.title?.replace(/persons?/i, 'Members') || `${rs.occupancy} Members`}
+                              <span className="font-semibold text-teal-600">({rs.adults}A{rs.children > 0 ? `+${rs.children}C` : ''})</span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-slate-400 truncate max-w-[160px]">{b.variant_title?.replace(/persons?/i, 'Members Package')}</p>
+                      )}
                       <p className="text-[10px] text-slate-400 mt-0.5">
                         {b.student_count && b.student_count > 0 ? (
                           `${b.student_count}S`

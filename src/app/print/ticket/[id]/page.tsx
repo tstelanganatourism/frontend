@@ -10,6 +10,8 @@ import {
   getPaymentMethodLabel,
   getRefreshmentAmount,
   getTransportSelections,
+  getRoomSelections,
+  formatAccommodationPackageLabel,
   hasRefreshment,
   hasFoodAddon,
   getFoodAmount,
@@ -200,6 +202,7 @@ export default async function PrintTicketPage({
   const isFullyPaid = booking.status === 'FULLY_PAID';
   const passengerCount = booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count;
   const transportSelections = getTransportSelections(booking.pricing_snapshot);
+  const roomSelections = getRoomSelections(booking.pricing_snapshot);
   const has25Seater = transportSelections.some(ts =>
     Number(ts.capacity) === 25 ||
     (ts.title && (
@@ -1106,7 +1109,10 @@ export default async function PrintTicketPage({
             <span>{isRoom ? (booking.variant_title || allocatedHotelName) : booking.package_title}</span>
             {isRoom
               ? (booking.variant_title && allocatedHotelName && <span className="pkg-ribbon-variant">{allocatedHotelName}</span>)
-              : (booking.variant_title && <span className="pkg-ribbon-variant">{booking.variant_title}</span>)
+              : (roomSelections.length > 0
+                  ? <span className="pkg-ribbon-variant">{roomSelections.map(rs => `${rs.quantity > 1 ? rs.quantity + ' × ' : ''}${rs.title?.replace(/persons?/i, 'Members Package') || `${rs.occupancy} Members Package`}`).join(' · ')}</span>
+                  : (booking.variant_title && <span className="pkg-ribbon-variant">{booking.variant_title.replace(/persons?/i, 'Members Package')}</span>)
+                )
             }
           </div>
 
@@ -1238,8 +1244,18 @@ export default async function PrintTicketPage({
               </div>
             </div>
             <div className="info-card">
-              <div className="info-label">Passengers</div>
-              <div className="info-value">{guestSummary}</div>
+              <div className="info-label">{roomSelections.length > 0 || booking.variant_title?.toLowerCase().includes('person') ? 'Accommodation & Guests' : 'Passengers'}</div>
+              <div className="info-value">
+                {roomSelections.length > 0
+                  ? roomSelections.map(rs => `${rs.quantity > 1 ? `${rs.quantity} × ` : ''}${rs.title?.replace(/persons?/i, 'Members Package') || `${rs.occupancy} Members Package`}`).join(', ')
+                  : (booking.variant_title?.toLowerCase().includes('person') ? booking.variant_title.replace(/persons?/i, 'Members Package') : guestSummary)
+                }
+                {(roomSelections.length > 0 || booking.variant_title?.toLowerCase().includes('person')) && (
+                  <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: 600, marginTop: '2px' }}>
+                    {guestSummary}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="info-card">
               <div className="info-label">PNR Number</div>
@@ -1383,16 +1399,32 @@ export default async function PrintTicketPage({
             {/* Left: Financial Statement */}
             <div className="summary-card">
               <div className="section-header">💳 Bill &amp; Payment Details</div>
-              <div className="pay-row">
-                <span>
-                  {isRoom ? 'Accommodation Fare' : 'Base Fare'}
-                  <span className="pay-row-subtext">
-                    {booking.variant_title} ({guestSummary})
-                    {customPerTicket !== null && ` • ${customUnitCount} × ${money(customPerTicket, 2)} / ${customUnitLabel}`}
+              {roomSelections.length > 0 ? (
+                roomSelections.map((rs, idx) => (
+                  <div className="pay-row" key={`room-${idx}`}>
+                    <span>
+                      {rs.title?.replace(/persons?/i, 'Members Package') || `${rs.occupancy || 1} Members Package`}
+                      <span className="pay-row-subtext">
+                        {rs.quantity > 1 ? `${rs.quantity} Packages • ` : ''}
+                        {rs.occupancy ? `${rs.occupancy} Members Package ` : ''}
+                        ({rs.adults || rs.occupancy || 1} Adults{rs.children && rs.children > 0 ? ` + ${rs.children} Children` : ''})
+                      </span>
+                    </span>
+                    <span>{money(rs.item_total || rs.price_per_room || baseFare, 2)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="pay-row">
+                  <span>
+                    {isRoom ? 'Accommodation Fare' : 'Base Fare'}
+                    <span className="pay-row-subtext">
+                      {booking.variant_title.replace(/persons?/i, 'Members Package')} ({guestSummary})
+                      {customPerTicket !== null && ` • ${customUnitCount} × ${money(customPerTicket, 2)} / ${customUnitLabel}`}
+                    </span>
                   </span>
-                </span>
-                <span>{money(baseFare, 2)}</span>
-              </div>
+                  <span>{money(baseFare, 2)}</span>
+                </div>
+              )}
 
               {transportSelections.map((ts, idx) => (
                 <div className="pay-row" key={`trans-${idx}`}>
