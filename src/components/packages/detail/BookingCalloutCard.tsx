@@ -42,6 +42,7 @@ interface BookingCalloutCardProps {
   refreshmentChildPrice?: number | string | null;
   refreshmentStudentPrice?: number | string | null;
   hasFoodOption?: boolean;
+  foodPricePerKg?: number | string | null;
   foodAdultPrice?: number | string | null;
   foodChildPrice?: number | string | null;
   foodStudentPrice?: number | string | null;
@@ -61,6 +62,7 @@ export const BookingCalloutCard = ({
   refreshmentChildPrice,
   refreshmentStudentPrice,
   hasFoodOption = false,
+  foodPricePerKg,
   foodAdultPrice,
   foodChildPrice,
   foodStudentPrice,
@@ -124,7 +126,7 @@ export const BookingCalloutCard = ({
     if (isNaN(num)) return 'N/A';
     return '₹' + num.toLocaleString('en-IN');
   };  const hasValidRefreshments = Boolean(hasRefreshments && (Number(refreshmentAdultPrice) > 0 || Number(refreshmentChildPrice) > 0 || Number(refreshmentStudentPrice) > 0));
-  const showAddonsTab = Boolean(hasValidRefreshments || (extras && extras.length > 0));
+  const showAddonsTab = Boolean(hasValidRefreshments || hasFoodOption || (extras && extras.length > 0));
   const showTransportTab = Boolean(hasTransport && transportOptions && transportOptions.length > 0);
   const hasTabs = showAddonsTab || showTransportTab;
 
@@ -291,6 +293,16 @@ export const BookingCalloutCard = ({
               </div>
             )}
 
+            {hasFoodOption && (
+              <div className="flex items-start gap-2.5 p-2 rounded-xl bg-amber-50/80 border border-amber-100">
+                <Utensils className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-[10px]">
+                  <span className="block font-black text-slate-800">Optional Food</span>
+                  <span className="block text-slate-500 font-semibold mt-0.5">₹{formatINR(foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice)} per kg. Select any quantity when booking.</span>
+                </div>
+              </div>
+            )}
+
             {/* Transport Options */}
             {showTransportTab && transportOptions.map((opt) => (
               <div key={opt.id} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50/80 border border-slate-100">
@@ -331,7 +343,9 @@ export const BookingCalloutCard = ({
                     <span className="block font-black text-slate-800">{ex.title}</span>
                     {ex.description && <span className="block text-[8px] text-slate-400 font-semibold">{ex.description}</span>}
                     <span className="block text-slate-500 font-semibold mt-0.5">
-                      {isStudentPackage ? (
+                      {(ex.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG' ? (
+                        <>Price: <strong className="text-[#0d6e75]">{formatINR(ex.price_per_kg ?? ex.adult_price)}</strong> / kg</>
+                      ) : isStudentPackage ? (
                         <>Fare: <strong className="text-[#0d6e75]">{formatINR(ex.student_price)}</strong> / student</>
                       ) : Number(ex.adult_price) === Number(ex.child_price) && Number(ex.adult_price) > 0 ? (
                         <>Fare: <strong className="text-[#0d6e75]">{formatINR(ex.adult_price)}</strong> / person</>

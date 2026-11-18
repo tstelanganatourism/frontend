@@ -104,6 +104,10 @@ export default function PreviewModal({ isOpen, onClose, pkg }: PreviewModalProps
                   variants={pkg.variants || []} 
                   packageId={pkg.id || 0}
                   packageSlug={pkg.slug || 'preview'} 
+                  hasFoodOption={pkg.has_food_option}
+                  foodPricePerKg={pkg.food_price_per_kg}
+                  extras={pkg.extras || []}
+                  hasAccommodation={pkg.has_accommodation}
                 />
               </aside>
             )}
@@ -115,6 +119,12 @@ export default function PreviewModal({ isOpen, onClose, pkg }: PreviewModalProps
               variants={pkg.variants || []} 
               packageId={pkg.id || 0}
               packageSlug={pkg.slug || 'preview'} 
+              hasFoodOption={pkg.has_food_option}
+              foodPricePerKg={pkg.food_price_per_kg}
+              foodAdultPrice={pkg.food_adult_price}
+              foodChildPrice={pkg.food_child_price}
+              foodStudentPrice={pkg.food_student_price}
+              extras={pkg.extras || []}
             />
           )}
         </div>

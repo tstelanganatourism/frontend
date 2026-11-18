@@ -18,6 +18,8 @@ import {
   hasRefreshment,
   hasFoodAddon,
   getFoodAmount,
+  getFoodPricingDetail,
+  getPackageExtraPricingDetail,
   hasExtras,
   getExtrasAmount,
   getSelectedExtrasList,
@@ -1178,9 +1180,9 @@ export default function BookingDetailsModal({
                         )}
                         {foodIncluded && (
                           <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-amber-50/50 border border-amber-100 shadow-sm">
-                            <span className="text-xs font-bold text-amber-900">Full Catering Package</span>
+                            <span className="text-xs font-bold text-amber-900">Food Order</span>
                             <span className="text-[10px] text-amber-700 font-semibold mt-1">
-                              Breakfast, Lunch &amp; Dinner Included • {formatCurrency(foodAmount)}
+                              {getFoodPricingDetail(booking.pricing_snapshot) || 'Food add-on'}{booking.pricing_snapshot?.food_included_in_custom_price ? '' : ` • ${formatCurrency(foodAmount)}`}
                             </span>
                           </div>
                         )}
@@ -1189,7 +1191,7 @@ export default function BookingDetailsModal({
                             <div key={`extra-pill-${idx}`} className="flex flex-col justify-center p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 shadow-sm">
                               <span className="text-xs font-bold text-purple-900">{extra.title || extra.name || 'Package Extra'}</span>
                               <span className="text-[10px] text-purple-700 font-semibold mt-1">
-                                {extra.description || 'Special Add-on Option'} • {formatCurrency(Number(extra.item_total || extra.total_price || extra.price || 0))}
+                                {[extra.description, getPackageExtraPricingDetail(extra)].filter(Boolean).join(' • ') || 'Special Add-on Option'}{extra.included_in_custom_price ? '' : ` • ${formatCurrency(Number(extra.item_total || extra.total_price || extra.price || 0))}`}
                               </span>
                             </div>
                           ))
@@ -1312,9 +1314,9 @@ export default function BookingDetailsModal({
                         )}
                         {foodIncluded && (
                           <>
-                            <div>Catering &amp; Meals Package</div>
+                              <div>Food Order {getFoodPricingDetail(booking.pricing_snapshot) && <span className="block text-[10px] text-slate-400 font-medium">{getFoodPricingDetail(booking.pricing_snapshot)}</span>}</div>
                             <div className="text-right font-bold text-slate-700">
-                              {formatCurrency(foodAmount)}
+                              {booking.pricing_snapshot?.food_included_in_custom_price ? 'Included in custom price' : formatCurrency(foodAmount)}
                             </div>
                           </>
                         )}
@@ -1324,9 +1326,10 @@ export default function BookingDetailsModal({
                               <div className="flex flex-col">
                                 <span>{extra.title || extra.name || 'Package Extra'}</span>
                                 {extra.description && <span className="text-[10px] text-slate-400 font-medium">{extra.description}</span>}
+                                {getPackageExtraPricingDetail(extra) && <span className="text-[10px] text-slate-400 font-medium">{getPackageExtraPricingDetail(extra)}</span>}
                               </div>
                               <div className="text-right font-bold text-slate-700">
-                                {formatCurrency(Number(extra.item_total || extra.total_price || extra.price || 0))}
+                                {extra.included_in_custom_price ? 'Included in custom price' : formatCurrency(Number(extra.item_total || extra.total_price || extra.price || 0))}
                               </div>
                             </React.Fragment>
                           ))

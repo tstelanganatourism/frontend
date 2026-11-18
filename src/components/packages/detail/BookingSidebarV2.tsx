@@ -27,7 +27,7 @@ const CheckoutPassengerModal = dynamic(() => import('@/components/checkout/Check
 import { toast } from 'sonner';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 import { downloadFileViaFetch } from '@/lib/downloadUtils';
-import { formatIndianDate } from '@/lib/bookingDisplay';
+import { formatIndianDate, getKgExtraQuantityError } from '@/lib/bookingDisplay';
 
 export interface CombinationPricingItem {
   adults: number;
@@ -83,6 +83,12 @@ interface BookingSidebarV2Props {
   refreshmentAdultPrice?: number | string | null;
   refreshmentChildPrice?: number | string | null;
   refreshmentStudentPrice?: number | string | null;
+  hasFoodOption?: boolean;
+  foodPricePerKg?: number | string | null;
+  foodAdultPrice?: number | string | null;
+  foodChildPrice?: number | string | null;
+  foodStudentPrice?: number | string | null;
+  extras?: any[];
   minPassengers?: number;
   isStudentPackage?: boolean;
   isActive?: boolean;
@@ -143,6 +149,12 @@ export const BookingSidebarV2 = ({
   refreshmentAdultPrice,
   refreshmentChildPrice,
   refreshmentStudentPrice,
+  hasFoodOption = false,
+  foodPricePerKg,
+  foodAdultPrice,
+  foodChildPrice,
+  foodStudentPrice,
+  extras = [],
   minPassengers = 1,
   isStudentPackage = false,
   isActive = true,
@@ -708,6 +720,9 @@ export const BookingSidebarV2 = ({
   // For SEPARATE: map of optionId -> quantity
   const [separateVehicleQtys, setSeparateVehicleQtys] = useState<Record<number, number>>({});
   const [includeRefreshments, setIncludeRefreshments] = useState<boolean>(false);
+  const [foodQuantityKg, setFoodQuantityKg] = useState('0');
+  const [selectedExtraIds, setSelectedExtraIds] = useState<number[]>([]);
+  const [extraKgQuantities, setExtraKgQuantities] = useState<Record<number, string>>({});
   const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(today));
   const [adults, setAdults] = useState<number>(0);
   const [children, setChildren] = useState<number>(0);
@@ -750,6 +765,10 @@ export const BookingSidebarV2 = ({
     return children ?? 0;
   }, [isAccommodationMode, roomConfigs, roomCart, children]);
 
+  const addonAdultsTotal = passengerAdults;
+  const addonChildrenTotal = passengerChildren;
+  const addonStudentsTotal = passengerAdults + passengerChildren;
+
   const totalPassengers = passengerAdults + passengerChildren;
 
   const hasPassengerSelection = useMemo(() => {
@@ -790,6 +809,9 @@ export const BookingSidebarV2 = ({
       const savedSharedOptionId = sessionStorage.getItem('last_checkout_selected_shared_option_id');
       const savedSeparateVehicleQtys = sessionStorage.getItem('last_checkout_separate_vehicle_qtys');
       const savedIncludeRefreshments = sessionStorage.getItem('last_checkout_include_refreshments');
+      const savedFoodQuantityKg = sessionStorage.getItem('last_checkout_food_quantity_kg');
+      const savedExtraIds = sessionStorage.getItem('last_checkout_extra_ids');
+      const savedExtraKgQuantities = sessionStorage.getItem('last_checkout_extra_kg_quantities');
       const savedAdults = sessionStorage.getItem('last_checkout_adults');
       const savedChildren = sessionStorage.getItem('last_checkout_children');
       
@@ -810,6 +832,13 @@ export const BookingSidebarV2 = ({
         } catch (e) {}
       }
       if (savedIncludeRefreshments) setIncludeRefreshments(savedIncludeRefreshments === 'true');
+      if (savedFoodQuantityKg !== null) setFoodQuantityKg(savedFoodQuantityKg);
+      if (savedExtraIds) {
+        try { setSelectedExtraIds(JSON.parse(savedExtraIds)); } catch (e) { }
+      }
+      if (savedExtraKgQuantities) {
+        try { setExtraKgQuantities(JSON.parse(savedExtraKgQuantities)); } catch (e) { }
+      }
       if (savedAdults) setAdults(Number(savedAdults));
       if (savedChildren) setChildren(Number(savedChildren));
       const savedRoomCart = sessionStorage.getItem('last_checkout_room_cart');
@@ -1244,6 +1273,37 @@ export const BookingSidebarV2 = ({
 
   const prices = useMemo(() => {
     const isWeekend = isWeekendSelected;
+    let addonAdults = adults;
+    let addonChildren = children;
+    if (isAccommodationMode) {
+      addonAdults = 0;
+      addonChildren = 0;
+      for (const v of validVariants) {
+        const qty = roomCart[v.id] || 0;
+        for (const config of (roomConfigs[v.id] || []).slice(0, qty)) {
+          addonAdults += Number(config.adults || 0);
+          addonChildren += Number(config.children || 0);
+        }
+      }
+    }
+    const requestedFoodKg = Math.max(0, Number(foodQuantityKg) || 0);
+    const foodUnitPrice = positiveNumber(foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice);
+    const foodSubtotal = hasFoodOption ? roundCurrency(requestedFoodKg * foodUnitPrice) : 0;
+    const customExtrasBreakdown = extras.filter((extra: any) => selectedExtraIds.includes(extra.id)).map((extra: any) => {
+      if ((extra.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG') {
+        const quantity = Math.max(0, Number(extraKgQuantities[extra.id] || 0));
+        const unitPrice = positiveNumber(extra.price_per_kg ?? extra.adult_price);
+        return { id: extra.id, title: extra.title, pricing_unit: 'PER_KG', quantity, unit_price: unitPrice, subtotal: roundCurrency(quantity * unitPrice) };
+      }
+      if (isStudentPackage) {
+        const unitPrice = positiveNumber(extra.student_price ?? extra.adult_price);
+        return { id: extra.id, title: extra.title, pricing_unit: 'PER_PERSON', subtotal: addonAdults * unitPrice };
+      }
+      const adultPrice = positiveNumber(extra.adult_price);
+      const childPrice = positiveNumber(extra.child_price);
+      return { id: extra.id, title: extra.title, pricing_unit: 'PER_PERSON', subtotal: addonAdults * adultPrice + addonChildren * childPrice };
+    });
+    const customExtrasSubtotal = customExtrasBreakdown.reduce((sum: number, item: any) => sum + item.subtotal, 0);
 
     // ACCOMMODATION MODE: calculate totals by summing across all selected room types in roomCart
     if (isAccommodationMode) {
@@ -1333,7 +1393,7 @@ export const BookingSidebarV2 = ({
         refreshmentSubtotal = roomCartTotalGuests * refAdult;
       }
 
-      const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal;
+      const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal + foodSubtotal + customExtrasSubtotal;
       let subtotal = rawSubtotal;
       let discount = 0;
 
@@ -1382,6 +1442,11 @@ export const BookingSidebarV2 = ({
         transportSubtotal,
         transportBreakdown,
         refreshmentSubtotal,
+        foodSubtotal,
+        foodQuantityKg: requestedFoodKg,
+        foodUnitPrice,
+        customExtrasSubtotal,
+        customExtrasBreakdown,
         rawSubtotal,
         discount,
         subtotal,
@@ -1539,7 +1604,7 @@ export const BookingSidebarV2 = ({
       }
     }
 
-    const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal;
+    const rawSubtotal = baseSubtotal + transportSubtotal + refreshmentSubtotal + foodSubtotal + customExtrasSubtotal;
 
     let subtotal = rawSubtotal;
     let discount = 0;
@@ -1581,6 +1646,11 @@ export const BookingSidebarV2 = ({
       pureBaseSubtotal, weekendSurchargeSubtotal, surgeSubtotal, discountSubtotal,
       transportSubtotal, transportBreakdown,
       refreshmentSubtotal, 
+      foodSubtotal,
+      foodQuantityKg: requestedFoodKg,
+      foodUnitPrice,
+      customExtrasSubtotal,
+      customExtrasBreakdown,
       rawSubtotal, discount, subtotal, gst, gatewayFee, serviceCharge,
       grandTotal, agentDiscount, agentPayable,
       commissionType, commissionPercentage, commissionFixedAmount,
@@ -1601,7 +1671,7 @@ export const BookingSidebarV2 = ({
         guests: number;
       }>
     };
-  }, [isAccommodationMode, validVariants, roomCart, roomCartTotalGuests, primaryRoomVariant, selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, commType, commPercentage, commFixedAmount, isWeekendSelected, isSpecialUser]);
+  }, [isAccommodationMode, validVariants, roomCart, roomCartTotalGuests, roomConfigs, primaryRoomVariant, selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, foodPricePerKg, foodAdultPrice, foodChildPrice, foodStudentPrice, foodQuantityKg, selectedExtraIds, extraKgQuantities, extras, commType, commPercentage, commFixedAmount, isWeekendSelected, isSpecialUser]);
 
   const { effectivePayNow, isPartial } = useMemo(() => {
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
@@ -2017,6 +2087,11 @@ export const BookingSidebarV2 = ({
       }
       return;
     }
+    const kgQuantityError = getKgExtraQuantityError(extras, selectedExtraIds, extraKgQuantities);
+    if (kgQuantityError) {
+      toast.error(kgQuantityError);
+      return;
+    }
     setIsProcessingCheckout(true);
     try {
       if (selectedDate && publicAvailability) {
@@ -2045,6 +2120,13 @@ export const BookingSidebarV2 = ({
           room_selections: buildRoomSelections(),
           transport_selections: buildTransportSelections(),
           include_refreshments: hasRefreshments ? includeRefreshments : false,
+          include_food_option: hasFoodOption && Number(foodQuantityKg) > 0,
+          food_quantity_kg: hasFoodOption ? Math.max(0, Number(foodQuantityKg) || 0) : 0,
+          extra_ids: selectedExtraIds,
+          extra_selections: selectedExtraIds.map((id) => {
+            const extra = extras.find((item: any) => item.id === id);
+            return { extra_id: id, quantity: (extra?.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG' ? Number(extraKgQuantities[id] ?? '1') : 1 };
+          }),
           passengers: passengers.map(p => ({
             ...p,
             aadhaar: p.aadhaar || undefined,
@@ -2068,6 +2150,13 @@ export const BookingSidebarV2 = ({
         room_selections: buildRoomSelections(),
         transport_selections: buildTransportSelections(),
         include_refreshments: hasRefreshments ? includeRefreshments : false,
+        include_food_option: hasFoodOption && Number(foodQuantityKg) > 0,
+        food_quantity_kg: hasFoodOption ? Math.max(0, Number(foodQuantityKg) || 0) : 0,
+        extra_ids: selectedExtraIds,
+        extra_selections: selectedExtraIds.map((id) => {
+          const extra = extras.find((item: any) => item.id === id);
+          return { extra_id: id, quantity: (extra?.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG' ? Number(extraKgQuantities[id] ?? '1') : 1 };
+        }),
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
         adult_count: isStudentPackage ? 0 : passengerAdults,
         child_count: isStudentPackage ? 0 : passengerChildren,
@@ -2105,6 +2194,10 @@ export const BookingSidebarV2 = ({
         sessionStorage.setItem('last_checkout_selected_shared_option_id', String(selectedSharedOptionId || ''));
         sessionStorage.setItem('last_checkout_separate_vehicle_qtys', JSON.stringify(separateVehicleQtys));
         sessionStorage.setItem('last_checkout_include_refreshments', String(includeRefreshments));
+        sessionStorage.setItem('last_checkout_include_food_option', String(hasFoodOption && Number(foodQuantityKg) > 0));
+        sessionStorage.setItem('last_checkout_food_quantity_kg', String(foodQuantityKg));
+        sessionStorage.setItem('last_checkout_extra_ids', JSON.stringify(selectedExtraIds));
+        sessionStorage.setItem('last_checkout_extra_kg_quantities', JSON.stringify(extraKgQuantities));
         sessionStorage.setItem('last_checkout_adults', String(passengerAdults));
         sessionStorage.setItem('last_checkout_children', String(passengerChildren));
         if (isAccommodationMode) {
@@ -3486,6 +3579,58 @@ export const BookingSidebarV2 = ({
             </div>
           )}
 
+          {(hasFoodOption || extras.length > 0) && (
+            <div className="mt-2.5 space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/50 p-3.5">
+              <div className="text-xs font-black text-slate-800">Food & Package Add-ons</div>
+              {hasFoodOption && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white p-3">
+                  <div>
+                    <div className="text-xs font-bold text-slate-800">Optional Food</div>
+                    <div className="text-[10px] font-semibold text-amber-800 mt-0.5">₹{formatINR(foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice ?? 0)} / kg · any quantity</div>
+                  </div>
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                    <span>Kg</span>
+                    <input type="number" min="0" max="9999" step="0.25" value={foodQuantityKg} onChange={(e) => setFoodQuantityKg(e.target.value)} className="w-20 rounded-lg border border-amber-200 px-2 py-1.5 text-center text-xs font-black outline-none focus:border-amber-500" aria-label="Food quantity in kilograms" />
+                  </label>
+                </div>
+              )}
+              {extras.map((extra: any) => {
+                const isKgPriced = (extra.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG';
+                const isSelected = selectedExtraIds.includes(extra.id);
+                const unitPrice = isKgPriced ? Number(extra.price_per_kg ?? extra.adult_price ?? 0) : isStudentPackage ? Number(extra.student_price ?? extra.adult_price ?? 0) : Number(extra.adult_price || 0);
+                const quantity = Number(extraKgQuantities[extra.id] ?? '1');
+                const extraTotal = isKgPriced ? roundCurrency(quantity * unitPrice) : isStudentPackage ? addonStudentsTotal * unitPrice : addonAdultsTotal * unitPrice + addonChildrenTotal * Number(extra.child_price || 0);
+                return (
+                  <div key={extra.id} className={`rounded-lg border p-3 ${isSelected ? 'border-amber-400 bg-white' : 'border-amber-100 bg-white/70'}`}>
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input type="checkbox" checked={isSelected} onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedExtraIds((ids) => [...ids, extra.id]);
+                          if (isKgPriced) setExtraKgQuantities((q) => ({ ...q, [extra.id]: q[extra.id] || '1' }));
+                        } else {
+                          setSelectedExtraIds((ids) => ids.filter((id) => id !== extra.id));
+                          setExtraKgQuantities((q) => { const next = { ...q }; delete next[extra.id]; return next; });
+                        }
+                      }} className="mt-0.5 h-4 w-4 rounded text-amber-600 focus:ring-amber-500" />
+                      <span className="flex-1">
+                        <span className="block text-xs font-bold text-slate-800">{extra.title}</span>
+                        {extra.description && <span className="block text-[10px] text-slate-500 mt-0.5">{extra.description}</span>}
+                        <span className="block text-[10px] font-semibold text-amber-800 mt-1">{isKgPriced ? `₹${unitPrice.toFixed(2)} / kg` : isStudentPackage ? `₹${unitPrice.toFixed(2)} / student` : `₹${unitPrice.toFixed(2)} / adult · ₹${Number(extra.child_price || 0).toFixed(2)} / child`}</span>
+                      </span>
+                      {isSelected && <span className="text-[10px] font-black text-amber-800">+₹{extraTotal.toFixed(2)}</span>}
+                    </label>
+                    {isSelected && isKgPriced && (
+                      <label className="mt-2 ml-6 flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                        <span>Quantity (kg)</span>
+                        <input type="number" min="0.25" max="9999" step="0.25" value={extraKgQuantities[extra.id] ?? '1'} onChange={(e) => setExtraKgQuantities((q) => ({ ...q, [extra.id]: e.target.value }))} className="w-20 rounded-lg border border-amber-200 px-2 py-1 text-center text-xs font-black outline-none focus:border-amber-500" aria-label={`${extra.title} quantity in kilograms`} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Coupon */}
           <div className="pt-2.5 border-t border-slate-100">
             <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Promo code</label>
@@ -3750,6 +3895,18 @@ export const BookingSidebarV2 = ({
                   <span className="font-bold">+₹{formatINR(prices.refreshmentSubtotal)}</span>
                 </div>
               )}
+              {prices.foodSubtotal > 0 && (
+                <div className="flex justify-between items-center gap-2 text-amber-700">
+                  <span className="font-semibold">Food ({prices.foodQuantityKg} kg × ₹{formatINR(prices.foodUnitPrice)}/kg)</span>
+                  <span className="font-bold">+₹{formatINR(prices.foodSubtotal)}</span>
+                </div>
+              )}
+              {prices.customExtrasBreakdown.map((item: any) => (
+                <div key={item.id} className="flex justify-between items-center gap-2 text-amber-700">
+                  <span className="font-semibold truncate">{item.title}{item.pricing_unit === 'PER_KG' ? ` (${item.quantity} kg × ₹${formatINR(item.unit_price)}/kg)` : ''}</span>
+                  <span className="font-bold shrink-0">+₹{formatINR(item.subtotal)}</span>
+                </div>
+              ))}
               {appliedCoupon && (
                 <div className="flex justify-between items-center text-emerald-600 font-bold">
                   <span>Discount <span className="text-[10px]">({appliedCoupon.code})</span></span>

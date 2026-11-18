@@ -144,9 +144,7 @@ export default function PackageForm({
 
   // Food Option pricing states
   const [hasFoodOption, setHasFoodOption] = useState(false);
-  const [foodAdultPrice, setFoodAdultPrice] = useState<number | ''>('');
-  const [foodChildPrice, setFoodChildPrice] = useState<number | ''>('');
-  const [foodStudentPrice, setFoodStudentPrice] = useState<number | ''>('');
+  const [foodPricePerKg, setFoodPricePerKg] = useState<number | ''>('');
 
   // Brochure (R2 integration & backend PDF generation)
   const [brochurePdfUrl, setBrochurePdfUrl] = useState('');
@@ -214,9 +212,7 @@ export default function PackageForm({
       setRefreshmentStudentPrice(initialData.refreshment_student_price ?? '');
 
       setHasFoodOption(initialData.has_food_option || false);
-      setFoodAdultPrice(initialData.food_adult_price ?? '');
-      setFoodChildPrice(initialData.food_child_price ?? '');
-      setFoodStudentPrice(initialData.food_student_price ?? '');
+      setFoodPricePerKg(initialData.food_price_per_kg ?? initialData.food_adult_price ?? '');
 
       setMetaTitle(initialData.meta_title || '');
       setMetaDescription(initialData.meta_description || '');
@@ -711,7 +707,8 @@ export default function PackageForm({
       refreshment_student_price: isStudentPackage && hasRefreshments && refreshmentStudentPrice !== '' ? Number(refreshmentStudentPrice) : null,
       refreshments_min_passengers: hasRefreshments ? Number(refreshmentsMinPassengers) : 1,
 
-      has_food_option: false,
+      has_food_option: hasFoodOption,
+      food_price_per_kg: hasFoodOption && foodPricePerKg !== '' ? Number(foodPricePerKg) : null,
       food_adult_price: null,
       food_child_price: null,
       food_student_price: null,
@@ -788,6 +785,8 @@ export default function PackageForm({
           ...ex,
           title: ex.title.trim(),
           description: ex.description ? ex.description.trim() : null,
+          pricing_unit: ex.pricing_unit || 'PER_PERSON',
+          price_per_kg: ex.pricing_unit === 'PER_KG' && ex.price_per_kg !== '' && ex.price_per_kg !== null && ex.price_per_kg !== undefined ? Number(ex.price_per_kg) : null,
           adult_price: ex.adult_price ? Number(ex.adult_price) : null,
           child_price: ex.child_price ? Number(ex.child_price) : null,
           student_price: ex.student_price ? Number(ex.student_price) : null,
@@ -800,6 +799,14 @@ export default function PackageForm({
   const doSave = async () => {
     if (!title.trim()) {
       toast.error('Package title is required');
+      return;
+    }
+    if (hasFoodOption && (foodPricePerKg === '' || Number(foodPricePerKg) < 0)) {
+      toast.error('Enter a valid food price per kg.');
+      return;
+    }
+    if (extras.some((ex) => ex.pricing_unit === 'PER_KG' && (ex.price_per_kg === '' || ex.price_per_kg === null || ex.price_per_kg === undefined || Number(ex.price_per_kg) < 0))) {
+      toast.error('Enter a valid price per kg for each kilogram-priced add-on.');
       return;
     }
     if (hasTransport && transportOptions.length === 0) {
@@ -1424,6 +1431,37 @@ export default function PackageForm({
                 )}
               </div>
 
+              {/* Kilogram-based optional food */}
+              <div className="flex flex-col gap-3 group bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/60 hover:border-amber-400/50 transition-all">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasFoodOption}
+                    onChange={(e) => setHasFoodOption(e.target.checked)}
+                    className="h-5 w-5 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+                  />
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800">Optional Food by Kilogram</span>
+                    <span className="block text-xs font-medium text-slate-500 mt-0.5">Guests choose the food quantity in kg. The price is independent of passenger type and count.</span>
+                  </div>
+                </label>
+                {hasFoodOption && (
+                  <div className="ml-8 max-w-xs">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Food price per kg (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={foodPricePerKg}
+                      onChange={(e) => setFoodPricePerKg(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 font-bold text-amber-700"
+                      placeholder="e.g. 500"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
 
               {/* Dynamic Custom Package Extras (e.g., Rajahmundry Drop, Special Transport, etc.) */}
               <div className="flex flex-col gap-3 group bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/60 hover:border-amber-400/50 transition-all">
@@ -1434,7 +1472,7 @@ export default function PackageForm({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setExtras(prev => [...prev, { title: '', description: '', adult_price: '', child_price: '', student_price: '', min_passengers: 1 }])}
+                    onClick={() => setExtras(prev => [...prev, { title: '', description: '', pricing_unit: 'PER_PERSON', price_per_kg: '', adult_price: '', child_price: '', student_price: '', min_passengers: 1 }])}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-600 transition-colors cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -1456,6 +1494,7 @@ export default function PackageForm({
                                 onChange={(e) => {
                                   const updated = [...extras];
                                   updated[idx].title = e.target.value;
+                                  if (/\b(food|meal|catering|lunch|dinner)\b/i.test(e.target.value)) updated[idx].pricing_unit = 'PER_KG';
                                   setExtras(updated);
                                 }}
                                 placeholder="e.g. Rajahmundry Dropping / Railway Station Drop"
@@ -1487,7 +1526,44 @@ export default function PackageForm({
                           </button>
                         </div>
 
+                        <div className="pt-2 border-t border-slate-100">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pricing Basis</label>
+                          <select
+                            value={item.pricing_unit || 'PER_PERSON'}
+                            onChange={(e) => {
+                              const updated = [...extras];
+                              updated[idx].pricing_unit = e.target.value;
+                              setExtras(updated);
+                            }}
+                            className="w-full max-w-xs rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 outline-none focus:border-amber-500"
+                          >
+                            <option value="PER_PERSON">Per passenger</option>
+                            <option value="PER_KG">Per kilogram (food / loose quantity)</option>
+                          </select>
+                        </div>
+
                         {/* Prices row */}
+                        {item.pricing_unit === 'PER_KG' ? (
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Price per kg (₹)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={item.price_per_kg ?? ''}
+                                onChange={(e) => {
+                                  const updated = [...extras];
+                                  updated[idx].price_per_kg = e.target.value === '' ? '' : Number(e.target.value);
+                                  setExtras(updated);
+                                }}
+                                placeholder="e.g. 200"
+                                className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold text-amber-700 outline-none focus:border-amber-500"
+                              />
+                            </div>
+                            <p className="self-end pb-2 text-[10px] font-semibold text-slate-500">Guests choose the kg amount. Passenger counts do not affect this price.</p>
+                          </div>
+                        ) : (
                         <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
                           {isStudentPackage ? (
                             <div className="col-span-3">
@@ -1554,6 +1630,7 @@ export default function PackageForm({
                             </>
                           )}
                         </div>
+                        )}
                       </div>
                     ))}
                   </div>

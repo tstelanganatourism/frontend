@@ -33,6 +33,7 @@ interface BookingDialogV3Props {
   refreshmentChildPrice?: number | string | null;
   refreshmentStudentPrice?: number | string | null;
   hasFoodOption?: boolean;
+  foodPricePerKg?: number | string | null;
   foodAdultPrice?: number | string | null;
   foodChildPrice?: number | string | null;
   foodStudentPrice?: number | string | null;

@@ -141,6 +141,7 @@ type PackageDetail = {
   refreshment_child_price?: number | string | null;
   refreshment_student_price?: number | string | null;
   has_food_option?: boolean;
+  food_price_per_kg?: number | string | null;
   food_adult_price?: number | string | null;
   food_child_price?: number | string | null;
   food_student_price?: number | string | null;
@@ -599,6 +600,9 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
               refreshmentAdultPrice={pkg.refreshment_adult_price}
               refreshmentChildPrice={pkg.refreshment_child_price}
               refreshmentStudentPrice={pkg.refreshment_student_price}
+              hasFoodOption={pkg.has_food_option}
+              foodPricePerKg={pkg.food_price_per_kg}
+              extras={pkg.extras}
               minPassengers={pkg.min_passengers}
               isStudentPackage={pkg.is_student_package}
               isActive={pkg.is_active}
@@ -620,6 +624,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
               refreshmentChildPrice={pkg.refreshment_child_price}
               refreshmentStudentPrice={pkg.refreshment_student_price}
               hasFoodOption={pkg.has_food_option}
+              foodPricePerKg={pkg.food_price_per_kg}
               foodAdultPrice={pkg.food_adult_price}
               foodChildPrice={pkg.food_child_price}
               foodStudentPrice={pkg.food_student_price}
@@ -645,6 +650,7 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
         refreshmentChildPrice={pkg.refreshment_child_price}
         refreshmentStudentPrice={pkg.refreshment_student_price}
         hasFoodOption={pkg.has_food_option}
+        foodPricePerKg={pkg.food_price_per_kg}
         foodAdultPrice={pkg.food_adult_price}
         foodChildPrice={pkg.food_child_price}
         foodStudentPrice={pkg.food_student_price}

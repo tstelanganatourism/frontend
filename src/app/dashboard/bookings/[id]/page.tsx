@@ -16,6 +16,11 @@ import {
   getRefreshmentAmount,
   getTransportSelections,
   hasRefreshment,
+  hasFoodAddon,
+  getFoodAmount,
+  getFoodPricingDetail,
+  getSelectedExtrasList,
+  getPackageExtraPricingDetail,
   getRoomSelections,
   formatAccommodationPackageLabel,
   formatAccommodationPackageNameOnly,
@@ -499,6 +504,9 @@ export default function BookingDetailPage() {
   const roomSelections = booking ? getRoomSelections(booking.pricing_snapshot) : [];
   const refreshmentIncluded = booking ? hasRefreshment(booking) : false;
   const refreshmentAmount = booking ? getRefreshmentAmount(booking.pricing_snapshot) : 0;
+  const foodIncluded = booking ? hasFoodAddon(booking.pricing_snapshot, booking) : false;
+  const foodAmount = booking ? getFoodAmount(booking.pricing_snapshot) : 0;
+  const selectedExtras = booking ? getSelectedExtrasList(booking.pricing_snapshot) : [];
   const baseFare = booking ? getBaseFareExcludingAddons(booking.subtotal_amount, booking.pricing_snapshot) : 0;
   const passengerCount = booking ? (booking.student_count > 0 ? booking.student_count : booking.adult_count + booking.child_count) : 0;
 
@@ -921,7 +929,7 @@ export default function BookingDetailPage() {
             )}
 
             {/* Stay / Transport / Addons */}
-            {(booking.target_type === 'ROOM' || transportSelections.length > 0 || refreshmentIncluded) && (
+            {(booking.target_type === 'ROOM' || transportSelections.length > 0 || refreshmentIncluded || foodIncluded || selectedExtras.length > 0) && (
               <div className="mb-8">
                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
@@ -970,8 +978,8 @@ export default function BookingDetailPage() {
                       <span className="text-xs font-bold text-emerald-800">Refreshments</span>
                       <span className="text-[10px] text-emerald-600 font-semibold mt-1">
                         {booking.student_count > 0
-                          ? `Add-on for ${booking.student_count} Student${booking.student_count > 1 ? 's' : ''} • {formatINR(refreshmentAmount)}`
-                          : `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children • {formatINR(refreshmentAmount)}`
+                          ? `Add-on for ${booking.student_count} Student${booking.student_count > 1 ? 's' : ''} • ${formatINR(refreshmentAmount)}`
+                          : `Add-on for ${booking.adult_count} Adults + ${booking.child_count} Children • ${formatINR(refreshmentAmount)}`
                         }
                       </span>
                     </div>
@@ -1157,6 +1165,38 @@ export default function BookingDetailPage() {
                   <span className="font-bold text-slate-700">{formatINR(refreshmentAmount)}</span>
                 </div>
               )}
+              {foodIncluded && (
+                <div className="flex justify-between text-slate-500 font-semibold gap-3">
+                  <span className="flex flex-col">
+                    <span>Food Order</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{getFoodPricingDetail(booking.pricing_snapshot) || 'Food add-on'}</span>
+                  </span>
+                  <span className="font-bold text-slate-700">{booking.pricing_snapshot?.food_included_in_custom_price ? 'Included in custom price' : formatINR(foodAmount)}</span>
+                </div>
+              )}
+              {selectedExtras.map((extra: any, idx: number) => (
+                <div key={`bill-extra-${idx}`} className="flex justify-between text-slate-500 font-semibold gap-3">
+                  <span className="flex flex-col">
+                    <span>{extra.title || extra.name || 'Package Extra'}</span>
+                    {getPackageExtraPricingDetail(extra) && <span className="text-[10px] text-slate-400 font-medium">{getPackageExtraPricingDetail(extra)}</span>}
+                  </span>
+                  <span className="font-bold text-slate-700">{extra.included_in_custom_price ? 'Included in custom price' : formatINR(Number(extra.item_total || 0))}</span>
+                </div>
+              ))}
+                  {foodIncluded && (
+                    <div className="flex flex-col justify-center p-3.5 rounded-2xl bg-amber-50 border border-amber-100 shadow-sm">
+                      <span className="text-xs font-bold text-amber-900">Food Order</span>
+                      <span className="text-[10px] text-amber-700 font-semibold mt-1">{getFoodPricingDetail(booking.pricing_snapshot) || 'Food add-on'}{booking.pricing_snapshot?.food_included_in_custom_price ? '' : ` • ${formatINR(foodAmount)}`}</span>
+                    </div>
+                  )}
+                  {selectedExtras.map((extra: any, idx: number) => (
+                    <div key={`booking-extra-${idx}`} className="flex flex-col justify-center p-3.5 rounded-2xl bg-purple-50 border border-purple-100 shadow-sm">
+                      <span className="text-xs font-bold text-purple-900">{extra.title || extra.name || 'Package Extra'}</span>
+                      <span className="text-[10px] text-purple-700 font-semibold mt-1">
+                        {[extra.description, getPackageExtraPricingDetail(extra)].filter(Boolean).join(' • ')}{extra.included_in_custom_price ? '' : ` • ${formatINR(Number(extra.item_total || 0))}`}
+                      </span>
+                    </div>
+                  ))}
               {booking.coupon_discount > 0 && (
                 <div className="flex justify-between font-semibold text-rose-600">
                   <span>Discount ({booking.coupon_applied})</span>

@@ -18,6 +18,7 @@ import { trackFunnelEvent } from '@/lib/activityTracker';
 import { toast } from 'sonner';
 import { ReconnectingEventSource } from '@/lib/ReconnectingEventSource';
 import { downloadFileViaFetch } from '@/lib/downloadUtils';
+import { getKgExtraQuantityError } from '@/lib/bookingDisplay';
 
 interface PackageVariant {
   id: number;
@@ -59,6 +60,7 @@ interface BookingSidebarV3Props {
   refreshmentChildPrice?: number | string | null;
   refreshmentStudentPrice?: number | string | null;
   hasFoodOption?: boolean;
+  foodPricePerKg?: number | string | null;
   foodAdultPrice?: number | string | null;
   foodChildPrice?: number | string | null;
   foodStudentPrice?: number | string | null;
@@ -113,6 +115,10 @@ function positiveNumber(value: number | string | null | undefined) {
   return numeric > 0 ? numeric : 0;
 }
 
+function roundCurrency(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 export const BookingSidebarV3 = ({
   startingPrice,
   variants,
@@ -126,6 +132,7 @@ export const BookingSidebarV3 = ({
   refreshmentChildPrice,
   refreshmentStudentPrice,
   hasFoodOption,
+  foodPricePerKg,
   foodAdultPrice,
   foodChildPrice,
   foodStudentPrice,
@@ -276,8 +283,9 @@ export const BookingSidebarV3 = ({
   }, [hasTransport, transportOptions, selectedTransportMode, selectedSharedOptionId, adults, children]);
 
   const [includeRefreshments, setIncludeRefreshments] = useState<boolean>(false);
-  const [includeFoodOption, setIncludeFoodOption] = useState<boolean>(false);
+  const [foodQuantityKg, setFoodQuantityKg] = useState('0');
   const [selectedExtraIds, setSelectedExtraIds] = useState<number[]>([]);
+  const [extraKgQuantities, setExtraKgQuantities] = useState<Record<number, string>>({});
   const [currentMonthStr, setCurrentMonthStr] = useState(toYYYYMM(today));
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [calYear, setCalYear] = useState(today.getFullYear());
@@ -314,10 +322,14 @@ export const BookingSidebarV3 = ({
   }, [isStudentPackage]);
 
   useEffect(() => {
-    if (!hasFoodOption && includeFoodOption) {
-      setIncludeFoodOption(false);
-    }
-  }, [hasFoodOption, includeFoodOption]);
+    setFoodQuantityKg('0');
+    setSelectedExtraIds([]);
+    setExtraKgQuantities({});
+  }, [packageId]);
+
+  useEffect(() => {
+    if (!hasFoodOption) setFoodQuantityKg('0');
+  }, [hasFoodOption]);
 
   useEffect(() => {
     if (!hasRefreshments && includeRefreshments) {
@@ -470,6 +482,9 @@ export const BookingSidebarV3 = ({
       const savedSeparateVehicleQtys = sessionStorage.getItem('last_checkout_separate_vehicle_qtys');
       const savedIncludeRefreshments = sessionStorage.getItem('last_checkout_include_refreshments');
       const savedIncludeFoodOption = sessionStorage.getItem('last_checkout_include_food_option');
+      const savedFoodQuantityKg = sessionStorage.getItem('last_checkout_food_quantity_kg');
+      const savedExtraIds = sessionStorage.getItem('last_checkout_extra_ids');
+      const savedExtraKgQuantities = sessionStorage.getItem('last_checkout_extra_kg_quantities');
       const savedAdults = sessionStorage.getItem('last_checkout_adults');
       const savedChildren = sessionStorage.getItem('last_checkout_children');
 
@@ -488,7 +503,17 @@ export const BookingSidebarV3 = ({
         } catch (e) { }
       }
       if (savedIncludeRefreshments) setIncludeRefreshments(savedIncludeRefreshments === 'true');
-      if (savedIncludeFoodOption) setIncludeFoodOption(savedIncludeFoodOption === 'true');
+      if (savedIncludeFoodOption) {
+        const shouldIncludeFood = savedIncludeFoodOption === 'true';
+        if (shouldIncludeFood) setFoodQuantityKg('1');
+      }
+      if (savedFoodQuantityKg !== null) setFoodQuantityKg(savedFoodQuantityKg);
+      if (savedExtraIds) {
+        try { setSelectedExtraIds(JSON.parse(savedExtraIds)); } catch (e) { }
+      }
+      if (savedExtraKgQuantities) {
+        try { setExtraKgQuantities(JSON.parse(savedExtraKgQuantities)); } catch (e) { }
+      }
       if (savedAdults) setAdults(Number(savedAdults));
       if (savedChildren) setChildren(Number(savedChildren));
 
@@ -774,36 +799,32 @@ export const BookingSidebarV3 = ({
       }
     }
 
-    // Food Options
-    let foodSubtotal = 0;
-    let foodAdult = 0;
-    let foodChild = 0;
-    let foodStudent = 0;
-    if (hasFoodOption && includeFoodOption) {
-      if (isStudentPackage) {
-        foodStudent = isSpecialUser ? 1 : positiveNumber(foodStudentPrice);
-        foodSubtotal = adults * foodStudent;
-      } else {
-        foodAdult = isSpecialUser ? 1 : positiveNumber(foodAdultPrice);
-        foodChild = isSpecialUser ? 1 : positiveNumber(foodChildPrice);
-        foodSubtotal = (adults * foodAdult) + (children * foodChild);
-      }
-    }
+    // Food is priced by kg and does not depend on passenger counts.
+    const requestedFoodKg = Math.max(0, Number(foodQuantityKg) || 0);
+    const configuredFoodPrice = foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice;
+    const foodUnitPrice = positiveNumber(configuredFoodPrice);
+    const foodSubtotal = hasFoodOption ? roundCurrency(requestedFoodKg * foodUnitPrice) : 0;
 
     // Extras Options
     let customExtrasSubtotal = 0;
-    const customExtrasBreakdown: Array<{ id: number; title: string; subtotal: number }> = [];
+    const customExtrasBreakdown: Array<{ id: number; title: string; subtotal: number; pricing_unit: string; quantity?: number; unit_price?: number }> = [];
     if (extras && extras.length > 0 && selectedExtraIds.length > 0) {
       extras.forEach((ex: any) => {
         if (selectedExtraIds.includes(ex.id)) {
           let itemCost = 0;
-          if (isStudentPackage) {
+          if ((ex.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG') {
+            const quantity = Math.max(0, Number(extraKgQuantities[ex.id] || 0));
+            const unitPrice = positiveNumber(ex.price_per_kg ?? ex.adult_price);
+            itemCost = roundCurrency(quantity * unitPrice);
+            customExtrasBreakdown.push({ id: ex.id, title: ex.title, subtotal: itemCost, pricing_unit: 'PER_KG', quantity, unit_price: unitPrice });
+          } else if (isStudentPackage) {
             itemCost = adults * (isSpecialUser ? 1 : positiveNumber(ex.student_price));
+            customExtrasBreakdown.push({ id: ex.id, title: ex.title, subtotal: itemCost, pricing_unit: 'PER_PERSON' });
           } else {
             itemCost = (adults * (isSpecialUser ? 1 : positiveNumber(ex.adult_price))) + (children * (isSpecialUser ? 1 : positiveNumber(ex.child_price)));
+            customExtrasBreakdown.push({ id: ex.id, title: ex.title, subtotal: itemCost, pricing_unit: 'PER_PERSON' });
           }
           customExtrasSubtotal += itemCost;
-          customExtrasBreakdown.push({ id: ex.id, title: ex.title, subtotal: itemCost });
         }
       });
     }
@@ -852,7 +873,7 @@ export const BookingSidebarV3 = ({
       rawSubtotal, discount, subtotal, gst, serviceCharge, gatewayFee,
       grandTotal, agentDiscount, agentPayable
     };
-  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, includeFoodOption, foodAdultPrice, foodChildPrice, foodStudentPrice, selectedExtraIds, extras, isSpecialUser, isWeekendSelected, commType, commPercentage, commFixedAmount]);
+  }, [selectedSlot, selectedVariant, startingPrice, adults, children, appliedCoupon, user, isAgent, selectedDate, hasTransport, selectedTransportMode, selectedSharedOptionId, separateVehicleQtys, transportOptions, hasRefreshments, includeRefreshments, refreshmentAdultPrice, refreshmentChildPrice, isStudentPackage, refreshmentStudentPrice, hasFoodOption, foodPricePerKg, foodAdultPrice, foodChildPrice, foodStudentPrice, foodQuantityKg, selectedExtraIds, extraKgQuantities, extras, isSpecialUser, isWeekendSelected, commType, commPercentage, commFixedAmount]);
 
   const { minPayable, effectivePayNow, isPartial } = useMemo(() => {
     const finalTotal = isAgent ? prices.agentPayable : prices.grandTotal;
@@ -1285,6 +1306,11 @@ export const BookingSidebarV3 = ({
   };
 
   const handleCheckoutSubmit = async (passengers: any[], quickBooking: boolean = false, customerEmail?: string) => {
+    const kgQuantityError = getKgExtraQuantityError(extras, selectedExtraIds, extraKgQuantities);
+    if (kgQuantityError) {
+      toast.error(kgQuantityError);
+      return;
+    }
     setIsProcessingCheckout(true);
     try {
       if (isAdmin) {
@@ -1298,9 +1324,19 @@ export const BookingSidebarV3 = ({
           variant_id: selectedVariantId,
           transport_selections: buildTransportSelections(),
           include_refreshments: hasRefreshments ? includeRefreshments : false,
-          include_food_option: hasFoodOption ? includeFoodOption : false,
+          include_food_option: hasFoodOption && Number(foodQuantityKg) > 0,
+          food_quantity_kg: hasFoodOption ? Math.max(0, Number(foodQuantityKg) || 0) : 0,
           selected_extra_ids: selectedExtraIds,
           extra_ids: selectedExtraIds,
+          extra_selections: selectedExtraIds.map((id) => {
+            const extra = extras.find((item: any) => item.id === id);
+            return {
+              extra_id: id,
+              quantity: (extra?.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG'
+                ? Number(extraKgQuantities[id] ?? '1')
+                : 1,
+            };
+          }),
           coupon_code: appliedCoupon ? appliedCoupon.code : null,
           passengers: passengers.map(p => ({
             ...p,
@@ -1341,9 +1377,19 @@ export const BookingSidebarV3 = ({
         variant_id: selectedVariantId,
         transport_selections: buildTransportSelections(),
         include_refreshments: hasRefreshments ? includeRefreshments : false,
-        include_food_option: hasFoodOption ? includeFoodOption : false,
+        include_food_option: hasFoodOption && Number(foodQuantityKg) > 0,
+        food_quantity_kg: hasFoodOption ? Math.max(0, Number(foodQuantityKg) || 0) : 0,
         selected_extra_ids: selectedExtraIds,
         extra_ids: selectedExtraIds,
+        extra_selections: selectedExtraIds.map((id) => {
+          const extra = extras.find((item: any) => item.id === id);
+          return {
+            extra_id: id,
+            quantity: (extra?.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG'
+              ? Number(extraKgQuantities[id] ?? '1')
+              : 1,
+          };
+        }),
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
         adult_count: isStudentPackage ? 0 : adults,
         child_count: isStudentPackage ? 0 : children,
@@ -1381,6 +1427,10 @@ export const BookingSidebarV3 = ({
         sessionStorage.setItem('last_checkout_selected_shared_option_id', String(selectedSharedOptionId || ''));
         sessionStorage.setItem('last_checkout_separate_vehicle_qtys', JSON.stringify(separateVehicleQtys));
         sessionStorage.setItem('last_checkout_include_refreshments', String(includeRefreshments));
+        sessionStorage.setItem('last_checkout_include_food_option', String(hasFoodOption && Number(foodQuantityKg) > 0));
+        sessionStorage.setItem('last_checkout_food_quantity_kg', String(foodQuantityKg));
+        sessionStorage.setItem('last_checkout_extra_ids', JSON.stringify(selectedExtraIds));
+        sessionStorage.setItem('last_checkout_extra_kg_quantities', JSON.stringify(extraKgQuantities));
         sessionStorage.setItem('last_checkout_adults', String(adults));
         sessionStorage.setItem('last_checkout_children', String(children));
       }
@@ -2212,21 +2262,60 @@ export const BookingSidebarV3 = ({
                     </label>
                   )}
 
+                  {hasFoodOption && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className="block text-xs font-black text-slate-800">Optional Food</span>
+                          <span className="block text-[9px] font-semibold text-amber-800 mt-1">₹{formatINR(foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice ?? 0)} per kg · choose any quantity</span>
+                        </div>
+                        <label className="flex items-center gap-2 shrink-0 text-[10px] font-bold text-slate-600">
+                          <span>Kg</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="9999"
+                            step="0.25"
+                            value={foodQuantityKg}
+                            onChange={(e) => setFoodQuantityKg(e.target.value)}
+                            className="w-20 rounded-lg border border-amber-200 bg-white px-2 py-1.5 text-center text-xs font-black text-amber-800 outline-none focus:border-amber-500"
+                            aria-label="Food quantity in kilograms"
+                          />
+                        </label>
+                      </div>
+                      {Number(foodQuantityKg) > 0 && (
+                        <div className="mt-2 text-right text-[10px] font-black text-amber-800">
+                          {Number(foodQuantityKg)} kg × ₹{formatINR(foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice ?? 0)} = ₹{formatINR(prices.foodSubtotal)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Extras checkbox list */}
                   {extras && extras.length > 0 && (
                     <div className="grid gap-2">
                       {extras.map((ex: any) => {
                         const isSelected = selectedExtraIds.includes(ex.id);
-                        const exCost = isStudentPackage ? (adults * positiveNumber(ex.student_price)) : ((adults * positiveNumber(ex.adult_price)) + (children * positiveNumber(ex.child_price)));
+                        const isKgPriced = (ex.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG';
+                        const exKgQty = Number(extraKgQuantities[ex.id] ?? '1');
+                        const exUnitPrice = positiveNumber(ex.price_per_kg ?? ex.adult_price);
+                        const exCost = isKgPriced
+                          ? exKgQty * exUnitPrice
+                          : isStudentPackage ? (adults * positiveNumber(ex.student_price)) : ((adults * positiveNumber(ex.adult_price)) + (children * positiveNumber(ex.child_price)));
                         return (
-                          <label key={ex.id} className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
+                          <div key={ex.id} className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${isSelected ? 'border-[#0d6e75] bg-[#0d6e75]/5 shadow-3xs' : 'border-slate-200 bg-white hover:border-slate-350'
                             }`}>
                             <input
                               type="checkbox"
                               checked={isSelected}
                               onChange={(e) => {
-                                if (e.target.checked) setSelectedExtraIds(p => [...p, ex.id]);
-                                else setSelectedExtraIds(p => p.filter(id => id !== ex.id));
+                                if (e.target.checked) {
+                                  setSelectedExtraIds(p => [...p, ex.id]);
+                                  if (isKgPriced) setExtraKgQuantities(p => ({ ...p, [ex.id]: p[ex.id] || '1' }));
+                                } else {
+                                  setSelectedExtraIds(p => p.filter(id => id !== ex.id));
+                                  setExtraKgQuantities(p => { const next = { ...p }; delete next[ex.id]; return next; });
+                                }
                               }}
                               className="mt-0.5 rounded text-[#0d6e75] focus:ring-[#0d6e75] h-4 w-4"
                             />
@@ -2234,13 +2323,29 @@ export const BookingSidebarV3 = ({
                               <span className="block text-xs font-black text-slate-800 leading-snug">{ex.title}</span>
                               {ex.description && <span className="block text-[9px] font-medium text-slate-400 mt-0.5 line-clamp-1">{ex.description}</span>}
                               <span className="block text-[9px] font-semibold text-[#0d6e75] mt-1">
-                                {isStudentPackage ? `₹${formatINR(ex.student_price)}/student` : `₹${formatINR(ex.adult_price)}/adult · ₹${formatINR(ex.child_price)}/child`}
+                                {isKgPriced ? `₹${formatINR(exUnitPrice)} per kg · choose any quantity` : isStudentPackage ? `₹${formatINR(ex.student_price)}/student` : `₹${formatINR(ex.adult_price)}/adult · ₹${formatINR(ex.child_price)}/child`}
                               </span>
+                              {isSelected && isKgPriced && (
+                                <label className="mt-2 flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                                  <span>Quantity (kg)</span>
+                                  <input
+                                    type="number"
+                                    min="0.25"
+                                    max="9999"
+                                    step="0.25"
+                                  value={extraKgQuantities[ex.id] ?? '1'}
+                                    onChange={(e) => setExtraKgQuantities(p => ({ ...p, [ex.id]: e.target.value }))}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center text-xs font-black text-slate-800 outline-none focus:border-[#0d6e75]"
+                                    aria-label={`${ex.title} quantity in kilograms`}
+                                  />
+                                </label>
+                              )}
                             </div>
                             {isSelected && exCost > 0 && (
                               <span className="text-[10px] font-black text-[#0d6e75] shrink-0">+₹{formatINR(exCost)}</span>
                             )}
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
@@ -2298,13 +2403,13 @@ export const BookingSidebarV3 = ({
                     )}
                     {prices.foodSubtotal > 0 && (
                       <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
-                        <span>Food & Meals</span>
+                        <span>Food ({Number(foodQuantityKg)} kg × ₹{formatINR(foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice ?? 0)}/kg)</span>
                         <span>+₹{formatINR(prices.foodSubtotal)}</span>
                       </div>
                     )}
                     {prices.customExtrasBreakdown && prices.customExtrasBreakdown.map((item) => (
                       <div key={item.id} className="flex justify-between items-center text-[#0d6e75] font-semibold gap-2">
-                        <span className="truncate">{item.title}</span>
+                        <span className="truncate">{item.title}{item.pricing_unit === 'PER_KG' ? ` (${item.quantity} kg × ₹${formatINR(item.unit_price || 0)}/kg)` : ''}</span>
                         <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
                       </div>
                     ))}
@@ -2488,13 +2593,13 @@ export const BookingSidebarV3 = ({
                   )}
                   {prices.foodSubtotal > 0 && (
                     <div className="flex justify-between items-center text-[#0d6e75] font-semibold">
-                      <span>Food & Meals Package</span>
+                      <span>Food ({Number(foodQuantityKg)} kg × ₹{formatINR(foodPricePerKg ?? foodAdultPrice ?? foodStudentPrice ?? foodChildPrice ?? 0)}/kg)</span>
                       <span>+₹{formatINR(prices.foodSubtotal)}</span>
                     </div>
                   )}
                   {prices.customExtrasBreakdown && prices.customExtrasBreakdown.map((item) => (
                     <div key={item.id} className="flex justify-between items-center text-[#0d6e75] font-semibold gap-2">
-                      <span className="truncate" title={item.title}>{item.title}</span>
+                      <span className="truncate" title={item.title}>{item.title}{item.pricing_unit === 'PER_KG' ? ` (${item.quantity} kg × ₹${formatINR(item.unit_price || 0)}/kg)` : ''}</span>
                       <span className="shrink-0">+₹{formatINR(item.subtotal)}</span>
                     </div>
                   ))}

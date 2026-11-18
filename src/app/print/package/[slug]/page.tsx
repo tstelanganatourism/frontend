@@ -64,7 +64,7 @@ type Gallery = { image_url: string; alt_text?: string | null };
 type Variant = { title: string; adult_price: number; child_price: number; weekend_adult_price?: number | null; weekend_child_price?: number | null; student_price?: number | null; weekend_student_price?: number | null };
 type TransportOption = { id: number; type: string; title: string; capacity?: number | null; adult_price?: number | null; child_price?: number | null; weekend_adult_price?: number | null; weekend_child_price?: number | null; fixed_price?: number | null; weekend_fixed_price?: number | null };
 type MealItem = { id: number; meal_type: string; name: string; serving_time?: string | null; description?: string | null; cost_per_person: number; is_vegetarian: boolean; day_number?: number | null };
-type ExtraItem = { id: number; title: string; description?: string | null; adult_price?: number | null; child_price?: number | null; student_price?: number | null; min_passengers: number };
+type ExtraItem = { id: number; title: string; description?: string | null; adult_price?: number | null; child_price?: number | null; student_price?: number | null; pricing_unit?: string; price_per_kg?: number | null; min_passengers: number };
 
 interface Pkg {
   title: string;
@@ -84,6 +84,7 @@ interface Pkg {
   refreshment_student_price?: number | null;
   refreshments_min_passengers?: number;
   has_food_option?: boolean;
+  food_price_per_kg?: number | null;
   food_adult_price?: number | null;
   food_child_price?: number | null;
   food_student_price?: number | null;
@@ -565,7 +566,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                       ))}
                       {pkg.has_food_option && (
                         <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontSize: '7pt', color: '#047857', fontWeight: 600 }}>
-                          Optional Food Add-On (Available on Selection): Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
+                          Optional Food Add-On (Available on Selection): {formatCurrency(pkg.food_price_per_kg ?? pkg.food_adult_price)} per kg
                         </div>
                       )}
                     </div>
@@ -587,7 +588,9 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                           <div style={{ fontWeight: 700, color: '#0f3d56', fontSize: '7.5pt' }}>{getExtraIcon(e.title)} {e.title}</div>
                           {e.description && <div style={{ fontSize: '6.5pt', color: '#64748b' }}>{e.description}</div>}
                           <div style={{ fontSize: '7pt', color: '#d97706', fontWeight: 600 }}>
-                            Adult: {formatCurrency(e.adult_price)} | Child: {formatCurrency(e.child_price)}
+                            {(e.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG'
+                              ? `${formatCurrency(e.price_per_kg ?? e.adult_price)} per kg`
+                              : `Adult: ${formatCurrency(e.adult_price)} | Child: ${formatCurrency(e.child_price)}`}
                           </div>
                         </div>
                       ))}
@@ -618,7 +621,7 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                     ))}
                     {pkg.has_food_option && (
                       <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontSize: '7pt', color: '#047857', fontWeight: 600 }}>
-                        Optional Food Add-On (Available on Selection): Adult {formatCurrency(pkg.food_adult_price)} | Child {formatCurrency(pkg.food_child_price)}
+                        Optional Food Add-On (Available on Selection): {formatCurrency(pkg.food_price_per_kg ?? pkg.food_adult_price)} per kg
                       </div>
                     )}
                   </div>
@@ -684,7 +687,9 @@ export default async function BrochurePage({ params }: { params: Promise<{ slug:
                           )}
                         </div>
                         <div style={{ fontSize: '7pt', color: '#d97706', fontWeight: 700, marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1' }}>
-                          Adult: {formatCurrency(e.adult_price)} | Child: {formatCurrency(e.child_price)}
+                          {(e.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG'
+                            ? `${formatCurrency(e.price_per_kg ?? e.adult_price)} per kg`
+                            : `Adult: ${formatCurrency(e.adult_price)} | Child: ${formatCurrency(e.child_price)}`}
                         </div>
                       </div>
                     ))}

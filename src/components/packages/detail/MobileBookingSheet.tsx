@@ -52,6 +52,7 @@ interface MobileBookingSheetProps {
   refreshmentChildPrice?: number | string | null;
   refreshmentStudentPrice?: number | string | null;
   hasFoodOption?: boolean;
+  foodPricePerKg?: number | string | null;
   foodAdultPrice?: number | string | null;
   foodChildPrice?: number | string | null;
   foodStudentPrice?: number | string | null;
@@ -77,6 +78,7 @@ export const MobileBookingSheet = ({
   refreshmentChildPrice,
   refreshmentStudentPrice,
   hasFoodOption = false,
+  foodPricePerKg,
   foodAdultPrice = 0,
   foodChildPrice = 0,
   foodStudentPrice = 0,
@@ -208,6 +210,7 @@ export const MobileBookingSheet = ({
                   refreshmentChildPrice={refreshmentChildPrice}
                   refreshmentStudentPrice={refreshmentStudentPrice}
                   hasFoodOption={hasFoodOption}
+                  foodPricePerKg={foodPricePerKg}
                   foodAdultPrice={foodAdultPrice}
                   foodChildPrice={foodChildPrice}
                   foodStudentPrice={foodStudentPrice}

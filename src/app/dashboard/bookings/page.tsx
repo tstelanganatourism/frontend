@@ -6,7 +6,7 @@ import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
-import { getTransportSelections, hasRefreshment, hasFoodAddon, getSelectedExtrasList, money, getRoomSelections, formatAccommodationPackageLabel } from '@/lib/bookingDisplay';
+import { getTransportSelections, hasRefreshment, hasFoodAddon, getFoodAmount, getFoodPricingDetail, getPackageExtraPricingDetail, getSelectedExtrasList, money, getRoomSelections, formatAccommodationPackageLabel } from '@/lib/bookingDisplay';
 import { OfficeVisitPopup, useOfficeVisitPopup } from '@/components/ui/OfficeVisitPopup';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string; bar: string }> = {
@@ -329,12 +329,12 @@ function BookingTicketCard({ booking: b, style, isPast }: { booking: any; style?
                   )}
                   {foodIncluded && (
                     <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-teal-700" style={{background:'#f0fdfa', border:'1px solid #99f6e4'}}>
-                      Meals Package
+                      Food{getFoodPricingDetail(b.pricing_snapshot) ? ` · ${getFoodPricingDetail(b.pricing_snapshot)}` : ''}{b.pricing_snapshot?.food_included_in_custom_price ? '' : ` · ${money(getFoodAmount(b.pricing_snapshot))}`}
                     </span>
                   )}
                   {extrasList.map((ex: any, idx: number) => (
-                    <span key={`ex-${idx}`} className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-purple-700" style={{background:'#faf5ff', border:'1px solid #e9d5ff'}}>
-                      {ex.title || ex.name || 'Extra'}
+                    <span key={`ex-${idx}`} title={getPackageExtraPricingDetail(ex)} className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-purple-700" style={{background:'#faf5ff', border:'1px solid #e9d5ff'}}>
+                      {ex.title || ex.name || 'Extra'}{getPackageExtraPricingDetail(ex) ? ` · ${getPackageExtraPricingDetail(ex)}` : ''}{ex.included_in_custom_price ? '' : ` · ${money(Number(ex.item_total || 0))}`}
                     </span>
                   ))}
                 </div>

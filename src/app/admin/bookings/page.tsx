@@ -16,6 +16,7 @@ import PrintBookingsModal from '@/components/admin/PrintBookingsModal';
 import PremiumSelect from '@/components/ui/PremiumSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import { BookingDateDisplay } from '@/components/ui/BookingDateDisplay';
+import { getFoodPricingDetail, getPackageExtraPricingDetail, getSelectedExtrasList } from '@/lib/bookingDisplay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -570,6 +571,16 @@ export default function AdminBookingsPage() {
                       {(b as any).pricing_snapshot?.transport_selections?.length > 0 && (
                         <p className="text-[10px] text-fuchsia-600 font-bold mt-1 truncate max-w-[160px]" title="Transport Selection">
                           + {(b as any).pricing_snapshot.transport_selections.map((ts: any) => `${ts.quantity > 1 ? ts.quantity + 'x ' : ''}${ts.title}`).join(', ')}
+                        </p>
+                      )}
+                      {(b as any).pricing_snapshot?.has_food_addon && Number((b as any).pricing_snapshot?.food_quantity_kg || 0) > 0 && (
+                        <p className="text-[10px] text-amber-700 font-bold mt-1" title={getFoodPricingDetail(b.pricing_snapshot)}>
+                          Food · {getFoodPricingDetail(b.pricing_snapshot)}{(b as any).pricing_snapshot?.food_included_in_custom_price ? '' : ` · ${formatINR(Number((b as any).pricing_snapshot?.food_subtotal || 0))}`}
+                        </p>
+                      )}
+                      {getSelectedExtrasList(b.pricing_snapshot).length > 0 && (
+                        <p className="text-[10px] text-purple-700 font-bold mt-1 truncate max-w-[180px]" title={getSelectedExtrasList(b.pricing_snapshot).map((extra: any) => `${extra.title}: ${getPackageExtraPricingDetail(extra)}`).join(' · ')}>
+                          + {getSelectedExtrasList(b.pricing_snapshot).map((extra: any) => `${extra.title}${getPackageExtraPricingDetail(extra) ? ` · ${getPackageExtraPricingDetail(extra)}` : ''}${extra.included_in_custom_price ? '' : ` · ${formatINR(Number(extra.item_total || 0))}`}`).join(', ')}
                         </p>
                       )}
                     </td>

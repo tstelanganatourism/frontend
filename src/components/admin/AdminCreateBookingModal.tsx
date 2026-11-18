@@ -5,6 +5,7 @@ import { X, Loader2, Plus, Users, Calendar, Package, Home, CalendarDays, Chevron
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 import PremiumSelect from '@/components/ui/PremiumSelect';
+import { getKgExtraQuantityError } from '@/lib/bookingDisplay';
 
 // ─── Verhoeff Checksum ────────────────────────────────────────────────────────
 const _d = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 0, 6, 7, 8, 9, 5], [2, 3, 4, 0, 1, 7, 8, 9, 5, 6], [3, 4, 0, 1, 2, 8, 9, 5, 6, 7], [4, 0, 1, 2, 3, 9, 5, 6, 7, 8], [5, 9, 8, 7, 6, 0, 4, 3, 2, 1], [6, 5, 9, 8, 7, 1, 0, 4, 3, 2], [7, 6, 5, 9, 8, 2, 1, 0, 4, 3], [8, 7, 6, 5, 9, 3, 2, 1, 0, 4], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]];
@@ -25,6 +26,10 @@ const GENDER_OPTIONS = [
   { value: 'FEMALE', label: 'Female' },
   { value: 'OTHER', label: 'Other' },
 ];
+
+function roundCurrency(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
 
 
 interface PassengerForm {
@@ -77,6 +82,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
   const [packageRefAdultPrice, setPackageRefAdultPrice] = useState(0);
   const [packageRefChildPrice, setPackageRefChildPrice] = useState(0);
   const [includeRefreshments, setIncludeRefreshments] = useState(false);
+  const [foodQuantityKg, setFoodQuantityKg] = useState('0');
+  const [selectedExtraIds, setSelectedExtraIds] = useState<number[]>([]);
+  const [extraKgQuantities, setExtraKgQuantities] = useState<Record<number, string>>({});
   const [minPassengers, setMinPassengers] = useState(1);
 
   // Taxes, Fees & Surcharges overrides
@@ -227,6 +235,9 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       setSelectedSharedOptId(null);
       setSeparateVehicleQtys({});
       setIncludeRefreshments(false);
+      setFoodQuantityKg('0');
+      setSelectedExtraIds([]);
+      setExtraKgQuantities({});
     }
   }, [variantId, packagesList, targetType]);
 
@@ -343,6 +354,13 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (targetType === 'package') {
+      const kgQuantityError = getKgExtraQuantityError(selectedPackage?.extras || [], selectedExtraIds, extraKgQuantities);
+      if (kgQuantityError) {
+        toast.error(kgQuantityError);
+        return;
+      }
+    }
     if (!canSubmit()) return;
     setIsSubmitting(true);
     try {
@@ -432,6 +450,15 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
         passengers: passengersPayload,
         transport_selections: transport_selections.length > 0 ? transport_selections : undefined,
         include_refreshments: includeRefreshments,
+        include_food_option: !!selectedPackage?.has_food_option && Number(foodQuantityKg) > 0,
+        food_quantity_kg: selectedPackage?.has_food_option ? Math.max(0, Number(foodQuantityKg) || 0) : 0,
+        extra_ids: targetType === 'package' ? selectedExtraIds : undefined,
+        extra_selections: targetType === 'package' ? selectedExtraIds.map((id) => ({
+          extra_id: id,
+          quantity: (selectedPackage?.extras?.find((extra: any) => extra.id === id)?.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG'
+            ? Number(extraKgQuantities[id] ?? '1')
+            : 1,
+        })) : undefined,
         quick_booking: passengerMode === 'quick',
         customer_email: customerEmail.trim() || undefined,
         coupon_code: (appliedCouponCode || couponCode).trim().toUpperCase() || undefined,
@@ -572,6 +599,20 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
           subtotal += (numAdults * packageRefAdultPrice) + (numChildren * packageRefChildPrice);
         }
       }
+      if (pkg?.has_food_option && Number(foodQuantityKg) > 0) {
+        const foodPrice = Number(pkg.food_price_per_kg ?? pkg.food_adult_price ?? pkg.food_student_price ?? pkg.food_child_price ?? 0);
+        subtotal += roundCurrency(Number(foodQuantityKg) * foodPrice);
+      }
+      for (const extra of pkg?.extras || []) {
+        if (!selectedExtraIds.includes(extra.id)) continue;
+        if ((extra.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG') {
+          subtotal += roundCurrency(Number(extraKgQuantities[extra.id] ?? '1') * Number(extra.price_per_kg ?? extra.adult_price ?? 0));
+        } else if (pkg?.is_student_package) {
+          subtotal += numStudents * Number(extra.student_price ?? extra.adult_price ?? 0);
+        } else {
+          subtotal += numAdults * Number(extra.adult_price || 0) + numChildren * Number(extra.child_price || 0);
+        }
+      }
     } else if (targetType === 'room' && roomVariantId && travelDate) {
       const selected = roomOptions.find(o => o.value === roomVariantId);
       if (selected) {
@@ -593,7 +634,7 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
       }
     }
     return subtotal;
-  }, [targetType, variantId, roomVariantId, packagesList, packageOptions, roomOptions, adultCount, childCount, studentCount, travelDate, departureDate, transportMode, selectedSharedOptId, separateVehicleQtys, packageTransportOptions, includeRefreshments, packageHasRefreshments, packageRefAdultPrice, packageRefChildPrice]);
+  }, [targetType, variantId, roomVariantId, packagesList, packageOptions, roomOptions, adultCount, childCount, studentCount, travelDate, departureDate, transportMode, selectedSharedOptId, separateVehicleQtys, packageTransportOptions, includeRefreshments, packageHasRefreshments, packageRefAdultPrice, packageRefChildPrice, foodQuantityKg, selectedExtraIds, extraKgQuantities]);
 
   const customDivisionInfo = useMemo(() => {
     if (targetType === 'room') {
@@ -922,6 +963,93 @@ export default function AdminCreateBookingModal({ isOpen, onClose, onSuccess }: 
                 )}
               </div>
             </label>
+          )}
+
+          {targetType === 'package' && selectedPackage && (selectedPackage.has_food_option || (selectedPackage.extras || []).length > 0) && (
+            <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/50 p-3.5">
+              <div>
+                <div className="text-xs font-black text-slate-800">Food & Package Add-ons</div>
+                <div className="text-[10px] font-semibold text-slate-500 mt-0.5">Food is priced by kg and does not change with passenger counts.</div>
+              </div>
+              {selectedPackage.has_food_option && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white p-3">
+                  <div>
+                    <div className="text-xs font-bold text-slate-800">Optional Food</div>
+                    <div className="text-[10px] font-semibold text-amber-800 mt-0.5">₹{Number(selectedPackage.food_price_per_kg ?? selectedPackage.food_adult_price ?? selectedPackage.food_student_price ?? selectedPackage.food_child_price ?? 0).toFixed(2)} / kg</div>
+                  </div>
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                    <span>Kg</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="9999"
+                      step="0.25"
+                      value={foodQuantityKg}
+                      onChange={(e) => setFoodQuantityKg(e.target.value)}
+                      className="w-20 rounded-lg border border-amber-200 px-2 py-1.5 text-center text-xs font-black outline-none focus:border-amber-500"
+                      aria-label="Food quantity in kilograms"
+                    />
+                  </label>
+                </div>
+              )}
+              {(selectedPackage.extras || []).map((extra: any) => {
+                const isSelected = selectedExtraIds.includes(extra.id);
+                const isKgPriced = (extra.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG';
+                const unitPrice = isKgPriced
+                  ? Number(extra.price_per_kg ?? extra.adult_price ?? 0)
+                  : isStudentPackage
+                    ? Number(extra.student_price ?? extra.adult_price ?? 0)
+                    : Number(extra.adult_price || 0);
+                const extraCost = isKgPriced
+                  ? roundCurrency(Number(extraKgQuantities[extra.id] ?? '1') * unitPrice)
+                  : isStudentPackage
+                    ? numStudents * unitPrice
+                    : numAdults * unitPrice + numChildren * Number(extra.child_price || 0);
+                return (
+                  <div key={extra.id} className={`rounded-lg border p-3 transition-colors ${isSelected ? 'border-amber-400 bg-white' : 'border-amber-100 bg-white/70'}`}>
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedExtraIds((ids) => [...ids, extra.id]);
+                            if (isKgPriced) setExtraKgQuantities((q) => ({ ...q, [extra.id]: q[extra.id] || '1' }));
+                          } else {
+                            setSelectedExtraIds((ids) => ids.filter((id) => id !== extra.id));
+                            setExtraKgQuantities((q) => { const next = { ...q }; delete next[extra.id]; return next; });
+                          }
+                        }}
+                        className="mt-0.5 h-4 w-4 rounded text-amber-600 focus:ring-amber-500"
+                      />
+                      <span className="flex-1">
+                        <span className="block text-xs font-bold text-slate-800">{extra.title}</span>
+                        {extra.description && <span className="block text-[10px] text-slate-500 mt-0.5">{extra.description}</span>}
+                        <span className="block text-[10px] font-semibold text-amber-800 mt-1">
+                          {isKgPriced ? `₹${unitPrice.toFixed(2)} / kg` : isStudentPackage ? `₹${unitPrice.toFixed(2)} / student` : `₹${unitPrice.toFixed(2)} / adult · ₹${Number(extra.child_price || 0).toFixed(2)} / child`}
+                        </span>
+                      </span>
+                      {isSelected && <span className="text-[10px] font-black text-amber-800">+₹{extraCost.toFixed(2)}</span>}
+                    </label>
+                    {isSelected && isKgPriced && (
+                      <label className="mt-2 ml-6 flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                        <span>Quantity (kg)</span>
+                        <input
+                          type="number"
+                          min="0.25"
+                          max="9999"
+                          step="0.25"
+                          value={extraKgQuantities[extra.id] ?? '1'}
+                          onChange={(e) => setExtraKgQuantities((q) => ({ ...q, [extra.id]: e.target.value }))}
+                          className="w-20 rounded-lg border border-amber-200 px-2 py-1 text-center text-xs font-black outline-none focus:border-amber-500"
+                          aria-label={`${extra.title} quantity in kilograms`}
+                        />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {/* Coupon Code Section */}

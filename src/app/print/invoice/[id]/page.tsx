@@ -10,6 +10,8 @@ import {
   getCapturedPayments,
   getExtrasAmount,
   getFoodAmount,
+  getFoodPricingDetail,
+  getPackageExtraPricingDetail,
   getPaymentMethodLabel,
   getRefreshmentAmount,
   getSelectedExtrasList,
@@ -1041,11 +1043,11 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                     <tr>
                       <td style={{ textAlign: 'center' }}>{sNo++}</td>
                       <td>
-                        <span className="tax-table-line-title">{booking.pricing_snapshot?.food_label || booking.pricing_snapshot?.catering_label || 'Catering & Meals Package'}</span>
-                        <span className="tax-table-line-sub">{booking.pricing_snapshot?.food_description || `Meals included for ${passengerCount} guest${passengerCount !== 1 ? 's' : ''}`}</span>
+                        <span className="tax-table-line-title">{booking.pricing_snapshot?.food_label || booking.pricing_snapshot?.catering_label || 'Food Order'}</span>
+                        <span className="tax-table-line-sub">{getFoodPricingDetail(booking.pricing_snapshot) || booking.pricing_snapshot?.food_description || `Food add-on for ${passengerCount} guest${passengerCount !== 1 ? 's' : ''}`}</span>
                       </td>
                       <td>996332</td>
-                      <td style={{ textAlign: 'right' }}>{money(foodAmount, 2)}</td>
+                      <td style={{ textAlign: 'right' }}>{booking.pricing_snapshot?.food_included_in_custom_price ? 'Included in custom price' : money(foodAmount, 2)}</td>
                       <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
                       <td style={{ textAlign: 'right' }}>{money(Number(foodAmount) * gstMultiplier, 2)}</td>
                     </tr>
@@ -1060,10 +1062,10 @@ export default async function PrintInvoicePage({ params, searchParams }: PagePro
                           <td style={{ textAlign: 'center' }}>{sNo++}</td>
                           <td>
                             <span className="tax-table-line-title">{extra.title || extra.name || 'Custom Addon'}</span>
-                            <span className="tax-table-line-sub">{extra.description || `Special package addon for ${passengerCount} guests`}</span>
+                            <span className="tax-table-line-sub">{[extra.description, getPackageExtraPricingDetail(extra)].filter(Boolean).join(' · ') || `Special package addon for ${passengerCount} guests`}</span>
                           </td>
                           <td>999799</td>
-                          <td style={{ textAlign: 'right' }}>{money(finalVal, 2)}</td>
+                          <td style={{ textAlign: 'right' }}>{extra.included_in_custom_price ? 'Included in custom price' : money(finalVal, 2)}</td>
                           <td style={{ textAlign: 'right' }}>{gstRateLabel}</td>
                           <td style={{ textAlign: 'right' }}>{money(Number(finalVal) * gstMultiplier, 2)}</td>
                         </tr>

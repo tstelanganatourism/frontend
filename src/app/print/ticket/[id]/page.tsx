@@ -15,6 +15,8 @@ import {
   hasRefreshment,
   hasFoodAddon,
   getFoodAmount,
+  getFoodPricingDetail,
+  getPackageExtraPricingDetail,
   hasExtras,
   getExtrasAmount,
   getSelectedExtrasList,
@@ -1449,10 +1451,10 @@ export default async function PrintTicketPage({
               {foodIncluded && (
                 <div className="pay-row">
                   <span>
-                    Catering &amp; Meals Package
-                    <span className="pay-row-subtext">Catering &amp; Meals Add-On</span>
+                    Food Order
+                    <span className="pay-row-subtext">{getFoodPricingDetail(booking.pricing_snapshot) || 'Food add-on'}</span>
                   </span>
-                  <span>{money(foodAmount, 2)}</span>
+                  <span>{booking.pricing_snapshot?.food_included_in_custom_price ? 'Included in custom price' : money(foodAmount, 2)}</span>
                 </div>
               )}
 
@@ -1462,8 +1464,9 @@ export default async function PrintTicketPage({
                     <span>
                       {extra.title || extra.name || 'Package Extra'}
                       {extra.description && <span className="pay-row-subtext">{extra.description}</span>}
+                      {getPackageExtraPricingDetail(extra) && <span className="pay-row-subtext">{getPackageExtraPricingDetail(extra)}</span>}
                     </span>
-                    <span>{money(extra.item_total || extra.total_price || extra.price || 0, 2)}</span>
+                    <span>{extra.included_in_custom_price ? 'Included in custom price' : money(extra.item_total || extra.total_price || extra.price || 0, 2)}</span>
                   </div>
                 ))
               ) : (
@@ -1665,7 +1668,6 @@ export default async function PrintTicketPage({
           {/* ── DYNAMIC ADD-ONS SECTION ── */}
           {(() => {
             const pSnap = booking.pricing_snapshot as any;
-            const hasFoodAddon = !!(pSnap?.has_food_addon && Number(pSnap?.food_subtotal || 0) > 0);
             const foodAmount = Number(pSnap?.food_subtotal || 0);
 
             // Build meal list from itinerary
@@ -1735,12 +1737,12 @@ export default async function PrintTicketPage({
                   {foodIncluded && !isRoom && (
                     <div style={{ flex: '1 1 230px', minWidth: '210px', padding: '12px 14px', borderLeft: '4px solid #ea580c', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
                       <div style={{ fontSize: '8.5px', fontWeight: 900, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        🥘 Catering &amp; Meals Add-On
+                        🍲 Food Order
                       </div>
                       <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#1e293b', marginBottom: '3px' }}>
-                        Full Catering Package Selected
+                        {getFoodPricingDetail(pSnap) || 'Food add-on selected'}
                       </div>
-                      {foodAmount > 0 && (
+                      {foodAmount > 0 && !pSnap?.food_included_in_custom_price && (
                         <div style={{ fontSize: '11px', fontWeight: 900, color: '#c2410c', marginBottom: '6px' }}>{money(foodAmount)}</div>
                       )}
 
@@ -1859,8 +1861,13 @@ export default async function PrintTicketPage({
                           {extra.description}
                         </div>
                       )}
+                      {getPackageExtraPricingDetail(extra) && (
+                        <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.5, fontWeight: 700, marginBottom: '6px' }}>
+                          {getPackageExtraPricingDetail(extra)}
+                        </div>
+                      )}
                       <div style={{ fontSize: '11px', fontWeight: 900, color: '#7e22ce' }}>
-                        {money(extra.item_total || extra.total_price || extra.price || 0)}
+                        {extra.included_in_custom_price ? 'Included in custom price' : money(extra.item_total || extra.total_price || extra.price || 0)}
                       </div>
                     </div>
                   ))}

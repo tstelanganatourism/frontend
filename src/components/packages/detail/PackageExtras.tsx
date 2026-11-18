@@ -9,6 +9,8 @@ export interface PackageExtraItem {
   adult_price?: number | string | null;
   child_price?: number | string | null;
   student_price?: number | string | null;
+  pricing_unit?: string;
+  price_per_kg?: number | string | null;
   min_passengers?: number;
   sort_order?: number;
 }
@@ -47,6 +49,8 @@ export function PackageExtras({ extras = [], isStudentPackage = false }: Package
           const adultPrice = Number(extra.adult_price || 0);
           const childPrice = Number(extra.child_price || 0);
           const studentPrice = Number(extra.student_price || 0);
+          const isKgPriced = (extra.pricing_unit || 'PER_PERSON').toUpperCase() === 'PER_KG';
+          const pricePerKg = Number(extra.price_per_kg ?? extra.adult_price ?? 0);
 
           return (
             <div
@@ -84,7 +88,11 @@ export function PackageExtras({ extras = [], isStudentPackage = false }: Package
                 </span>
 
                 <div className="text-right">
-                  {isStudentPackage ? (
+                  {isKgPriced ? (
+                    <span className="text-sm font-black text-[#0d6e75] bg-teal-50 px-3 py-1 rounded-xl border border-teal-100">
+                      ₹{formatINR(pricePerKg)} <span className="text-[10px] font-semibold text-slate-500">/ kg · choose any quantity</span>
+                    </span>
+                  ) : isStudentPackage ? (
                     <span className="text-sm font-black text-[#0d6e75] bg-teal-50 px-3 py-1 rounded-xl border border-teal-100">
                       ₹{formatINR(studentPrice)} <span className="text-[10px] font-semibold text-slate-500">/ student</span>
                     </span>

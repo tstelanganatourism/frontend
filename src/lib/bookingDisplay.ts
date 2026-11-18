@@ -100,6 +100,52 @@ export function getFoodAmount(pricingSnapshot?: any) {
   return Number(pricingSnapshot?.food_amount || pricingSnapshot?.catering_amount || pricingSnapshot?.food_subtotal || 0);
 }
 
+export function getFoodPricingDetail(pricingSnapshot?: any) {
+  const quantity = Number(pricingSnapshot?.food_quantity_kg || 0);
+  const pricePerKg = Number(pricingSnapshot?.food_price_per_kg || 0);
+  if (quantity <= 0) return '';
+  const detail = `${quantity} kg × ${money(pricePerKg)}/kg`;
+  if (pricingSnapshot?.food_included_in_custom_price) {
+    const catalogAmount = Number(pricingSnapshot?.food_catalog_subtotal || 0);
+    return `${detail}${catalogAmount > 0 ? ` = ${money(catalogAmount)}` : ''} (included in custom price)`;
+  }
+  return detail;
+}
+
+export function getPackageExtraPricingDetail(extra: any) {
+  const includedSuffix = extra?.included_in_custom_price
+    ? ` = ${money(extra.original_item_total || 0)} (included in custom price)`
+    : '';
+  if ((extra?.pricing_unit || '').toUpperCase() === 'PER_KG') {
+    const quantity = Number(extra.quantity || 0);
+    const pricePerKg = Number(extra.unit_price ?? extra.price_per_kg ?? 0);
+    return quantity > 0 ? `${quantity} kg × ${money(pricePerKg)}/kg${includedSuffix}` : '';
+  }
+  if (Number(extra?.student_count || 0) > 0) {
+    return `${Number(extra.student_count)} students × ${money(extra.student_price || 0)}/student${includedSuffix}`;
+  }
+  if (extra?.adult_count !== undefined || extra?.child_count !== undefined) {
+    const adults = Number(extra.adult_count || 0);
+    const children = Number(extra.child_count || 0);
+    return `${adults} adults × ${money(extra.adult_price || 0)} + ${children} children × ${money(extra.child_price || 0)}${includedSuffix}`;
+  }
+  return '';
+}
+
+export function getKgExtraQuantityError(
+  extras: Array<{ id: number; title?: string; pricing_unit?: string }> = [],
+  selectedIds: number[] = [],
+  quantities: Record<number, string> = {},
+) {
+  const invalidExtra = extras.find((extra) => {
+    if (!selectedIds.includes(extra.id) || (extra.pricing_unit || 'PER_PERSON').toUpperCase() !== 'PER_KG') return false;
+    const quantity = Number(quantities[extra.id] ?? '1');
+    return !Number.isFinite(quantity) || quantity < 0.25;
+  });
+
+  return invalidExtra ? `Enter at least 0.25 kg for ${invalidExtra.title || 'the selected food option'}.` : null;
+}
+
 export function hasExtras(pricingSnapshot?: any) {
   const amount = Number(pricingSnapshot?.extras_amount || pricingSnapshot?.extras_subtotal || 0);
   const list = Array.isArray(pricingSnapshot?.selected_extras) ? pricingSnapshot.selected_extras : [];
