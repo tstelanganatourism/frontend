@@ -188,12 +188,16 @@ const fetchPackageDetail = cache(async (slug: string): Promise<PackageDetail | n
     });
     if (!res.ok) {
       if (res.status === 404) return null;
-      throw new Error(`Failed to fetch package ${slug}: HTTP ${res.status}`);
+      // On 5xx / transient errors during build, return null instead of throwing.
+      // The page will be rendered on-demand via ISR when the backend is healthy.
+      console.warn(`[Build] fetchPackageDetail: HTTP ${res.status} for "${slug}" — skipping prerender`);
+      return null;
     }
     return res.json();
   } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes('HTTP 404')) return null;
-    throw err;
+    // Network errors, timeouts, etc. — don't crash the build worker.
+    console.warn(`[Build] fetchPackageDetail error for "${slug}":`, err instanceof Error ? err.message : err);
+    return null;
   }
 });
 
