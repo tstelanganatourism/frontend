@@ -53,12 +53,14 @@ export default function PaymentStatusPage() {
         setLoading(false);
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         
-        // Fire Google Ads Purchase Conversion Event
-        // send_to = AW-{account_id}/{conversion_label} from Google Ads > Conversions > Purchase
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-          const awConversionId = process.env.NEXT_PUBLIC_AW_PURCHASE_CONVERSION || 'AW-18389035084/purchase_conversion';
+        // Fire Google Ads Purchase Conversion Event (guarded against duplicate triggers)
+        const conversionKey = `gads_conv_${statusData.booking_id || merchantTransactionId}`;
+        const alreadyFired = typeof window !== 'undefined' && sessionStorage.getItem(conversionKey);
+
+        if (!alreadyFired && typeof window !== 'undefined' && (window as any).gtag) {
+          sessionStorage.setItem(conversionKey, 'true');
           (window as any).gtag('event', 'conversion', {
-              'send_to': awConversionId,
+              'send_to': 'AW-18389035084/n7yYCOuExI8dEMzQycBE',
               'transaction_id': statusData.booking_id,
               'value': 1.0,
               'currency': 'INR'

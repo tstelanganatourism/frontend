@@ -51,10 +51,12 @@ function AnalyticsInner() {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const awIdInput = process.env.NEXT_PUBLIC_AW_ID;
 
-  // Support single ID or comma-separated list of multiple IDs
-  const awIds = awIdInput
+  // Support single ID or comma-separated list of multiple IDs.
+  // Filter out the primary AW ID that is already loaded in <head> to prevent duplicate tags.
+  const awIds = (awIdInput
     ? awIdInput.split(',').map((id) => id.trim()).filter(Boolean)
-    : [];
+    : []
+  ).filter((id) => id !== 'AW-18389035084');
 
   if (!loadAnalytics) return null;
 
