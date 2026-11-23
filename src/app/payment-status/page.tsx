@@ -53,11 +53,20 @@ export default function PaymentStatusPage() {
         setLoading(false);
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         
-        // Fire Google Ads Conversion Event
+        // Fire Google Ads Purchase Conversion Event
+        // send_to = AW-{account_id}/{conversion_label} from Google Ads > Conversions > Purchase
         if (typeof window !== 'undefined' && (window as any).gtag) {
+          const awConversionId = process.env.NEXT_PUBLIC_AW_PURCHASE_CONVERSION || 'AW-18389035084/purchase_conversion';
           (window as any).gtag('event', 'conversion', {
-              'send_to': 'AW-18250568283/_guECIjIkcIcENukxv5D',
-              'transaction_id': statusData.booking_id
+              'send_to': awConversionId,
+              'transaction_id': statusData.booking_id,
+              'value': 1.0,
+              'currency': 'INR'
+          });
+          // Also fire a standard purchase event for GA4
+          (window as any).gtag('event', 'purchase', {
+              'transaction_id': statusData.booking_id,
+              'currency': 'INR',
           });
         }
       } else if (statusData.status === 'pending') {

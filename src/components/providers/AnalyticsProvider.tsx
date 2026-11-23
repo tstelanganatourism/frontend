@@ -112,11 +112,12 @@ export const trackEvent = (eventName: string, params: Record<string, any> = {}) 
   }
 };
 
-// Google Ads conversion tracking for 'Book Now' click
+// Google Ads conversion tracking for 'Book Now' click (account: AW-18389035084)
 export const reportBookNowConversion = () => {
   if (typeof window !== 'undefined' && window.gtag) {
+    const awConversionId = process.env.NEXT_PUBLIC_AW_BOOKNOW_CONVERSION || 'AW-18389035084/book_now_click';
     window.gtag('event', 'conversion', {
-      'send_to': 'AW-18250568283/WfmRCPuLpdEcENukxv5D',
+      'send_to': awConversionId,
       'value': 1.0,
       'currency': 'INR'
     });
